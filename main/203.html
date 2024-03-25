@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horizontal 3-level Tree Structure</title>
+<style>
+  body {
+    background-image: url('10.jpg'); /* 背景圖片 */
+    background-size: cover;
+    font-size: 12px; /* 字體大小 */
+  }
+  ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+  li {
+    margin-bottom: 10px;
+    position: relative;
+  }
+  a {
+    text-decoration: none;
+    color: blue; /* 文字顏色 */
+    padding: 10px;
+    display: block;
+  }
+  .sub-menu {
+    display: none;
+    background-color: #EE82EE; /* 第二層選單顏色 */
+    white-space: nowrap; /* 不換行 */
+    position: absolute; /* 絕對定位 */
+    top: 100%; /* 沿著上方對齊 */
+    left: 0; /* 沿著左邊對齊 */
+    width: 100px; /* 選單寬度 */
+  }
+
+  li:hover > .sub-menu, .sub-menu:hover {
+    display: block;
+  }
+
+  .sub-menu li {
+    margin-top: 5px;
+  }
+  .sub-menu .sub-menu {
+    background-color: #CCCCFF; /* 第三層選單顏色 */
+    position: absolute; /* 絕對定位 */
+    top: 0; /* 沿著上方對齊 */
+    left: 100%; /* 沿著右邊對齊 */
+    width: 250px; /* 選單寬度 */
+  }
+  .main-menu {
+    background-color: #7FFFD4; /* 第一層選單顏色 */
+    display: inline-block; /* 將按鈕水平排列 */
+    margin-right: 20px; /* 設置按鈕之間的間距 */
+    position: relative; /* 相對定位 */
+  }
+</style>
+</head>
+<body>
+<h1>國中數學遊戲化測驗</h1>
+<ul>
+
+
+  <li class="main-menu">
+    <a href="#">籃球高手</a>
+
+    <ul class="sub-menu">
+      <li><a href="#">第二冊</a>
+        <ul class="sub-menu">
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_72ch1/html5_basketball.html"target="_blank">CH1 二元一次聯立方程式</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_72-CH2/html5_basketball.html"target="_blank">CH2 直角坐標與二元一次方程式的圖形</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_72ch3/html5_basketball.html"target="_blank">CH3 比與比例式</a></li>
+
+
+        </ul>
+      </li>
+      <li><a href="#">第三冊</a>
+        <ul class="sub-menu">
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-1-1/html5_basketball.html"target="_blank">1-1 乘法公式</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-1-2/html5_basketball.html"target="_blank">1-2 多項式與其加減運算</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-2-1/html5_basketball.html"target="_blank">2-1 平方根與近似值</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-2-2/html5_basketball.html"target="_blank">2-2 根式的運算</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-2-3/html5_basketball.html"target="_blank">2-3 畢氏定理</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-3-1/html5_basketball.html"target="_blank">3-1 利用提出公因式與乘法公式做因式分解</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-3-2/html5_basketball.html"target="_blank">3-2 利用十字交乘法做因式分解</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-4-1/html5_basketball.html"target="_blank">4-1 因式分解解一元二次方程式</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-4-2/html5_basketball.html"target="_blank">4-2 配方法與公式解</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-4-3/html5_basketball.html"target="_blank">4-3 應用問題</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_81-5-1/html5_basketball.html"target="_blank">5-1 資料整理與統計圖表</a></li>
+
+        </ul>
+      </li>
+
+  <li><a href="#">第四冊</a>
+        <ul class="sub-menu">
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_82-1-1/html5_basketball.html"target="_blank">1-1 等差數列</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_82-1-2/html5_basketball.html"target="_blank">1-2 等差級數</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_82-1-3/html5_basketball.html"target="_blank">1-3 等比數列</a></li>
+          <li><a href="https://xtjh-yucc.github.io/math/html5_basketball_82-2-1/html5_basketball.html"target="_blank">2-1 函數與函數圖形</a></li>
+        
+        </ul>
+      </li>
+    </ul>
+  </li>
+
+
+ 
+
+
+
+  <li class="main-menu">
+    <a href="#">QUIZ--GENIALLY</a>
+    <ul class="sub-menu">
+      <li><a href="#">第四冊</a>
+        <ul class="sub-menu">
+          <li><a href="https://view.genial.ly/64168b0344195d0011c2fb3e"target="_blank">3-1-1互餘與互補</a></li>
+          <li><a href="https://view.genial.ly/641715eca053fb001a6a04ad"target="_blank">3-1-2 求對頂角</a></li>
+          <li><a href="https://view.genial.ly/641883d4082343001193a934/"target="_blank">3-1-3 三角形內角和與外角和的應用</a></li>
+          <li><a href="https://view.genial.ly/641896fb9470b4001108f370"target="_blank">3-1-4 三角形外角定理</a></li>
+          <li><a href="https://view.genial.ly/6419d588a0b8fc0018c6c984"target="_blank">3-1-5 三角形外角定理或內角和定理的應用</a></li>
+          <li><a href="https://view.genial.ly/6416780f96449600129eef30/interactive-content-3-1-6-n"target="_blank">3-1-6 n邊形的內角與外角</a></li>
+          <li><a href="https://view.genial.ly/641bb028d854cf00189a29f4/interactive-content-3-2-1"target="_blank">3-2-1 等線段與等角作圖</a></li>
+          <li><a href="https://view.genial.ly/642d5173a109c00010e68550/interactive-content-3-2"target="_blank">密室脫逃3-2-2 中垂線與角平分線作圖</a></li>
+          <li><a href="https://view.genial.ly/6436d77825e96f001a916d91/interactive-content-3-3-1"target="_blank">3-3-1 三角形全等的意義</a></li>
+          <li><a href="https://view.genial.ly/6438c85a09c92200125b0154/interactive-content-3-3-2"target="_blank">3-3-2 三角形全等性質的應用</a></li>
+          <li><a href="https://view.genial.ly/64415473ed54ca00113daf23/interactive-content-3-4-1"target="_blank">3-4-1 中垂線性質的應用</a></li>
+          <li><a href="https://view.genial.ly/6415953eda54e30018fdf571/interactive-content-3-4-2"target="_blank">3-4-2 角平分線性質的應用</a></li>
+          <li><a href="https://view.genial.ly/6448ca8dcd62990019950a06/interactive-content-3-4-3"target="_blank">3-4-3 綜合應用</a></li>
+          <li><a href="https://view.genial.ly/645a72dd58792b001a67de4b/interactive-content-3-5-1"target="_blank">3-5-1 三角形的三邊關係</a></li>
+          <li><a href="https://view.genial.ly/645bb16f4a7fc000132c9731/interactive-content-3-5-2"target="_blank">3-5-2大邊對大角的應用</a></li>
+          <li><a href="https://view.genial.ly/645bab5fb10aa2001106cf70/interactive-content-3-5-3"target="_blank">3-5-3 大角對大邊的應用，直角三角形的判別</a></li>
+          <li><a href="https://view.genial.ly/641596311539d80013730f17/interactive-content-4-1-1"target="_blank">4-1-1平行線間的距離與面積</a></li>
+          <li><a href="https://view.genial.ly/6460fdfe50df4c00198616a9/interactive-content-4-1-2"target="_blank">4-1-2 截線與截角</a></li>
+          <li><a href="https://view.genial.ly/6448c6a74f0db200112dad7a/interactive-content-4-1-3"target="_blank">4-1-3 平行線的判別與作圖</a></li>
+          <li><a href="https://view.genial.ly/64663c36e6b4ba001a8ccfe1/interactive-content-4-2-1"target="_blank">4-2-1 平行四邊形的意義與性質</a></li>
+          <li><a href="https://view.genial.ly/6466c65a4875c500183d41bb/interactive-content-4-2-2"target="_blank">4-2-2 平行四邊形的判別與作圖</a></li>
+          <li><a href="https://view.genial.ly/641baeaa9da988001041437c/interactive-content-4-3-1"target="_blank">4-3-1長方形、菱形、箏形與正方形的性質</a></li>
+          <li><a href="https://view.genial.ly/6469fb9fba5fb3001b7b0dff/interactive-content-4-3-2"target="_blank">4-3-2 梯形的性質</a></li>
+
+    
+
+
+        </ul>
+      </li>
+
+      <li><a href="#">第五冊</a>
+        <ul class="sub-menu">
+          <li><a href="https://view.genial.ly/64d5fb75f2628b00185f5302/interactive-content-1-1-1"target="_blank">1-1-1 連比</a></li>
+          <li><a href="https://view.genial.ly/64d6106156261b001862e19a/interactive-content-1-1-2-quiz"target="_blank">1-1-2 連比例式與應用</a></li>
+          <li><a href="https://view.genial.ly/64d610a8333e7e0012d6e672/interactive-content-1-2-1quiz"target="_blank">1-2-1 平行線截比例線段性質</a></li>
+          <li><a href="https://view.genial.ly/64d611062961b5001362498a/interactive-content-1-2-2quiz"target="_blank">1-2-2 平行線截比例線段性質的應用</a></li>
+          <li><a href="https://view.genial.ly/64d61348abf5c70019ae1ee6/interactive-content-1-3-1-quiz"target="_blank">1-3-1 縮放圖形</a></li>
+          <li><a href="https://view.genial.ly/64d60e6c49eef6001d1f0d2c/interactive-content-1-3-2-quiz"target="_blank">1-3-2 相似多邊形</a></li>
+          <li><a href="https://view.genial.ly/64d6141d56261b001862e298/interactive-content-1-3-3-quiz"target="_blank">1-3-3 相似三角形判別性質</a></li>
+          <li><a href="https://view.genial.ly/64d625028c720a00180ba710/interactive-content-1-4-1-quiz"target="_blank">1-4-1 簡易測量</a></li>
+          <li><a href="https://view.genial.ly/64d769e5dd82ac0019b4e280/interactive-content-1-4-2-escape-room"target="_blank">密室脫逃1-4-2 相似三角形的面積與邊長關係</a></li>
+          <li><a href="https://view.genial.ly/64eb3a96a761d40019a2c40a/interactive-content-1-4-3escape-room"target="_blank">密室脫逃1-4-3 相似直角三角形</a></li>
+          <li><a href="https://view.genial.ly/64d61c68abf5c70019ae24c1/interactive-content-quiz-2-1-1"target="_blank">2-1-1 圓</a></li>
+          <li><a href="https://view.genial.ly/652ab2960e320700118ad975/interactive-content-quiz-2-1-23"target="_blank">2-1-2、3 點、直線與圓的位置關係</a></li>
+          <li><a href="https://view.genial.ly/652b78a6235f5f001016c5af/interactive-content-quiz-2-1-4"target="_blank">2-1-4 切線段</a></li>
+          <li><a href="https://view.genial.ly/652bebe4bba50d0010b47ffa/interactive-content-quiz-2-1-5"target="_blank">2-1-5 弦與弦心距</a></li>
+          <li><a href="https://view.genial.ly/653135f5684d6700111e10fe/learning-experience-didactic-unit-quiz-2-2-1"target="_blank">2-2-1 圓心角與弧的關係</a></li>
+          <li><a href="https://view.genial.ly/64d60f9b2961b500136248e7/interactive-content-quiz-2-2-2"target="_blank">2-2-2 圓周角與弧的關係</a></li>
+          <li><a href="https://www.canva.com/design/DAF0mj6-z2k/zm01EV5m7-kjfnrk5rQhgg/edit"target="_blank">3-1-1 幾何證明</a></li>
+          <li><a href="https://view.genial.ly/6560b9cfa8824900112d6b62/interactive-content-quiz-3-1-2"target="_blank">3-1-2代數證明</a></li>
+          <li><a href="https://view.genial.ly/64d7a4d5ed55da001230bb67/interactive-content-escape-game-3-2-1"target="_blank">密室脫逃3-2-1 三角形的外心</a></li>
+          <li><a href="https://view.genial.ly/64d618e257f9080011f868f5/interactive-content-quiz-3-2-2"target="_blank">3-2-2 三角形的內心</a></li>
+          <li><a href="https://view.genial.ly/64d623614a39d900111950ae/interactive-content-escape-room-3-2-3"target="_blank">密室脫逃3-2-3 三角形的重心</a></li>
+
+
+
+        </ul>
+      </li>
+    </ul>
+  </li>
+
+ <li class="main-menu">
+    <a href="#"> 歷屆基測會考試題及解答</a>
+    <ul class="sub-menu">
+      <li><a href="#">會考試題</a>
+        <ul class="sub-menu">
+          <li><a href="https://wordwall.net/play/61293/253/793 "target="_blank">112會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/049/208 "target="_blank">111會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/100/932 "target="_blank">110會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/409/659 "target="_blank">109會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/467/549 "target="_blank">108會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/702/420 "target="_blank">107會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/743/207 "target="_blank">106會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/832/605 "target="_blank">105會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61289/942/407 "target="_blank">104會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61290/055/394 "target="_blank">103會考試題</a></li>
+          <li><a href="https://wordwall.net/play/61290/121/327 "target="_blank">102基測試題</a></li>
+          <li><a href="https://wordwall.net/play/61290/229/349 "target="_blank">101基測試題</a></li>
+
+
+        </ul>
+      </li>
+      <li><a href="#">會考試題解答</a>
+        <ul class="sub-menu">
+          <li><a href=" https://view.genial.ly/652fe003e55dde0010b0b848/learning-experience-didactic-unit-112 "target="_blank">112會考試題解答</a></li>
+          <li><a href="https://appsntpcedutw-my.sharepoint.com/:p:/g/personal/aa0487_apps_ntpc_edu_tw/Eezf1R-BthlKvfgFgQo8F-IBNnTTRh88kOOHIfK5jNdhbA?e=7UCCau "target="_blank">111會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/9b2f8016c4.html "target="_blank">110會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/5725dda402.html "target="_blank">109會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/a5c7de845d.html"target="_blank">108會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/69e7124097.html "target="_blank">107會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/8a3680e25b.html "target="_blank">106會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/b749841ae7.html"target="_blank">105會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/baaaf2bb07.html"target="_blank">104會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/ed8054c7f2.html"target="_blank">103會考試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/54607b64df.html"target="_blank">102基測試題解答</a></li>
+          <li><a href="https://heyzine.com/flip-book/67492eec9e.html"target="_blank">101基測試題解答</a></li>
+
+        </ul>
+      </li>
+ </ul>
+  </li>
+
+
+</ul>
+</body>
+</html>
