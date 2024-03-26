@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二次函數選擇題測驗</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+  }
+  .question {
+    margin-bottom: 20px;
+  }
+  .options {
+    margin-left: 20px;
+  }
+</style>
+</head>
+<body>
+<label for="classNumber">班級座號：</label>
+<input type="text" id="classNumber">
+<div class="question">
+  <p>1. 下列哪一個二次函數的頂點坐標為(－2 , 5)？</p>
+  <div class="options">
+    <input type="radio" name="q1" value="A"> (A) y＝3(x＋2)2＋5<br>
+    <input type="radio" name="q1" value="B"> (B) y＝－2x2＋5<br>
+    <input type="radio" name="q1" value="C"> (C) y＝(x－2)2＋5<br>
+    <input type="radio" name="q1" value="D"> (D) y＝－(x－2)2－5<br>
+  </div>
+</div>
+
+<!-- 其他題目 -->
+
+<button onclick="submitQuiz()">提交</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.0/xlsx.full.min.js"></script>
+<script>
+function submitQuiz() {
+  const classNumber = document.getElementById('classNumber').value;
+  const answers = [];
+  const questions = document.querySelectorAll('.question');
+  questions.forEach(question => {
+    const selectedOption = question.querySelector('input[type="radio"]:checked');
+    if (selectedOption) {
+      answers.push(selectedOption.value);
+    } else {
+      answers.push(null);
+    }
+  });
+  const score = calculateScore(answers);
+  const currentDate = new Date().toLocaleString();
+  
+  // 將測試結果保存到Excel文件中
+  const data = [
+    ['班級座號', '提交時間', '成績', '答案'],
+    [classNumber, currentDate, score, ...answers]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '測驗結果');
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = //https://xtjh-yucc.github.io/math/test/.createObjectURL(blob);
+  a.download = 'ans.xlsx';
+  a.click();
+}
+
+function calculateScore(answers) {
+  const correctAnswers = ['A','C', 'D', 'B', 'B' ];
+  let score = 0;
+  for (let i = 0; i < answers.length; i++) {
+    if (answers[i] === correctAnswers[i]) {
+      score++;
+    }
+  }
+  return score;
+}
+</script>
+</body>
+</html>
