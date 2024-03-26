@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二次函數選擇題測驗</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+  }
+  .question {
+    margin-bottom: 20px;
+  }
+  .options {
+    margin-left: 20px;
+  }
+</style>
+</head>
+<body>
+<label for="classNumber">班級座號：</label>
+<input type="text" id="classNumber">
+<div class="question">
+  <p>1. 下列哪一個二次函數的頂點坐標為(－2 , 5)？</p>
+  <div class="options">
+    <input type="radio" name="q1" value="A"> (A) y＝3(x＋2)2＋5<br>
+    <input type="radio" name="q1" value="B"> (B) y＝－2x2＋5<br>
+    <input type="radio" name="q1" value="C"> (C) y＝(x－2)2＋5<br>
+    <input type="radio" name="q1" value="D"> (D) y＝－(x－2)2－5<br>
+  </div>
+</div>
+
+<!-- 其他題目 -->
+
+<button onclick="submitQuiz()">提交</button>
+
+<script>
+function submitQuiz() {
+  const classNumber = document.getElementById('classNumber').value;
+  const answers = [];
+  const questions = document.querySelectorAll('.question');
+  questions.forEach(question => {
+    const selectedOption = question.querySelector('input[type="radio"]:checked');
+    if (selectedOption) {
+      answers.push(selectedOption.value);
+    } else {
+      answers.push(null);
+    }
+  });
+  const score = calculateScore(answers);
+  const currentDate = new Date().toLocaleString();
+  
+  // 將測試結果保存到文本文件中
+  const content = `${classNumber}\t${currentDate}\t${score}\t${answers.join('\t')}`;
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ans.txt';
+  a.click();
+}
+
+function calculateScore(answers) {
+  const correctAnswers = ['C', 'D', 'B', 'B', 'A'];
+  let score = 0;
+  for (let i = 0; i < answers.length; i++) {
+    if (answers[i] === correctAnswers[i]) {
+      score++;
+    }
+  }
+  return score;
+}
+</script>
+</body>
+</html>
