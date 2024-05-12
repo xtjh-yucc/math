@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guessing Game</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .container {
+        margin: 50px auto;
+        width: 300px;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>Guessing Game</h2>
+    <p>Guess a number between 1 and 100.</p>
+    <p>Attempts remaining: <span id="attempts">6</span></p>
+    <input type="text" id="guess" placeholder="Enter your guess">
+    <button id="guessBtn" onclick="checkGuess()">Guess</button>
+    <button id="replayBtn" onclick="restartGame()" disabled>Replay</button>
+    <p id="result"></p>
+</div>
+
+<script>
+    var answer = Math.floor(Math.random() * 100) + 1;
+    var attempts = 6;
+
+    function checkGuess() {
+        var guess = parseInt(document.getElementById('guess').value);
+        var result = document.getElementById('result');
+        var attemptsDisplay = document.getElementById('attempts');
+        var guessBtn = document.getElementById('guessBtn');
+        var replayBtn = document.getElementById('replayBtn');
+
+        if (guess === answer) {
+            result.textContent = 'Congratulations! You guessed it right!';
+            guessBtn.disabled = true;
+            replayBtn.disabled = false;
+        } else {
+            if (guess < answer) {
+                result.textContent = 'Try a higher number.';
+            } else {
+                result.textContent = 'Try a lower number.';
+            }
+            document.getElementById('guess').value = '';
+            attempts--;
+            attemptsDisplay.textContent = attempts;
+            if (attempts === 0) {
+                result.textContent = 'Game Over. The correct answer was ' + answer + '.';
+                guessBtn.disabled = true;
+                replayBtn.disabled = false;
+            }
+        }
+    }
+
+    function restartGame() {
+        answer = Math.floor(Math.random() * 100) + 1;
+        attempts = 6;
+        document.getElementById('guess').value = '';
+        document.getElementById('attempts').textContent = attempts;
+        document.getElementById('result').textContent = '';
+        document.getElementById('guessBtn').disabled = false;
+        document.getElementById('replayBtn').disabled = true;
+    }
+</script>
+</body>
+</html>

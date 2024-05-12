@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猜數字遊戲</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #c7e7ff; /* 淡藍色 */
+    }
+    .container {
+        margin: 50px auto;
+        width: 300px;
+        text-align: center;
+    }
+    #result {
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>猜數字遊戲</h2>
+    <p>猜一個介於1到100之間的數字。</p>
+    <p>您還有<span id="attempts">10</span>次機會。</p>
+    <input type="text" id="guess" placeholder="輸入您的猜測">
+    <button id="guessBtn" onclick="checkGuess()">猜猜看</button>
+    <button id="replayBtn" onclick="restartGame()" disabled>重新開始</button>
+    <p id="result"></p>
+</div>
+
+<script>
+    var answer = Math.floor(Math.random() * 100) + 1;
+    var attempts = 10;
+
+    function checkGuess() {
+        var guess = parseInt(document.getElementById('guess').value);
+        var result = document.getElementById('result');
+        var attemptsDisplay = document.getElementById('attempts');
+        var guessBtn = document.getElementById('guessBtn');
+        var replayBtn = document.getElementById('replayBtn');
+
+        if (guess === answer) {
+            result.textContent = '恭喜您！您猜對了！';
+            guessBtn.disabled = true;
+            replayBtn.disabled = false;
+        } else {
+            if (guess < answer) {
+                result.textContent = '請猜一個較大的數字。';
+            } else {
+                result.textContent = '請猜一個較小的數字。';
+            }
+            document.getElementById('guess').value = '';
+            attempts--;
+            attemptsDisplay.textContent = attempts;
+            if (attempts === 0) {
+                result.textContent = '遊戲結束。正確答案是 ' + answer + '。';
+                guessBtn.disabled = true;
+                replayBtn.disabled = false;
+            } else {
+                result.textContent += ' 您還有 ' + attempts + ' 次機會。';
+                result.textContent += ' 目前可猜測範圍為 1 到 ' + answer + '。';
+            }
+        }
+    }
+
+    function restartGame() {
+        answer = Math.floor(Math.random() * 100) + 1;
+        attempts = 10;
+        document.getElementById('guess').value = '';
+        document.getElementById('attempts').textContent = attempts;
+        document.getElementById('result').textContent = '';
+        document.getElementById('guessBtn').disabled = false;
+        document.getElementById('replayBtn').disabled = true;
+    }
+</script>
+</body>
+</html>

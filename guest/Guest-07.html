@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title style="font-size: 16px; color: #6a0dad;">甲乙猜數字遊戲</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f8ff; /* 很淡的藍色 */
+    }
+    .container {
+        margin: 50px auto;
+        width: 500px;
+        text-align: center;
+    }
+    .player-container {
+        display: flex;
+        justify-content: space-around;
+    }
+    .guess-input {
+        margin-bottom: 10px;
+    }
+    .guess-btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        color: white; /* 文字改為白色 */
+    }
+    #result {
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2 style="font-size: 16px; color: #6a0dad;">甲乙猜數字遊戲</h2>
+    <div class="player-container">
+        <div class="player">
+            <h3>YOYO</h3>
+            <input type="text" id="guessA" class="guess-input" placeholder="請輸入您的猜測">
+            <button id="guessBtnA" class="guess-btn" style="background-color: #ff69b4;" onclick="checkGuess('A')">猜猜看</button>
+            <div id="guessHistoryA"></div>
+        </div>
+        <div class="player">
+            <h3>阿嬤嬤</h3>
+            <input type="text" id="guessB" class="guess-input" placeholder="請輸入您的猜測">
+            <button id="guessBtnB" class="guess-btn" style="background-color: #00008b;" onclick="checkGuess('B')">猜猜看</button>
+            <div id="guessHistoryB"></div>
+        </div>
+    </div>
+    <div id="result"></div>
+</div>
+
+<script>
+    var answer = Math.floor(Math.random() * 100) + 1;
+    var attemptsA = 5;
+    var attemptsB = 5;
+    var minRange = 1;
+    var maxRange = 100;
+
+    function checkGuess(player) {
+        var guess;
+        var attemptsDisplay;
+        var guessHistory;
+
+        if (player === 'A') {
+            guess = parseInt(document.getElementById('guessA').value);
+            attemptsDisplay = attemptsA;
+            guessHistory = document.getElementById('guessHistoryA');
+        } else {
+            guess = parseInt(document.getElementById('guessB').value);
+            attemptsDisplay = attemptsB;
+            guessHistory = document.getElementById('guessHistoryB');
+        }
+
+        var result = document.getElementById('result');
+        var guessBtn = document.getElementById('guessBtn' + player);
+
+        if (guess === answer) {
+            result.textContent = '恭喜' + (player === 'A' ? 'YOYO' : '阿嬤嬤') + '！您猜對了！';
+            guessBtn.disabled = true;
+        } else {
+            var historyItem = document.createElement('p');
+            historyItem.textContent = (player === 'A' ? 'YOYO' : '阿嬤嬤') + '的猜測：' + guess;
+            guessHistory.appendChild(historyItem);
+
+            attemptsDisplay--;
+            if (attemptsDisplay === 0) {
+                result.textContent = '遊戲結束。' + (player === 'A' ? 'YOYO' : '阿嬤嬤') + '未能猜中。正確答案是 ' + answer + '。';
+                guessBtn.disabled = true;
+            } else {
+                result.textContent = (player === 'A' ? 'YOYO' : '阿嬤嬤') + '還有 ' + attemptsDisplay + ' 次機會。';
+                if (guess < answer) {
+                    result.textContent += ' 提示範圍為：' + (guess + 1) + ' 到 ' + maxRange + '。';
+                    minRange = guess + 1;
+                } else {
+                    result.textContent += ' 提示範圍為：' + minRange + ' 到 ' + (guess - 1) + '。';
+                    maxRange = guess - 1;
+                }
+            }
+        }
+
+        if (player === 'A') {
+            attemptsA = attemptsDisplay;
+        } else {
+            attemptsB = attemptsDisplay;
+        }
+    }
+</script>
+</body>
+</html>
