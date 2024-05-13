@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>誰是小豬遊戲</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: lightblue;
+    }
+    .input-container {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+    }
+    .input-container p {
+        font-size: 18px;
+        font-weight: bold;
+        color: purple;
+    }
+    .input-container input {
+        width: 100px;
+    }
+    #output {
+        font-size: 20px;
+        color: navy;
+        font-weight: bold;
+    }
+    #pigImageContainer {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    #pigImage {
+        width: 200px;
+        height: 200px;
+    }
+</style>
+</head>
+<body>
+<h1>誰是小豬遊戲</h1>
+<div class="input-container">
+    <div>
+        <p>小新</p>
+        <input type="number" id="inputNumber1" min="1" max="12">
+        <button onclick="submitNumber(1)">輸入</button>
+    </div>
+    <div>
+        <p>小泰</p>
+        <input type="number" id="inputNumber2" min="1" max="12">
+        <button onclick="submitNumber(2)">輸入</button>
+    </div>
+</div>
+<p id="output"></p>
+<div id="restartButton" style="display: none;">
+    <button onclick="restartGame()">重玩一次</button>
+</div>
+<div id="pigImageContainer" style="display: none;">
+    <img id="pigImage" src="01.gif">
+</div>
+
+<script>
+    var currentPlayer = "<span style='font-size:18px; color:purple; font-weight:bold;'>小新</span>";
+    var currentNumber = 0;
+    var gameEnded = false;
+
+    function submitNumber(player) {
+        if (gameEnded) return;
+
+        var input = parseInt(document.getElementById("inputNumber" + player).value);
+        
+        if (isNaN(input) || input < 1 || input > 2) {
+            alert("請輸入1或2");
+            return;
+        }
+
+        currentNumber += input;
+        if (currentNumber >= 12) {
+            document.getElementById("output").innerHTML = "你是漂亮的小豬！";
+            document.getElementById("output").style.color = "red";
+            document.getElementById("pigImageContainer").style.display = "block";
+            document.getElementById("restartButton").style.display = "block";
+            gameEnded = true;
+            return;
+        }
+
+        var nextPlayer = (currentPlayer === "<span style='font-size:18px; color:purple; font-weight:bold;'>小新</span>") ? "<span style='font-size:18px; color:purple; font-weight:bold;'>小泰</span>" : "<span style='font-size:18px; color:purple; font-weight:bold;'>小新</span>";
+        var nextMin = currentNumber % 10 + 1;
+        var nextMax = Math.min(currentNumber % 10 + 2, 12);
+        if (currentNumber === 10) {
+            nextMin = 11;
+            nextMax = 12;
+        } else if (currentNumber === 11) {
+            nextMin = 12;
+            nextMax = 12;
+        }
+        var animal = getAnimal(currentNumber);
+        document.getElementById("output").innerHTML = currentPlayer + "你是" + "<span style='font-size:20px; color:navy; font-weight:bold;'>" + animal + "</span>" + "，現在輪到" + nextPlayer + "輸入，請輸入1或2，新範圍是 " + "<span style='font-size:20px; color:navy; font-weight:bold;'>" + nextMin + "~" + nextMax + "</span>";
+        currentPlayer = nextPlayer;
+        document.getElementById("inputNumber1").value = "";
+        document.getElementById("inputNumber2").value = "";
+    }
+
+    function restartGame() {
+        currentPlayer = "<span style='font-size:18px; color:purple; font-weight:bold;'>小新</span>";
+        currentNumber = 0;
+        gameEnded = false;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").style.color = "red";
+        document.getElementById("pigImageContainer").style.display = "none";
+        document.getElementById("restartButton").style.display = "none";
+        document.getElementById("inputNumber1").value = "";
+        document.getElementById("inputNumber2").value = "";
+    }
+
+    function getAnimal(number) {
+        switch (number) {
+            case 1: return "鼠";
+            case 2: return "牛";
+            case 3: return "虎";
+            case 4: return "兔";
+            case 5: return "龍";
+            case 6: return "蛇";
+            case 7: return "馬";
+            case 8: return "羊";
+            case 9: return "猴";
+            case 10: return "雞";
+            case 11: return "狗";
+            case 12: return "豬";
+            default: return "";
+        }
+    }
+</script>
+</body>
+</html>
