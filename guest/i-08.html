@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成語接龍遊戲</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #e6f7ff; /* 淡藍色背景 */
+    }
+    .container {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px auto;
+      max-width: 600px;
+    }
+    .player {
+      width: 45%;
+      margin: 0 auto;
+    }
+    input[type="text"] {
+      width: calc(100% - 60px);
+      padding: 5px;
+      margin-right: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 18px; /* 調整字體大小 */
+      max-width: 190px; /* 最大寬度 */
+    }
+    button {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+    }
+    #output {
+      margin-top: 20px;
+    }
+    #playAgainBtn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>成語接龍遊戲</h1>
+  <button id="playAgainBtn" onclick="playAgain()">再玩一次</button>
+  <div class="container">
+    <div class="player">
+      <input type="text" id="player1Input" placeholder="小新輸入成語" autocomplete="off">
+      <button onclick="play('player1')">提交</button>
+      <button onclick="startVoiceInput('player1Input')">語音輸入</button>
+    </div>
+    <div class="player">
+      <input type="text" id="player2Input" placeholder="小泰輸入成語" autocomplete="off">
+      <button onclick="play('player2')">提交</button>
+      <button onclick="startVoiceInput('player2Input')">語音輸入</button>
+    </div>
+  </div>
+  <div id="output"></div>
+
+  <script>
+    let lastWord = ''; // 存儲上一個輸入的成語
+    let currentPlayer = 'player1'; // 當前玩家
+    let timer; // 計時器
+
+    function play(player) {
+      const input = document.getElementById(player === 'player1' ? 'player1Input' : 'player2Input');
+      const output = document.getElementById('output');
+      const word = input.value.trim(); // 獲取輸入的成語，去除前後空格
+
+      if (!word) {
+        alert('請輸入成語！');
+        return;
+      }
+
+      // 如果是第一個成語或符合接龍條件
+      if (!lastWord || word[0] === lastWord[lastWord.length - 1]) {
+        output.innerHTML += `<p>${word}</p>`; // 顯示成語
+        lastWord = word; // 更新上一個成語
+        input.value = ''; // 清空輸入框
+        switchPlayer(); // 切換玩家
+      } else {
+        alert('不符合接龍規則，請重新輸入！');
+      }
+    }
+
+    function switchPlayer() {
+      currentPlayer = currentPlayer === 'player1' ? 'player2' : 'player1'; // 切換玩家
+      startTimer(); // 開始計時器
+    }
+
+    function startTimer() {
+      clearTimeout(timer); // 清除之前的計時器
+      timer = setTimeout(() => {
+        const winner = currentPlayer === 'player1' ? '小新' : '小泰';
+        const output = document.getElementById('output');
+        output.innerHTML = `<p style="font-size: 25px; color: red; font-weight: bold;">恭喜${winner}獲勝！</p><img src="i-001.png" alt="獲勝圖片">`; // 顯示獲勝圖片和恭喜訊息
+        document.getElementById('playAgainBtn').style.display = 'block'; // 顯示「再玩一次」按鈕
+      }, 30000); // 30秒後執行
+    }
+
+    function playAgain() {
+      window.location.reload(); // 重新載入頁面，重新開始遊戲
+    }
+
+    function startVoiceInput(inputId) {
+      const input = document.getElementById(inputId);
+      const recognition = new webkitSpeechRecognition() || new SpeechRecognition();
+
+      recognition.lang = 'zh-TW';
+
+      recognition.onresult = function(event) {
+        input.value = event.results[0][0].transcript;
+      };
+
+      recognition.onerror = function(event) {
+        alert('語音識別錯誤: ' + event.error);
+      };
+
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
