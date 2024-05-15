@@ -87,13 +87,13 @@
             width: 60px; /* 輸入列寬度60 */
         }
         .game-description {
-            color: black;
+            color: blue;
             font-size: 16px;
             font-weight: bold;
             text-align: left;
             position: absolute;
-            top: 20px;
-            right: 20px;
+            bottom: 20px;
+            left: 20px;
         }
         .game-description p {
             margin: 5px 0;
@@ -101,14 +101,16 @@
     </style>
 </head>
 <body>
-   <div class="game-description" style="color: blue; font-weight: bold;">
-    <p>&emsp;&emsp;&emsp;遊戲說明</p>
+    <div class="game-description">
+       <p>&emsp;&emsp;&emsp;遊戲說明</p>
     <p>1.&ensp;這是兩人對戰的遊戲 (小新和小泰)</p>
     <p>2.&ensp;視窗上有12顆黑色圍棋分成3堆，</p>
     <p> &emsp; 5顆在左邊，4顆在中間，3顆在右邊。</p>
     <p>3.&ensp;兩人輪流拿掉黑色棋子，每次只能拿掉其中某一堆的棋子，</p>
     <p>&emsp; 最少1顆， 最多可以整堆拿掉，最後一個將所有棋子拿掉者獲勝。</p>
-</div>
+
+    </div>
+
     <div class="header">
         <h1>543遊戲</h1>
     </div>
@@ -142,7 +144,8 @@
             <input type="number" id="inputPile1" min="1" max="5" placeholder="第1堆拿">
             <button onclick="removeStones(1)">移除</button>
         </div>
-        <div class="input-container">
+        <div
+ class="input-container">
             <input type="number" id="inputPile2" min="1" max="4" placeholder="第2堆拿">
             <button onclick="removeStones(2)">移除</button>
         </div>
@@ -156,8 +159,7 @@
         let piles = [5, 4, 3];
         let currentPlayer = '小新';
 
-        function removeStones
-(pileIndex) {
+        function removeStones(pileIndex) {
             const inputId = `inputPile${pileIndex}`;
             const input = document.getElementById(inputId);
             const count = parseInt(input.value);
