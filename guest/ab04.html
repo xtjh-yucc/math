@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國字部件組合成辭遊戲</title>
+    <style>
+        body {
+            background-color: #e0f7fa;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #003366;
+        }
+        .instructions {
+            font-size: 20px;
+            color: #003366;
+            text-align: left;
+            margin: 0 auto;
+            max-width: 600px;
+        }
+        .game-container {
+            margin-top: 20px;
+        }
+        .question {
+            font-size: 30px;  /* 題目字體大小設為 30 號 */
+            color: #800080;
+            font-weight: bold;
+        }
+        .answer-input {
+            font-size: 20px;
+        }
+        .timer {
+            font-size: 24px;
+            color: red;
+            font-weight: bold;
+        }
+        .message {
+            font-size: 20px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>國字部件組合成辭遊戲</h1>
+    <div class="instructions">
+        <ol>
+            <li>請仔細觀察視窗中 4~7 個國字部件，可以組合成兩個字的辭</li>
+            <li>請將組合成的辭填入輸入框，按輸入鈕</li>
+            <li>在60秒鐘正確輸入者可進入下一關，開始挑戰看看你可以完成幾關</li>
+        </ol>
+    </div>
+
+    <div class="game-container">
+        <div class="question" id="question">題目：牛+刀+竹+合+角</div>
+        <input type="text" id="answer" class="answer-input">
+        <button onclick="submitAnswer()">輸入</button>
+        <div class="timer" id="timer">倒數 60 秒</div>
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        let currentLevel = 0;
+        let timer;
+        let timeLeft = 60;
+        const questions = [
+            { components: '牛+刀+竹+合+角', answer: '解答' },
+            { components: '心+令+口+頁+五', answer: '領悟' },
+            { components: '口+木+口+各+口', answer: '品格' },
+            { components: '系+手+女+內+立', answer: '接納' },
+            { components: '日+水+月+青', answer: '清明' },
+            { components: '人+成+言+言', answer: '誠信' },
+            { components: '心+心+相+田', answer: '思想' },
+            { components: '卂+耳+言+門', answer: '聞訊' },
+            { components: '祭+雚+宀+見', answer: '觀察' },
+            { components: '青+火+丸+心+坴', answer: '熱情' },
+            { components: '口+言+言+五', answer: '語言' },
+            { components: '月+水+水+古+白', answer: '湖泊' },
+            { components: '各+木+水+寸+艹', answer: '村落' },
+            { components: '十+艹+女+曰+宀+木', answer: '草案' },
+            { components: '欠+口+曰+哥+日', answer: '唱歌' },
+            { components: '目+心+心+今+木', answer: '想念' },
+            { components: '一+口+口+人+竹+門', answer: '問答' },
+            { components: '辰+也+雨+土', answer: '地震' },
+            { components: '牜+直+勿+目', answer: '植物' },
+            { components: '心+令+口+頁+五', answer: '領悟' }
+        ];
+
+        function startTimer() {
+            timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame(false);
+                } else {
+                    document.getElementById('timer').innerText = `倒數 ${timeLeft--} 秒`;
+                }
+            }, 1000);
+        }
+
+        function submitAnswer() {
+            const userAnswer = document.getElementById('answer').value;
+            if (userAnswer === questions[currentLevel].answer) {
+                clearInterval(timer);
+                if (currentLevel < questions.length - 1) {
+                    currentLevel++;
+                    document.getElementById('message').innerText = `恭喜玩家，第 ${currentLevel + 1} 題開始作答`;
+                    nextQuestion();
+                } else {
+                    endGame(true);
+                }
+            } else {
+                document.getElementById('message').innerText = '答案錯誤，請再試一次';
+            }
+        }
+
+        function nextQuestion() {
+            document.getElementById('answer').value = '';
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            currentLevel = randomIndex;
+            document.getElementById('question').innerText = `題目：${questions[randomIndex].components}`;
+            timeLeft = 60;
+            document.getElementById('timer').innerText = `倒數 60 秒`;
+            startTimer();
+        }
+
+        function endGame(success) {
+            let message;
+            if (success) {
+                message = `恭喜完成所有題目！你真是學識淵博，才華洋溢，我佩服你！`;
+            } else {
+                message = `遊戲結束，共完成 ${currentLevel + 1} 題。`;
+                if (currentLevel + 1 <= 2) {
+                    message += '多讀書有益身心，加油！';
+                } else if (currentLevel + 1 <= 5) {
+                    message += '成績不錯，上課更用心一點，你可以做得更好！';
+                } else if (currentLevel + 1 <= 8) {
+                    message += '你已經是成語高手了，想要更上一層樓，有空多讀書吧！';
+                } else {
+                    message += '你真是學識淵博，才華洋溢，我佩服你！';
+                }
+                message += ` 此題正確答案是 ${questions[currentLevel].answer}`;
+            }
+            document.getElementById('message').innerText = message;
+        }
+
+        window.onload = () => {
+            nextQuestion();
+        };
+    </script>
+
+</body>
+</html>
