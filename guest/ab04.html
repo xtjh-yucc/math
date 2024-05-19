@@ -90,6 +90,8 @@
             { components: '心+令+口+頁+五', answer: '領悟' }
         ];
 
+        let availableQuestions = [...questions];  // 複製題目陣列，便於隨機選取且不重複
+
         function startTimer() {
             timer = setInterval(() => {
                 if (timeLeft <= 0) {
@@ -105,8 +107,7 @@
             const userAnswer = document.getElementById('answer').value;
             if (userAnswer === questions[currentLevel].answer) {
                 clearInterval(timer);
-                if (currentLevel < questions.length - 1) {
-                    currentLevel++;
+                if (availableQuestions.length > 0) {
                     document.getElementById('message').innerText = `恭喜玩家，第 ${currentLevel + 1} 題開始作答`;
                     nextQuestion();
                 } else {
@@ -119,9 +120,10 @@
 
         function nextQuestion() {
             document.getElementById('answer').value = '';
-            const randomIndex = Math.floor(Math.random() * questions.length);
-            currentLevel = randomIndex;
-            document.getElementById('question').innerText = `題目：${questions[randomIndex].components}`;
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            const nextQuestion = availableQuestions.splice(randomIndex, 1)[0]; // 從題庫中隨機抽取一題
+            document.getElementById('question').innerText = `題目：${nextQuestion.components}`;
+            currentLevel++;
             timeLeft = 60;
             document.getElementById('timer').innerText = `倒數 60 秒`;
             startTimer();
@@ -132,17 +134,17 @@
             if (success) {
                 message = `恭喜完成所有題目！你真是學識淵博，才華洋溢，我佩服你！`;
             } else {
-                message = `遊戲結束，共完成 ${currentLevel + 1} 題。`;
-                if (currentLevel + 1 <= 2) {
+                message = `遊戲結束，共完成 ${currentLevel} 題。`;
+                if (currentLevel <= 2) {
                     message += '多讀書有益身心，加油！';
-                } else if (currentLevel + 1 <= 5) {
+                } else if (currentLevel <= 5) {
                     message += '成績不錯，上課更用心一點，你可以做得更好！';
-                } else if (currentLevel + 1 <= 8) {
+                } else if (currentLevel <= 8) {
                     message += '你已經是成語高手了，想要更上一層樓，有空多讀書吧！';
                 } else {
                     message += '你真是學識淵博，才華洋溢，我佩服你！';
                 }
-                message += ` 此題正確答案是 ${questions[currentLevel].answer}`;
+                message += ` 此題正確答案是 ${questions[currentLevel - 1].answer}`;
             }
             document.getElementById('message').innerText = message;
         }
