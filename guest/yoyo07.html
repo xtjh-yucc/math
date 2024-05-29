@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>加法練習</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #b3d9ff;
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 30px;
+            color: #00008b;
+        }
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: inline-block;
+            text-align: left;
+        }
+        .feedback {
+            font-size: 20px;
+            font-weight: bold;
+            color: blue;
+            margin-top: 20px;
+        }
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+        .circle {
+            color: #00008b;
+            font-size: 24px;
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background-color: #00008b;
+            border-radius: 50%;
+            margin: 2px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .grid-item {
+            width: 60px;
+            height: 60px;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #000;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .grid-item.delete {
+            background-color: #ffcccc;
+        }
+        .grid-item.input {
+            background-color: #ccffcc;
+        }
+        .number {
+            display: block;
+            color: #00008b;
+            font-size: 20px;
+        }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .game-container > div {
+            margin-right: 20px;
+        }
+        #levelImage {
+            max-width: 200px;
+        }
+        input#answer {
+            font-size: 24px; /* 放大輸入框中的數字 */
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="game">
+            <h1>加法練習</h1>
+            <div id="questionContainer" class="question">
+                <div>
+                    <span id="num1"></span>
+                    <span class="number" id="num1Value"></span>
+                </div>
+                +
+                <div>
+                    <span id="num2"></span>
+                    <span class="number" id="num2Value"></span>
+                </div>
+                = <input type="text" id="answer" readonly>
+            </div>
+            <div id="numberGrid" class="grid-container">
+                <div class="grid-item" onclick="addToAnswer(1)">1</div>
+                <div class="grid-item" onclick="addToAnswer(2)">2</div>
+                <div class="grid-item" onclick="addToAnswer(3)">3</div>
+                <div class="grid-item" onclick="addToAnswer(4)">4</div>
+                <div class="grid-item" onclick="addToAnswer(5)">5</div>
+                <div class="grid-item" onclick="addToAnswer(6)">6</div>
+                <div class="grid-item" onclick="addToAnswer(7)">7</div>
+                <div class="grid-item" onclick="addToAnswer(8)">8</div>
+                <div class="grid-item" onclick="addToAnswer(9)">9</div>
+                <div class="grid-item" onclick="addToAnswer(0)">0</div>
+                <div class="grid-item delete" onclick="deleteAnswer()">刪除</div>
+                <div class="grid-item input" onclick="checkAnswer()">輸入</div>
+            </div>
+            <div id="feedback" class="feedback"></div>
+            <button id="nextQuestion" class="button hidden" onclick="nextQuestion()">下一題</button>
+            <button id="retry" class="button hidden" onclick="retry()">再練習一次</button>
+            <button id="nextLevel" class="button hidden" onclick="nextLevel()">下一關</button>
+            <button id="restart" class="button hidden" onclick="restart()">再玩一次</button>
+        </div>
+        <div>
+            <img id="levelImage" class="hidden">
+        </div>
+    </div>
+
+    <script>
+        const levels = [
+            { maxNumber: 4, questions: 5 },
+            { maxNumber: 7, questions: 5 },
+            { maxNumber: 11, questions: 5 },
+            { maxNumber: 14, questions: 5 },
+            { maxNumber: 19, questions: 5 }
+        ];
+
+        let currentLevel = 0;
+        let currentQuestion = 0;
+        let num1, num2, answer;
+
+        function getRandomNumber(max) {
+            return Math.floor(Math.random() * max) + 1;  // 不為0的隨機數
+        }
+
+        function generateQuestion() {
+            const maxNumber = levels[currentLevel].maxNumber;
+            num1 = getRandomNumber(maxNumber);
+            num2 = getRandomNumber(maxNumber);
+            answer = num1 + num2;
+            document.getElementById('num1').innerHTML = createCircles(num1);
+            document.getElementById('num2').innerHTML = createCircles(num2);
+            document.getElementById('num1Value').textContent = num1;
+            document.getElementById('num2Value').textContent = num2;
+            document.getElementById('answer').value = '';
+        }
+
+        function createCircles(num) {
+            let circles = '';
+            for (let i = 0; i < num; i++) {
+                circles += '<span class="circle"></span>';
+                if ((i + 1) % 5 === 0) circles += '<br>';  // 每5個換行
+            }
+            return circles;
+        }
+
+        function addToAnswer(num) {
+            let answerField = document.getElementById('answer');
+            answerField.value += num;
+        }
+
+        function deleteAnswer() {
+            let answerField = document.getElementById('answer');
+            answerField.value = '';
+        }
+
+        function checkAnswer() {
+            const userAnswer = parseInt(document.getElementById('answer').value);
+            if (userAnswer === answer) {
+                document.getElementById('feedback').textContent = "答對了，請做下一題!";
+                document.getElementById('nextQuestion').classList.remove('hidden');
+                document.getElementById('retry').classList.add('hidden');
+            } else {
+                document.getElementById('feedback').textContent = "答錯了，再練習一次!";
+                document.getElementById('retry').classList.remove('hidden');
+                document.getElementById('nextQuestion').classList.add('hidden');
+            }
+        }
+
+        function nextQuestion() {
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('nextQuestion').classList.add('hidden');
+            currentQuestion++;
+            if (currentQuestion < levels[currentLevel].questions) {
+                generateQuestion();
+            } else {
+                document.getElementById('feedback').textContent = '太棒了，請繼續下一關!';
+                document.getElementById('levelImage').src = 'yoyo01.jpg';
+                document.getElementById('levelImage').classList.remove('hidden');
+                document.getElementById('levelImage').style.transform = "scale(2)";  // 放大200%
+                document.getElementById('nextLevel').classList.remove('hidden');
+            }
+        }
+
+        function retry() {
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('retry').classList.add('hidden');
+            deleteAnswer();
+            generateQuestion();
+        }
+
+        function nextLevel() {
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('levelImage').classList.add('hidden');
+            document.getElementById('nextLevel').classList.add('hidden');
+            currentLevel++;
+            currentQuestion = 0;
+            if (currentLevel < levels.length) {
+                generateQuestion();
+            } else {
+                document.getElementById('feedback').textContent = '你太優秀了!';
+                document.getElementById('levelImage').src = 'yoyo02.jpg';
+                document.getElementById('levelImage').classList.remove('hidden');
+                document.getElementById('levelImage').style.transform = "scale(2)";  // 放大200%
+                document.getElementById('restart').classList.remove('hidden');
+            }
+        }
+
+        function restart() {
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('levelImage').classList.add('hidden');
+            document.getElementById('restart').classList.add('hidden');
+            document.getElementById('questionContainer').classList.remove('hidden');
+            document.getElementById('numberGrid').classList.remove('hidden');
+            currentLevel = 0;
+            currentQuestion = 0;
+            generateQuestion();
+        }
+
+        // Initialize first question
+        generateQuestion();
+    </script>
+</body>
+</html>
