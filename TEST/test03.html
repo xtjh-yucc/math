@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>精熟性線上練習卷</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #b3d9ff;
+        }
+        h1 {
+            font-size: 30px;
+            color: #00008b;
+        }
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: inline-block;
+            text-align: center;
+        }
+        .feedback {
+            font-size: 20px;
+            font-weight: bold;
+            color: red;
+            margin-top: 20px;
+        }
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .grid-item {
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #000;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="game">
+            <h1>精熟性線上練習卷</h1>
+            <div id="questionContainer" class="question"></div>
+            <div id="optionsContainer" class="grid-container"></div>
+            <div id="feedback" class="feedback"></div>
+            <button id="nextQuestion" class="button hidden" onclick="nextQuestion()">下一題</button>
+            <button id="retry" class="button hidden" onclick="retry()">再練習一次</button>
+            <button id="finish" class="button hidden" onclick="finish()">打卡</button>
+        </div>
+    </div>
+
+    <audio id="correctSound" src="yo01.mp3"></audio>
+    <audio id="incorrectSound" src="yo04.mp3"></audio>
+
+    <script>
+        const questions = [
+            { 
+                question: "若以中午十二點為基準，上午十點鐘以－4表示，則下午三點鐘應記為多少？", 
+                options: ["－3", "＋3", "－6", "＋6"], 
+                answer: "＋6", 
+                similar: [
+                    { question: "若以中午十二點為基準，上午九點鐘以－3表示，則下午四點鐘應記為多少？", options: ["＋4", "＋5", "－5", "＋6"], answer: "＋4" },
+                    { question: "若以中午十二點為基準，上午十一點鐘以－1表示，則下午兩點鐘應記為多少？", options: ["＋2", "＋3", "－2", "＋1"], answer: "＋2" },
+                    { question: "若以中午十二點為基準，下午一點鐘以＋1表示，則下午六點鐘應記為多少？", options: ["＋4", "＋5", "＋6", "＋7"], answer: "＋6" }
+                ]
+            },
+            { 
+                question: "在一數線上有P、Q、R、S、T五個點，其表示的數分別是－4、12、15、－8、5，則原點不在下列哪兩點之間？", 
+                options: ["P與Q之間", "Q與S之間", "R與T之間", "P與T之間"], 
+                answer: "R與T之間", 
+                similar: [
+                    { question: "在一數線上有A、B、C、D、E五個點，其表示的數分別是－3、8、14、－6、4，則原點不在下列哪兩點之間？", options: ["A與B之間", "B與D之間", "C與E之間", "A與E之間"], answer: "C與E之間" },
+                    { question: "在一數線上有X、Y、Z、W、V五個點，其表示的數分別是－5、9、13、－7、6，則原點不在下列哪兩點之間？", options: ["X與Y之間", "Y與W之間", "Z與V之間", "X與V之間"], answer: "Z與V之間" },
+                    { question: "在一數線上有M、N、O、P、Q五個點，其表示的數分別是－2、7、10、－9、3，則原點不在下列哪兩點之間？", options: ["M與N之間", "N與P之間", "O與Q之間", "M與Q之間"], answer: "O與Q之間" }
+                ]
+            },
+            { 
+                question: "若(甲數＋3)與－8互為相反數，則甲數的相反數為何？", 
+                options: ["－11", "－5", "5", "11"], 
+                answer: "－5", 
+                similar: [
+                    { question: "若(乙數－4)與＋6互為相反數，則乙數的相反數為何？", options: ["－2", "－10", "10", "2"], answer: "2" },
+                    { question: "若(丙數＋5)與－7互為相反數，則丙數的相反數為何？", options: ["－12", "－2", "2", "12"], answer: "－2" },
+                    { question: "若(丁數－6)與＋9互為相反數，則丁數的相反數為何？", options: ["－15", "－3", "3", "15"], answer: "3" }
+                ]
+            },
+            { 
+                question: "若乙數為整數，且∣－2∣＜∣乙數∣＜∣－5∣，則符合條件的乙數共有多少個？", 
+                options: ["6", "5", "4", "3"], 
+                answer: "4", 
+                similar: [
+                    { question: "若丙數為整數，且∣－3∣＜∣丙數∣＜∣－6∣，則符合條件的丙數共有多少個？", options: ["4", "5", "6", "7"], answer: "4" },
+                    { question: "若丁數為整數，且∣－1∣＜∣丁數∣＜∣－4∣，則符合條件的丁數共有多少個？", options: ["2", "3", "4", "5"], answer: "4" },
+                    { question: "若戊數為整數，且∣－4∣＜∣戊數∣＜∣－7∣，則符合條件的戊數共有多少個？", options: ["6", "5", "4", "3"], answer: "4" }
+                ]
+            }
+
+        ];
+
+        let currentQuestionIndex = 0;
+        let retryMode = false;
+        let currentSimilarQuestions;
+
+        function generateQuestion() {
+            const questionData = questions[currentQuestionIndex];
+            document.getElementById('questionContainer').textContent = questionData.question;
+            document.getElementById('optionsContainer').innerHTML = questionData.options.map((option, index) => {
+                return `<div class="grid-item" onclick="checkAnswer('${option}')">${option}</div>`;
+            }).join('');
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('nextQuestion').classList.add('hidden');
+            document.getElementById('retry').classList.add('hidden');
+        }
+
+        function checkAnswer(selectedAnswer) {
+            const questionData = questions[currentQuestionIndex];
+            if (selectedAnswer === questionData.answer) {
+                document.getElementById('feedback').textContent = "答對了請繼續下一題!";
+                document.getElementById('correctSound').play();
+                document.getElementById('nextQuestion').classList.remove('hidden');
+                document.getElementById('retry').classList.add('hidden');
+                retryMode = false;
+            } else {
+                document.getElementById('feedback').textContent = "答錯了，再練習一次!";
+                document.getElementById('incorrectSound').play();
+                document.getElementById('retry').classList.remove('hidden');
+                document.getElementById('nextQuestion').classList.add('hidden');
+                retryMode = true;
+                currentSimilarQuestions = questionData.similar.slice(); // clone array
+            }
+        }
+
+        function retry() {
+            if (retryMode && currentSimilarQuestions.length > 0) {
+                const randomIndex = Math.floor(Math.random() * currentSimilarQuestions.length);
+                const similarQuestion = currentSimilarQuestions.splice(randomIndex, 1)[0];
+                document.getElementById('questionContainer').textContent = similarQuestion.question;
+                document.getElementById('optionsContainer').innerHTML = similarQuestion.options.map((option, index) => {
+                    return `<div class="grid-item" onclick="checkAnswer('${option}')">${option}</div>`;
+                }).join('');
+                document.getElementById('feedback').textContent = '';
+                document.getElementById('retry').classList.add('hidden');
+            } else {
+                generateQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                generateQuestion();
+            } else {
+                document.getElementById('game').innerHTML = `<h1>你真的太優秀了</h1><button onclick="location.href='https://padlet.com/aa0487ntpc/padlet-t7v807jlfxpe07kv'" class="button">打卡</button>`;
+            }
+        }
+
+        function finish() {
+            location.href = 'https://padlet.com/aa0487ntpc/padlet-t7v807jlfxpe07kv';
+        }
+
+        // Initialize first question
+        generateQuestion();
+    </script>
+</body>
+</html>
