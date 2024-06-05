@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精熟性線上練習卷</title>
+    <style>
+        body {
+            background-color: #ADD8E6;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 50px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .feedback {
+            color: red;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .question {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+        .inputs {
+            margin-top: 20px;
+        }
+        .inputs input {
+            margin-right: 10px;
+            padding: 5px;
+            font-size: 16px;
+        }
+        .submit-container {
+            margin-top: 20px;
+        }
+        .submit-container input {
+            padding: 10px;
+            font-size: 20px;
+            height: 30px;
+        }
+        .submit-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            color: darkblue;
+        }
+        .underline {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">負數的加法與減法</div>
+        <div class="inputs">
+            <label>班級: <input type="text" id="class"></label>
+            <label>座號: <input type="text" id="number"></label>
+            <label>姓名: <input type="text" id="name"></label>
+        </div>
+        <div class="question" id="question">第1題: (- 5/8) - (- 9/8) = ?</div>
+        <div class="feedback" id="feedback"></div>
+        <div class="submit-container">
+            <input type="text" id="answer" placeholder="請輸入答案">
+            <button id="submit-btn" onclick="submitAnswer()">提交答案</button>
+        </div>
+    </div>
+
+    <audio id="correctSound" src="yo01.mp3"></audio>
+    <audio id="wrongSound" src="yo04.mp3"></audio>
+    <audio id="completionSound" src="yo06.mp3"></audio>
+
+    <script>
+        const questions = [
+            { question: "(- 5/8) - (- 9/8) = ?", answer: 0.5 },
+            { question: "(- 5/13) + 12/13 = ?", answer: 7/13 },
+            { question: "3/8 - (- 4/7) = ?", answer: 53/56 },
+            { question: "- 5/8 - 3/4 = ?", answer: -11/8 }
+        ];
+
+        const similarQuestions = [
+            [
+                { question: "(- 7/12) - (- 3/12) = ?", answer: 1/3 }, 
+                { question: "(- 2/5) - (- 3/5) = ?", answer: 1/5 }, 
+                { question: "(- 11/16) - (- 7/16) = ?", answer: 1/4 }
+            ],
+            [
+                { question: "(- 3/11) + 7/11 = ?", answer: 4/11 }, 
+                { question: "(- 1/9) + 5/9 = ?", answer: 4/9 }, 
+                { question: "(- 6/15) + 10/15 = ?", answer: 4/15 }
+            ],
+            [
+                { question: "5/6 - (- 1/2) = ?", answer: 1.5 }, 
+                { question: "2/5 - (- 3/10) = ?", answer: 0.7 }, 
+                { question: "7/9 - (- 2/3) = ?", answer: 11/9 }
+            ],
+            [
+                { question: "- 1/3 - 2/3 = ?", answer: -1 }, 
+                { question: "- 4/5 - 1/5 = ?", answer: -1 }, 
+                { question: "- 7/12 - 1/4 = ?", answer: -5/6 }
+            ]
+        ];
+
+        let currentQuestionIndex = 0;
+        let attemptCount = 0;
+
+        function submitAnswer() {
+            const answerInput = document.getElementById("answer").value;
+            const feedback = document.getElementById("feedback");
+            const correctSound = document.getElementById("correctSound");
+            const wrongSound = document.getElementById("wrongSound");
+            const completionSound = document.getElementById("completionSound");
+
+            const parsedAnswer = parseAnswer(answerInput);
+
+            if (parsedAnswer === questions[currentQuestionIndex].answer) {
+                correctSound.play();
+                feedback.textContent = "答對了請繼續下一題";
+                attemptCount++;
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    setTimeout(() => {
+                        document.getElementById("question").textContent = `第${currentQuestionIndex + 1}題: ${questions[currentQuestionIndex].question}`;
+                        feedback.textContent = "";
+                        document.getElementById("answer").value = "";
+                    }, 1000);
+                } else {
+                    completionSound.play();
+                    feedback.innerHTML = `太棒了，你完成所有題目，請<span class="underline">截圖打卡!</span>`;
+                    document.getElementById("submit-btn").style.display = "none";
+                    const punchButton = document.createElement("button");
+                    punchButton.textContent = "打卡";
+                    punchButton.onclick = () => {
+                        window.location.href = "https://padlet.com/aa0487ntpc/padlet-t7v807jlfxpe07kv";
+                    };
+                    document.querySelector(".submit-container").appendChild(punchButton);
+                }
+            } else {
+                wrongSound.play();
+                feedback.textContent = `答錯了，再練習一次。正確答案是${questions[currentQuestionIndex].answer}`;
+                attemptCount++;
+                const similarQuestion = similarQuestions[currentQuestionIndex][Math.floor(Math.random() * 3)];
+                setTimeout(() => {
+                    document.getElementById("question").textContent = similarQuestion.question;
+                    feedback.textContent = "";
+                    document.getElementById("answer").value = "";
+                    questions[currentQuestionIndex].question = similarQuestion.question;
+                    questions[currentQuestionIndex].answer = similarQuestion.answer;
+                }, 1000);
+            }
+        }
+
+        function parseAnswer(input) {
+            // 判斷是否為分數形式
+            if (input.includes('/')) {
+                const [numerator, denominator] = input.split('/').map(Number);
+                return numerator / denominator;
+            }
+            return parseFloat(input);
+        }
+    </script>
+</body>
+</html>
