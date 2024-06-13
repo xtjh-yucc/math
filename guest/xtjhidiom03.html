@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字海覓成語</title>
+    <style>
+        body {
+            background-color: #ADD8E6;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            font-size: 24px;
+            color: #00008B;
+            text-align: center;
+        }
+        p {
+            font-size: 24px;
+            color: #00008B;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 60%;
+            margin: 20px auto;
+        }
+        .grid div {
+            font-size: 30px;
+            font-weight: bold;
+            color: purple;
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #00008B;
+            cursor: pointer;
+        }
+        .input-section {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .current-input {
+            font-size: 30px;
+            height: 50px;
+            margin-right: 10px;
+            flex: 1;
+            border: 1px solid #000;
+            padding: 10px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+        }
+        button {
+            padding: 10px;
+            font-size: 20px;
+            width: 200px;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+            margin-left: 20px;
+        }
+        .result {
+            font-size: 20px;
+            color: red;
+            text-align: center;
+        }
+        .start-button, .restart-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 20px;
+        }
+        .clear-button {
+            padding: 10px;
+            font-size: 20px;
+            margin-left: 10px;
+        }
+        .hint-button {
+            padding: 10px;
+            font-size: 20px;
+            margin-left: 10px;
+            background-color: #FFD700;
+        }
+        .hint {
+            font-size: 20px;
+            color: green;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>字海覓成語</h1>
+    <p>在一個3*3 9宮格中，共有9個字，其中只有四個字可以組成一個成語。請把成語找出來並在輸入框填入成語後，按輸入鈕。在40秒鐘正確輸入者可進入下一關，開始挑戰看看你可以完成幾關。</p>
+    <div class="grid" id="grid"></div>
+    <div class="input-section" id="inputSection">
+        <div class="current-input" id="currentInput"></div>
+        <button onclick="checkAnswer()">輸入</button>
+        <button class="clear-button" onclick="clearInput()">重新輸入</button>
+        <button class="hint-button" onclick="showHint()">提示</button>
+        <div class="timer" id="timer">倒數40秒</div>
+    </div>
+    <div class="hint" id="hint"></div>
+    <div class="result" id="result"></div>
+    <button class="start-button" id="startButton" onclick="startGame()">開始遊戲</button>
+    <button class="restart-button" id="restartButton" onclick="restartGame()" style="display:none;">再玩一次</button>
+
+    <script>
+        const idioms = [
+            { idiom: "出神入化", hint: "形容技藝達到非常高的水平。" },
+            { idiom: "心無旁騖", hint: "形容心思集中，沒有其他的念頭干擾。" },
+            { idiom: "脫穎而出", hint: "比喻人的才能顯露出來。" },
+            { idiom: "物換星移", hint: "形容時間的變化和世事的變遷。" },
+            { idiom: "臨陣磨槍", hint: "比喻事到臨頭才匆忙準備。" },
+            { idiom: "臨渴掘井", hint: "比喻事到臨頭才慌忙準備。" },
+            { idiom: "如虎添翼", hint: "比喻強者又增添了新的力量，使之更強。" },
+            { idiom: "嘆為觀止", hint: "形容讚美看到的事物好到極點。" }
+        ];
+        const commonChars = "的一是了不在人我有他這個上們來到時大地為子中你說生國年得就那和要她出也得裡後自以會家可下而過天去能對小多然於心學之都好看起發當沒成只如事把還用第樣道想作種開美總從無情己面最女但現前些所同日手公三現下們有時會和原發命至過形作方因心將然家之別問高走感多問手業接者文心命真義集必然際路或轉重導且運基達反勢表當然連者基滿例建數管京車門者般非學名東傳些消住則界其局影品統受元案例海花具展響流精值千技養將地提條基法造紅話會由精進簡己專除導調陸增親板輪傳集政村言樹影處內展步場局圖勢識機才志供條馬特護家建德便速管路聲風觀史畫手做造術學親青傳意推放線程深細溝義類書些故機價角信葉車至信報流業師適展康建名河深願推何些健非常勢量義積書角根非設提運驗展東且細代壞標廣失簡令都隨作山黑夜住寫報什事世便很期萬思家親";
+
+        let currentIdioms = [];
+        let currentGrid = [];
+        let currentHint = '';
+        let timeLeft = 40;
+        let timer;
+        let level = 0;
+        let score = 0;
+        let currentInput = "";
+        let usedIdioms = new Set();
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function generateGrid() {
+            let selected;
+            do {
+                selected = idioms[Math.floor(Math.random() * idioms.length)];
+            } while (usedIdioms.has(selected.idiom));
+
+            usedIdioms.add(selected.idiom);
+
+            currentIdioms = selected.idiom.split('');
+            currentHint = selected.hint;
+            currentGrid = currentIdioms.slice();
+            while (currentGrid.length < 9) {
+                const randomChar = commonChars.charAt(Math.floor(Math.random() * commonChars.length));
+                currentGrid.push(randomChar);
+            }
+            shuffle(currentGrid);
+            displayGrid();
+        }
+
+        function displayGrid() {
+            const gridElement = document.getElementById("grid");
+            gridElement.innerHTML = '';
+            currentGrid.forEach(char => {
+                const charElement = document.createElement("div");
+                charElement.innerText = char;
+                charElement.onclick = () => addToInput(char);
+                gridElement.appendChild(charElement);
+            });
+        }
+
+        function addToInput(char) {
+            if (currentInput.length < 4) {
+                currentInput += char;
+                document.getElementById("currentInput").innerText = currentInput;
+            }
+        }
+
+        function startTimer() {
+            timeLeft = 40;
+            document.getElementById("timer").innerText = `倒數${timeLeft}秒`;
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = `倒數${timeLeft}秒`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function checkAnswer() {
+            if (currentIdioms.join('') === currentInput) {
+                clearInterval(timer);
+                score++;
+                level++;
+                document.getElementById("result").innerText = `恭喜玩家，第${level + 1}關開始作答`;
+                currentInput = "";
+                document.getElementById("currentInput").innerText = '';
+                nextLevel();
+            } else {
+                document.getElementById("result").innerText = "答案錯誤，請再試一次";
+            }
+        }
+
+        function clearInput() {
+            currentInput = "";
+            document.getElementById("currentInput").innerText = '';
+        }
+
+        function nextLevel() {
+            if (usedIdioms.size === idioms.length) {
+                document.getElementById("result").innerText = "你太優秀了!你已完成所有關卡!";
+                document.getElementById("restartButton").style.display = "block";
+                document.getElementById("inputSection").style.display = "none";
+            } else {
+                generateGrid();
+                startTimer();
+            }
+        }
+
+        function endGame() {
+            let message = '';
+            if (score <= 2) {
+                message = '多讀書有益身心，加油！';
+            } else if (score <= 5) {
+                message = '成績不錯，上課更用心一點，你可以做得更好！';
+            } else if (score <= 8) {
+                message = '你已經是成語高手了，想要更上一層樓，有空多讀書吧！';
+            } else {
+                message = '你真是學識淵博，才華洋溢，我佩服你！';
+            }
+            document.getElementById("result").innerText = `遊戲結束，共完成${score}關。本題正確答案為${currentIdioms.join('')}. ${message}`;
+            document.getElementById("restartButton").style.display = "block";
+            document.getElementById("inputSection").style.display = "none";
+        }
+
+        function showHint() {
+            document.getElementById("hint").innerText = `提示: ${currentHint}`;
+        }
+
+        function startGame() {
+            document.getElementById("startButton").style.display = "none";
+            document.getElementById("restartButton").style.display = "none";
+            document.getElementById("inputSection").style.display = "flex";
+            score = 0;
+            level = 0;
+            usedIdioms.clear();
+            document.getElementById("result").innerText = '';
+            document.getElementById("hint").innerText = '';
+            currentInput = "";
+            document.getElementById("currentInput").innerText = '';
+            nextLevel();
+        }
+
+        function restartGame() {
+            startGame();
+        }
+    </script>
+</body>
+</html>
