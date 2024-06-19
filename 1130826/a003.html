@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>帥哥美女回饋</title>
+    <style>
+        .title, .subtitle {
+            font-size: 50px;
+            color: blue;
+            font-weight: bold;
+            text-align: center;
+        }
+        .feedback {
+            font-size: 50px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .handsome-btn {
+            background-color: blue;
+            color: white;
+            font-size: 20px;
+            padding: 10px 20px;
+            margin: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .beautiful-btn {
+            background-color: pink;
+            color: white;
+            font-size: 20px;
+            padding: 10px 20px;
+            margin: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hidden {
+            display: none;
+        }
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="title">今天來上課都是帥哥美女</div>
+    <div class="subtitle">你是帥哥還是美女?</div>
+    <button class="handsome-btn" onclick="showHandsomeFeedback()">帥哥</button>
+    <button class="beautiful-btn" onclick="showBeautifulFeedback()">美女</button>
+    <div id="feedback" class="feedback hidden"></div>
+    <div class="center">
+        <img id="feedback-image" class="hidden" src="" alt="feedback image" width="300">
+    </div>
+    <audio id="feedback-audio" class="hidden" src="" autoplay></audio>
+
+    <script>
+        function showHandsomeFeedback() {
+            document.getElementById('feedback').textContent = '你真的太帥了!';
+            document.getElementById('feedback').style.color = 'blue';
+            document.getElementById('feedback').classList.remove('hidden');
+            document.getElementById('feedback-image').src = 'a001.png';
+            document.getElementById('feedback-image').classList.remove('hidden');
+            document.getElementById('feedback-audio').src = 'a001.mp3';
+            document.getElementById('feedback-audio').play();
+        }
+
+        function showBeautifulFeedback() {
+            document.getElementById('feedback').textContent = '你真的迷死人了!';
+            document.getElementById('feedback').style.color = 'red';
+            document.getElementById('feedback').classList.remove('hidden');
+            document.getElementById('feedback-image').src = 'a002.png';
+            document.getElementById('feedback-image').classList.remove('hidden');
+            document.getElementById('feedback-audio').src = 'a002.mp3';
+            document.getElementById('feedback-audio').play();
+        }
+    </script>
+
+</body>
+</html>
