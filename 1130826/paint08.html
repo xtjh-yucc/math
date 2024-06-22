@@ -284,23 +284,19 @@ body, html {
         }
 
 .image-container {
-        position: relative;
+        position: relative; /* Changed to relative for easier positioning */
         border: 1px solid #ccc;
         background-color: #f0f0f0;
         padding: 10px;
-        width: 300px;
-        height: 300px;
-        display: flex; /* 使用 flexbox 來置中 */
-        justify-content: center; /* 水平置中 */
-        align-items: center; /* 垂直置中 */
+        width: 300px; /* Added width for container */
+        height: 300px; /* Added height for container */
     }
     img {
         max-width: 100%;
-        max-height: 100%;
+        height: auto;
         cursor: move;
-        position: absolute;
+        position: absolute; /* Ensure image can be positioned absolutely */
     }
-
 
 
     </style>
@@ -929,7 +925,7 @@ body, html {
             }
         }
 
-var selectedImage = null;
+ var selectedImage = null;
 
         document.getElementById('insert-image-btn').addEventListener('click', function() {
             // 創建一個 input 元素
@@ -1042,6 +1038,8 @@ var selectedImage = null;
                 document.ontouchmove = null; // 平板觸摸事件
             }
         }
+
+
 
 
 
