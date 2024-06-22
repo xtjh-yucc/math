@@ -961,12 +961,6 @@ body, html {
                             selectedImage = img;
                             document.getElementById('remove-image-btn').disabled = false; // 啟用移除按鈕
                         };
-
-                        // 添加觸摸事件以選擇圖像
-                        img.ontouchstart = function() {
-                            selectedImage = img;
-                            document.getElementById('remove-image-btn').disabled = false; // 啟用移除按鈕
-                        };
                     };
                 };
                 reader.readAsDataURL(file);
@@ -1003,14 +997,14 @@ body, html {
                 if (e.type === 'touchstart') {
                     pos3 = e.touches[0].clientX;
                     pos4 = e.touches[0].clientY;
-                    document.ontouchend = closeDragElement; // 平板觸摸事件
-                    document.ontouchmove = elementDrag; // 平板觸摸事件
                 } else {
                     pos3 = e.clientX;
                     pos4 = e.clientY;
-                    document.onmouseup = closeDragElement;
-                    document.onmousemove = elementDrag;
                 }
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchend = closeDragElement; // 平板觸摸事件
+                document.ontouchmove = elementDrag; // 平板觸摸事件
             }
 
             function elementDrag(e) {
@@ -1038,7 +1032,6 @@ body, html {
                 document.ontouchmove = null; // 平板觸摸事件
             }
         }
-
 
 
 
