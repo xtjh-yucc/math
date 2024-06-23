@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學課本檔案目錄</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #E0FFFF; /* 淺藍色背景 */
+            font-size: 1.5em; /* 放大字體大小 */
+        }
+        h1 {
+            color: #00008B;
+            font-size: 30px;
+            font-weight: bold;
+        }
+        input[type="file"], button, select {
+            padding: 15px 30px; /* 放大按鈕大小 */
+            margin: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 1em; /* 放大字體大小 */
+        }
+        #upload {
+            font-size: 1em; /* 放大字體大小 */
+        }
+        #bookSelect {
+            background-color: #D3A4FF; /* 紫色 */
+        }
+        #chapterSelect {
+            background-color: #90EE90; /* 淡綠色 */
+        }
+        #unitSelect {
+            background-color: #FFC0CB; /* 淡粉紅色 */
+        }
+        #dataSelect {
+            background-color: #FFDAB9; /* 淡橙色 */
+        }
+        .link-button {
+            color: #00008B; /* 深藍色 */
+            text-decoration: none;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>數學課本檔案目錄</h1>
+    <input type="file" id="upload" accept=".xlsx" style="font-size: 1.5em; padding: 15px 30px;"> <!-- 放大按鈕及字體大小 -->
+    <button onclick="loadFile()">上傳excel檔</button>
+    <div>
+        <select id="bookSelect" class="hidden" onchange="showChapters()"></select>
+        <select id="chapterSelect" class="hidden" onchange="showUnits()"></select>
+        <select id="unitSelect" class="hidden" onchange="showData()"></select>
+        <select id="dataSelect" class="hidden" onchange="showLinks()"></select>
+        <div id="linkContainer" class="hidden">
+            <a id="link" href="#" class="link-button" target="_blank"></a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script>
+        let treeData = [];
+
+        function loadFile() {
+            const fileInput = document.getElementById('upload');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('請選擇一個Excel檔案');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                treeData = XLSX.utils.sheet_to_json(firstSheet, {header: 1}).slice(1);
+                populateBooks();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function populateBooks() {
+            const bookSelect = document.getElementById('bookSelect');
+            const books = [...new Set(treeData.map(row => row[0]))];
+
+            bookSelect.innerHTML = '<option value="">選擇冊別</option>';
+            books.forEach(book => {
+                bookSelect.innerHTML += `<option value="${book}">${book}</option>`;
+            });
+
+            bookSelect.classList.remove('hidden');
+        }
+
+        function showChapters() {
+            const bookSelect = document.getElementById('bookSelect');
+            const chapterSelect = document.getElementById('chapterSelect');
+            const selectedBook = bookSelect.value;
+
+            const chapters = [...new Set(treeData.filter(row => row[0] === selectedBook).map(row => row[1]))];
+
+            chapterSelect.innerHTML = '<option value="">選擇章節</option>';
+            chapters.forEach(chapter => {
+                chapterSelect.innerHTML += `<option value="${chapter}">${chapter}</option>`;
+            });
+
+            chapterSelect.classList.remove('hidden');
+            document.getElementById('unitSelect').classList.add('hidden');
+            document.getElementById('dataSelect').classList.add('hidden');
+            document.getElementById('linkContainer').classList.add('hidden');
+        }
+
+        function showUnits() {
+            const bookSelect = document.getElementById('bookSelect');
+            const chapterSelect = document.getElementById('chapterSelect');
+            const unitSelect = document.getElementById('unitSelect');
+            const selectedBook = bookSelect.value;
+            const selectedChapter = chapterSelect.value;
+
+            const units = [...new Set(treeData.filter(row => row[0] === selectedBook && row[1] === selectedChapter).map(row => row[2]))];
+
+            unitSelect.innerHTML = '<option value="">選擇單元</option>';
+            units.forEach(unit => {
+                unitSelect.innerHTML += `<option value="${unit}">${unit}</option>`;
+            });
+
+            unitSelect.classList.remove('hidden');
+            document.getElementById('dataSelect').classList.add('hidden');
+            document.getElementById('linkContainer').classList.add('hidden');
+        }
+
+        function showData() {
+            const bookSelect = document.getElementById('bookSelect');
+            const chapterSelect = document.getElementById('chapterSelect');
+            const unitSelect = document.getElementById('unitSelect');
+            const dataSelect = document.getElementById('dataSelect');
+            const selectedBook = bookSelect.value;
+            const selectedChapter = chapterSelect.value;
+            const selectedUnit = unitSelect.value;
+
+            const data = [...new Set(treeData.filter(row => row[0] === selectedBook && row[1] === selectedChapter && row[2] === selectedUnit).map(row => row[3]))];
+
+            dataSelect.innerHTML = '<option value="">選擇資料</option>';
+            data.forEach(item => {
+                dataSelect.innerHTML += `<option value="${item}">${item}</option>`;
+            });
+
+            dataSelect.classList.remove('hidden');
+            document.getElementById('linkContainer').classList.add('hidden');
+        }
+
+        function showLinks() {
+            const bookSelect = document.getElementById('bookSelect');
+            const chapterSelect = document.getElementById('chapterSelect');
+            const unitSelect = document.getElementById('unitSelect');
+            const dataSelect = document.getElementById('dataSelect');
+            const linkContainer = document.getElementById('linkContainer');
+            const link = document.getElementById('link');
+            const selectedBook = bookSelect.value;
+            const selectedChapter = chapterSelect.value;
+            const selectedUnit = unitSelect.value;
+            const selectedData = dataSelect.value;
+
+            const links = treeData.filter(row => row[0] === selectedBook && row[1] === selectedChapter && row[2] === selectedUnit && row[3] === selectedData).map(row => row[4]);
+
+            if (links.length > 0) {
+                link.href = links[0];
+                link.innerText = links[0];
+                linkContainer.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
