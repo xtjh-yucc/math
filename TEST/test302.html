@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>數學課本檔案目錄</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #b3d9ff;
+        }
+        h1 {
+            font-size: 30px;
+            color: #00008b;
+        }
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: inline-block;
+            text-align: center;
+        }
+        .feedback {
+            font-size: 20px;
+            font-weight: bold;
+            color: red;
+            margin-top: 20px;
+        }
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .grid-item {
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #000;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .input-field {
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 20px;
+            color: #00008b;
+        }
+        input {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .underline {
+            text-decoration: underline;
+        }
+        .finish-button {
+            background-color: #ff69b4; /* Pink color */
+            border: none;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="game">
+            <h1>精熟性線上練習卷</h1>
+            <div class="input-field">
+                <label for="class">班級: </label>
+                <input type="text" id="class" placeholder="輸入班級">
+                <label for="number">座號: </label>
+                <input type="text" id="number" placeholder="輸入座號">
+                <label for="name">姓名: </label>
+                <input type="text" id="name" placeholder="輸入姓名">
+            </div>
+            <div id="questionContainer" class="question"></div>
+            <div id="optionsContainer" class="grid-container"></div>
+            <div id="feedback" class="feedback"></div>
+            <button id="nextQuestion" class="button hidden" onclick="nextQuestion()">下一題</button>
+            <button id="retry" class="button hidden" onclick="retry()">再練習一次</button>
+            <button id="finish" class="button hidden finish-button" onclick="finishQuiz()">打卡</button>
+        </div>
+    </div>
+
+    <audio id="correctSound" src="yo01.mp3"></audio>
+    <audio id="incorrectSound" src="yo04.mp3"></audio>
+    <audio id="finishSound" src="yo06.mp3"></audio>
+
+    <script>
+        const questions = [
+            {
+                question: "在坐標平面上一點P(−3, 4)與y軸的距離為何？",
+                options: ["－3", "3", "4", "5"],
+                answer: "3",
+                similar: [
+                    { question: "在坐標平面上一點Q(5, −2)與x軸的距離為何？", options: ["－2", "2", "5", "－5"], answer: "2" },
+                    { question: "在坐標平面上一點R(−8, 7)與y軸的距離為何？", options: ["8", "−8", "7", "−7"], answer: "8" },
+                    { question: "在坐標平面上一點S(2, −9)與x軸的距離為何？", options: ["2", "9", "−9", "－2"], answer: "9" }
+                ]
+            },
+            {
+                question: "在坐標平面的兩軸上，且與原點的距離為10的點有幾個？",
+                options: ["1個", "4個", "2個", "無限多個"],
+                answer: "4個",
+                similar: [
+                    { question: "在坐標平面的x軸上，且與原點的距離為5的點有幾個？", options: ["1個", "2個", "4個", "無限多個"], answer: "2個" },
+                    { question: "在坐標平面的y軸上，且與原點的距離為15的點有幾個？", options: ["1個", "4個", "2個", "無限多個"], answer: "2個" },
+                    { question: "在坐標平面的兩軸上，且與原點的距離為20的點有幾個？", options: ["1個", "4個", "2個", "無限多個"], answer: "4個" }
+                ]
+            },
+            {
+                question: "依數回原由直角坐標平面上P點(−7, 4)出發，先向右9單位，再向下6單位，到達新的位置Q點；若Q點坐標為(a, b)，則a+b=？",
+                options: ["−2", "0", "2", "3"],
+                answer: "0",
+                similar: [
+                    { question: "依數回原由直角坐標平面上M點(5, −3)出發，先向左10單位，再向上8單位，到達新的位置N點；若N點坐標為(c, d)，則c+d=？", options: ["−2", "0", "2", "3"], answer: "0" },
+                    { question: "依數回原由直角坐標平面上X點(−1, 2)出發，先向右4單位，再向下5單位，到達新的位置Y點；若Y點坐標為(e, f)，則e+f=？", options: ["−2", "0", "2", "3"], answer: "0" },
+                    { question: "依數回原由直角坐標平面上A點(3, −6)出發，先向左7單位，再向上9單位，到達新的位置B點；若B點坐標為(g, h)，則g+h=？", options: ["−2", "0", "2", "3"], answer: "2" }
+                ]
+            },
+            {
+                question: "設e > f且|e| = |f|，則與(e−f, e+f)在坐標平面上的距離是？",
+                options: ["原點", "x軸", "y軸", "第一象限"],
+                answer: "x軸",
+                similar: [
+                    { question: "設m > n且|m| = |n|，則與(m−n, m+n)在坐標平面上的距離是？", options: ["原點", "x軸", "y軸", "第一象限"], answer: "x軸" },
+                    { question: "設x > y且|x| = |y|，則與(x−y, x+y)在坐標平面上的距離是？", options: ["原點", "x軸", "y軸", "第一象限"], answer: "x軸" },
+                    { question: "設g > h且 |g| = |h|，則與(g−h, g+h)在坐標平面上的距離是？", options: ["原點", "x軸", "y軸", "第一象限"], answer: "x軸" }
+                ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let answeredQuestions = 0;
+        let score = 100;
+        let incorrectAttempts = 0;
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            answeredQuestions = 0;
+            score = 100;
+            incorrectAttempts = 0;
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('retry').classList.add('hidden');
+            document.getElementById('nextQuestion').classList.remove('hidden');
+            document.getElementById('finish').classList.add('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const questionData = questions[currentQuestionIndex];
+            document.getElementById('questionContainer').innerText = questionData.question;
+
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            questionData.options.forEach((option) => {
+                const optionElement = document.createElement('div');
+                optionElement.classList.add('grid-item');
+                optionElement.innerText = option;
+                optionElement.onclick = () => checkAnswer(option);
+                optionsContainer.appendChild(optionElement);
+            });
+        }
+
+        function showSimilarQuestion() {
+            const questionData = questions[currentQuestionIndex];
+            const randomIndex = Math.floor(Math.random() * questionData.similar.length);
+            const similarQuestion = questionData.similar[randomIndex];
+
+            document.getElementById('questionContainer').innerText = similarQuestion.question;
+
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            similarQuestion.options.forEach((option) => {
+                const optionElement = document.createElement('div');
+                optionElement.classList.add('grid-item');
+                optionElement.innerText = option;
+                optionElement.onclick = () => checkAnswer(option, similarQuestion.answer, true);
+                optionsContainer.appendChild(optionElement);
+            });
+        }
+
+        function checkAnswer(selectedOption, correctAnswer = null, isSimilarQuestion = false) {
+            const questionData = questions[currentQuestionIndex];
+            const feedbackElement = document.getElementById('feedback');
+
+            if (selectedOption === (correctAnswer || questionData.answer)) {
+                feedbackElement.innerText = "回答正確！";
+                document.getElementById('correctSound').play();
+                currentQuestionIndex++;
+                incorrectAttempts = 0; // Reset incorrect attempts on correct answer
+                if (currentQuestionIndex < questions.length) {
+                    document.getElementById('nextQuestion').classList.remove('hidden');
+                } else {
+                    document.getElementById('nextQuestion').classList.add('hidden');
+                    finishQuiz();
+                }
+            } else {
+                feedbackElement.innerText = `回答錯誤！再試一次。`;
+                document.getElementById('incorrectSound').play();
+                incorrectAttempts++;
+                if (incorrectAttempts === 1) {
+                    score -= 10;
+                } else if (incorrectAttempts === 2) {
+                    score -= 10; // Total 20 points deducted for two incorrect attempts
+                }
+                showSimilarQuestion();
+            }
+
+            answeredQuestions++;
+        }
+
+        function nextQuestion() {
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('nextQuestion').classList.add('hidden');
+            showQuestion();
+        }
+
+        function finishQuiz() {
+            const classInput = document.getElementById('class').value;
+            const numberInput = document.getElementById('number').value;
+            const nameInput = document.getElementById('name').value;
+            const finishMessage = `${nameInput}同學，這份測驗你的成績是${score}分，你已完成所有題目，請截圖打卡!`;
+
+            document.getElementById('questionContainer').innerHTML = `<span style="color: red;">${finishMessage}</span>`;
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('optionsContainer').innerHTML = '';
+            document.getElementById('finish').classList.remove('hidden');
+            document.getElementById('retry').classList.remove('hidden');
+            document.getElementById('finishSound').play();
+            submitScore(classInput, numberInput, nameInput, score);
+        }
+
+        function retry() {
+            startQuiz();
+        }
+
+        function submitScore(classInput, numberInput, nameInput, score) {
+            fetch('/submit-score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    class: classInput,
+                    number: numberInput,
+                    name: nameInput,
+                    score: score
+                })
+            }).then(response => {
+                if (response.ok) {
+                    console.log('成績已提交');
+                } else {
+                    console.error('成績提交失敗');
+                }
+            });
+        }
+
+        window.onload = startQuiz;
+    </script>
+</body>
+</html>
