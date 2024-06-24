@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搶三十遊戲</title>
+<style>
+    body {
+        background-color: lightblue;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .player-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px;
+    }
+
+    .player {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .player input {
+        margin: 0 10px;
+        font-size: 18px;
+    }
+
+    #gameInstructions {
+        background-color: navy;
+        color: white;
+        padding: 20px;
+        margin-top: 40px;
+        width: 100%;
+    }
+
+    .player-names {
+        color: purple;
+        font-size: 20px;
+    }
+
+    #message {
+        margin-top: 20px;
+        text-align: center;
+        color: red;
+        font-size: 18px;
+        clear: both; /* 解決文字顯示在兩個玩家區塊下方的問題 */
+        width: 100%;
+        font-weight: bold; /* 將訊息改為粗體 */
+    }
+</style>
+</head>
+<body>
+<h1>搶三十遊戲</h1>
+<div class="player-container">
+    <p class="player-names">小新</p>
+    <div class="player">
+        <input type="number" id="player1Input" min="1" max="3">
+        <button onclick="submitPlayer1()">輸入</button>
+    </div>
+</div>
+<div style="margin-bottom: 60px;"></div>
+<div class="player-container">
+    <p class="player-names">小泰</p>
+    <div class="player">
+        <input type="number" id="player2Input" min="1" max="3">
+        <button onclick="submitPlayer2()">輸入</button>
+    </div>
+</div>
+<p id="message"></p>
+
+<div id="gameInstructions">
+    <h2>遊戲說明</h2>
+    <p>1. 兩人從數字1開始輪流加數字直到數字 30，玩家在 text field 輸入數字，按 "輸入"按鈕 就可以送出答案。</p>
+    <p>2. 從1開始輸入數字，每次可以加1~3。</p>
+    <p>3. 使用者在 text field 輸入數字後，按 "輸入"按鈕 就可以送出答案。</p>
+    <p>4. 輸入後會顯示新的數字範圍供參考。</p>
+    <p>5. 後手接著依序輸入數字，一樣最多加3，最少加1。</p>
+    <p>6. 兩人輪流一直輸入數字，看最後誰輸入 30 這個數字就是勝利者。</p>
+    <p>7. 當輸入30時，會出現"恭喜您獲勝了！"的訊息。</p>
+</div>
+
+<script>
+let currentValue = 0;
+let currentPlayer = "小新";
+
+function submitPlayer1() {
+    const player1Input = document.getElementById("player1Input").value;
+    if (!validateInput(player1Input)) {
+        return;
+    }
+    currentValue += parseInt(player1Input);
+    updateMessage(currentValue);
+    switchPlayer();
+}
+
+function submitPlayer2() {
+    const player2Input = document.getElementById("player2Input").value;
+    if (!validateInput(player2Input)) {
+        return;
+    }
+    currentValue += parseInt(player2Input);
+    updateMessage(currentValue);
+    switchPlayer();
+}
+
+function validateInput(input) {
+    if (parseInt(input) < 1 || parseInt(input) > 3) {
+        alert("請輸入1~3之間的數字！");
+        return false;
+    }
+    return true;
+}
+
+function updateMessage(value) {
+    const messageElement = document.getElementById("message");
+    const nextPlayer = currentPlayer === "小新" ? "小泰" : "小新";
+    if (value >= 30) {
+        messageElement.textContent = "恭喜" + currentPlayer + "獲勝了！";
+    } else {
+        messageElement.textContent = "現在數字為" + value + "，下次數字範圍：" + (value + 1) + " ~ " + (value + 3) + "，現在輪到" + nextPlayer + "輸入。";
+    }
+}
+
+function switchPlayer() {
+    currentPlayer = currentPlayer === "小新" ? "小泰" : "小新";
+    clearInput();
+}
+
+function clearInput() {
+    document.getElementById("player1Input").value = "";
+    document.getElementById("player2Input").value = "";
+}
+</script>
+</body>
+</html>
