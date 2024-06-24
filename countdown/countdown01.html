@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倒數計時器</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            margin: 0;
+            background-color: #e0f7fa;
+            font-family: 'Microsoft JhengHei', sans-serif;
+        }
+        #setup, #countdown {
+            background: #ffffff;
+            border: 2px solid #00acc1;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 340px;
+            margin-top: 30px;
+        }
+        #setup h2 {
+            font-size: 2em; /* 加大「倒數計時器」字體 */
+        }
+        #setup label, #setup input, #setup button {
+            font-size: 1em; /* 縮小其他字體 */
+            margin: 10px 0;
+        }
+        #setup input[type="number"] {
+            width: 60px; /* 設定數字輸入框的寬度 */
+            text-align: center;
+        }
+        #timer {
+            font-size: 3.5em; /* 加大倒數計時字體 */
+            margin-top: 20px;
+            color: #00796b;
+        }
+        .circle {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 10px solid #4dd0e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+        }
+        .circle.flash {
+            border-color: red !important; /* 改變邊框顏色 */
+            animation: flash-animation 1s infinite alternate; /* 閃爍動畫 */
+        }
+        @keyframes flash-animation {
+            from { box-shadow: 0 0 10px red; }
+            to { box-shadow: 0 0 0 transparent; }
+        }
+        .circle img {
+            position: absolute;
+            width: 75px; /* 調整圖片大小 */
+            height: 75px; /* 調整圖片大小 */
+        }
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around; /* 按鈕排成一列 */
+        }
+        #controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 1em; /* 調整按鈕字體大小 */
+            color: #ffffff;
+            background-color: #00838f;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #controls button:hover {
+            background-color: #005662;
+        }
+        #startButton {
+            background-color: #26c6da;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #startButton:hover {
+            background-color: #00acc1;
+        }
+        #footer {
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        #footer a {
+            color: #00838f;
+            text-decoration: none;
+        }
+        #footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="setup">
+        <h2>倒數計時器</h2>
+        <label for="timeInput">倒數時間：</label>
+        <input type="number" id="timeInput" value="1" min="1"> (分鐘)
+        <br>
+        <label for="soundCheckbox">啟用倒數聲音：</label>
+        <input type="checkbox" id="soundCheckbox" checked="">
+        <br>
+        <button id="startButton">開始倒數</button>
+    </div>
+    <div id="countdown" style="display:none;">
+        <div class="circle">
+            <img id="icon" src="yu04.png" alt="Icon" style="transform: translate(0px, -150px);">
+            <div id="timer"></div>
+        </div>
+        <div id="controls">
+            <button id="pauseButton">暫停</button>
+            <button id="resetButton">重新計時</button>
+            <button id="extendButton">延長1分鐘</button>
+        </div>
+    </div>
+    <div id="footer">
+        Made by <a href="https://lin.ee/jz7fxYMQ" target="_blank">ㄚ亮笑長練功坊</a>
+    </div>
+
+    <audio id="countdownSound" src="https://www.teachersay.com/image/works/Lljbox1YshiM0xQw736XaQ9KsMKkEp5fv4zXNxXL.mp3" preload="auto"></audio>
+    <audio id="endSound" src="https://www.teachersay.com/image/works/ZPo3LtD6TQMPw1N1iKqejaOMxajBlQNbtXQyJrQA.mp3" preload="auto"></audio>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const timeInput = document.getElementById('timeInput');
+        const soundCheckbox = document.getElementById('soundCheckbox');
+        const setupDiv = document.getElementById('setup');
+        const countdownDiv = document.getElementById('countdown');
+        const timerDiv = document.getElementById('timer');
+        const iconImg = document.getElementById('icon');
+        const countdownSound = document.getElementById('countdownSound');
+        const endSound = document.getElementById('endSound');
+        const pauseButton = document.getElementById('pauseButton');
+        const resetButton = document.getElementById('resetButton');
+        const extendButton = document.getElementById('extendButton');
+        const circleDiv = document.querySelector('.circle');
+
+        let interval;
+        let paused = false;
+        let timeRemaining;
+        let totalTime;
+
+        startButton.addEventListener('click', () => {
+            totalTime = parseInt(timeInput.value) * 60;  // 轉換成秒
+            timeRemaining = totalTime;
+            startCountdown();
+        });
+
+        pauseButton.addEventListener('click', () => {
+            if (!paused) {
+                clearInterval(interval);
+                countdownSound.pause();
+                pauseButton.textContent = '繼續';
+            } else {
+                startCountdown();
+                pauseButton.textContent = '暫停';
+            }
+            paused = !paused;
+        });
+
+        resetButton.addEventListener('click', () => {
+            clearInterval(interval);
+            countdownSound.pause();
+            countdownSound.currentTime = 0;
+            setupDiv.style.display = 'block';
+            countdownDiv.style.display = 'none';
+            pauseButton.textContent = '暫停';
+            circleDiv.classList.remove('flash'); // 移除閃爍效果
+            paused = false;
+        });
+
+        extendButton.addEventListener('click', () => {
+            timeRemaining += 60; // 增加1分鐘
+            totalTime += 60;     // 總時間也相應增加
+        });
+
+        function startCountdown() {
+            setupDiv.style.display = 'none';
+            countdownDiv.style.display = 'block';
+            countdownSound.loop = soundCheckbox.checked;
+
+            if (soundCheckbox.checked) countdownSound.play();
+
+            updateTimer();  // 更新倒數計時器和圖像的位置
+
+            interval = setInterval(() => {
+                if (!paused) {
+                    timeRemaining--;
+                    updateTimer();
+                    if (timeRemaining <= 30) {
+                        circleDiv.classList.add('flash'); // 倒數30秒後添加閃爍效果並持續
+                    }
+                    if (timeRemaining <= 10) {
+                        countdownSound.playbackRate = 2.0; // 倒數10秒後將播放速度加快至120BPM
+                    }
+                    if (timeRemaining <= 0) {
+                        clearInterval(interval);
+                        countdownSound.pause();
+                        endSound.play(); // 播放結束音效
+                        setTimeout(() => {
+                            alert('時間到！');
+                            timerDiv.textContent = "0:00"; // 倒數結束後時間歸零
+                            resetButton.click();
+                        }, endSound.duration * 1000); // 等待音效播放完畢
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            timerDiv.textContent = `${minutes}:${('0' + seconds).slice(-2)}`;
+
+            const proportion = (totalTime - timeRemaining) / totalTime;
+            const angle = proportion * 360;
+            const radius = 150;  // 圓圈半徑
+            const x = radius * Math.cos((angle - 90) * Math.PI / 180);
+            const y = radius * Math.sin((angle - 90) * Math.PI / 180);
+            iconImg.style.transform = `translate(${x}px, ${y}px)`;
+        }
+
+        // 設置圖像的初始位置在12點鐘位置
+        iconImg.style.transform = `translate(0px, -150px)`;
+    </script>
+</body>
+</html>
