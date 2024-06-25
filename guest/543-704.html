@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>543遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            background-color: lightblue; /* 背景改成淺藍色 */
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+        }
+        h1 {
+            color: darkblue;
+            font-size: 22px; /* 標題改成22號字體 */
+            font-weight: bold;
+            text-align: left;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .player-turn {
+            color: red;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px 0; /* 列距加大，原來的兩倍 */
+        }
+        .pile {
+            margin: 0 40px; /* 欄距加大，原來的兩倍 */
+            width: 100px; /* 欄寬變成原來的兩倍 */
+        }
+        .circle {
+            width: 30px; /* 圓圈變小，30% */
+            height: 30px; /* 圓圈變小，30% */
+            border-radius: 50%;
+            background-color: black;
+            display: inline-block;
+            margin: 10px 0; /* 間距調整 */
+        }
+        .input-container {
+            margin: 20px; /* 比原來大一點的間距 */
+            width: 150px; /* 欄寬變大 */
+        }
+        .input-container input {
+            width: 100px; /* 輸入框加大 */
+            font-size: 20px; /* 字體加大 */
+            padding: 10px; /* 增加內距 */
+            border: 2px solid blue; /* 改成藍色 */
+        }
+        .input-container button {
+            width: 100px; /* 按鈕加大 */
+            font-size: 20px; /* 字體加大 */
+            padding: 10px; /* 增加內距 */
+            border: 2px solid blue; /* 改成藍色 */
+            background-color: white; /* 背景顏色 */
+            color: blue; /* 按鈕文字顏色 */
+            cursor: pointer;
+        }
+        .winner-message {
+            color: blue; /* 獲勝訊息顏色改為藍色 */
+            font-size: 50px; /* 字體改為50號 */
+            font-weight: bold; /* 粗體 */
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .winner-message img {
+            transform: scale(0.5); /* 50% 放大 */
+        }
+        .restart-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            margin-top: 20px;
+            display: inline-block;
+            font-size: 16px;
+            border: none; /* 無框線 */
+            background: none;
+            color: blue;
+            cursor: pointer;
+        }
+        .pile-info {
+            color: red;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: -20px; /* 調整數字和圖片之間的間距 */
+            margin-left: 40px; /* 提示語之間的間隔 */
+            margin-right: 40px; /* 提示語之間的間隔 */
+        }
+        .game-description {
+            color: black;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: left;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: white; /* 背景顏色 */
+            padding: 10px;
+            border: 1px solid black;
+            display: none; /* 隱藏遊戲說明 */
+        }
+        .game-description p {
+            margin: 5px 0;
+        }
+        @media (max-width: 768px) {
+            .game-description {
+                position: static;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+   <div class="header">
+        <h1>543遊戲</h1>
+    </div>
+
+    <div class="restart-button">
+        <button onclick="restartGame()">再玩一次</button>
+    </div>
+
+    <div class="player-turn" id="playerTurn">現在輪到小新輸入</div>
+    
+    <div class="row">
+        <div class="pile" id="pile1">
+            <!-- 替換成實心圓 -->
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+        </div>
+        <div class="pile" id="pile2">
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+        </div>
+        <div class="pile" id="pile3">
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="pile-info" id="pile1Info">目前剩餘 5 顆</div>
+        <div class="pile-info" id="pile2Info">目前剩餘 4 顆</div>
+        <div class="pile-info" id="pile3Info">目前剩餘 3 顆</div>
+    </div>
+    
+    <div class="row">
+        <div class="input-container">
+            <input type="number" id="inputPile1" min="1" max="5" placeholder="第1堆拿">
+            <button onclick="removeStones(1)">移除</button>
+        </div>
+        <div class="input-container">
+            <input type="number" id="inputPile2" min="1" max="4" placeholder="第2堆拿">
+            <button onclick="removeStones(2)">移除</button>
+        </div>
+        <div class="input-container">
+            <input type="number" id="inputPile3" min="1" max="3" placeholder="第3堆拿">
+            <button onclick="removeStones(3)">移除</button>
+        </div>
+    </div>
+
+    <div class="row">
+        <button onclick="toggleDescription(true)">遊戲說明</button>
+        <button onclick="toggleDescription(false)">隱藏遊戲說明</button>
+    </div>
+
+    <div class="game-description" id="gameDescription" style="color: blue; font-weight: bold;">
+        <p>&emsp;&emsp;&emsp;遊戲說明</p>
+        <p>1.&ensp;這是兩人對戰的遊戲 (小新和小泰)</p>
+        <p>2.&ensp;視窗上有12顆黑色圍棋分成3堆，</p>
+        <p>&emsp; 5顆在左邊，4顆在中間，3顆在右邊。</p>
+        <p>3.&ensp;兩人輪流拿掉黑色棋子，每次只能拿掉其中某一堆的棋子，</p>
+        <p>&emsp; 最少1顆， 最多可以整堆拿掉，最後一個將所有棋子拿掉者獲勝。</p>
+    </div>
+
+    <script>
+        let piles = [5, 4, 3];
+        let currentPlayer = '小新';
+
+        function removeStones(pileIndex) {
+            const inputId = `inputPile${pileIndex}`;
+            const input = document.getElementById(inputId);
+            const count = parseInt(input.value);
+            
+            if (isNaN(count) || count < 1 || count > piles[pileIndex - 1]) {
+                alert('無效的數量');
+                return;
+            }
+
+            piles[pileIndex - 1] -= count;
+            input.value = '';
+
+            updateGame();
+        }
+
+        function updateGame() {
+            if (piles.every(pile => pile === 0)) {
+                document.body.innerHTML += `<div class="winner-message">${currentPlayer} 獲勝! <img src="i-001.png" alt="winner" style="transform: scale(0.5);"></div>`;
+                return;
+            }
+
+            currentPlayer = currentPlayer === '小新' ? '小泰' : '小新';
+            document.getElementById('playerTurn').innerText = '現在輪到 ' + currentPlayer + ' 輸入';
+
+            updatePileDisplay(1);
+            updatePileDisplay(2);
+            updatePileDisplay(3);
+        }
+
+        function updatePileDisplay(pileIndex) {
+            const pileElement = document.getElementById(`pile${pileIndex}`);
+            const pileInfoElement = document.getElementById(`pile${pileIndex}Info`);
+            const pileCount = piles[pileIndex - 1];
+
+            pileElement.innerHTML = '';
+            for (let i = 0; i < pileCount; i++) {
+                pileElement.innerHTML += '<div class="circle"></div>';
+            }
+            pileInfoElement.innerText = `目前剩餘 ${pileCount} 顆`;
+        }
+
+        function restartGame() {
+            piles = [5, 4, 3];
+            currentPlayer = '小新';
+            document.getElementById('playerTurn').innerText = '現在輪到小新輸入';
+            updatePileDisplay(1);
+            updatePileDisplay(2);
+            updatePileDisplay(3);
+            const winnerMessage = document.querySelector('.winner-message');
+            if (winnerMessage) {
+                winnerMessage.remove();
+            }
+        }
+
+        function toggleDescription(show) {
+            const gameDescription = document.getElementById('gameDescription');
+            gameDescription.style.display = show ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
