@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL 工具</title>
+    <style>
+        body {
+            background-color: #ADD8E6; /* 淺藍色背景 */
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        input {
+            padding: 10px;
+            width: 300px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #4CAF50; /* 綠色按鈕 */
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #qrcode {
+            margin: 20px;
+        }
+        #short-url {
+            display: none;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>URL 工具</h1>
+<input type="text" id="url-input" placeholder="輸入網址">
+<div>
+    <button onclick="generateQRCode()">生成 QR Code</button>
+    <button onclick="generateShortURL()">生成短網址</button>
+</div>
+<div id="qrcode"></div>
+<div id="short-url">
+    短網址: <span id="short-url-link"></span>
+    <button onclick="copyShortURL()">複製短網址</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    function generateQRCode() {
+        const url = document.getElementById('url-input').value;
+        if (!url) {
+            alert('請輸入一個網址');
+            return;
+        }
+        document.getElementById('qrcode').innerHTML = '';
+        new QRCode(document.getElementById('qrcode'), url);
+    }
+
+    function generateShortURL() {
+        const url = document.getElementById('url-input').value;
+        if (!url) {
+            alert('請輸入一個網址');
+            return;
+        }
+
+        fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('short-url').style.display = 'block';
+                document.getElementById('short-url-link').innerText = data.shorturl;
+                document.getElementById('short-url-link').setAttribute('data-url', data.shorturl);
+            })
+            .catch(error => {
+                alert('生成短網址失敗');
+                console.error('Error:', error);
+            });
+    }
+
+    function copyShortURL() {
+        const shortUrl = document.getElementById('short-url-link').getAttribute('data-url');
+        navigator.clipboard.writeText(shortUrl).then(() => {
+            alert('短網址已複製');
+        }).catch(err => {
+            alert('複製失敗');
+            console.error('Error:', err);
+        });
+    }
+</script>
+
+</body>
+</html>
