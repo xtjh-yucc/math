@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>線上測驗</title>
+    <style>
+        body {
+            background-color: lightblue;
+        }
+        form label {
+            margin-right: 10px;
+        }
+        form input[type="text"] {
+            margin-right: 20px;
+        }
+        .question {
+            font-size: 14px;
+            margin-left: 2em;
+        }
+        .option {
+            font-size: 14px;
+            margin-left: 2em;
+        }
+        .result {
+            color: red;
+            font-weight: bold;
+            margin-left: 2em;
+        }
+        .submit-button {
+            background-color: green;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            margin-left: 2em;
+        }
+        .submit-button:hover {
+            background-color: darkgreen;
+        }
+    </style>
+    <script>
+        function gradeQuiz() {
+            const answers = ['A', 'B', 'C', 'D', 'D'];
+            let score = 0;
+            let resultHTML = '<table border="1" style="margin-left: 2em;"><tr><th>題目</th><th>您的答案</th>';
+
+            let attempts = localStorage.getItem('attempts') ? parseInt(localStorage.getItem('attempts')) + 1 : 1;
+            localStorage.setItem('attempts', attempts);
+
+            if (attempts >= 3) {
+                resultHTML += '<th>正確答案</th>';
+            }
+
+            resultHTML += '<th>結果</th></tr>';
+
+            for (let i = 1; i <= 5; i++) {
+                let selected = document.querySelector(`input[name="q${i}"]:checked`);
+                let userAnswer = selected ? selected.value : '未作答';
+                let correct = answers[i - 1];
+                let result = (userAnswer === correct) ? '對' : '錯';
+                if (result === '對') score += 20;
+
+                resultHTML += `<tr><td>第${i}題</td><td>${userAnswer}</td>`;
+                if (attempts >= 3) {
+                    resultHTML += `<td>${correct}</td>`;
+                }
+                resultHTML += `<td>${result}</td></tr>`;
+            }
+            resultHTML += `</table><p class="result">班級: ${document.querySelector('input[name="class"]').value} 座號: ${document.querySelector('input[name="number"]').value} 姓名: ${document.querySelector('input[name="name"]').value} 您的總分: ${score} 分</p>`;
+
+            resultHTML += `<p class="result">這是你的第${attempts}次測驗</p>`;
+            document.getElementById('result').innerHTML = resultHTML;
+        }
+    </script>
+</head>
+<body>
+    <h1 style="margin-left: 2em;">線上測驗</h1>
+    <form id="quizForm">
+        <label style="margin-left: 2em;">班級: <input type="text" name="class" required></label>
+        <label>座號: <input type="text" name="number" required></label>
+        <label>姓名: <input type="text" name="name" required></label><br><br>
+
+        <p class="question">1. 展開(－a＋b)(c－d)其結果應為下列何者？</p>
+        <label class="option"><input type="radio" name="q1" value="A">  (A) －ac－ad＋bc＋bd</label><br>
+        <label class="option"><input type="radio" name="q1" value="B">  (B) －ac＋ad－bc＋bd</label><br>
+        <label class="option"><input type="radio" name="q1" value="C">  (C) ac－ad－bc＋bd</label><br>
+        <label class="option"><input type="radio" name="q1" value="D">  (D) －ac＋ad＋bc－bd</label><br>
+
+        <p class="question">2. 下列哪一個式子是正確的？</p>
+        <label class="option"><input type="radio" name="q2" value="A">  (A) (5－8)2＝(8－5)2</label><br>
+        <label class="option"><input type="radio" name="q2" value="B">  (B) (9＋4)2＝92＋42</label><br>
+        <label class="option"><input type="radio" name="q2" value="C">  (C) (8－5)2＝82－52</label><br>
+        <label class="option"><input type="radio" name="q2" value="D">  (D) (4－7)2＝42－2×4×7－72</label><br>
+
+        <p class="question">3. 若9962＝10002－2×a×4＋b2，其中a、b皆為正整數，則a＋b＝？</p>
+        <label class="option"><input type="radio" name="q3" value="A">  (A) 1000</label><br>
+        <label class="option"><input type="radio" name="q3" value="B">  (B) 1004</label><br>
+        <label class="option"><input type="radio" name="q3" value="C">  (C) 1008</label><br>
+        <label class="option"><input type="radio" name="q3" value="D">  (D) 1016</label><br>
+
+        <p class="question">4. 展開(－a＋b)(－a－b)其結果與下列何者相同？</p>
+        <label class="option"><input type="radio" name="q4" value="A">  (A) a2－b2</label><br>
+        <label class="option"><input type="radio" name="q4" value="B">  (B) b2－a2</label><br>
+        <label class="option"><input type="radio" name="q4" value="C">  (C) (a－b)2</label><br>
+        <label class="option"><input type="radio" name="q4" value="D">  (D) (a＋b)2</label><br>
+
+        <p class="question">5. 計算4.992－10×4.99＋25＝？</p>
+        <label class="option"><input type="radio" name="q5" value="A">  (A) －0.01</label><br>
+        <label class="option"><input type="radio" name="q5" value="B">  (B) －0.0001</label><br>
+        <label class="option"><input type="radio" name="q5" value="C">  (C) 0.01</label><br>
+        <label class="option"><input type="radio" name="q5" value="D">  (D) 0.0001</label><br>
+
+        <br><br>
+        <input type="button" value="送出" onclick="gradeQuiz()" class="submit-button">
+    </form>
+
+    <div id="result"></div>
+</body>
+</html>
