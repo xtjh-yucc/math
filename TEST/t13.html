@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>線上測驗</title>
+    <style>
+        body {
+            background-color: lightblue;
+        }
+        form label {
+            margin-right: 10px;
+        }
+        form input[type="text"] {
+            margin-right: 20px;
+        }
+        .question {
+            font-size: 14px;
+            margin-left: 2em;
+        }
+        .option {
+            font-size: 14px;
+            margin-left: 2em;
+        }
+        .result {
+            color: red;
+            font-weight: bold;
+            margin-left: 2em;
+        }
+        .submit-button {
+            background-color: green;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            margin-left: 2em;
+        }
+        .submit-button:hover {
+            background-color: darkgreen;
+        }
+        .wrong-answer {
+            color: red;
+            font-weight: bold;
+        }
+        .correct-answer {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        const questions = [
+            {id: 1, options: [{text: '孫權「雄踞」江東，實力堅強', value: 'A'}, {text: '山間小溪「浩蕩」，清澈見底', value: 'B'}, {text: '華華為人褊狹小器，氣度「恢弘」', value: 'C'}, {text: '這手遊刺激「打趣」，廣受歡迎', value: 'D'}]},
+            {id: 2, options: [{text: '陰山動／龍門開', value: 'A'}, {text: '驚濤與豪笑／萬里滔滔入海', value: 'B'}, {text: '那轟動匡廬的大瀑布／無中生有／不止不休／可是你傾側的小酒壺', value: 'C'}, {text: '有一條黃河，你已夠熱鬧的了', value: 'D'}]},
+            {id: 3, options: [{text: '指出後世的多篇學術研究，皆證實李白的故鄉位在黃河流域', value: 'A'}, {text: '說明李白常為文勸勉讀者，寫作時應多將描寫黃河的內容融入作品', value: 'B'}, {text: '闡明「黃河」命名的由來，是取自李白的詩作', value: 'C'}, {text: '意指李白寫黃河的詩文已成經典，使後人對黃河的印象多來自其作品', value: 'D'}]},
+            {id: 4, options: [{text: '笑裡藏刀', value: 'A'}, {text: '豪放不羈', value: 'B'}, {text: '膽顫心驚', value: 'C'}, {text: '聲色俱厲', value: 'D'}]},
+            {id: 5, options: [{text: '李白除了擅長寫詩，亦精於繪畫，憑藉想像便能畫出壯麗的瀑布之景', value: 'A'}, {text: '李白曾在作品中，捏造匡廬瀑布之水湧自他的小酒壺', value: 'B'}, {text: '指出李白以誇飾筆法描寫匡廬飛瀑，並讚美李白妙筆生花', value: 'C'}, {text: '點出李白喜愛鑽研道家經典，常在詩文中闡釋「無中生有」的深意', value: 'D'}]}
+        ];
+
+        const correctAnswers = {
+            1: '孫權「雄踞」江東，實力堅強',
+            2: '那轟動匡廬的大瀑布／無中生有／不止不休／可是你傾側的小酒壺',
+            3: '意指李白寫黃河的詩文已成經典，使後人對黃河的印象多來自其作品',
+            4: '豪放不羈',
+            5: '指出李白以誇飾筆法描寫匡廬飛瀑，並讚美李白妙筆生花'
+        };
+
+        function gradeQuiz() {
+            let score = 0;
+            let resultHTML = '<table border="1" style="margin-left: 2em;"><tr><th>題目</th><th>您的答案</th>';
+
+            let attempts = localStorage.getItem('attempts') ? parseInt(localStorage.getItem('attempts')) + 1 : 1;
+            localStorage.setItem('attempts', attempts);
+
+            if (attempts >= 3) {
+                resultHTML += '<th>正確答案</th>';
+            }
+
+            resultHTML += '<th>結果</th></tr>';
+
+            questions.forEach((q, index) => {
+                let selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                let userAnswer = selected ? selected.nextSibling.nodeValue.trim() : '未作答';
+                let correct = correctAnswers[q.id];
+                let result = (userAnswer === correct) ? '對' : '錯';
+                if (result === '對') score += 20;
+
+                resultHTML += `<tr><td>第${q.id}題</td><td>${userAnswer === correct ? userAnswer : `<span class="wrong-answer">${userAnswer}</span>`}</td>`;
+                if (attempts >= 3) {
+                    resultHTML += `<td>${userAnswer !== correct ? `<span class="correct-answer">${correct}</span>` : correct}</td>`;
+                }
+                resultHTML += `<td>${result}</td></tr>`;
+            });
+
+            resultHTML += `</table><p class="result">班級: ${document.querySelector('input[name="class"]').value} 座號: ${document.querySelector('input[name="number"]').value} 姓名: ${document.querySelector('input[name="name"]').value} 您的總分: ${score} 分</p>`;
+
+            resultHTML += `<p class="result">這是你的第${attempts}次測驗</p>`;
+            document.getElementById('result').innerHTML = resultHTML;
+        }
+
+        function shuffleOptions() {
+            questions.forEach(q => {
+                const container = document.getElementById(`q${q.id}`);
+                container.innerHTML = '';
+                q.options.sort(() => Math.random() - 0.5);
+                q.options.forEach(opt => {
+                    container.innerHTML += `<label class="option"><input type="radio" name="q${q.id}" value="${opt.value}">  ${opt.text}</label><br>`;
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            shuffleOptions();
+        });
+    </script>
+</head>
+<body>
+    <h1 style="margin-left: 2em;">線上測驗</h1>
+    <form id="quizForm">
+        <label style="margin-left: 2em;">班級: <input type="text" name="class" required></label>
+        <label>座號: <input type="text" name="number" required></label>
+        <label>姓名: <input type="text" name="name" required></label><br><br>
+
+        <p class="question">  1. 下列文句「　」中的詞語，何者使用最恰當？</p>
+        <div id="q1"></div>
+
+        <p class="question">  2. 下列詩句，何者運用了映襯修辭技巧？</p>
+        <div id="q2"></div>
+
+        <p class="question">  3. 「而今黃河反從你的句中來」關於這句詩的含義，下列敘述何者正確？</p>
+        <div id="q3"></div>
+
+        <p class="question">  4. 〈戲李白〉一詩中，作者藉由「驚濤與豪笑」一句，來表現李白的何種形象？</p>
+        <div id="q4"></div>
+
+        <p class="question">  5. 「那轟動匡廬的大瀑布／無中生有／不止不休／可是你傾側的小酒壺？」這段詩句中的「無中生有」有何含義？</p>
+        <div id="q5"></div>
+
+        <br><br>
+        <input type="button" value="送出" onclick="gradeQuiz()" class="submit-button">
+    </form>
+
+    <div id="result"></div>
+</body>
+</html>
