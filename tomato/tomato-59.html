@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多功能網頁應用</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .left-column, .right-column {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 10px;
+        }
+        h2 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        input[type="text"], input[type="number"] {
+            width: calc(100% - 40px);
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #timer {
+            font-size: 48px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        #todo-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #todo-list li {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        #todo-list li.completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        #youtube-player, #image-carousel {
+            margin-top: 20px;
+        }
+        #spinner-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            margin: 20px auto;
+            border: 10px solid transparent;
+            border-radius: 50%;
+            background-image: conic-gradient(from 0deg, #ff6b6b, #4ecdc4, #45b7d8, #ff6b6b);
+            animation: spin 4s linear infinite;
+        }
+        #spinner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: absolute;
+        }
+        #spinner-pointer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 100px;
+            background-color: #333;
+            transform-origin: bottom center;
+            transform: translateX(-50%);
+            clip-path: polygon(50% 0%, 60% 100%, 40% 100%);
+        }
+        #spinner-result {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: white;
+        }
+        footer a {
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-column">
+            <div id="pomodoro">
+                <h2>番茄鐘計時器</h2>
+                <input type="number" id="timer-input" placeholder="設置時間（分鐘）" min="1" max="60">
+                <div id="timer">25:00</div>
+                <button id="start-timer">開始</button>
+                <button id="reset-timer">重置</button>
+                <audio id="alarm-sound" src="alarm.mp3" preload="auto"></audio>
+            </div>
+            <div id="spinner-section">
+                <h2>迪碼轉盤器</h2>
+                <input type="number" id="min-number" placeholder="最小數字">
+                <input type="number" id="max-number" placeholder="最大數字">
+                <button id="spin-button">轉動</button>
+                <div id="spinner-container">
+                    <div id="spinner"></div>
+                    <div id="spinner-pointer"></div>
+                    <div id="spinner-result"></div>
+                </div>
+            </div>
+        </div>
+        <div class="right-column">
+            <div id="todo-list">
+                <h2>待辦事項列表</h2>
+                <input type="text" id="new-todo" placeholder="新增待辦事項">
+                <button id="add-todo">添加</button>
+                <ul id="todos"></ul>
+            </div>
+            <div id="youtube-player">
+                <h2>YouTube 視頻播放器</h2>
+                <input type="text" id="video-url" placeholder="輸入 YouTube 視頻連結">
+                <button id="load-video">載入視頻</button>
+                <div id="player"></div>
+            </div>
+            <div id="image-carousel">
+                <h2>圖片輪播</h2>
+                <input type="text" id="image-url" placeholder="輸入圖片連結">
+                <button id="add-image">添加圖片</button>
+                <div id="carousel"></div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p>相關連結：<a href="#" target="_blank">番茄鐘使用方法</a> | <a href="#" target="_blank">個人 YouTube 頻道</a></p>
+    </footer>
+    <script>
+        // 番茄鐘計時器
+        let timer;
+        let timeLeft = 1500; // 25 minutes in seconds
+        const timerDisplay = document.getElementById('timer');
+        const startButton = document.getElementById('start-timer');
+        const resetButton = document.getElementById('reset-timer');
+        const timerInput = document.getElementById('timer-input');
+        const alarmSound = document.getElementById('alarm-sound');
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            timeLeft = (parseInt(timerInput.value) || 25) * 60;
+            updateTimerDisplay();
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 10 && timeLeft > 0) {
+                    alarmSound.play().catch((error) => {
+                        console.error('Audio playback error:', error);
+                        alert('無法播放警報聲音，請檢查音頻文件和瀏覽器設置');
+                    });
+                }
+                if (timeLeft === 0) {
+                    clearInterval(timer);
+                    alert('時間到！');
+                    playYouTubeVideo();
+                }
+            }, 1000);
+            startButton.disabled = true;
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            timeLeft = (parseInt(timerInput.value) || 25) * 60;
+            updateTimerDisplay();
+            startButton.disabled = false;
+        }
+
+        startButton.addEventListener('click', startTimer);
+        resetButton.addEventListener('click', resetTimer);
+        timerInput.addEventListener('change', resetTimer);
+
+        // 待辦事項列表
+        const todoInput = document.getElementById('new-todo');
+        const addTodoButton = document.getElementById('add-todo');
+        const todoList = document.getElementById('todos');
+
+        function addTodo() {
+            const todoText = todoInput.value.trim();
+            if (todoText) {
+                const li = document.createElement('li');
+                li.textContent = todoText;
+                li.addEventListener('click', () => {
+                    li.classList.toggle('completed');
+                });
+                todoList.appendChild(li);
+                todoInput.value = '';
+            }
+        }
+
+        addTodoButton.addEventListener('click', addTodo);
+        todoInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                addTodo();
+            }
+        });
+
+        // YouTube 視頻播放器
+        const videoUrlInput = document.getElementById('video-url');
+        const loadVideoButton = document.getElementById('load-video');
+        const playerDiv = document.getElementById('player');
+
+        function getYouTubeVideoId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function loadYouTubeVideo() {
+            const videoUrl = videoUrlInput.value;
+            const videoId = getYouTubeVideoId(videoUrl);
+            if (videoId) {
+                playerDiv.innerHTML = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            } else {
+                alert('無效的 YouTube 網址');
+            }
+        }
+
+        function playYouTubeVideo() {
+            const iframe = playerDiv.querySelector('iframe');
+            if (iframe) {
+                const src = iframe.src;
+                iframe.src = src.includes('?') ? `${src}&autoplay=1` : `${src}?autoplay=1`;
+            }
+        }
+
+        loadVideoButton.addEventListener('click', loadYouTubeVideo);
+
+        // 圖片輪播
+        const carousel = document.getElementById('carousel');
+        const addImageButton = document.getElementById('add-image');
+        const imageUrlInput = document.getElementById('image-url');
+        let images = [];
+        let currentImageIndex = 0;
+
+        function addImage() {
+            const imageUrl = imageUrlInput.value.trim();
+            if (imageUrl) {
+                images.push(imageUrl);
+                imageUrlInput.value = '';
+                if (images.length === 1) {
+                    showImage(0);
+                    setInterval(nextImage, 3000);
+                }
+            }
+        }
+
+        function showImage(index) {
+            carousel.style.backgroundImage = `url(${images[index]})`;
+            carousel.style.backgroundSize = 'cover';
+            carousel.style.backgroundPosition = 'center';
+            carousel.style.height = '300px';
+        }
+
+        function nextImage() {
+            currentImageIndex = (currentImageIndex + 1) % images.length;
+            showImage(currentImageIndex);
+        }
+
+        addImageButton.addEventListener('click', addImage);
+
+        // 迪碼轉盤器
+        const spinButton = document.getElementById('spin-button');
+        const spinner = document.getElementById('spinner');
+        const spinnerPointer = document.getElementById('spinner-pointer');
+        const spinnerResult = document.getElementById('spinner-result');
+
+        spinButton.addEventListener('click', () => {
+            const minNumber = parseInt(document.getElementById('min-number').value);
+            const maxNumber = parseInt(document.getElementById('max-number').value);
+            
+            if (isNaN(minNumber) || isNaN(maxNumber) || minNumber >= maxNumber) {
+                alert('請輸入有效的數字範圍');
+                return;
+            }
+
+            const result = Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber;
+            
+            // 動畫效果
+            const rotation = 360 * 5 + Math.random() * 360; // 至少旋轉5圈
+            spinnerPointer.style.transition = 'transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            spinnerPointer.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+            spinnerResult.textContent = '';
+
+            setTimeout(() => {
+                spinnerResult.textContent = result;
+                spinnerPointer.style.transition = 'none';
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
