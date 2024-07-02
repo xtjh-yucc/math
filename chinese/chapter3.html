@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰淇淋山 - 冰淇淋王國的冒險</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #e6e6fa;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            margin: auto;
+        }
+        .question {
+            margin: 20px 0;
+        }
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>冰淇淋山</h1>
+        <p>你登上了冰淇淋山，回答問題才能繼續前進。</p>
+        <div class="question">
+            <p>問題3：作者描述他童年時第一次吃冰的經歷是在什麼時候？</p>
+            <input type="radio" name="q3" value="a">夏天<br>
+            <input type="radio" name="q3" value="b">冬天<br>
+            <input type="radio" name="q3" value="c">春天<br>
+            <input type="radio" name="q3" value="d">秋天<br>
+        </div>
+        <button onclick="submitAnswer()">提交答案</button>
+    </div>
+
+    <script>
+        function submitAnswer() {
+            var answers = document.getElementsByName('q3');
+            var answer;
+            for (var i = 0; i < answers.length; i++) {
+                if (answers[i].checked) {
+                    answer = answers[i].value;
+                }
+            }
+            if (answer === 'a') {
+                alert('答對了！繼續冒險。');
+                window.location.href = 'chapter4.html';
+            } else {
+                alert('答錯了！請再試一次。');
+            }
+        }
+    </script>
+</body>
+</html>

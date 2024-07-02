@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰淇淋王宮 - 冰淇淋王國的冒險</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #fffacd;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            margin: auto;
+        }
+        .question {
+            margin: 20px 0;
+        }
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>冰淇淋王宮</h1>
+        <p>你來到了冰淇淋王宮，回答問題才能進入大殿。</p>
+        <div class="question">
+            <p>問題4：作者在文章中提到的冰淇淋帶給他什麼感覺？</p>
+            <input type="radio" name="q4" value="a">快樂與幸福<br>
+            <input type="radio" name="q4" value="b">沮喪與失望<br>
+            <input type="radio" name="q4" value="c">驚奇與冒險<br>
+            <input type="radio" name="q4" value="d">疲憊與無聊<br>
+        </div>
+        <button onclick="submitAnswer()">提交答案</button>
+    </div>
+
+    <script>
+        function submitAnswer() {
+            var answers = document.getElementsByName('q4');
+            var answer;
+            for (var i = 0; i < answers.length; i++) {
+                if (answers[i].checked) {
+                    answer = answers[i].value;
+                }
+            }
+            if (answer === 'a') {
+                alert('答對了！繼續冒險。');
+                window.location.href = 'chapter5.html';
+            } else {
+                alert('答錯了！請再試一次。');
+            }
+        }
+    </script>
+</body>
+</html>

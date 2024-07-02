@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰淇淋王國的冒險</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #83a4d4, #b6fbff);
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            margin: auto;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>冰淇淋王國的冒險</h1>
+        <p>請輸入你的班級、座號和姓名以開始遊戲：</p>
+        <form id="startForm">
+            <input type="text" id="class" placeholder="班級">
+            <input type="text" id="number" placeholder="座號">
+            <input type="text" id="name" placeholder="姓名">
+            <button type="button" onclick="startGame()">開始冒險</button>
+        </form>
+    </div>
+
+    <script>
+        function startGame() {
+            var className = document.getElementById('class').value;
+            var number = document.getElementById('number').value;
+            var name = document.getElementById('name').value;
+
+            if (className && number && name) {
+                localStorage.setItem('className', className);
+                localStorage.setItem('number', number);
+                localStorage.setItem('name', name);
+                window.location.href = 'chapter1.html';
+            } else {
+                alert('請完整填寫所有資訊！');
+            }
+        }
+    </script>
+</body>
+</html>

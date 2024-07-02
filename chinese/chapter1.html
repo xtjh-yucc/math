@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰淇淋森林 - 冰淇淋王國的冒險</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f8ff;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            margin: auto;
+        }
+        .question {
+            margin: 20px 0;
+        }
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>冰淇淋森林</h1>
+        <p>歡迎來到冰淇淋森林！這裡的冰淇淋口味多樣，請回答以下問題繼續冒險。</p>
+        <div class="question">
+            <p>問題1：文章中提到作者最喜歡哪種口味的冰淇淋？</p>
+            <input type="radio" name="q1" value="a">香草味<br>
+            <input type="radio" name="q1" value="b">巧克力味<br>
+            <input type="radio" name="q1" value="c">草莓味<br>
+            <input type="radio" name="q1" value="d">綠茶味<br>
+        </div>
+        <button onclick="submitAnswer()">提交答案</button>
+    </div>
+
+    <script>
+        function submitAnswer() {
+            var answers = document.getElementsByName('q1');
+            var answer;
+            for (var i = 0; i < answers.length; i++) {
+                if (answers[i].checked) {
+                    answer = answers[i].value;
+                }
+            }
+            if (answer === 'c') {
+                alert('答對了！繼續冒險。');
+                window.location.href = 'chapter2.html';
+            } else {
+                alert('答錯了！請再試一次。');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰淇淋迷宮 - 冰淇淋王國的冒險</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #ffe4b5;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            margin: auto;
+        }
+        .question {
+            margin: 20px 0;
+        }
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>冰淇淋迷宮</h1>
+        <p>你進入了冰淇淋迷宮，回答最後的問題以完成冒險。</p>
+        <div class="question">
+            <p>問題5：作者最後提到吃冰的經驗讓他學到了什麼？</p>
+            <input type="radio" name="q5" value="a">人生的甜美與苦澀<br>
+            <input type="radio" name="q5" value="b">冰淇淋的製作過程<br>
+            <input type="radio" name="q5" value="c">如何選擇冰淇淋<br>
+            <input type="radio" name="q5" value="d">冰淇淋的歷史<br>
+        </div>
+        <button onclick="submitAnswer()">提交答案</button>
+    </div>
+
+    <script>
+        function submitAnswer() {
+            var answers = document.getElementsByName('q5');
+            var answer;
+            for (var i = 0; i < answers.length; i++) {
+                if (answers[i].checked) {
+                    answer = answers[i].value;
+                }
+            }
+            if (answer === 'a') {
+                alert('答對了！你完成了冒險！');
+                window.location.href = 'score.html';
+            } else {
+                alert('答錯了！請再試一次。');
+            }
+        }
+    </script>
+</body>
+</html>

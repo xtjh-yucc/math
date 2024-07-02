@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰雪奇緣：尋找最甜美的童年回憶</title>
+    <style>
+        body {
+            font-family: '微軟正黑體', sans-serif;
+            background-color: #E6F3FF;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0066CC;
+            text-align: center;
+        }
+        .question {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        input[type="text"], input[type="radio"] {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #0066CC;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #result {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .wrong {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>冰雪奇緣：尋找最甜美的童年回憶</h1>
+        
+        <div id="studentInfo">
+            <h2>請輸入你的資料：</h2>
+            <input type="text" id="className" placeholder="班級">
+            <input type="text" id="seatNumber" placeholder="座號">
+            <input type="text" id="studentName" placeholder="姓名">
+            <button onclick="startGame()">開始遊戲</button>
+        </div>
+
+        <div id="gameContent" style="display:none;">
+            <div id="story"></div>
+            <div id="question"></div>
+            <button onclick="nextQuestion()">下一步</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = [];
+        const questions = [
+            {
+                story: "你來到了1950年代的台灣，首先遇到的是台糖福利社。你決定買一支冰棒，老闆告訴你一支只要一毛錢。",
+                question: "根據課文，當時的冰棒有什麼特點？",
+                options: ["含有糖精", "使用道地的砂糖", "價格昂貴", "口味單一"],
+                answer: 1
+            },
+            {
+                story: "你含著冰棒，慢慢品嚐。旁邊的小朋友們看得眼巴巴的。",
+                question: "課文中用什麼成語形容這些小朋友的表情？",
+                options: ["望穿秋水", "垂涎三尺", "目瞪口呆", "心花怒放"],
+                answer: 1
+            },
+            {
+                story: "接著，你來到一個賣刨冰的小攤子。老闆正在製作刨冰。",
+                question: "根據課文描述，當時的刨冰機是怎麼操作的？",
+                options: ["電動的", "手搖的", "腳踏的", "自動的"],
+                answer: 1
+            },
+            {
+                story: "你點了一碗刨冰，看著各種配料。",
+                question: "下列哪個不是課文中提到的刨冰配料？",
+                options: ["四果", "粉圓", "仙草", "巧克力醬"],
+                answer: 3
+            },
+            {
+                story: "突然，你聽到遠處傳來叮叮噹噹的聲音。",
+                question: "這聲音最可能是什麼？",
+                options: ["冰淇淋車", "賣芋冰的小販", "消防車", "救護車"],
+                answer: 1
+            }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startGame() {
+            document.getElementById('studentInfo').style.display = 'none';
+            document.getElementById('gameContent').style.display = 'block';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentQuestion < questions.length) {
+                const q = questions[currentQuestion];
+                let html = `<h3>${q.story}</h3><p>${q.question}</p>`;
+                
+                let shuffledOptions = [...q.options];
+                shuffleArray(shuffledOptions);
+                
+                for (let i = 0; i < shuffledOptions.length; i++) {
+                    html += `<input type="radio" name="answer" value="${q.options.indexOf(shuffledOptions[i])}"> ${shuffledOptions[i]}<br>`;
+                }
+                document.getElementById('question').innerHTML = html;
+            } else {
+                showResult();
+            }
+        }
+
+        function nextQuestion() {
+            const selected = document.querySelector('input[name="answer"]:checked');
+            if (selected) {
+                userAnswers.push(parseInt(selected.value));
+                if (parseInt(selected.value) === questions[currentQuestion].answer) {
+                    score += 20;
+                }
+                currentQuestion++;
+                showQuestion();
+            } else {
+                alert('請選擇一個答案！');
+            }
+        }
+
+        function showResult() {
+            const className = document.getElementById('className').value;
+            const seatNumber = document.getElementById('seatNumber').value;
+            const studentName = document.getElementById('studentName').value;
+            let resultHTML = `
+                <h2>遊戲結束！</h2>
+                <p>班級：${className}</p>
+                <p>座號：${seatNumber}</p>
+                <p>姓名：${studentName}</p>
+                <p>得分：${score}</p>
+                <p>${score === 100 ? '太棒了！你完美地體驗了童年的冰品回憶！' : 
+                   score >= 80 ? '很好！你對童年的冰品有了深刻的了解。' :
+                   score >= 60 ? '不錯！你體驗到了一些童年的冰品滋味。' :
+                   '繼續加油！再多了解一些童年的冰品故事吧。'}</p>
+                <h3>答題回顧：</h3>
+            `;
+
+            for (let i = 0; i < questions.length; i++) {
+                const q = questions[i];
+                const userAnswer = userAnswers[i];
+                const isCorrect = userAnswer === q.answer;
+                
+                resultHTML += `
+                    <p>
+                        問題 ${i + 1}: ${q.question}<br>
+                        你的答案: <span class="${isCorrect ? '' : 'wrong'}">${q.options[userAnswer]}</span><br>
+                        正確答案: ${q.options[q.answer]}
+                    </p>
+                `;
+            }
+
+            resultHTML += `
+                <p>記得截圖打卡哦！</p>
+                <a href="https://padlet.com/yucc55555/1130826-sanbiw2iv596q1jb" target="_blank">
+                    <button>打卡</button>
+                </a>
+            `;
+
+            document.getElementById('result').innerHTML = resultHTML;
+            document.getElementById('gameContent').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

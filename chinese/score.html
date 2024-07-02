@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成績 - 冰淇淋王國的冒險</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            margin: auto;
+        }
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>恭喜你完成了冒險！</h1>
+        <p>請輸入班級、座號、姓名以獲取成績。</p>
+        <div>
+            <label for="class">班級：</label>
+            <input type="text" id="class"><br>
+            <label for="number">座號：</label>
+            <input type="text" id="number"><br>
+            <label for="name">姓名：</label>
+            <input type="text" id="name"><br>
+        </div>
+        <button onclick="submitScore()">提交成績</button>
+    </div>
+
+    <script>
+        function submitScore() {
+            var studentClass = document.getElementById('class').value;
+            var studentNumber = document.getElementById('number').value;
+            var studentName = document.getElementById('name').value;
+
+            if (studentClass && studentNumber && studentName) {
+                alert('恭喜你完成了冒險！你的成績是100分！');
+            } else {
+                alert('請填寫完整資料。');
+            }
+        }
+    </script>
+</body>
+</html>
