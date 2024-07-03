@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時光穿梭：尋找失落的臺灣寶藏</title>
+    <style>
+        body {
+            font-family: '微軟正黑體', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            transition: background-color 0.5s ease;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #4a4a4a;
+            text-align: center;
+        }
+        .question {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        input[type="text"], input[type="radio"] {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #result {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .wrong {
+            color: red;
+            font-weight: bold;
+        }
+        .reminder {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>時光穿梭：尋找失落的臺灣寶藏</h1>
+        
+        <div id="studentInfo">
+            <h2>請輸入你的資料：</h2>
+            <input type="text" id="className" placeholder="班級">
+            <input type="text" id="seatNumber" placeholder="座號">
+            <input type="text" id="studentName" placeholder="姓名">
+            <button onclick="startGame()">開始冒險</button>
+        </div>
+
+        <div id="gameContent" style="display:none;">
+            <div id="story"></div>
+            <div id="question"></div>
+            <button onclick="nextQuestion()">繼續冒險</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = [];
+        const questions = [
+            {
+                story: "你的時光機啟動了！你首先來到了舊石器時代。在臺東縣長濱鄉，你發現了一處遺址。",
+                question: "這處遺址代表的文化是什麼？",
+                options: ["大坌坑文化", "長濱文化", "圓山文化", "卑南文化"],
+                answer: 1,
+                background: "#FFE4B5" // 淺橙色
+            },
+            {
+                story: "你繼續前進，來到了新石器時代。你發現人們開始有了新的生活方式。",
+                question: "下列哪項不是新石器時代的特徵？",
+                options: ["農業生產", "磨製石器", "燒製陶器", "使用鐵器"],
+                answer: 3,
+                background: "#E6E6FA" // 淺紫色
+            },
+            {
+                story: "在新石器時代晚期，你來到了臺東縣，發現了一處重要遺址。",
+                question: "這處遺址最可能是哪個文化？",
+                options: ["大坌坑文化", "長濱文化", "圓山文化", "卑南文化"],
+                answer: 3,
+                background: "#F0FFF0" // 蜜瓜色
+            },
+            {
+                story: "時光飛逝，你來到了金屬器時代。在新北市八里區，你發現了一個繁榮的聚落。",
+                question: "這個聚落代表的文化是什麼？",
+                options: ["大坌坑文化", "長濱文化", "圓山文化", "十三行文化"],
+                answer: 3,
+                background: "#F0F8FF" // 愛麗絲藍
+            },
+            {
+                story: "你在十三行文化遺址中發現了一些特殊的物品。",
+                question: "下列哪項不是在十三行文化遺址中發現的物品？",
+                options: ["鐵渣", "玻璃手環", "青銅器", "瑪瑙珠飾"],
+                answer: 2,
+                background: "#FFF0F5" // 淺粉紅
+            },
+            {
+                story: "你的時光機突然失控，把你帶到了現代！你遇到了一位語言學家，他正在研究臺灣原住民族的語言。",
+                question: "臺灣原住民族屬於哪個語族？",
+                options: ["印歐語族", "漢藏語族", "南島語族", "阿爾泰語族"],
+                answer: 2,
+                background: "#F5F5DC" // 米色
+            },
+            {
+                story: "你遇到一位泰雅族的長老，他正在講述祖先的起源。",
+                question: "泰雅族的哪個傳說與他們的起源有關？",
+                options: ["大洪水傳說", "岩石始祖說", "天梯傳說", "太陽神傳說"],
+                answer: 1,
+                background: "#E0FFFF" // 淺青色
+            },
+            {
+                story: "你來到了清朝時期，發現政府對原住民有特殊的分類方式。",
+                question: "清朝政府如何分類原住民？",
+                options: ["平地族和山地族", "熟番和生番", "平埔族和高砂族", "漢人和非漢人"],
+                answer: 1,
+                background: "#FDF5E6" // 老亞麻色
+            },
+            {
+                story: "時光機帶你到了日治時期，你注意到日本政府對原住民的稱呼有所不同。",
+                question: "日治時期，日本政府如何稱呼原住民？",
+                options: ["山胞和平地人", "熟番和生番", "平埔族和高砂族", "本島人和外島人"],
+                answer: 2,
+                background: "#F0FFFF" // 天藍色
+            },
+            {
+                story: "最後，你回到了現代。你發現原住民的稱呼又有了變化。",
+                question: "現在我們使用什麼稱呼來尊重臺灣的原住民？",
+                options: ["山地同胞", "少數民族", "原住民族", "南島民族"],
+                answer: 2,
+                background: "#FFFAFA" // 雪白色
+            }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startGame() {
+            document.getElementById('studentInfo').style.display = 'none';
+            document.getElementById('gameContent').style.display = 'block';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentQuestion < questions.length) {
+                const q = questions[currentQuestion];
+                document.body.style.backgroundColor = q.background;
+                let html = `<h3>${q.story}</h3><p>${q.question}</p>`;
+                
+                let shuffledOptions = [...q.options];
+                shuffleArray(shuffledOptions);
+                
+                for (let i = 0; i < shuffledOptions.length; i++) {
+                    html += `<input type="radio" name="answer" value="${q.options.indexOf(shuffledOptions[i])}"> ${shuffledOptions[i]}<br>`;
+                }
+                document.getElementById('question').innerHTML = html;
+            } else {
+                showResult();
+            }
+        }
+
+        function nextQuestion() {
+            const selected = document.querySelector('input[name="answer"]:checked');
+            if (selected) {
+                userAnswers.push(parseInt(selected.value));
+                if (parseInt(selected.value) === questions[currentQuestion].answer) {
+                    score += 10;
+                }
+                currentQuestion++;
+                showQuestion();
+            } else {
+                alert('請選擇一個答案！');
+            }
+        }
+
+        function showResult() {
+            document.body.style.backgroundColor = "#FFFFFF";
+            const className = document.getElementById('className').value;
+            const seatNumber = document.getElementById('seatNumber').value;
+            const studentName = document.getElementById('studentName').value;
+            let resultHTML = `
+                <h2>冒險結束！</h2>
+                <p>班級：${className}　座號：${seatNumber}　姓名：${studentName}　得分：${score}</p>
+                <p>${score === 100 ? '太棒了！你成功解開了所有謎題，成為了最偉大的時空考古學家！' : 
+                   score >= 80 ? '很好！你對臺灣史前文化有了深刻的了解。' :
+                   score >= 60 ? '不錯！你已經掌握了一些重要的歷史知識。' :
+                   '繼續加油！再多了解一些臺灣的古老文化吧。'}</p>
+                <h3>答題回顧：</h3>
+            `;
+
+            for (let i = 0; i < questions.length; i++) {
+                const q = questions[i];
+                const userAnswer = userAnswers[i];
+                const isCorrect = userAnswer === q.answer;
+                
+                resultHTML += `
+                    <p>
+                        問題 ${i + 1}: ${q.question}<br>
+                        你的答案: <span class="${isCorrect ? '' : 'wrong'}">${q.options[userAnswer]}</span>，
+                        正確答案: ${q.options[q.answer]}
+                    </p>
+                `;
+            }
+
+            resultHTML += `
+                <p class="reminder">請記得截圖打卡哦！</p>
+                <a href="https://padlet.com/yucc55555/1130826-sanbiw2iv596q1jb" target="_blank">
+                    <button>打卡</button>
+                </a>
+            `;
+
+            document.getElementById('result').innerHTML = resultHTML;
+            document.getElementById('gameContent').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
