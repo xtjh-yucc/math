@@ -303,6 +303,51 @@
         .instructions:hover {
             background-color: #7B68EE;
         }
+        .reset-confirm-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+        .reset-confirm-box {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            text-shadow: 2px 2px 4px #aaa;
+            text-align: center;
+        }
+        .confirm-button, .cancel-button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-shadow: 2px 2px 4px #aaa;
+        }
+        .confirm-button {
+            background-color: #DC3545;
+        }
+        .confirm-button:hover {
+            background-color: #C82333;
+        }
+        .cancel-button {
+            background-color: #6c757d;
+        }
+        .cancel-button:hover {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 <body>
@@ -323,9 +368,17 @@
         <tbody></tbody>
     </table>
 
-    <div id="overlay" class="overlay" onclick="hideOverlay()" style="display: none;"></div>
+    <div id="overlay" class="overlay" onclick="hideOverlay()"></div>
+    
+    <div id="reset-confirm-overlay" class="reset-confirm-overlay" onclick="hideResetOverlay()">
+        <div class="reset-confirm-box">
+            <p>確定要重置所有數據嗎？此操作不可逆。</p>
+            <button class="confirm-button" onclick="confirmReset()">確認</button>
+            <button class="cancel-button" onclick="hideResetOverlay()">取消</button>
+        </div>
+    </div>
 
-    <div id="homework-input-section" class="input-section" style="display: none;">
+    <div id="homework-input-section" class="input-section">
         <label class="input-label">選擇日期</label>
         <input type="date" id="homework-date" class="input-field">
         <label class="input-label">輸入今日作業</label>
@@ -333,19 +386,19 @@
         <button class="submit-button" onclick="submitHomework()">送出</button>
     </div>
 
-    <div id="student-input-section" class="input-section" style="display: none;">
+    <div id="student-input-section" class="input-section">
         <label class="input-label">輸入學生姓名</label>
         <textarea id="student-input" class="input-field" rows="5" placeholder="輸入學生姓名，每個姓名一行"></textarea>
         <button class="submit-button" onclick="submitStudents()">送出</button>
     </div>
 
-    <div id="single-student-input-section" class="input-section" style="display: none;">
+    <div id="single-student-input-section" class="input-section">
         <label class="input-label">新增一個學生</label>
         <input id="single-student-input" class="input-field" type="text">
         <button class="submit-button" onclick="submitSingleStudent()">送出</button>
     </div>
 
-    <div id="instructions-section" class="input-section" style="display: none;">
+    <div id="instructions-section" class="input-section">
         <label class="input-label">使用說明</label>
         <div class="instructions-content">
             <p>1. 點擊“輸入今日作業”按鈕，選擇日期並輸入今日的作業。選擇日期後，在文本框內輸入作業名稱，每行一個作業名稱。完成後，點擊“送出”按鈕保存。</p>
@@ -372,7 +425,6 @@
         <button class="export-button" onclick="exportData()">匯出</button>
         <input type="file" id="import-file" style="display: none;" onchange="importData(event)">
         <button class="import-button" onclick="document.getElementById(&#39;import-file&#39;).click()">匯入</button>
-        <button class="reset-button" onclick="resetData()">重置</button>
     </div>
 
     <div style="position: absolute; bottom: 20px; right: 20px; display: flex; align-items: center;">
@@ -384,7 +436,9 @@
         Designed by <a href="https://kentxchang.blogspot.tw/" target="_blank">阿剛老師</a>
     </div>
 
-    <script src="./每日作業表_files/html2canvas.min.js.下載"></script>
+    <button class="reset-button" style="position: absolute; top: 20px; left: 20px;" onclick="showResetConfirm()">重置</button>
+
+    <script src="./hwandcheck02_files/html2canvas.min.js.下載"></script>
     <script>
         let students = JSON.parse(localStorage.getItem('students')) || [];
         let homeworkRows = JSON.parse(localStorage.getItem('homeworkRows')) || [];
@@ -464,12 +518,21 @@
             }
         }
 
-        function resetData() {
+        function showResetConfirm() {
+            document.getElementById('reset-confirm-overlay').style.display = 'flex';
+        }
+
+        function hideResetOverlay() {
+            document.getElementById('reset-confirm-overlay').style.display = 'none';
+        }
+
+        function confirmReset() {
             localStorage.removeItem('students');
             localStorage.removeItem('homeworkRows');
             students = [];
             homeworkRows = [];
             populateTable();
+            hideResetOverlay();
         }
 
         function exportData() {
@@ -810,7 +873,6 @@
                     <button class="export-button" onclick="exportData()">匯出</button>
                     <input type="file" id="import-file" style="display: none;" onchange="importData(event)">
                     <button class="import-button" onclick="document.getElementById('import-file').click()">匯入</button>
-                    <button class="reset-button" onclick="resetData()">重置</button>
                 </div>
                 <div style="position: absolute; bottom: 20px; right: 20px; display: flex; align-items: center;">
                     <button id="add-single-student-button" class="table-button student-button" onclick="showSingleStudentInput()">新增單筆學生</button>
@@ -819,6 +881,7 @@
                 <div class="copyright" style="left: 300px;">
                     Designed by <a href="https://kentxchang.blogspot.tw" target="_blank">阿剛老師</a>
                 </div>
+                <button class="reset-button" style="position: absolute; top: 20px; left: 20px;" onclick="showResetConfirm()">重置</button>
                 <div id="overlay" class="overlay" onclick="hideOverlay()"></div>
                 <div id="homework-input-section" class="input-section">
                     <label class="input-label">選擇日期</label>
