@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時光穿梭家族大冒險</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        h1 {
+            color: #4b0082;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .question {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e6e6fa;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4b0082;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #8a2be2;
+        }
+        #result {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .wrong {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>時光穿梭家族大冒險</h1>
+        <div id="start">
+            <p>歡迎來到時光穿梭家族大冒險！在這個奇妙的旅程中，你將穿越時空，遇見不同時代的家庭成員，學習英語中的家庭稱謂和職業名稱。準備好開始這段刺激的冒險了嗎？</p>
+            <form id="userInfo">
+                班級：<input type="text" id="class" required><br>
+                座號：<input type="text" id="seatNumber" required><br>
+                姓名：<input type="text" id="name" required><br>
+                <button type="submit">開始冒險</button>
+            </form>
+        </div>
+        <div id="quiz" style="display:none;">
+            <!-- 問題將在這裡動態生成 -->
+        </div>
+        <div id="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "你穿越到了古代，遇到了一位年長的男性。他說他是你的爺爺的爺爺。用英文怎麼稱呼他？",
+                options: ["Great-great-grandfather", "Elder grandfather", "Ancient grandfather", "Oldest grandfather"],
+                answer: 0
+            },
+            {
+                question: "在未來世界，你遇到了自己的孩子。如何用英文介紹你的兒子？",
+                options: ["This is my kid", "This is my boy", "This is my son", "This is my child"],
+                answer: 2
+            },
+            {
+                question: "你來到了19世紀的英國，遇到了一位女士。她說她的工作是照顧別人的孩子。她的職業英文是？",
+                options: ["Babysitter", "Nanny", "Teacher", "Nurse"],
+                answer: 1
+            },
+            {
+                question: "在現代，你遇到了一位親戚。他是你父親的兄弟。用英文怎麼稱呼他？",
+                options: ["Brother", "Cousin", "Uncle", "Father-in-law"],
+                answer: 2
+            },
+            {
+                question: "你穿越到了未來，遇到了一位機器人。它說它的工作是幫助人類解決法律問題。它的職業英文是？",
+                options: ["Judge", "Lawyer", "Police officer", "Counselor"],
+                answer: 1
+            },
+            {
+                question: "在古羅馬，你遇到了一位年輕的女性。她說她是你的姐姐的女兒。用英文怎麼稱呼她？",
+                options: ["Sister", "Niece", "Cousin", "Daughter"],
+                answer: 1
+            },
+            {
+                question: "在中世紀的歐洲，你遇到了一位製作麵包的人。他的職業英文是？",
+                options: ["Cook", "Chef", "Baker", "Farmer"],
+                answer: 2
+            },
+            {
+                question: "你回到現代，想詢問一個人的職業。用哪個句子最自然？",
+                options: ["What's your work?", "What do you do for a living?", "What's your labor?", "How do you earn money?"],
+                answer: 1
+            },
+            {
+                question: "在未來世界，你遇到了自己的孫子和孫女。用英文怎麼介紹他們？",
+                options: ["These are my children", "These are my grandchildren", "These are my descendants", "These are my offspring"],
+                answer: 1
+            },
+            {
+                question: "在維多利亞時代，你遇到了一位女士。她說她的工作是在學校教書。她的職業英文是？",
+                options: ["Educator", "Professor", "Teacher", "Instructor"],
+                answer: 2
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answers = [];
+
+        document.getElementById('userInfo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('start').style.display = 'none';
+            document.getElementById('quiz').style.display = 'block';
+            showQuestion();
+        });
+
+        function showQuestion() {
+            const quizDiv = document.getElementById('quiz');
+            const questionData = questions[currentQuestion];
+            
+            let questionHTML = `
+                <div class="question">
+                    <h3>問題 ${currentQuestion + 1}：</h3>
+                    <p>${questionData.question}</p>
+                `;
+            
+            // 打亂選項順序
+            let shuffledOptions = [...questionData.options];
+            shuffledOptions.sort(() => Math.random() - 0.5);
+            
+            shuffledOptions.forEach((option, index) => {
+                questionHTML += `
+                    <input type="radio" name="q${currentQuestion}" value="${index}" id="q${currentQuestion}o${index}">
+                    <label for="q${currentQuestion}o${index}">${option}</label><br>
+                `;
+            });
+            
+            questionHTML += `
+                    <button onclick="submitAnswer()">提交答案</button>
+                </div>
+            `;
+            
+            quizDiv.innerHTML = questionHTML;
+        }
+
+        function submitAnswer() {
+            const selected = document.querySelector(`input[name="q${currentQuestion}"]:checked`);
+            if (!selected) {
+                alert('請選擇一個答案！');
+                return;
+            }
+            
+            const answer = parseInt(selected.value);
+            const correctAnswer = questions[currentQuestion].options[questions[currentQuestion].answer];
+            answers.push({
+                question: currentQuestion + 1,
+                userAnswer: questions[currentQuestion].options[answer],
+                correctAnswer: correctAnswer
+            });
+            
+            if (questions[currentQuestion].options.indexOf(questions[currentQuestion].options[answer]) === questions[currentQuestion].answer) {
+                score += 10;
+            }
+            
+            currentQuestion++;
+            
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            const quizDiv = document.getElementById('quiz');
+            const resultDiv = document.getElementById('result');
+            quizDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            
+            let resultHTML = `
+                <h2>遊戲結束！</h2>
+                <p>${document.getElementById('class').value} ${document.getElementById('seatNumber').value} ${document.getElementById('name').value} 得分：${score}</p>
+                <h3>答題詳情：</h3>
+            `;
+            
+            answers.forEach(answer => {
+                const isCorrect = answer.userAnswer === answer.correctAnswer;
+                resultHTML += `
+                    <p>問題 ${answer.question}: 你的答案: <span class="${isCorrect ? '' : 'wrong'}">${answer.userAnswer}</span>, 正確答案: ${answer.correctAnswer}</p>
+                `;
+            });
+            
+            resultHTML += `
+                <p style="color: red; font-weight: bold;">請記得截圖打卡哦!</p>
+                <a href="https://padlet.com/yucc55555/1130826-sanbiw2iv596q1jb" target="_blank"><button>打卡</button></a>
+            `;
+            
+            resultDiv.innerHTML = resultHTML;
+        }
+    </script>
+</body>
+</html>

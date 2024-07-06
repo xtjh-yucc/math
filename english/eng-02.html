@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time-Traveling Family Adventure</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        h1 {
+            color: #4b0082;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .question {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e6e6fa;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4b0082;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #8a2be2;
+        }
+        #result {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .wrong {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Time-Traveling Family Adventure</h1>
+        <div id="start">
+            <p>Welcome to the Time-Traveling Family Adventure! In this amazing journey, you'll travel through time and space, meet family members from different eras, and learn English terms for family relationships and occupations. Are you ready to start this exciting adventure?</p>
+            <form id="userInfo">
+                Class：<input type="text" id="class" required><br>
+                Seat Number：<input type="text" id="seatNumber" required><br>
+                Name：<input type="text" id="name" required><br>
+                <button type="submit">Start Adventure</button>
+            </form>
+        </div>
+        <div id="quiz" style="display:none;">
+            <!-- Questions will be dynamically generated here -->
+        </div>
+        <div id="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "You travel to ancient times and meet an elderly man. He says he's your grandfather's grandfather. What do you call him in English?",
+                options: ["Great-great-grandfather", "Elder grandfather", "Ancient grandfather", "Oldest grandfather"],
+                answer: 0
+            },
+            {
+                question: "In the future world, you meet your own child. How do you introduce your son in English?",
+                options: ["This is my kid", "This is my boy", "This is my son", "This is my child"],
+                answer: 2
+            },
+            {
+                question: "You arrive in 19th century England and meet a lady. She says her job is to take care of other people's children. What's her occupation in English?",
+                options: ["Babysitter", "Nanny", "Teacher", "Nurse"],
+                answer: 1
+            },
+            {
+                question: "In modern times, you meet a relative. He's your father's brother. What do you call him in English?",
+                options: ["Brother", "Cousin", "Uncle", "Father-in-law"],
+                answer: 2
+            },
+            {
+                question: "You travel to the future and meet a robot. It says its job is to help humans solve legal problems. What's its occupation in English?",
+                options: ["Judge", "Lawyer", "Police officer", "Counselor"],
+                answer: 1
+            },
+            {
+                question: "In ancient Rome, you meet a young woman. She says she's your sister's daughter. What do you call her in English?",
+                options: ["Sister", "Niece", "Cousin", "Daughter"],
+                answer: 1
+            },
+            {
+                question: "In medieval Europe, you meet someone who makes bread. What's their occupation in English?",
+                options: ["Cook", "Chef", "Baker", "Farmer"],
+                answer: 2
+            },
+            {
+                question: "You return to modern times and want to ask about someone's job. Which sentence is most natural?",
+                options: ["What's your work?", "What do you do for a living?", "What's your labor?", "How do you earn money?"],
+                answer: 1
+            },
+            {
+                question: "In the future world, you meet your grandson and granddaughter. How do you introduce them in English?",
+                options: ["These are my children", "These are my grandchildren", "These are my descendants", "These are my offspring"],
+                answer: 1
+            },
+            {
+                question: "In the Victorian era, you meet a lady. She says her job is to teach at a school. What's her occupation in English?",
+                options: ["Educator", "Professor", "Teacher", "Instructor"],
+                answer: 2
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answers = [];
+
+        document.getElementById('userInfo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('start').style.display = 'none';
+            document.getElementById('quiz').style.display = 'block';
+            showQuestion();
+        });
+
+        function showQuestion() {
+            const quizDiv = document.getElementById('quiz');
+            const questionData = questions[currentQuestion];
+            
+            let questionHTML = `
+                <div class="question">
+                    <h3>Question ${currentQuestion + 1}：</h3>
+                    <p>${questionData.question}</p>
+                `;
+            
+            // Shuffle options
+            let shuffledOptions = [...questionData.options];
+            shuffledOptions.sort(() => Math.random() - 0.5);
+            
+            shuffledOptions.forEach((option, index) => {
+                questionHTML += `
+                    <input type="radio" name="q${currentQuestion}" value="${index}" id="q${currentQuestion}o${index}">
+                    <label for="q${currentQuestion}o${index}">${option}</label><br>
+                `;
+            });
+            
+            questionHTML += `
+                    <button onclick="submitAnswer()">Submit Answer</button>
+                </div>
+            `;
+            
+            quizDiv.innerHTML = questionHTML;
+        }
+
+        function submitAnswer() {
+            const selected = document.querySelector(`input[name="q${currentQuestion}"]:checked`);
+            if (!selected) {
+                alert('Please select an answer!');
+                return;
+            }
+            
+            const answer = parseInt(selected.value);
+            const correctAnswer = questions[currentQuestion].options[questions[currentQuestion].answer];
+            answers.push({
+                question: currentQuestion + 1,
+                userAnswer: questions[currentQuestion].options[answer],
+                correctAnswer: correctAnswer
+            });
+            
+            if (questions[currentQuestion].options.indexOf(questions[currentQuestion].options[answer]) === questions[currentQuestion].answer) {
+                score += 10;
+            }
+            
+            currentQuestion++;
+            
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            const quizDiv = document.getElementById('quiz');
+            const resultDiv = document.getElementById('result');
+            quizDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            
+            let resultHTML = `
+                <h2>Game Over!</h2>
+                <p>${document.getElementById('class').value} ${document.getElementById('seatNumber').value} ${document.getElementById('name').value} Score: ${score}</p>
+                <h3>Answer Details:</h3>
+            `;
+            
+            answers.forEach(answer => {
+                const isCorrect = answer.userAnswer === answer.correctAnswer;
+                resultHTML += `
+                    <p>Question ${answer.question}: Your answer: <span class="${isCorrect ? '' : 'wrong'}">${answer.userAnswer}</span>, Correct answer: ${answer.correctAnswer}</p>
+                `;
+            });
+            
+            resultHTML += `
+                <p style="color: red; font-weight: bold;">Remember to take a screenshot and check in!</p>
+                <a href="https://padlet.com/yucc55555/1130826-sanbiw2iv596q1jb" target="_blank"><button>Check In</button></a>
+            `;
+            
+            resultDiv.innerHTML = resultHTML;
+        }
+    </script>
+</body>
+</html>
