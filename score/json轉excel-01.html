@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to Excel Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <style>
+        body {
+            background-color: #e0f7fa; /* 淡藍色背景 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .exportButton {
+            background-color: green;
+            color: white;
+            font-size: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .exportButton:hover {
+            background-color: darkgreen;
+        }
+    </style>
+    <script>
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        function changeBackgroundColor() {
+            document.body.style.backgroundColor = getRandomColor();
+        }
+
+        function exportToExcel(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = JSON.parse(e.target.result);
+                    const studentsData = data.students;
+                    const scoresData = data.scores['2024-7-17'];
+
+                    const numbers = [];
+                    const names = [];
+                    const scores = [];
+
+                    studentsData.forEach(student => {
+                        const [number, name] = student.split('\t');
+                        let score = scoresData[`${number}\t${name}-0`];
+                        if (score === undefined) {
+                            score = scoresData[`${number}\t${name}-1`];
+                        }
+                        if (score === undefined) {
+                            score = scoresData[`${number}\t${name}-2`];
+                        }
+                        if (score === undefined) {
+                            score = scoresData[`${number}\t${name}-3`];
+                        }
+                        numbers.push(number);
+                        names.push(name);
+                        scores.push(score);
+                    });
+
+                    const ws_data = [['座號', '姓名', '分數']];
+                    for (let i = 0; i < numbers.length; i++) {
+                        ws_data.push([numbers[i], names[i], scores[i]]);
+                    }
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+                    XLSX.writeFile(wb, 'student_scores.xlsx');
+
+                    changeBackgroundColor();
+                };
+                reader.readAsText(file);
+            }
+        }
+    </script>
+</head>
+<body>
+    <input type="file" id="fileInput" style="display: none;" onchange="exportToExcel(event)">
+    <button class="exportButton" onclick="document.getElementById('fileInput').click();">資料轉excel</button>
+</body>
+</html>
