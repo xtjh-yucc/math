@@ -35,30 +35,24 @@
                 reader.onload = function(e) {
                     const data = JSON.parse(e.target.result);
                     const workbook = XLSX.utils.book_new();
-                    
+
+                    const students = data.students.map(student => {
+                        const [id, name] = student.split('\t');
+                        return { id, name };
+                    });
+
                     for (const date in data.scores) {
                         const worksheet_data = [];
                         const headers = ['座號', '姓名', '分數'];
                         worksheet_data.push(headers);
 
-                        const students = data.students.map(student => {
-                            const [id, name] = student.split('\t');
-                            return { id, name };
-                        });
-
-                        const scores = {};
-                        for (const key in data.scores[date]) {
-                            const [id_name, _] = key.split('-');
-                            const [id, name] = id_name.split('\t');
-                            const score = data.scores[date][key];
-                            if (!scores[id]) scores[id] = { name, score: 0 };
-                            scores[id].score += score;
-                        }
-
-                        for (const id in scores) {
-                            const { name, score } = scores[id];
+                        const scores = data.scores[date];
+                        students.forEach(student => {
+                            const { id, name } = student;
+                            const scoreKey = `${id}\t${name}`;
+                            const score = scores[`${scoreKey}-${students.indexOf(student)}`] || 0;
                             worksheet_data.push([id, name, score]);
-                        }
+                        });
 
                         const worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
                         XLSX.utils.book_append_sheet(workbook, worksheet, date);
