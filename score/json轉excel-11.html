@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to Excel Converter</title>
+    <style>
+        #uploadButton {
+            background-color: green;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+        #uploadButton:hover {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <input type="file" id="fileInput" />
+    <button id="uploadButton">上傳並轉換</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', () => {
+            document.body.style.backgroundColor = getRandomColor();
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = JSON.parse(e.target.result);
+                    const workbook = XLSX.utils.book_new();
+                    
+                    for (const date in data.scores) {
+                        const worksheet_data = [];
+                        const headers = ['座號', '姓名', '分數'];
+                        worksheet_data.push(headers);
+
+                        const students = data.students.map(student => {
+                            const [id, name] = student.split('\t');
+                            return { id, name };
+                        });
+
+                        const scores = {};
+                        for (const key in data.scores[date]) {
+                            const [id_name, _] = key.split('-');
+                            const [id, name] = id_name.split('\t');
+                            const score = data.scores[date][key];
+                            if (!scores[id]) scores[id] = { name, score: 0 };
+                            scores[id].score += score;
+                        }
+
+                        for (const id in scores) {
+                            const { name, score } = scores[id];
+                            worksheet_data.push([id, name, score]);
+                        }
+
+                        const worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
+                        XLSX.utils.book_append_sheet(workbook, worksheet, date);
+                    }
+
+                    XLSX.writeFile(workbook, 'class_data.xlsx');
+                };
+                reader.readAsText(file);
+            } else {
+                alert('請選擇一個文件');
+            }
+        });
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+    </script>
+</body>
+</html>
