@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<!-- saved from url=(0107)https://filedn.com/laMtL9jmKf7JrDEQG0A6OPy/html/%E5%A4%A7%E5%B1%8F%E7%B6%B2%E9%A0%81%E5%B7%A5%E5%85%B7.html -->
+<html lang="zh-TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多功能工具</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif';
+            background-color: #f0f0f0;
+        }
+        .floating-buttons {
+            position: fixed;
+            right: 10px;
+            top: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1001;
+        }
+        .floating-buttons button {
+            margin: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .floating-buttons button:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .url-button {
+            background-color: #28a745;
+        }
+        .url-button:hover {
+            background-color: #218838;
+        }
+        .canvas-button {
+            background-color: #6f42c1;
+        }
+        .canvas-button:hover {
+            background-color: #5a31a6;
+        }
+        .countdown-button {
+            background-color: #007bff;
+        }
+        .countdown-button:hover {
+            background-color: #0056b3;
+        }
+        .orange-button {
+            background-color: #ff7f50;
+        }
+        .orange-button:hover {
+            background-color: #e67300;
+        }
+        .other-button {
+            background-color: #007bff;
+        }
+        .other-button:hover {
+            background-color: #0056b3;
+        }
+        .brown-button {
+            background-color: #8B4513;
+        }
+        .brown-button:hover {
+            background-color: #A0522D;
+        }
+        iframe {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 1000;
+        }
+        .modal, .draggable, .todo-list {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 1002;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            width: 300px;
+        }
+        .external-modal {
+            width: 320px;
+            height: 600px;
+            overflow: auto;
+        }
+        .draggable-header {
+            cursor: move;
+            padding: 10px;
+            background: #007bff;
+            border-radius: 10px 10px 0 0;
+            border-bottom: 1px solid #ccc;
+            color: white;
+            text-align: center;
+            position: relative;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .close-button {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: #ff4757;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 0 0 10px 10px;
+        }
+        .modal-content label {
+            font-size: 16px;
+            color: #333;
+            font-weight: bold;
+        }
+        .modal-content input[type="text"], .modal-content input[type="number"], .modal-content textarea {
+            width: calc(100% - 40px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 0 0;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .modal-content button:hover {
+            background-color: #218838;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .url-buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .url-buttons-container button {
+            width: 80px;
+            height: 30px;
+            font-size: 10px;
+            color: black;
+            font-weight: bold;
+        }
+        .timer-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        .timer-buttons button {
+            flex: 1;
+            margin: 0 5px;
+            width: calc(33.33% - 10px);
+        }
+        .canvas-toolbar {
+            position: fixed;
+            left: 10px;
+            top: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1004;
+        }
+        .canvas-toolbar button {
+            margin: 5px;
+            padding: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #6c757d;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .canvas-toolbar button:hover {
+            background-color: #5a6268;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .canvas-toolbar .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .canvas-toolbar .dropdown-content {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background-color: #f9f9f9;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .canvas-toolbar .dropdown-content button {
+            color: black;
+            padding: 6px 8px;
+            text-decoration: none;
+            display: block;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .canvas-toolbar .dropdown-content button:hover {
+            background-color: #ddd;
+        }
+        .canvas-toolbar .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .canvas-toolbar .dropdown:hover .dropbtn {
+            background-color: #5a6268;
+        }
+        .canvas-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            z-index: 1003;
+        }
+        .canvas-content {
+            position: absolute;
+            background: transparent;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .fullscreen {
+            width: 100% !important;
+            height: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+            transform: none !important;
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .fullscreen .draggable-header {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            background: #007bff;
+        }
+        .fullscreen #timerDisplay {
+            font-size: calc(20vw);
+        }
+        .fullscreen #timerControls {
+            position: absolute;
+            bottom: 10%;
+            display: flex;
+            gap: 10px;
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .todo-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .todo-item label {
+            flex: 1;
+            font-size: 20px;
+            font-weight: bold;
+            color: blue;
+        }
+        .todo-item label.completed {
+            text-decoration: line-through;
+            color: red;
+        }
+        .image-container {
+            position: absolute;
+            border: 1px solid #ccc;
+            resize: both;
+            overflow: auto;
+            z-index: 1000;
+        }
+        .image-container img {
+            width: 100%;
+            height: auto;
+        }
+        .canvas-status {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: red;
+            font-weight: bold;
+            z-index: 1005;
+        }
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #000;
+        }
+        .bookmark-button {
+            position: fixed;
+            top: 10px;
+            left: 110px; /* 向右移动100px */
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 1006;
+            width: 25px; /* 调整按钮大小 */
+            height: 25px;
+            border-radius: 50%; /* 圆形按钮 */
+            background-color: #ffc107;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .bookmark-button:hover {
+            background-color: #e0a800;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .bookmarked-urls {
+            margin-top: 20px;
+        }
+        .bookmarked-url {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+        .bookmarked-url .remove-url {
+            color: red;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .lottery-result {
+            font-size: 20px;
+            font-weight: bold;
+            color: blue;
+        }
+        .recording-indicator {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: red;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1005;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-buttons">
+        <button class="url-button" onclick="showUrlModal()">網址</button>
+        <button class="canvas-button" onclick="showCanvas()">畫筆</button>
+        <button class="countdown-button" onclick="showTimer()">倒數</button>
+        <button class="other-button" onclick="showLottery()">抽籤</button>
+        <button class="other-button" onclick="showTodoList()">待辦</button>
+        <button class="other-button" onclick="uploadImage()">圖片</button>
+        <button class="orange-button" onclick="toggleRecording()">錄影</button>
+        <button class="brown-button" onclick="showExternalModal()">外部</button>
+    </div>
+
+    <div id="urlModal" class="modal">
+        <div class="modal-content">
+            <label for="urlInput">輸入網址:</label>
+            <input type="text" id="urlInput" value="https://filedn.com/laMtL9jmKf7JrDEQG0A6OPy/html/list/list-out.html" ondrop="handleDrop(event)" ondragover="allowDrop(event)">
+            <button onclick="loadUrl()">載入</button>
+            <button onclick="closeModal(&#39;urlModal&#39;)">關閉</button>
+            <div id="bookmarkedUrls" class="bookmarked-urls"></div>
+        </div>
+    </div>
+
+    <div id="timerModal" class="draggable">
+        <div class="draggable-header">倒數
+            <button class="close-button" onclick="closeModal(&#39;timerModal&#39;)">×</button>
+        </div>
+        <div id="timerContent" class="modal-content">
+            <div class="timer-buttons">
+                <button onclick="setTimer(60)">1分鐘</button>
+                <button onclick="setTimer(180)">3分鐘</button>
+                <button onclick="setTimer(300)">5分鐘</button>
+            </div>
+            <input type="number" id="customTimer" placeholder="自訂時間(秒)" style="width: 100px; margin-top: 10px;">
+            <button onclick="startTimer()">開始</button>
+        </div>
+        <div id="timerDisplay" style="display: none; text-align: center; color: blue;"></div>
+        <div id="timerControls" style="margin-top: 10px; display: none; text-align: center;">
+            <button onclick="toggleFullScreen(&#39;timerModal&#39;)">全畫面</button>
+            <button id="pauseButton" onclick="pauseTimer()">暫停</button>
+            <button onclick="stopTimer()">停止</button>
+        </div>
+    </div>
+
+    <div id="lotteryModal" class="draggable">
+        <div class="draggable-header">抽籤
+            <button class="close-button" onclick="closeModal(&#39;lotteryModal&#39;)">×</button>
+        </div>
+        <div class="modal-content">
+            <input type="number" id="customParticipants" placeholder="自訂人數" style="width: 100px; margin-top: 10px;">
+            <button onclick="drawLottery()">抽籤</button>
+            <button onclick="resetLottery()">重置</button>
+            <div id="lotteryResult" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <div id="canvasOverlay" class="canvas-overlay">
+        <div class="canvas-content">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
+        <div class="canvas-toolbar">
+            <button onclick="toggleToolbar()">收合</button>
+            <div id="toolbarContent">
+                <div class="dropdown">
+                    <button class="dropbtn">顏色</button>
+                    <div class="dropdown-content">
+                        <button onclick="setColor(&#39;red&#39;)">紅</button>
+                        <button onclick="setColor(&#39;green&#39;)">綠</button>
+                        <button onclick="setColor(&#39;blue&#39;)">藍</button>
+                        <button onclick="setColor(&#39;yellow&#39;)">黃</button>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="dropbtn">粗細</button>
+                    <div class="dropdown-content">
+                        <button onclick="setLineWidth(2)">細</button>
+                        <button onclick="setLineWidth(5)">中</button>
+                        <button onclick="setLineWidth(10)">粗</button>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="dropbtn">擦布</button>
+                    <div class="dropdown-content">
+                        <button onclick="setEraser(4)">擦細</button>
+                        <button onclick="setEraser(10)">擦中</button>
+                        <button onclick="setEraser(20)">擦粗</button>
+                    </div>
+                </div>
+                <button onclick="clearCanvas()">全擦掉</button>
+                <button onclick="closeCanvas()">關閉</button>
+            </div>
+        </div>
+        <div class="canvas-status">畫筆使用中</div>
+    </div>
+
+    <div id="todoListModal" class="todo-list">
+        <div class="draggable-header">待辦事項
+            <button class="close-button" onclick="closeModal(&#39;todoListModal&#39;)">×</button>
+        </div>
+        <div id="todoItems" class="modal-content"></div>
+        <div class="modal-content">
+            <textarea id="todoInput" placeholder="輸入待辦事項，每行一筆資料" style="width: 100%; height: 33px;"></textarea>
+            <button onclick="addTodo()">新增</button>
+        </div>
+        <div class="modal-content" style="margin-top: 5px;">
+            <button onclick="clearTodos()">清除所有資料</button>
+        </div>
+    </div>
+
+    <div id="externalModal" class="modal external-modal">
+        <div class="draggable-header">外部
+            <button class="close-button" onclick="closeModal(&#39;externalModal&#39;)">×</button>
+        </div>
+        <div class="modal-content">
+            <label for="externalUrlInput">輸入網址:</label>
+            <input type="text" id="externalUrlInput" placeholder="輸入網址">
+            <label for="externalUrlText">請輸入該網址按鈕要呈現的文字:</label>
+            <input type="text" id="externalUrlText" placeholder="按鈕文字">
+            <button onclick="addExternalUrl()">送出</button>
+            <div id="externalUrlButtons" class="url-buttons-container"></div>
+        </div>
+    </div>
+
+    <input type="file" id="imageInput" style="display: none;" onchange="handleImageUpload(event)">
+
+    <iframe id="iframe" src="./多功能工具_files/saved_resource.html"></iframe>
+
+    <div id="recordingIndicator" class="recording-indicator" style="display: none;">錄影片</div>
+
+    <script>
+        let bookmarkedUrls = JSON.parse(localStorage.getItem('bookmarkedUrls')) || [];
+        let currentUrl = '';
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            const file = event.dataTransfer.files[0];
+            const fileUrl = URL.createObjectURL(file);
+            document.getElementById('urlInput').value = fileUrl;
+            loadUrl();
+        }
+
+        function showUrlModal() {
+            document.getElementById('urlModal').style.display = 'flex';
+            updateBookmarkList();
+        }
+
+        function loadUrl() {
+            let url = document.getElementById('urlInput').value;
+            if (url.includes('youtube.com/watch?v=')) {
+                const videoId = url.split('v=')[1];
+                url = `https://www.youtube.com/embed/${videoId}`;
+            }
+            const iframe = document.getElementById('iframe');
+            currentUrl = url;
+            iframe.src = url;
+            closeModal('urlModal');
+            resetBookmarkButton();
+        }
+
+        function showTimer() {
+            const timerModal = document.getElementById('timerModal');
+            timerModal.style.display = 'block';
+            makeDraggable(timerModal);
+        }
+
+        let timerInterval;
+        let remainingTime;
+        let isPaused = false;
+
+        function setTimer(seconds) {
+            document.getElementById('customTimer').value = seconds;
+        }
+
+        function startTimer() {
+            const time = parseInt(document.getElementById('customTimer').value);
+            remainingTime = time;
+            document.getElementById('timerContent').style.display = 'none';
+            document.getElementById('timerDisplay').style.display = 'block';
+            document.getElementById('timerControls').style.display = 'block';
+            updateTimerDisplay();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            if (!isPaused) {
+                remainingTime--;
+                updateTimerDisplay();
+                if (remainingTime <= 10) {
+                    document.getElementById('timerDisplay').style.color = 'red';
+                } else {
+                    document.getElementById('timerDisplay').style.color = 'blue';
+                }
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    playExplosionSound();
+                }
+            }
+        }
+
+        function updateTimerDisplay() {
+            const timerDisplay = document.getElementById('timerDisplay');
+            timerDisplay.style.fontSize = document.getElementById('timerModal').classList.contains('fullscreen') ? 'calc(20vw)' : '3em';
+            timerDisplay.innerHTML = `${remainingTime}秒`;
+        }
+
+        function toggleFullScreen(id) {
+            const modal = document.getElementById(id);
+            if (modal.classList.contains('fullscreen')) {
+                modal.classList.remove('fullscreen');
+                modal.style.width = 'auto';
+                modal.style.height = 'auto';
+            } else {
+                modal.classList.add('fullscreen');
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.transform = 'none';
+            }
+            updateTimerDisplay();
+        }
+
+        function pauseTimer() {
+            isPaused = !isPaused;
+            document.getElementById('pauseButton').innerText = isPaused ? '繼續' : '暫停';
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const timerModal = document.getElementById('timerModal');
+            if (timerModal.classList.contains('fullscreen')) {
+                toggleFullScreen('timerModal');
+            }
+            document.getElementById('timerContent').style.display = 'block';
+            document.getElementById('timerDisplay').style.display = 'none';
+            document.getElementById('timerControls').style.display = 'none';
+            isPaused = false;
+            document.getElementById('pauseButton').innerText = '暫停';
+        }
+
+        function playExplosionSound() {
+            const sound = new Audio('https://taira-komori.jpn.org/sound_os2/arms01/game_explosion2.mp3');
+            sound.play();
+        }
+
+        function showLottery() {
+            const lotteryModal = document.getElementById('lotteryModal');
+            lotteryModal.style.display = 'block';
+            makeDraggable(lotteryModal);
+        }
+
+        let participants = 20;
+        let drawnNumbers = [];
+        let drawCount = 0;
+
+        function setParticipants(num) {
+            document.getElementById('customParticipants').value = num;
+        }
+
+        function drawLottery() {
+            const customParticipants = parseInt(document.getElementById('customParticipants').value);
+            participants = isNaN(customParticipants) ? participants : customParticipants;
+            if (drawnNumbers.length >= participants) {
+                alert("所有數字都已被抽完！");
+                return;
+            }
+            let result;
+            do {
+                result = Math.floor(Math.random() * participants) + 1;
+            } while (drawnNumbers.includes(result));
+            drawnNumbers.push(result);
+            drawCount++;
+            const lotteryResult = document.getElementById('lotteryResult');
+            lotteryResult.innerHTML += `<span class="lottery-result">第${drawCount}次抽出: ${result}</span><br>`;
+        }
+
+        function resetLottery() {
+            document.getElementById('lotteryResult').innerHTML = '';
+            drawnNumbers = [];
+            drawCount = 0;
+        }
+
+        function showCanvas() {
+            document.getElementById('canvasOverlay').style.display = 'flex';
+            resizeCanvas();
+            const toolbarContent = document.getElementById('toolbarContent');
+            toolbarContent.style.display = 'none';
+        }
+
+        function closeCanvas() {
+            document.getElementById('canvasOverlay').style.display = 'none';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            if (id === 'timerModal') {
+                stopTimer();
+            }
+        }
+
+        function toggleToolbar() {
+            const toolbarContent = document.getElementById('toolbarContent');
+            if (toolbarContent.style.display === 'none') {
+                toolbarContent.style.display = 'flex';
+                toolbarContent.style.flexDirection = 'column';
+            } else {
+                toolbarContent.style.display = 'none';
+            }
+        }
+
+        function resizeCanvas() {
+            const canvas = document.getElementById('drawingCanvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let painting = false;
+        let erasing = false;
+        let color = 'red';
+        let lineWidth = 2;
+
+        function setColor(newColor) {
+            color = newColor;
+            erasing = false;
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function setLineWidth(newWidth) {
+            lineWidth = newWidth;
+            erasing = false;
+        }
+
+        function setEraser(newWidth) {
+            lineWidth = newWidth;
+            erasing = true;
+            ctx.globalCompositeOperation = 'destination-out';
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+
+        canvas.addEventListener('touchstart', startPosition);
+        canvas.addEventListener('touchend', endPosition);
+        canvas.addEventListener('touchmove', draw);
+
+        function startPosition(e) {
+            painting = true;
+            draw(e);
+        }
+
+        function endPosition() {
+            painting = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!painting) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || e.touches[0].clientX;
+            const clientY = e.clientY || e.touches[0].clientY;
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = erasing ? 'rgba(0,0,0,1)' : color;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = element.querySelector('.draggable-header');
+            header.onmousedown = dragMouseDown;
+            header.ontouchstart = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX || e.touches[0].clientX;
+                pos4 = e.clientY || e.touches[0].clientY;
+                document.onmouseup = closeDragElement;
+                document.ontouchend = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchmove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                pos1 = pos3 - clientX;
+                pos2 = pos4 - clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+                element.style.top = (element.offsetTop - pos2) + "px";
+                element.style.left = (element.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.ontouchend = null;
+                document.onmousemove = null;
+                document.ontouchmove = null;
+            }
+        }
+
+        function showTodoList() {
+            const todoListModal = document.getElementById('todoListModal');
+            todoListModal.style.display = 'block';
+            makeDraggable(todoListModal);
+        }
+
+        function addTodo() {
+            const todoInput = document.getElementById('todoInput').value;
+            const todoItems = document.getElementById('todoItems');
+            const todoLines = todoInput.split('\n');
+
+            todoLines.forEach(line => {
+                if (line.trim() !== '') {
+                    const todoItem = document.createElement('div');
+                    todoItem.className = 'todo-item';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.onchange = function() {
+                        label.classList.toggle('completed', checkbox.checked);
+                        label.style.color = checkbox.checked ? 'red' : 'blue';
+                    };
+
+                    const label = document.createElement('label');
+                    label.textContent = line;
+
+                    todoItem.appendChild(checkbox);
+                    todoItem.appendChild(label);
+                    todoItems.appendChild(todoItem);
+                }
+            });
+
+            document.getElementById('todoInput').value = '';
+        }
+
+        function clearTodos() {
+            const todoItems = document.getElementById('todoItems');
+            todoItems.innerHTML = '';
+        }
+
+        function uploadImage() {
+            document.getElementById('imageInput').click();
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                    const ratio = img.height / img.width;
+                    const width = 400;
+                    const height = width * ratio;
+                    const imageContainer = document.createElement('div');
+                    imageContainer.className = 'image-container';
+                    imageContainer.style.width = width + 'px';
+                    imageContainer.style.height = height + 'px';
+
+                    const header = document.createElement('div');
+                    header.className = 'draggable-header';
+                    header.innerHTML = '圖片';
+                    
+                    const closeButton = document.createElement('button');
+                    closeButton.className = 'close-button';
+                    closeButton.innerHTML = '關閉';
+                    closeButton.onclick = function() {
+                        document.body.removeChild(imageContainer);
+                    };
+                    closeButton.ontouchstart = function() {
+                        document.body.removeChild(imageContainer);
+                    };
+                    header.appendChild(closeButton);
+                    imageContainer.appendChild(header);
+
+                    makeDraggable(imageContainer);
+
+                    const newImg = document.createElement('img');
+                    newImg.src = img.src;
+                    imageContainer.appendChild(newImg);
+                    document.body.appendChild(imageContainer);
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.querySelectorAll('.close-button').forEach(button => {
+            button.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                closeModal(e.target.closest('.modal, .draggable, .todo-list').id);
+            });
+        });
+
+        function addBookmark() {
+            const bookmarkButton = document.getElementById('bookmarkButton');
+            if (bookmarkButton.innerText === '☆') {
+                bookmarkButton.innerText = '★';
+                const url = currentUrl;
+                const shortUrl = url.length > 30 ? url.substring(0, 30) + '...' : url;
+                bookmarkedUrls.push({ url, shortUrl });
+                updateBookmarkList();
+                saveBookmarks();
+            }
+        }
+
+        function resetBookmarkButton() {
+            const bookmarkButton = document.getElementById('bookmarkButton');
+            bookmarkButton.innerText = '☆';
+        }
+
+        function updateBookmarkList() {
+            const bookmarkedUrlsContainer = document.getElementById('bookmarkedUrls');
+            bookmarkedUrlsContainer.innerHTML = '';
+            bookmarkedUrls.forEach((bookmark, index) => {
+                const bookmarkElement = document.createElement('div');
+                bookmarkElement.className = 'bookmarked-url';
+                bookmarkElement.innerHTML = `${index + 1}. ${bookmark.shortUrl} <span class="remove-url" onclick="removeBookmark(${index})">X</span>`;
+                bookmarkElement.onclick = () => {
+                    document.getElementById('urlInput').value = bookmark.url;
+                    loadUrl();
+                };
+                bookmarkElement.ontouchend = bookmarkElement.onclick; // 兼容触摸设备
+                bookmarkedUrlsContainer.appendChild(bookmarkElement);
+            });
+        }
+
+        function removeBookmark(index) {
+            bookmarkedUrls.splice(index, 1);
+            updateBookmarkList();
+            saveBookmarks();
+        }
+
+        function saveBookmarks() {
+            localStorage.setItem('bookmarkedUrls', JSON.stringify(bookmarkedUrls));
+        }
+
+        function toggleRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                document.getElementById('recordingIndicator').style.display = 'none';
+            } else {
+                startRecording();
+                document.getElementById('recordingIndicator').style.display = 'block';
+            }
+        }
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = function(event) {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = function() {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'recording.webm';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                recordedChunks = [];
+            };
+
+            mediaRecorder.start();
+        }
+
+        function showExternalModal() {
+            const externalModal = document.getElementById('externalModal');
+            externalModal.style.display = 'block';
+            makeDraggable(externalModal);
+        }
+
+        function addExternalUrl() {
+            const url = document.getElementById('externalUrlInput').value;
+            const buttonText = document.getElementById('externalUrlText').value;
+            const colors = ['#FFFFE0', '#FFDAB9', '#E6E6FA', '#ADD8E6', '#90EE90', '#FFA07A'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            if (url && buttonText) {
+                const button = document.createElement('button');
+                button.style.backgroundColor = color;
+                button.innerText = buttonText;
+                button.style.width = '80px';
+                button.style.height = '30px';
+                button.style.margin = '5px';
+                button.style.fontSize = '10px';
+                button.style.color = 'black';
+                button.style.fontWeight = 'bold';
+                button.onclick = () => window.open(url, '_blank');
+
+                button.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    if (confirm('確定要刪除這個按鈕嗎？')) {
+                        button.remove();
+                    }
+                };
+
+                button.addEventListener('touchstart', handleLongPress);
+                button.addEventListener('touchend', clearLongPress);
+                button.addEventListener('mousedown', handleLongPress);
+                button.addEventListener('mouseup', clearLongPress);
+
+                document.getElementById('externalUrlButtons').appendChild(button);
+            }
+        }
+
+        let longPressTimer;
+        function handleLongPress(event) {
+            event.preventDefault();
+            longPressTimer = setTimeout(() => {
+                if (confirm('確定要刪除這個按鈕嗎？')) {
+                    event.target.remove();
+                }
+            }, 1000);
+        }
+
+        function clearLongPress() {
+            clearTimeout(longPressTimer);
+        }
+
+        // 添加书签按钮
+        const bookmarkButton = document.createElement('button');
+        bookmarkButton.id = 'bookmarkButton';
+        bookmarkButton.className = 'bookmark-button';
+        bookmarkButton.innerText = '☆';
+        bookmarkButton.onclick = addBookmark;
+        document.body.appendChild(bookmarkButton);
+
+        // 清除本地存储的书签数据
+        function clearLocalStorage() {
+            localStorage.removeItem('bookmarkedUrls');
+            bookmarkedUrls = [];
+            updateBookmarkList();
+        }
+
+        // 监听键盘事件
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'c' || event.key === 'C') {
+                clearLocalStorage();
+            }
+        });
+    </script><button id="bookmarkButton" class="bookmark-button">☆</button>
+
+    <div class="footer">
+        Made by <a href="https://kentxchang.blogspot.tw/" target="_blank">阿剛老師</a>
+    </div>
+
+
+</body></html>
