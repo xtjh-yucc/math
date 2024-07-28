@@ -399,13 +399,13 @@
         <button class="brown-button" onclick="showExternalModal()">外部</button>
     </div>
 
-    <div id="urlModal" class="modal">
+    <div id="urlModal" class="modal" style="display: none;">
         <div class="modal-content">
             <label for="urlInput">輸入網址:</label>
             <input type="text" id="urlInput" value="https://filedn.com/laMtL9jmKf7JrDEQG0A6OPy/html/list/list-out.html" ondrop="handleDrop(event)" ondragover="allowDrop(event)">
             <button onclick="loadUrl()">載入</button>
             <button onclick="closeModal(&#39;urlModal&#39;)">關閉</button>
-            <div id="bookmarkedUrls" class="bookmarked-urls"></div>
+            <div id="bookmarkedUrls" class="bookmarked-urls"><div class="bookmarked-url">1. https://xtjh-yucc.github.io/ma... <span class="remove-url" onclick="removeBookmark(0)">X</span></div></div>
         </div>
     </div>
 
@@ -511,7 +511,7 @@
 
     <input type="file" id="imageInput" style="display: none;" onchange="handleImageUpload(event)">
 
-    <iframe id="iframe" src="./多功能工具_files/saved_resource.html"></iframe>
+    <iframe id="iframe" src="./多功能工具_files/課堂加分-加強版999.html"></iframe>
 
     <div id="recordingIndicator" class="recording-indicator" style="display: none;">錄影片</div>
 
