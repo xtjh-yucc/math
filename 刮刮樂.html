@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刮刮樂</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .container {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+        }
+        .input-group button {
+            font-size: 16px;
+            padding: 10px 20px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .input-group button:hover {
+            background-color: #27ae60;
+        }
+        .scratch-area {
+            display: inline-block;
+            margin: 10px;
+            position: relative;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        #history {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+        .history-item {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 5px;
+            font-size: 14px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .warning {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>威力彩刮刮樂</h1>
+        <div class="input-group">
+            <label for="startNumber">起始座號:</label>
+            <input type="number" id="startNumber">
+            <label for="endNumber">結束座號:</label>
+            <input type="number" id="endNumber">
+            <label for="numToSelect">選取人數:</label>
+            <input type="number" id="numToSelect">
+            <button onclick="setupGame()">設定完成</button>
+        </div>
+        <div id="scratchArea1" class="scratch-area" style="width:304px; height:104px;">
+            <canvas id="area1Bottom" width="300" height="100"></canvas>
+            <canvas width="300" height="100" style="position: absolute; top: 0px; left: 0px;"></canvas>
+        </div>
+        <button onclick="resetGame()">再來一次</button>
+        <div id="history">
+            <h2>歷史紀錄</h2>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        const area1Bottom = document.getElementById('area1Bottom');
+        const ctx1Bottom = area1Bottom.getContext('2d');
+        const historyList = document.getElementById('historyList');
+        let numberHistory = [];
+        let currentNumbers = null;
+
+        // 創建音效
+        const scratchSound = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound() {
+            const oscillator = scratchSound.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, scratchSound.currentTime);
+            
+            const gainNode = scratchSound.createGain();
+            gainNode.gain.setValueAtTime(0.1, scratchSound.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, scratchSound.currentTime + 0.1);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(scratchSound.destination);
+            
+            oscillator.start();
+            oscillator.stop(scratchSound.currentTime + 0.1);
+        }
+
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateUniqueNumbers(count, min, max) {
+            let numbers = new Set();
+            while (numbers.size < count) {
+                numbers.add(getRandomNumber(min, max));
+            }
+            return Array.from(numbers).sort((a, b) => a - b);
+        }
+
+        function formatNumber(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        function drawNumbers(numToSelect, startNumber, endNumber) {
+            const area1Numbers = generateUniqueNumbers(numToSelect, startNumber, endNumber);
+
+            currentNumbers = { area1: area1Numbers };
+
+            ctx1Bottom.clearRect(0, 0, area1Bottom.width, area1Bottom.height);
+
+            const gradient1 = ctx1Bottom.createLinearGradient(0, 0, area1Bottom.width, 0);
+            gradient1.addColorStop(0, "#ff9966");
+            gradient1.addColorStop(1, "#ff5e62");
+
+            ctx1Bottom.fillStyle = gradient1;
+            ctx1Bottom.fillRect(0, 0, area1Bottom.width, area1Bottom.height);
+
+            ctx1Bottom.fillStyle = 'white';
+            ctx1Bottom.font = 'bold 24px Arial';
+            ctx1Bottom.textAlign = 'center';
+
+            const totalWidth = 50 * (numToSelect - 1);
+            const startX = (area1Bottom.width - totalWidth) / 2;
+            area1Numbers.forEach((num, index) => {
+                ctx1Bottom.fillText(formatNumber(num), startX + index * 50, 60);
+            });
+        }
+
+        function addToHistory() {
+            if (currentNumbers) {
+                const historyItem = `${currentNumbers.area1.map(formatNumber).join(', ')}`;
+                numberHistory.unshift(historyItem);
+                if (numberHistory.length > 10) {
+                    numberHistory.pop();
+                }
+                updateHistoryDisplay();
+            }
+        }
+
+        function updateHistoryDisplay() {
+            historyList.innerHTML = numberHistory.map(item =>
+                `<div class="history-item" style="color: #2c3e50; font-weight: bold;">${item}</div>`
+            ).join('');
+        }
+
+        function createScratchLayer(areaId, width, height) {
+            const scratchArea = document.getElementById(areaId);
+            const topCanvas = document.createElement('canvas');
+            topCanvas.width = width;
+            topCanvas.height = height;
+            topCanvas.style.position = 'absolute';
+            topCanvas.style.top = '0';
+            topCanvas.style.left = '0';
+            scratchArea.appendChild(topCanvas);
+
+            const ctx = topCanvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, "#bdc3c7");
+            gradient.addColorStop(1, "#2c3e50");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('刮開我', width / 2, height / 2);
+
+            setupScratch(topCanvas);
+        }
+
+        function setupScratch(topCanvas) {
+            let isDrawing = false;
+            const ctx = topCanvas.getContext('2d');
+
+            topCanvas.addEventListener('mousedown', startDrawing);
+            topCanvas.addEventListener('mousemove', draw);
+            topCanvas.addEventListener('mouseup', stopDrawing);
+            topCanvas.addEventListener('mouseout', stopDrawing);
+
+            topCanvas.addEventListener('touchstart', startDrawing);
+            topCanvas.addEventListener('touchmove', draw);
+            topCanvas.addEventListener('touchend', stopDrawing);
+
+            function startDrawing(e) {
+                isDrawing = true;
+                draw(e);
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+
+                const rect = topCanvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, Math.PI * 2);
+                ctx.fill();
+
+                playSound();
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+            }
+        }
+
+        function resetGame() {
+            addToHistory();
+            const numToSelect = parseInt(document.getElementById('numToSelect').value);
+            const startNumber = parseInt(document.getElementById('startNumber').value);
+            const endNumber = parseInt(document.getElementById('endNumber').value);
+            drawNumbers(numToSelect, startNumber, endNumber);
+
+            document.querySelectorAll('#scratchArea1 canvas:not(#area1Bottom)').forEach(el => el.remove());
+
+            createScratchLayer('scratchArea1', 300, 100);
+        }
+
+        function setupGame() {
+            const numToSelect = parseInt(document.getElementById('numToSelect').value);
+            const startNumber = parseInt(document.getElementById('startNumber').value);
+            const endNumber = parseInt(document.getElementById('endNumber').value);
+            drawNumbers(numToSelect, startNumber, endNumber);
+
+            document.querySelectorAll('#scratchArea1 canvas:not(#area1Bottom)').forEach(el => el.remove());
+
+            createScratchLayer('scratchArea1', 300, 100);
+        }
+
+        drawNumbers(6, 1, 38); // Default values for initial display
+        createScratchLayer('scratchArea1', 300, 100);
+    </script>
+
+</body>
+</html>
