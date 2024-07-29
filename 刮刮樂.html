@@ -29,12 +29,17 @@
         .input-group {
             margin: 10px 0;
         }
+        .input-group label {
+            margin-right: 5px;
+        }
         .input-group input {
-            padding: 10px;
+            padding: 5px;
             font-size: 16px;
             border-radius: 5px;
             border: 1px solid #ccc;
             margin-right: 10px;
+            width: 60px; /* Width to accommodate 3 digits */
+            text-align: center;
         }
         .input-group button {
             font-size: 16px;
@@ -107,11 +112,11 @@
         <h1>威力彩刮刮樂</h1>
         <div class="input-group">
             <label for="startNumber">起始座號:</label>
-            <input type="number" id="startNumber">
+            <input type="number" id="startNumber" maxlength="3">
             <label for="endNumber">結束座號:</label>
-            <input type="number" id="endNumber">
+            <input type="number" id="endNumber" maxlength="3">
             <label for="numToSelect">選取人數:</label>
-            <input type="number" id="numToSelect">
+            <input type="number" id="numToSelect" maxlength="3">
             <button onclick="setupGame()">設定完成</button>
         </div>
         <div id="scratchArea1" class="scratch-area" style="width:304px; height:104px;">
@@ -298,6 +303,5 @@
         drawNumbers(6, 1, 38); // Default values for initial display
         createScratchLayer('scratchArea1', 300, 100);
     </script>
-
 </body>
 </html>
