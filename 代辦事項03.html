@@ -33,7 +33,7 @@
         .completed {
             text-decoration: line-through;
         }
-        #addButton {
+        button {
             background-color: #4CAF50;
             border: none;
             color: white;
@@ -80,6 +80,10 @@
         
         <h2>未完成事項</h2>
         <ul id="unfinishedList"></ul>
+
+        <button id="saveButton">存檔</button>
+        <input type="file" id="fileInput" style="display: none;" accept=".json">
+        <button id="uploadButton">上傳</button>
     </div>
 
     <div id="modal" class="modal">
@@ -105,6 +109,9 @@
         const todayList = document.getElementById('todayList');
         const tomorrowList = document.getElementById('tomorrowList');
         const unfinishedList = document.getElementById('unfinishedList');
+        const saveButton = document.getElementById('saveButton');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileInput = document.getElementById('fileInput');
         let selectedDate;
 
         addButton.onclick = function() {
@@ -179,6 +186,71 @@
 
         document.getElementById('today').textContent = today.toLocaleDateString('zh-TW');
         document.getElementById('tomorrow').textContent = tomorrow.toLocaleDateString('zh-TW');
+
+        // 存檔功能
+        saveButton.onclick = function() {
+            const data = {
+                today: Array.from(todayList.children).map(li => ({
+                    text: li.textContent,
+                    completed: li.querySelector('input').checked
+                })),
+                tomorrow: Array.from(tomorrowList.children).map(li => ({
+                    text: li.textContent,
+                    completed: li.querySelector('input').checked
+                }))
+            };
+            const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${today.toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // 上傳功能
+        uploadButton.onclick = function() {
+            fileInput.click();
+        };
+
+        fileInput.onchange = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = JSON.parse(e.target.result);
+                    todayList.innerHTML = '';
+                    tomorrowList.innerHTML = '';
+                    data.today.forEach(task => addTaskToList(todayList, task));
+                    data.tomorrow.forEach(task => addTaskToList(tomorrowList, task));
+                    updateLists();
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        function addTaskToList(list, task) {
+            const li = document.createElement('li');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = task.completed;
+            checkbox.onchange = function() {
+                if (this.checked) {
+                    li.classList.add('completed');
+                } else {
+                    li.classList.remove('completed');
+                }
+                updateLists();
+            };
+            li.appendChild(checkbox);
+            li.appendChild(document.createTextNode(task.text));
+            if (task.completed) {
+                li.classList.add('completed');
+            }
+            list.appendChild(li);
+        }
     </script>
 </body>
 </html>
