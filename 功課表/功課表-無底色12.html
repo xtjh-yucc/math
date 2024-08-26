@@ -1,0 +1,759 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美化版可拖拉科目的功課表 - 完整顯示科目名稱</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1400px;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        #editable-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            text-align: center;
+            width: 98%;
+            border-radius: 4px;
+        }
+
+        #editable-title:focus {
+            outline: none;
+            border: 2px solid #aaa;
+            background-color: #ffffff;
+        }
+
+        .timetable {
+            display: grid;
+            grid-template-columns: auto repeat(5, 1fr);
+            gap: 1px;
+            background-color: black;
+            border: 1px solid #888;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .timetable > div {
+            background-color: white;
+            padding: 12px;
+            text-align: center;
+            border: 1px dashed #ccc;
+            position: relative;
+        }
+
+        .timetable > div::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -1px;
+            bottom: 0;
+            width: 1px;
+            background-color: #ccc;
+            border-right: 1px dashed #ccc;
+        }
+
+        .timetable > div::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px;
+            height: 1px;
+            background-color: #ccc;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .time-slot {
+            font-weight: bold;
+            font-size:14px;
+            background-color: #ffffff !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 90px;
+        }
+
+        .day {
+            font-weight: bold;
+            background-color: #ffffff !important;
+            padding: 15px !important;
+            font-size: 24px;
+        }
+
+        .lunch-break {
+            background-color: #ffffff !important;
+            font-style: italic;
+            grid-column: span 5;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .timetable > div:nth-child(6n)::after,
+        .timetable > div:nth-last-child(-n+6)::before {
+            display: none;
+        }
+
+        .droppable {
+            min-height: 40px;
+            transition: background-color 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+        }
+
+        .droppable:hover {
+            background-color: #ffffff;
+        }
+
+        .subject-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            justify-content: center;
+        }
+
+        .subject {
+            cursor: move;
+            border: 1px solid #b8d8ff;
+            margin: 2px;
+            padding: 2px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            font-size: 16px;
+            min-height: 35px;
+            width: 150px;
+        }
+
+        .subject span {
+            word-break: break-word;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .color-picker {
+            width: 20px;
+            height: 20px;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            border-radius: 50%;
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+        }
+
+        #print-button, #download-button {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            font-size: 18px;
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        #print-button {
+            background-color: #6495ED;
+        }
+
+        #download-button {
+            background-color: #4CAF50;
+        }
+
+        #print-button:hover {
+            background-color: #4d78c7;
+        }
+
+        #download-button:hover {
+            background-color: #45a049;
+        }
+
+        .teacher-table {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background-color: black;
+            border: 3px solid #888;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .teacher-header {
+            grid-column: span 4;
+            background-color: #ffffff;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .teacher-row {
+            display: contents;
+        }
+
+        .teacher-subject, .teacher-input {
+			background-color: white;
+			padding: 12px;
+			text-align: center;
+			position: relative;
+			min-height: 24px;
+			font-size: 12px;
+			font-weight: bold;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+        .teacher-subject::after, .teacher-input::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: black;
+        }
+
+        .teacher-subject::before, .teacher-input::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 1px;
+            background-color: black;
+        }
+
+        .teacher-subject {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .teacher-input:focus {
+            outline: none;
+            background-color: #ffffff;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .image-upload-area {
+            width: 100%;
+            
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .image-upload-area img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .image-upload-text {
+            text-align: center;
+            color: #888;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            body {
+                padding: 0;
+                background-color: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: 100%;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            #editable-title {
+                font-size: 36px;
+                margin-bottom: 10px;
+                border: 1px;
+            }
+
+            .timetable {
+                font-size: 18px;
+                border: 1px solid black;
+				padding: 5px;
+            }
+
+            .time-slot, .day {
+                padding: 4px;
+                font-size: 14px;
+            }
+
+            .day {
+                font-size: 18px;
+            }
+
+            .lunch-break {
+                font-size: 18px;
+            }
+
+            .subject {
+                font-size: 18px;
+                min-height: 45px;
+				padding:4px;
+            }
+
+            .teacher-table {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+
+            .teacher-header {
+                font-size: 18px;
+                padding: 4px;
+            }
+
+            .teacher-subject, .teacher-input {
+                padding: 4px;
+                min-height: 30px;
+                font-size: 14px;
+            }
+
+            #print-button, #download-button, .subject-list, .color-picker {
+                display: none;
+            }
+
+            .image-upload-area {
+                border: none;
+                width: 100%;
+                height: auto;
+                margin: 10mm auto;
+            }
+
+            .image-upload-area img {
+                max-width: 100%;
+                max-height: 95mm;
+                object-fit: contain;
+            }
+
+            .image-upload-text {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+     <div class="container">
+        <h1 id="editable-title" contenteditable="true">這邊可以自行輸入班級的功課表</h1>
+        
+        <div class="subject-list">
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>國文</span>
+                <input type="color" class="color-picker" value="#e6f3ff">
+            </div>
+<div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>彈性國文</span>
+                <input type="color" class="color-picker" value="#e6f3ff">
+            </div>
+<div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>彈性數學</span>
+                <input type="color" class="color-picker" value="#e6f3ff">
+            </div>
+
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>數學</span>
+                <input type="color" class="color-picker" value="#e6f3ff">
+            </div>
+            <div class="subject" draggable="true" style="background-color:#ffffff;">
+                <span>英文</span>
+                <input type="color" class="color-picker" value="#fff0e6">
+            </div>
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>理化</span>
+                <input type="color" class="color-picker" value="#e6ffe6">
+            </div>
+                <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>生物</span>
+                <input type="color" class="color-picker" value="#e6ffe6">
+            </div>
+               
+                <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>生活科技</span>
+                <input type="color" class="color-picker" value="#e6ffe6">
+            </div>
+ 
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>地理</span>
+                <input type="color" class="color-picker" value="#ffe6f0">
+            </div>
+ <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>歷史</span>
+                <input type="color" class="color-picker" value="#ffe6f0">
+            </div>
+ <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>公民</span>
+                <input type="color" class="color-picker" value="#ffe6f0">
+            </div>
+ <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>表演藝術</span>
+                <input type="color" class="color-picker" value="#f0e6ff">
+            </div>
+ <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>國際觀影</span>
+                <input type="color" class="color-picker" value="#f0e6ff">
+            </div>
+ <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>SDGs閱世界</span>
+                <input type="color" class="color-picker" value="#f0e6ff">
+            </div>
+ <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>音樂</span>
+                <input type="color" class="color-picker" value="#f0e6ff">
+            </div>
+
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>視覺藝術</span>
+                <input type="color" class="color-picker" value="#f0e6ff">
+            </div>
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>體育</span>
+                <input type="color" class="color-picker" value="#e6ffff">
+            </div>
+<div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>健教</span>
+                <input type="color" class="color-picker" value="#e6ffff">
+            </div>
+
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>科學大探索</span>
+                <input type="color" class="color-picker" value="#fff6e6">
+            </div>
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>班會</span>
+                <input type="color" class="color-picker" value="#f2ffe6">
+            </div>
+  <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>聯課活動</span>
+                <input type="color" class="color-picker" value="#f2ffe6">
+            </div>
+  <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>輔導</span>
+                <input type="color" class="color-picker" value="#f2ffe6">
+            </div>
+
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>本土語言</span>
+                <input type="color" class="color-picker" value="#f2ffe6">
+            </div>
+            <div class="subject" draggable="true" style="background-color: #ffffff;">
+                <span>資訊科技</span>
+                <input type="color" class="color-picker" value="#f2ffe6">
+            </div>
+
+        </div>
+
+        <div class="timetable">
+            <div></div>
+            <div class="day">星期一</div>
+            <div class="day">星期二</div>
+            <div class="day">星期三</div>
+            <div class="day">星期四</div>
+            <div class="day">星期五</div>
+
+            <div class="time-slot">08:20 - 09:05</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+
+            <div class="time-slot">09:15 - 10:00</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+
+            <div class="time-slot">10:15 - 11:00</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+
+            <div class="time-slot">11:10 - 11:55</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+
+            <div class="time-slot">12:00 - 13:00</div>
+            <div class="lunch-break">午休時間</div>
+
+
+            <div class="time-slot">13:10 - 13:55</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+
+            <div class="time-slot">14:05 - 14:50</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+
+            <div class="time-slot">15:05 - 15:50</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+
+            <div class="time-slot">16:00 - 16:45</div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+            <div class="droppable"></div>
+        </div>
+        
+        
+
+        <div class="button-container">
+            <button id="print-button">列印功課表</button>
+            <button id="download-button">儲存功課表</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const subjects = document.querySelectorAll('.subject');
+            const dropZones = document.querySelectorAll('.droppable');
+            const colorPickers = document.querySelectorAll('.color-picker');
+            const editableTitle = document.getElementById('editable-title');
+            const printButton = document.getElementById('print-button');
+            const downloadButton = document.getElementById('download-button');
+            const teacherSubjects = document.querySelectorAll('.teacher-subject');
+            
+            teacherSubjects.forEach(subject => {
+                subject.addEventListener('dragover', dragOver);
+                subject.addEventListener('dragenter', dragEnter);
+                subject.addEventListener('dragleave', dragLeave);
+                subject.addEventListener('drop', drop);
+            });
+
+            subjects.forEach(subject => {
+                subject.addEventListener('dragstart', dragStart);
+                subject.addEventListener('dragend', dragEnd);
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', dragOver);
+                zone.addEventListener('dragenter', dragEnter);
+                zone.addEventListener('dragleave', dragLeave);
+                zone.addEventListener('drop', drop);
+            });
+
+            colorPickers.forEach(picker => {
+                picker.addEventListener('change', changeColor);
+                picker.addEventListener('click', (e) => e.stopPropagation());
+            });
+
+            editableTitle.addEventListener('blur', () => {
+                if (editableTitle.textContent.trim() === '') {
+                    editableTitle.textContent = '可拖拉科目的功課表';
+                }
+            });
+
+            printButton.addEventListener('click', () => {
+                window.print();
+            });
+
+            downloadButton.addEventListener('click', downloadTimetable);
+
+            document.body.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            document.body.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.target.classList.contains('droppable')) return;
+                const draggedElement = document.querySelector('.hide');
+                if (draggedElement && draggedElement.parentElement.classList.contains('droppable')) {
+                    draggedElement.parentElement.innerHTML = '';
+                }
+            });
+
+            function dragStart(e) {
+                e.dataTransfer.setData('text/plain', e.target.innerHTML);
+                e.dataTransfer.setData('text/background-color', e.target.style.backgroundColor);
+                setTimeout(() => {
+                    e.target.classList.add('hide');
+                }, 0);
+            }
+
+            function dragEnd(e) {
+                e.target.classList.remove('hide');
+            }
+
+            function dragOver(e) {
+                e.preventDefault();
+            }
+
+            function dragEnter(e) {
+                e.preventDefault();
+                e.target.classList.add('drag-over');
+            }
+
+            function dragLeave(e) {
+                e.target.classList.remove('drag-over');
+            }
+
+            function drop(e) {
+                e.target.classList.remove('drag-over');
+
+                const subjectHTML = e.dataTransfer.getData('text');
+                const backgroundColor = e.dataTransfer.getData('text/background-color');
+                const newSubject = document.createElement('div');
+                newSubject.classList.add('subject');
+                newSubject.draggable = true;
+                newSubject.innerHTML = subjectHTML;
+                newSubject.style.backgroundColor = backgroundColor;
+
+                newSubject.addEventListener('dragstart', dragStart);
+                newSubject.addEventListener('dragend', dragEnd);
+
+                const colorPicker = newSubject.querySelector('.color-picker');
+                colorPicker.addEventListener('change', changeColor);
+                colorPicker.addEventListener('click', (e) => e.stopPropagation());
+
+                if (e.target.classList.contains('droppable')) {
+                    e.target.innerHTML = '';
+                    e.target.appendChild(newSubject);
+                }
+            }
+
+            function changeColor(e) {
+                e.target.parentElement.style.backgroundColor = e.target.value;
+            }
+
+            function downloadTimetable() {
+                const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = '功課表.html';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }
+
+            // 圖片上傳功能
+            const imageUploadArea = document.getElementById('imageUploadArea');
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
+            imageUploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', handleFileSelect);
+
+            imageUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                imageUploadArea.style.borderColor = '#000';
+            });
+
+            imageUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                imageUploadArea.style.borderColor = '#ccc';
+            });
+
+            imageUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                imageUploadArea.style.borderColor = '#ccc';
+                if (e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+
+            function handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    handleFiles(files);
+                }
+            }
+
+            function handleFiles(files) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        imageUploadArea.innerHTML = '';
+                        imageUploadArea.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('請上傳圖片檔案');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
