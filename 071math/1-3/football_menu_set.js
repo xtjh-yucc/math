@@ -1,4 +1,4 @@
-menu_title = "第一冊1-2";
+menu_title = "第一冊1-3";
 menu_items = new Array(
 
   "1-3-11兩整數相乘,1-3-1/1-3-11.js"
