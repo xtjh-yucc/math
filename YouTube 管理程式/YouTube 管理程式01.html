@@ -1120,8 +1120,8 @@
 function importData() {
     console.log("開始匯入程序"); // 添加日誌以便調試
     
-    // 使用 fetch 從同一目錄下獲取 youtubedata.json
-    fetch('youtubedata.json')
+    // 使用 fetch 從同一目錄下獲取 youtube_data.json
+    fetch('youtube_data.json')
         .then(response => {
             if (!response.ok) {
                 throw new Error('無法找到檔案');
