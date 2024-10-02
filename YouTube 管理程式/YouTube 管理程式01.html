@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<!-- saved from url=(0104)https://filedn.com/laMtL9jmKf7JrDEQG0A6OPy/html/youtube%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7/youtube.html -->
+<html lang="zh-TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>YouTube 管理程式</title>
+    <style>
+        /* 全域樣式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f3f3;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            margin-bottom: 80px; /* 為畫面底部預留 80px 空白 */
+        }
+
+        /* 標題樣式 */
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            color: #FF0000; /* YouTube 紅色 */
+            margin: 20px 0;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out, color 0.3s ease-in-out;
+        }
+        h1:hover {
+            transform: scale(1.05);
+            color: #cc0000; /* 深紅色 */
+        }
+
+        /* 頂部控制面板 */
+        #top-panel {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 15px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* 按鈕樣式 */
+        .button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background-color: #FF0000;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .button:hover {
+            background-color: #cc0000;
+            transform: translateY(-3px);
+        }
+
+        /* 新增區域 */
+        #add-container {
+            display: none;
+            background-color: #ffffff;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        /* 新增標籤和新增影片的區域 */
+        .add-section {
+            width: 48%;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .add-section h3 {
+            color: #FF0000;
+            margin-bottom: 10px;
+        }
+        .add-section input[type="text"] {
+            width: calc(100% - 20px);
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .add-section input[type="text"]:focus {
+            border-color: #FF0000;
+        }
+
+        /* 主內容區域 */
+        #main-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        /* 標籤和影片列表 */
+        .content-section {
+            margin: 0 10px;
+            flex: 1 1 45%;
+        }
+        .tags-section {
+            flex-basis: 30%;
+            max-width: 300px;
+            position: relative;
+        }
+        .videos-section {
+            flex-basis: 65%;
+        }
+
+        .content-title {
+            color: #FF0000;
+            font-size: 1.5em;
+            margin: 10px 0;
+            text-align: center;
+            border-bottom: 2px solid #FF0000;
+            padding-bottom: 5px;
+            position: relative;
+        }
+
+        /* 自動播放開關 */
+        #autoplay-toggle {
+            position: absolute;
+            right: 50px; /* 距離標題右側 50px */
+            top: 50%; /* 垂直置中 */
+            transform: translateY(-50%);
+            font-size: 18PX;
+            cursor: pointer;
+            user-select: none;
+        }
+        #autoplay-toggle label {
+            font-size: 1em;
+            cursor: pointer;
+            user-select: none;
+        }
+        #autoplay-toggle input[type="checkbox"] {
+            margin-right: 5px;
+        }
+
+        .content-box {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* 標籤樣式 */
+        .tag-item {
+            padding: 10px;
+            margin: 5px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            user-select: none;
+            display: inline-block;
+            border: 2px solid transparent; /* 預設邊框為透明 */
+        }
+        .tag-item:hover {
+            transform: translateY(-3px);
+        }
+        .tag-item.selected-tag {
+            border: 2px solid blue; /* 選取的標籤邊框為藍色 */
+        }
+
+        /* 影片項目樣式 */
+        .video-item {
+            padding: 10px;
+            margin: 5px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            user-select: none;
+            display: inline-block;
+            width: calc(48% - 10px);
+            box-sizing: border-box;
+            position: relative;
+        }
+        .video-item:hover {
+            transform: translateY(-3px);
+        }
+
+        /* 工具提示 */
+        .tooltip {
+            display: none;
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px;
+            border-radius: 5px;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+        .video-item:hover .tooltip {
+            display: block;
+        }
+
+        /* 新增影片標籤選擇 */
+        #tag-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .tag-selection-item {
+            padding: 5px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s;
+        }
+        .tag-selection-item:hover {
+            background-color: #d0d0d0;
+        }
+        .tag-selection-item.selected-tag {
+            border: 2px solid #FF0000;
+            font-weight: bold;
+        }
+
+        /* 彈出層樣式 */
+        #video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #video-modal-content {
+            width: 80%;
+            max-width: 1280px;
+            aspect-ratio: 16 / 9;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 右鍵選單樣式 */
+        .context-menu {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            padding: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            width: 160px;
+        }
+        .color-option {
+            width: 30px;
+            height: 30px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        /* 署名 */
+        #made-by {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            font-size: 1em;
+            color: #666;
+            opacity: 0.8;
+        }
+        #made-by a {
+            color: #FF0000;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        #made-by a:hover {
+            color: #cc0000;
+        }
+
+        /* 分享相關的文字 */
+        #share-links {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            font-size: 1em;
+            color: #666;
+            opacity: 0.8;
+            text-align: left;
+            display: flex;
+            gap: 20px;
+        }
+        #share-links a {
+            color: #FF0000;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        #share-links a:hover {
+            color: #cc0000;
+        }
+
+        /* 紅色提示樣式 */
+        .start-time {
+            color: #FF0000;
+            font-weight: bold;
+        }
+
+        /* 提示圖層 */
+        #import-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        #import-overlay-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+        #import-overlay-content .button {
+            margin: 10px;
+        }
+
+        /* 匯出標籤的圖層樣式 */
+        #export-tags-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        #export-tags-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+        #export-tags-content h3 {
+            margin-bottom: 15px;
+        }
+        #export-tags-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .tag-checkbox {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 固定在標籤區塊左下方的匯出按鈕 */
+        #select-export-tags {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            font-size: 0.8em;
+            padding: 5px 10px;
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        #select-export-tags:hover {
+            background-color: #cc0000;
+            transform: translateY(-3px);
+        }
+
+    </style>
+</head>
+<body>
+    <h1 onclick="importFromFile()">YouTube 管理程式</h1> <!-- 綁定點擊事件 -->
+
+    <!-- 頂部控制面板 -->
+    <div id="top-panel">
+        <button class="button" onclick="toggleAddContainer()">新增</button>
+        <div style="margin-left: auto;"> <!-- 向右對齊 -->
+            <button class="button" onclick="exportData()">匯出</button>
+            <button class="button" onclick="importData()">匯入</button>
+            <button class="button" onclick="resetData()">重置</button>
+            <input type="file" id="file-input" style="display: none;" onchange="handleFileImport(event)">
+        </div>
+    </div>
+    
+    <!-- 新增區域 -->
+    <div id="add-container" style="display: none;"> <!-- 預設隱藏 -->
+        <!-- 新增標籤區塊 -->
+        <div class="add-section">
+            <h3>新增標籤</h3>
+            <input type="text" id="new-tag-name" placeholder="輸入新標籤名稱">
+            <button class="button" onclick="addTag()">新增標籤</button>
+        </div>
+        <!-- 新增影片區塊 -->
+        <div class="add-section">
+            <h3>新增影片</h3>
+            <input type="text" id="youtube-url" placeholder="貼上YouTube影片連結">
+            <input type="text" id="youtube-title" placeholder="影片標題">
+            <div id="tag-selection"></div>
+            <button class="button" onclick="addVideo()">新增影片</button>
+        </div>
+    </div>
+    
+    <!-- 主內容區域 -->
+    <div id="main-content">
+        <div class="content-section tags-section">
+            <h2 class="content-title">標籤</h2> <!-- 在區塊外部添加標題 -->
+            <div id="tags-container" class="content-box"><div class="tag-item selected-tag" draggable="true" data-index="0" data-type="tag">全部</div></div>
+            <button id="select-export-tags" onclick="showExportTagsOverlay()">匯出部份標籤</button>
+        </div>
+        <div class="content-section videos-section">
+            <h2 class="content-title">影片列表
+                <span id="autoplay-toggle">
+                    <label>
+                        <input type="checkbox" id="autoplay-switch" onchange="toggleAutoplay()">
+                        自動播放
+                    </label>
+                </span>
+            </h2>
+            <div id="videos-list" class="content-box"></div>
+        </div>
+    </div>
+
+    <!-- 彈出層 -->
+    <div id="video-modal">
+        <div id="video-modal-content"></div>
+    </div>
+    
+    <!-- 提示圖層 -->
+    <div id="import-overlay">
+        <div id="import-overlay-content">
+            <h3>選擇匯入方式</h3>
+            <button class="button" onclick="mergeData()">合併</button>
+            <button class="button" onclick="replaceData()">替換</button>
+            <button class="button" onclick="cancelImport()">取消</button>
+        </div>
+    </div>
+
+    <!-- 匯出標籤圖層 -->
+    <div id="export-tags-overlay">
+        <div id="export-tags-content">
+            <h3>選擇要匯出的標籤</h3>
+            <div id="export-tags-checkboxes"></div> <!-- 勾選標籤 -->
+            <button class="button" onclick="exportSelectedTags()">將已選擇的標籤內容匯出</button>
+            <button class="button" onclick="hideExportTagsOverlay()">取消</button>
+        </div>
+    </div>
+
+    <!-- 署名 -->
+    <div id="share-links">
+        <a href="https://forms.gle/eo8UCcWuoL7bmBT77" target="_blank">我要分享</a>
+        <a href="https://docs.google.com/spreadsheets/d/1F3xZmKtg0zA3Hz3KYEkvLrDg-Gho_rDBRlmokZ_w2zY/edit?usp=sharing" target="_blank">大家的分享</a>
+    </div>
+    <div id="made-by">
+        Made by <a href="https://kentxchang.blogspot.tw/" target="_blank">阿剛老師</a>
+    </div>
+
+    <script type="text/javascript" id="www-widgetapi-script" src="./YouTube 管理程式_files/www-widgetapi.js.下載" async=""></script><script src="./YouTube 管理程式_files/iframe_api"></script><script>
+        const presetColors = ['#FFC1CC', '#FFD1A4', '#FFF9B0', '#B2F1A6', '#A0D4FF', 
+                              '#FFB2F5', '#D5B2FF', '#FFD6E7', '#C1EFFF', '#C8D7FF', 
+                              '#FFF7C1', '#C1FFD6', '#D6FFC1', '#FFC1E4', '#E4C1FF'];
+
+        let dragSrcElement = null; // 記錄拖拽的源元素
+        let currentVideoIndex = 0; // 記錄當前播放視頻的索引
+        let player; // YouTube 播放器實例
+        let titleClicked = false; // 標題是否已經被點擊
+        let fetchedData = null; // 儲存從遠程文件獲取的數據
+        let currentTag = '全部'; // 當前選中的標籤，預設為"全部"
+        let isAutoplayEnabled = false; // 自動播放狀態
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        // 點擊標題從遠程文件導入數據
+        function importFromFile() {
+            if (titleClicked) return; // 防止多次點擊
+            titleClicked = true;
+
+            fetch('https://filedn.com/laMtL9jmKf7JrDEQG0A6OPy/html/youtube管理工具/youtube_data.json')
+                .then(response => {
+                    if (!response.ok) throw new Error('File not found');
+                    return response.json();
+                })
+                .then(data => {
+                    fetchedData = data; // 儲存獲取到的數據
+                    showImportOverlay(); // 顯示提示圖層
+                })
+                .catch(error => {
+                    // 文件不存在時不呈現任何信息
+                });
+        }
+
+        // 顯示提示圖層
+        function showImportOverlay() {
+            const overlay = document.getElementById('import-overlay');
+            overlay.style.display = 'flex';
+        }
+
+        // 隱藏提示圖層
+        function hideImportOverlay() {
+            const overlay = document.getElementById('import-overlay');
+            overlay.style.display = 'none';
+        }
+
+        // 合併數據
+        function mergeData() {
+            if (!fetchedData) return;
+            
+            const currentTags = JSON.parse(localStorage.getItem('tags')) || [];
+            const currentVideos = JSON.parse(localStorage.getItem('videos')) || [];
+
+            const mergedTags = [...currentTags, ...fetchedData.tags];
+            const mergedVideos = [...currentVideos, ...fetchedData.videos];
+
+            const uniqueTags = Array.from(new Set(mergedTags.map(tag => tag.name))).map(name => {
+                return mergedTags.find(tag => tag.name === name);
+            });
+
+            localStorage.setItem('tags', JSON.stringify(uniqueTags));
+            localStorage.setItem('videos', JSON.stringify(mergedVideos));
+            
+            loadData();
+            hideImportOverlay();
+            alert('合併匯入成功');
+        }
+
+        // 替換數據
+        function replaceData() {
+            if (!fetchedData) return;
+
+            if (fetchedData.tags) localStorage.setItem('tags', JSON.stringify(fetchedData.tags));
+            if (fetchedData.videos) localStorage.setItem('videos', JSON.stringify(fetchedData.videos));
+            
+            loadData();
+            hideImportOverlay();
+            alert('替換匯入成功');
+        }
+
+        // 取消導入
+        function cancelImport() {
+            hideImportOverlay();
+            titleClicked = false;
+        }
+
+        // 切換"新增"區域的顯示狀態
+        function toggleAddContainer() {
+            const addContainer = document.getElementById('add-container');
+            addContainer.style.display = addContainer.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        // 添加標籤
+        function addTag() {
+            var tagName = document.getElementById('new-tag-name').value.trim();
+            if (!tagName) {
+                alert('請輸入標籤名稱。');
+                return;
+            }
+
+            var tags = JSON.parse(localStorage.getItem('tags')) || [];
+            if (!tags.some(tag => tag.name === tagName)) {
+                tags.push({ name: tagName });
+                localStorage.setItem('tags', JSON.stringify(tags));
+            }
+
+            document.getElementById('new-tag-name').value = '';
+
+            loadTags();
+            updateTagSelection();
+        }
+
+        // 添加影片
+        function addVideo() {
+            var url = document.getElementById('youtube-url').value;
+            var title = document.getElementById('youtube-title').value.trim();
+            var selectedTags = Array.from(document.querySelectorAll('#tag-selection .tag-selection-item.selected-tag')).map(div => div.textContent);
+
+            if (!url || !title || selectedTags.length === 0) {
+                alert('請輸入有效的YouTube連結、影片標題並選擇至少一個標籤。');
+                return;
+            }
+
+            var match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&]t=(\d+))?/);
+            if (!match) {
+                alert('請輸入有效的YouTube連結。');
+                return;
+            }
+            var videoId = match[1];
+            var startTime = match[2] || 0;
+
+            var videos = JSON.parse(localStorage.getItem('videos')) || [];
+            videos.push({ id: videoId, title: title, tags: selectedTags, startTime: startTime });
+            localStorage.setItem('videos', JSON.stringify(videos));
+
+            document.getElementById('youtube-url').value = '';
+            document.getElementById('youtube-title').value = '';
+
+            showVideosByTag(currentTag); // 加載當前標籤的影片
+        }
+
+        // 載入標籤和影片數據
+        function loadData() {
+            loadTags();
+            showVideosByTag(currentTag); // 加載當前標籤的影片
+        }
+
+        // 載入標籤
+        function loadTags() {
+            var tags = JSON.parse(localStorage.getItem('tags')) || [];
+            var tagsContainer = document.getElementById('tags-container');
+            tagsContainer.innerHTML = '';
+
+            // 將 "全部" 標籤與其他標籤組合在一起
+            var allTags = [{ name: '全部' }, ...tags];
+
+            allTags.forEach((tag, index) => {
+                var tagElement = document.createElement('div');
+                tagElement.innerText = tag.name;
+                tagElement.classList.add('tag-item');
+                tagElement.draggable = true;
+                tagElement.dataset.index = index;
+                tagElement.dataset.type = 'tag';
+                tagElement.ondragstart = handleDragStart;
+                tagElement.ondragover = allowDrop;
+                tagElement.ondrop = handleDrop;
+                if (tag.name !== '全部') {
+                    tagElement.oncontextmenu = function(event) { showContextMenu(event, tagElement, tag.name, 'tag'); return false; };
+                }
+                tagElement.onclick = function() {
+                    currentTag = tag.name;
+                    loadTags();
+                    showVideosByTag(tag.name);
+                };
+                if (currentTag === tag.name) {
+                    tagElement.classList.add('selected-tag');
+                }
+                tagsContainer.appendChild(tagElement);
+
+                if (tag.backgroundColor) {
+                    tagElement.style.backgroundColor = tag.backgroundColor;
+                }
+            });
+
+            updateTagSelection();
+        }
+
+        // 更新標籤選擇區域
+        function updateTagSelection() {
+            var tags = JSON.parse(localStorage.getItem('tags')) || [];
+            var tagSelection = document.getElementById('tag-selection');
+            tagSelection.innerHTML = '';
+
+            tags.forEach(tag => {
+                var tagDiv = document.createElement('div');
+                tagDiv.classList.add('tag-selection-item');
+                tagDiv.innerText = tag.name;
+
+                tagDiv.onclick = function() {
+                    if (tagDiv.classList.contains('selected-tag')) {
+                        tagDiv.classList.remove('selected-tag');
+                    } else {
+                        tagDiv.classList.add('selected-tag');
+                    }
+                };
+
+                tagDiv.oncontextmenu = function(event) {
+                    event.preventDefault();
+                    var newTagName = prompt('修改標籤名稱：', tagDiv.innerText);
+                    if (newTagName && newTagName.trim() !== '') {
+                        var oldTagName = tagDiv.innerText;
+                        updateTagName(oldTagName, newTagName.trim());
+                    }
+                };
+
+                tagSelection.appendChild(tagDiv);
+            });
+        }
+
+        // 更新標籤名稱
+        function updateTagName(oldName, newName) {
+            var tags = JSON.parse(localStorage.getItem('tags')) || [];
+            var videos = JSON.parse(localStorage.getItem('videos')) || [];
+
+            tags.forEach(tag => {
+                if (tag.name === oldName) {
+                    tag.name = newName;
+                }
+            });
+
+            videos.forEach(video => {
+                video.tags = video.tags.map(tag => (tag === oldName ? newName : tag));
+            });
+
+            localStorage.setItem('tags', JSON.stringify(tags));
+            localStorage.setItem('videos', JSON.stringify(videos));
+
+            loadData();
+        }
+
+        // 顯示指定標籤的影片
+        function showVideosByTag(tag) {
+            currentTag = tag; // 設定當前標籤
+            var videos = JSON.parse(localStorage.getItem('videos')) || [];
+            var filteredVideos;
+            if (tag === '全部') {
+                filteredVideos = videos;
+            } else {
+                filteredVideos = videos.filter(video => video.tags.includes(tag));
+            }
+            var videosList = document.getElementById('videos-list');
+            videosList.innerHTML = '';
+
+            filteredVideos.forEach((video, index) => {
+                var videoElement = document.createElement('div');
+                var timeTooltip = video.startTime > 0 ? ` 開始時間：${formatTime(video.startTime)}` : '';
+
+                videoElement.innerHTML = `<span title="${video.title}">${index + 1}. 影片 ID: ${video.id}</span>
+                                          <div class="tooltip">${video.title}</div>
+                                          <div><span class="start-time">${timeTooltip}</span> ${video.title.substring(0, 100)}</div>`;
+                videoElement.classList.add('video-item');
+                videoElement.draggable = true;
+                videoElement.dataset.index = index;
+                videoElement.dataset.tag = tag; // 增加標籤數據
+                videoElement.dataset.type = 'video';
+                videoElement.ondragstart = handleDragStart;
+                videoElement.ondragover = allowDrop;
+                videoElement.ondrop = handleDrop;
+                videoElement.oncontextmenu = function(event) { showContextMenu(event, videoElement, video.id, 'video', tag); return false; };
+                videoElement.onclick = function() { showModalVideo(video.id, video.startTime); };
+
+                if (video.backgroundColor) {
+                    videoElement.style.backgroundColor = video.backgroundColor;
+                }
+
+                videosList.appendChild(videoElement);
+            });
+        }
+
+        // 格式化時間，將秒轉換為 mm:ss 格式
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        // 處理拖拽開始
+        function handleDragStart(event) {
+            dragSrcElement = event.target;
+            event.dataTransfer.effectAllowed = 'move';
+            dragSrcElement.classList.add('dragging');
+        }
+
+        // 允許拖放
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        // 處理放下
+        function handleDrop(event) {
+            event.stopPropagation();
+            event.preventDefault();
+
+            if (dragSrcElement !== this) {
+                if (dragSrcElement.dataset.type === 'tag' && this.dataset.type === 'tag') {
+                    // 處理標籤互換
+                    const draggedIndex = parseInt(dragSrcElement.dataset.index);
+                    const droppedIndex = parseInt(this.dataset.index);
+
+                    var tags = JSON.parse(localStorage.getItem('tags')) || [];
+
+                    // 將 "全部" 標籤納入考慮
+                    var allTags = [{ name: '全部' }, ...tags];
+
+                    // 互換標籤在 allTags 中的位置
+                    [allTags[draggedIndex], allTags[droppedIndex]] = [allTags[droppedIndex], allTags[draggedIndex]];
+
+                    // 排除 "全部" 標籤，保存剩餘標籤
+                    var updatedTags = allTags.filter(tag => tag.name !== '全部');
+
+                    localStorage.setItem('tags', JSON.stringify(updatedTags));
+
+                    loadTags(); // 重新加載標籤
+                } else if (dragSrcElement.dataset.type === 'video' && this.dataset.type === 'video') {
+                    // 處理影片互換
+                    const draggedIndex = parseInt(dragSrcElement.dataset.index); // 拖動的元素索引
+                    const droppedIndex = parseInt(this.dataset.index); // 放置目標的索引
+                    const currentTag = this.dataset.tag; // 獲取當前影片所屬的標籤
+
+                    const videos = JSON.parse(localStorage.getItem('videos')) || [];
+
+                    let filteredVideos;
+                    if (currentTag === '全部') {
+                        filteredVideos = videos;
+                    } else {
+                        filteredVideos = videos.filter(video => video.tags.includes(currentTag));
+                    }
+
+                    // 交換 filteredVideos 中拖動和放置影片的順序
+                    const draggedVideo = filteredVideos[draggedIndex];
+                    const droppedVideo = filteredVideos[droppedIndex];
+
+                    // 找到 draggedVideo 和 droppedVideo 在原始 videos 列表中的索引
+                    const draggedVideoIndex = videos.findIndex(video => video.id === draggedVideo.id);
+                    const droppedVideoIndex = videos.findIndex(video => video.id === droppedVideo.id);
+
+                    // 交換原始 videos 列表中的影片順序
+                    [videos[draggedVideoIndex], videos[droppedVideoIndex]] = [videos[droppedVideoIndex], videos[draggedVideoIndex]];
+
+                    // 更新 localStorage 中的數據
+                    localStorage.setItem('videos', JSON.stringify(videos));
+
+                    // 重新加載當前標籤下的影片
+                    showVideosByTag(currentTag);
+                }
+            }
+
+            dragSrcElement.classList.remove('dragging');
+        }
+
+        // 顯示並播放影片
+        function showModalVideo(videoId, startTime = 0) {
+            currentVideoIndex = getCurrentVideoIndex(videoId); // 設置當前播放影片的索引
+            var autoplayParam = isAutoplayEnabled ? '&autoplay=1' : '';
+            var embedUrl = 'https://www.youtube-nocookie.com/embed/' + videoId + '?start=' + startTime + '&controls=1&rel=0&enablejsapi=1' + autoplayParam;
+            var iframe = '<iframe id="youtube-iframe" width="100%" height="100%" src="' + embedUrl + '" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>';
+            var modalContent = document.getElementById('video-modal-content');
+            modalContent.innerHTML = iframe;
+
+            var modal = document.getElementById('video-modal');
+            modal.style.display = 'flex';
+
+            modal.onclick = function(event) {
+                if (event.target === modal) {
+                    closeModalVideo();
+                }
+            };
+
+            setTimeout(() => {
+                player = new YT.Player('youtube-iframe', {
+                    events: {
+                        'onStateChange': onPlayerStateChange // 監聽播放器狀態變更
+                    }
+                });
+            }, 500);
+        }
+
+        // 根據影片 ID 獲取當前影片的索引
+        function getCurrentVideoIndex(videoId) {
+            var videos = JSON.parse(localStorage.getItem('videos')) || [];
+            var filteredVideos;
+
+            if (currentTag === '全部') {
+                filteredVideos = videos;
+            } else {
+                filteredVideos = videos.filter(video => video.tags.includes(currentTag));
+            }
+
+            return filteredVideos.findIndex(video => video.id === videoId);
+        }
+
+        // 播放下一部影片
+        function playNextVideo() {
+            var videos = JSON.parse(localStorage.getItem('videos')) || [];
+            var filteredVideos;
+
+            if (currentTag === '全部') {
+                filteredVideos = videos;
+            } else {
+                filteredVideos = videos.filter(video => video.tags.includes(currentTag));
+            }
+
+            // 循環播放：當到達最後一部影片時，播放第一部影片
+            currentVideoIndex = (currentVideoIndex + 1) % filteredVideos.length;
+
+            var nextVideo = filteredVideos[currentVideoIndex];
+            showModalVideo(nextVideo.id, nextVideo.startTime); // 播放下一部影片
+        }
+
+        // 當播放器狀態改變時，根據狀態執行對應的邏輯
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                playNextVideo(); // 當影片播放完畢後，自動播放下一部影片
+            }
+        }
+
+        // 切換自動播放狀態
+        function toggleAutoplay() {
+            isAutoplayEnabled = document.getElementById('autoplay-switch').checked;
+        }
+
+        // 關閉彈出層並停止影片播放
+        function closeModalVideo() {
+            var modal = document.getElementById('video-modal');
+            var modalContent = document.getElementById('video-modal-content');
+
+            modalContent.innerHTML = '';
+
+            modal.style.display = 'none';
+        }
+
+        // 右鍵選單
+        function showContextMenu(event, element, id, type, currentTag) {
+            event.preventDefault();
+
+            const existingContextMenu = document.querySelector('.context-menu');
+            if (existingContextMenu) existingContextMenu.remove();
+
+            var contextMenu = document.createElement('div');
+            contextMenu.classList.add('context-menu');
+            contextMenu.style.left = `${event.pageX}px`;
+            contextMenu.style.top = `${event.pageY}px`;
+
+            // 創建顏色選擇
+            presetColors.forEach(color => {
+                var colorOption = document.createElement('div');
+                colorOption.classList.add('color-option');
+                colorOption.style.backgroundColor = color;
+                colorOption.onclick = function() { changeBackgroundColor(id, color, element, type); };
+                contextMenu.appendChild(colorOption);
+            });
+
+            // 添加還原背景色選項
+            var resetOption = document.createElement('div');
+            resetOption.innerHTML = '還原背景色';
+            resetOption.style.marginTop = '10px';
+            resetOption.style.cursor = 'pointer';
+            resetOption.onclick = function() { resetBackgroundColor(id, element, type); };
+            contextMenu.appendChild(resetOption);
+
+            if (type === 'video') {
+                var deleteOption = document.createElement('div');
+                deleteOption.innerHTML = '刪除';
+                deleteOption.style.marginTop = '10px';
+                deleteOption.style.cursor = 'pointer';
+                deleteOption.style.color = '#FF0000'; // 將刪除選項的文字改為紅色
+                deleteOption.onclick = function() { deleteVideoFromTag(id, currentTag); };
+                contextMenu.appendChild(deleteOption);
+            } else if (type === 'tag') {
+                if (!isTagAssociatedWithAnyVideo(id)) {
+                    var deleteTagOption = document.createElement('div');
+                    deleteTagOption.innerHTML = '刪除標籤';
+                    deleteTagOption.style.marginTop = '10px';
+                    deleteTagOption.style.cursor = 'pointer';
+                    deleteTagOption.style.color = '#FF0000';
+                    deleteTagOption.onclick = function() { deleteTag(id); };
+                    contextMenu.appendChild(deleteTagOption);
+                }
+            }
+
+            document.body.appendChild(contextMenu);
+
+            document.addEventListener('click', function removeContextMenu() {
+                contextMenu.remove();
+                document.removeEventListener('click', removeContextMenu);
+            });
+        }
+
+        // 刪除影片時只刪除當前標籤下的影片
+        function deleteVideoFromTag(videoId, currentTag) {
+            var videos = JSON.parse(localStorage.getItem('videos')) || [];
+            var video = videos.find(v => v.id === videoId);
+
+            if (video) {
+                if (video.tags.length > 1) {
+                    // 移除當前標籤
+                    video.tags = video.tags.filter(tag => tag !== currentTag);
+
+                    // 更新影片的標籤列表
+                    localStorage.setItem('videos', JSON.stringify(videos));
+                } else {
+                    // 如果影片只有一個標籤，直接從列表中移除影片
+                    videos = videos.filter(v => v.id !== videoId);
+                    localStorage.setItem('videos', JSON.stringify(videos));
+                }
+
+                // 重新加載當前標籤下的影片
+                showVideosByTag(currentTag);
+            }
+        }
+
+        // 檢查標籤是否與任何影片關聯
+        function isTagAssociatedWithAnyVideo(tagName) {
+            var videos = JSON.parse(localStorage.getItem('videos')) || [];
+            return videos.some(video => video.tags.includes(tagName));
+        }
+
+        // 刪除標籤
+        function deleteTag(tagName) {
+            if (confirm(`你確定要刪除標籤「${tagName}」嗎？`)) {
+                var tags = JSON.parse(localStorage.getItem('tags')) || [];
+                tags = tags.filter(tag => tag.name !== tagName);
+                localStorage.setItem('tags', JSON.stringify(tags));
+                loadTags();
+            }
+        }
+
+        // 更改背景色
+        function changeBackgroundColor(id, color, element, type) {
+            if (type === 'video') {
+                var videos = JSON.parse(localStorage.getItem('videos')) || [];
+                var video = videos.find(v => v.id === id);
+                if (video) {
+                    video.backgroundColor = color;
+                    localStorage.setItem('videos', JSON.stringify(videos));
+                    element.style.backgroundColor = color;
+                }
+            } else if (type === 'tag') {
+                var tags = JSON.parse(localStorage.getItem('tags')) || [];
+                var tag = tags.find(t => t.name === id);
+                if (tag) {
+                    tag.backgroundColor = color;
+                    localStorage.setItem('tags', JSON.stringify(tags));
+                    element.style.backgroundColor = color;
+                }
+            }
+        }
+
+        // 還原背景色
+        function resetBackgroundColor(id, element, type) {
+            if (type === 'video') {
+                var videos = JSON.parse(localStorage.getItem('videos')) || [];
+                var video = videos.find(v => v.id === id);
+                if (video) {
+                    delete video.backgroundColor;
+                    localStorage.setItem('videos', JSON.stringify(videos));
+                    element.style.backgroundColor = '';
+                }
+            } else if (type === 'tag') {
+                var tags = JSON.parse(localStorage.getItem('tags')) || [];
+                var tag = tags.find(t => t.name === id);
+                if (tag) {
+                    delete tag.backgroundColor;
+                    localStorage.setItem('tags', JSON.stringify(tags));
+                    element.style.backgroundColor = '';
+                }
+            }
+        }
+
+        // 重置
+        function resetData() {
+            if (confirm('你確定要清除所有資料嗎？')) {
+                localStorage.clear();
+                document.getElementById('videos-list').innerHTML = '';
+                document.getElementById('tags-container').innerHTML = '';
+                document.getElementById('tag-selection').innerHTML = '';
+            }
+        }
+
+        // 匯出數據
+        function exportData() {
+            const tags = localStorage.getItem('tags');
+            const videos = localStorage.getItem('videos');
+            if (!tags && !videos) {
+                alert('沒有可匯出的資料');
+                return;
+            }
+
+            const data = JSON.stringify({ tags: tags ? JSON.parse(tags) : [], videos: videos ? JSON.parse(videos) : [] });
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'youtube_data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 匯入數據
+        function importData() {
+            document.getElementById('file-input').click();
+        }
+
+        // 處理匯入文件
+       // 匯入數據
+function importData() {
+    console.log("開始匯入程序"); // 添加日誌以便調試
+    
+    // 使用 fetch 從同一目錄下獲取 youtube_data.json
+    fetch('youtube_data.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('無法找到檔案');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("成功讀取檔案"); // 添加日誌
+            
+            // 顯示確認對話框
+            const action = confirm('要合併現有內容還是刪除全部內容重新匯入？\n按確定進行合併，按取消進行替換。');
+            
+            if (action) {
+                // 合併數據
+                const currentTags = JSON.parse(localStorage.getItem('tags')) || [];
+                const currentVideos = JSON.parse(localStorage.getItem('videos')) || [];
+
+                const mergedTags = [...currentTags, ...data.tags];
+                const mergedVideos = [...currentVideos, ...data.videos];
+
+                const uniqueTags = Array.from(new Set(mergedTags.map(tag => tag.name)))
+                    .map(name => mergedTags.find(tag => tag.name === name));
+
+                localStorage.setItem('tags', JSON.stringify(uniqueTags));
+                localStorage.setItem('videos', JSON.stringify(mergedVideos));
+            } else {
+                // 替換數據
+                if (data.tags) localStorage.setItem('tags', JSON.stringify(data.tags));
+                if (data.videos) localStorage.setItem('videos', JSON.stringify(data.videos));
+            }
+            
+            loadData(); // 重新加載頁面數據
+            alert('匯入成功');
+        })
+        .catch(error => {
+            console.error('匯入失敗:', error); // 添加錯誤日誌
+            alert('匯入失敗：' + error.message);
+            
+            // 如果自動匯入失敗，則顯示手動文件選擇
+            const input = document.getElementById('file-input');
+            input.click();
+        });
+}
+
+// 確保文件輸入元素存在
+function ensureFileInput() {
+    let input = document.getElementById('file-input');
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.id = 'file-input';
+        input.accept = '.json';
+        input.style.display = 'none';
+        input.onchange = handleFileImport;
+        document.body.appendChild(input);
+    }
+    return input;
+}
+
+// 處理文件匯入
+function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                const action = confirm('要合併現有內容還是刪除全部內容重新匯入？\n按確定進行合併，按取消進行替換。');
+
+                if (action) {
+                    // 合併數據
+                    const currentTags = JSON.parse(localStorage.getItem('tags')) || [];
+                    const currentVideos = JSON.parse(localStorage.getItem('videos')) || [];
+
+                    const mergedTags = [...currentTags, ...importedData.tags];
+                    const mergedVideos = [...currentVideos, ...importedData.videos];
+
+                    const uniqueTags = Array.from(new Set(mergedTags.map(tag => tag.name)))
+                        .map(name => mergedTags.find(tag => tag.name === name));
+
+                    localStorage.setItem('tags', JSON.stringify(uniqueTags));
+                    localStorage.setItem('videos', JSON.stringify(mergedVideos));
+                } else {
+                    // 替換數據
+                    if (importedData.tags) localStorage.setItem('tags', JSON.stringify(importedData.tags));
+                    if (importedData.videos) localStorage.setItem('videos', JSON.stringify(importedData.videos));
+                }
+                
+                loadData();
+                alert('匯入成功');
+            } catch (error) {
+                console.error('處理文件失敗:', error);
+                alert('匯入失敗：文件格式不正確');
+            }
+        };
+        reader.readAsText(file);
+    }
+}
+
+// 在頁面加載時確保文件輸入元素存在
+document.addEventListener('DOMContentLoaded', ensureFileInput);
+        // 顯示匯出標籤圖層
+        function showExportTagsOverlay() {
+            loadTagsForExport();
+            document.getElementById('export-tags-overlay').style.display = 'flex';
+        }
+
+        // 隱藏匯出標籤圖層
+        function hideExportTagsOverlay() {
+            document.getElementById('export-tags-overlay').style.display = 'none';
+        }
+
+        // 加載要匯出的標籤選項
+        function loadTagsForExport() {
+            const tags = JSON.parse(localStorage.getItem('tags')) || [];
+            const checkboxesContainer = document.getElementById('export-tags-checkboxes');
+            checkboxesContainer.innerHTML = '';
+
+            tags.forEach(tag => {
+                const label = document.createElement('label');
+                label.classList.add('tag-checkbox');
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = tag.name;
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(tag.name));
+
+                checkboxesContainer.appendChild(label);
+            });
+        }
+
+        // 匯出已選擇的標籤
+        function exportSelectedTags() {
+            const selectedTags = Array.from(document.querySelectorAll('#export-tags-checkboxes input:checked'))
+                .map(input => input.value);
+
+            if (selectedTags.length === 0) {
+                alert('請選擇至少一個標籤進行匯出');
+                return;
+            }
+
+            const videos = JSON.parse(localStorage.getItem('videos')) || [];
+            const selectedVideos = videos.filter(video => video.tags.some(tag => selectedTags.includes(tag)));
+
+            const tags = JSON.parse(localStorage.getItem('tags')) || [];
+            const selectedTagData = tags.filter(tag => selectedTags.includes(tag.name));
+
+            const data = JSON.stringify({ tags: selectedTagData, videos: selectedVideos });
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'youtube_data_selected_tags.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            hideExportTagsOverlay();
+        }
+		
+		
+window.onload = function() {
+  // 解析 URL 中的參數
+  let urlParams = new URLSearchParams(window.location.search);
+  let youtubeUrl = urlParams.get('youtube-url');
+  let youtubeTitle = urlParams.get('youtube-title');
+
+  // 將解析出的參數放入對應的輸入框
+  if (youtubeUrl) {
+    document.getElementById('youtube-url').value = youtubeUrl;
+  }
+  if (youtubeTitle) {
+    document.getElementById('youtube-title').value = youtubeTitle;
+  }
+};	
+		
+		
+    </script>
+
+
+</body></html>
