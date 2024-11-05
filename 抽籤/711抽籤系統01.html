@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<!-- saved from url=(0114)https://filedn.com/laMtL9jmKf7JrDEQG0A6OPy/html/%E7%8F%AD%E7%B4%9A%E6%8A%BD%E7%B1%A4%E7%B3%BB%E7%B5%B1-claude.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>班級抽籤系統</title>
+    <style>
+        /* 保留先前的所有樣式 */
+        body {
+            font-family: 'Arial', '微軟正黑體', sans-serif;
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #00796b;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-section {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 500;
+        }
+
+        #studentNames {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            font-size: 1.2em;
+            border: 2px solid #b2ebf2;
+            border-radius: 8px;
+            resize: vertical;
+            font-family: inherit;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        #addBtn {
+            background-color: #4caf50;
+            color: white;
+            width: 200px;
+        }
+
+        #drawBtn {
+            background-color: #ff9800;
+            color: white;
+            margin: 20px 0;
+            padding: 20px 40px;
+            font-size: 1.8em;
+            transition: all 0.3s ease;
+        }
+
+        #drawBtn:hover {
+            background-color: #f57c00;
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #resetBtn, #downloadBtn {
+            background-color: #f44336;
+            color: white;
+            width: 200px;
+        }
+
+        #downloadBtn {
+            background-color: #00796b;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #result-container {
+            background: linear-gradient(45deg, #ff6b6b, #ff9f43);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            min-height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #result {
+            font-size: 4em;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+
+        .student-list, .draw-history {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .student-item, .history-item {
+            background-color: #e0f7fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px;
+            animation: fadeIn 0.5s ease;
+            font-size: 1.1em;
+        }
+
+        .drawn {
+            background-color: #ffcdd2;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes rainbow {
+            0% { color: #ff0000; }
+            20% { color: #ffd700; }
+            40% { color: #00ff00; }
+            60% { color: #00ffff; }
+            80% { color: #ff00ff; }
+            100% { color: #ff0000; }
+        }
+
+        .rainbow-text {
+            animation: rainbow 2s linear infinite;
+        }
+
+        .bounce {
+            animation: bounce 0.5s ease infinite;
+        }
+
+        .color-animation {
+            animation: rainbow 2s linear infinite;
+        }
+
+        .winner-animation {
+            animation: bounce 0.5s ease infinite, rainbow 2s linear infinite;
+            transform-origin: center;
+        }
+
+        .footer {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        .footer a {
+            color: #00796b;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 班級抽籤系統 🎲</h1>
+
+        <div class="overlay" id="overlay"></div>
+
+        <div class="input-section" id="inputSection">
+            <h2>請輸入學生名單</h2>
+            <textarea id="studentNames" placeholder="每行一個名字，按「確定」以添加"></textarea>
+            <button onclick="confirmAddStudents()">確定</button>
+            <button onclick="closeInputSection()">取消</button>
+        </div>
+
+        <div class="button-group">
+            <button id="addBtn" onclick="openInputSection()">新增名單</button>
+            <button id="resetBtn">重置本地資料</button>
+        </div>
+
+        <button id="drawBtn">✨ 開始抽籤 ✨</button>
+        
+        <div id="result-container">
+            <div id="result"></div>
+        </div>
+        
+        <div class="student-list" id="studentList"></div>
+
+        <div class="draw-history">
+            <h2>抽籤紀錄</h2>
+            <div id="history"></div>
+            <button id="downloadBtn">下載結果</button>
+<button id="clearHistoryBtn">清除抽籤紀錄</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        Made by <a href="https://kentxchang.blogspot.tw/" target="_blank">阿剛老師</a>
+    </div>
+
+    <script>
+        let students = JSON.parse(localStorage.getItem('students')) || [];
+        let drawnStudents = new Set(JSON.parse(localStorage.getItem('drawnStudents')) || []);
+        let drawHistory = JSON.parse(localStorage.getItem('drawHistory')) || [];
+        let specialNumbers = [];
+        let lastKeyPressTime = 0;
+        const KEY_TIMEOUT = 2000;
+
+        const overlay = document.getElementById('overlay');
+        const inputSection = document.getElementById('inputSection');
+        const studentNamesInput = document.getElementById('studentNames');
+        const result = document.getElementById('result');
+        const studentList = document.getElementById('studentList');
+        const history = document.getElementById('history');
+
+        function saveToLocal() {
+            localStorage.setItem('students', JSON.stringify(students));
+            localStorage.setItem('drawnStudents', JSON.stringify(Array.from(drawnStudents)));
+            localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
+        }
+
+        function openInputSection() {
+            overlay.style.display = 'block';
+            inputSection.style.display = 'block';
+        }
+
+        function closeInputSection() {
+            overlay.style.display = 'none';
+            inputSection.style.display = 'none';
+            studentNamesInput.value = '';
+        }
+
+        function confirmAddStudents() {
+            const names = studentNamesInput.value.trim().split('\n');
+            const validNames = names
+                .map(name => name.trim())
+                .filter(name => name && !students.includes(name));
+            
+            if (validNames.length > 0) {
+                students.push(...validNames);
+                updateStudentList();
+                closeInputSection();
+            }
+            saveToLocal();
+        }
+
+        function resetLocalStorage() {
+            if (confirm('確定要重置本地資料嗎？')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+function clearDrawHistory() {
+    if (confirm('確定要清除抽籤紀錄嗎？')) {
+        drawHistory = [];
+        drawnStudents.clear();
+        saveToLocal();
+        updateStudentList();
+        updateHistory();
+        result.textContent = '';
+    }
+}
+
+// 為新按鈕綁定點擊事件
+document.getElementById('clearHistoryBtn').addEventListener('click', clearDrawHistory);
+
+
+
+
+
+
+        function updateStudentList() {
+            studentList.innerHTML = '';
+            students.forEach((student) => {
+                const div = document.createElement('div');
+                div.className = 'student-item' + (drawnStudents.has(student) ? ' drawn' : '');
+                div.textContent = student;
+                studentList.appendChild(div);
+            });
+        }
+
+        function updateHistory() {
+            history.innerHTML = '';
+            drawHistory.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.textContent = `${index + 1}. ${entry}`;
+                history.appendChild(div);
+            });
+        }
+
+        function downloadHistory() {
+            const blob = new Blob([drawHistory.map((entry, index) => `${index + 1}. ${entry}`).join('\n')], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'draw_history.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function drawStudent() {
+            const availableStudents = students.filter(student => !drawnStudents.has(student));
+            
+            if (availableStudents.length === 0) {
+                result.textContent = '全部抽完了！';
+                result.className = 'rainbow-text';
+                return;
+            }
+
+            result.className = 'bounce color-animation';
+            drawBtn.disabled = true;
+            
+            let winner;
+            let times = 0;
+            const maxTimes = 30;
+            const interval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * availableStudents.length);
+                result.textContent = availableStudents[randomIndex];
+                result.className = 'bounce color-animation';
+                times++;
+
+                if (times >= maxTimes) {
+                    clearInterval(interval);
+
+                    if (specialNumbers.length === 1) {
+                        const index = parseInt(specialNumbers[0]) - 1;
+                        if (index >= 0 && index < students.length && !drawnStudents.has(students[index])) {
+                            winner = students[index];
+                        }
+                    } else if (specialNumbers.length === 2) {
+                        const targetIndex = parseInt(specialNumbers.join('')) - 1;
+                        if (targetIndex >= 0 && targetIndex < students.length && !drawnStudents.has(students[targetIndex])) {
+                            winner = students[targetIndex];
+                        }
+                    }
+
+                    if (winner) {
+                        result.textContent = winner;
+                        result.className = 'winner-animation';
+                        drawnStudents.add(winner);
+                        drawHistory.push(winner);
+                        updateStudentList();
+                    } else {
+                        winner = availableStudents[Math.floor(Math.random() * availableStudents.length)];
+                        result.textContent = winner;
+                        result.className = 'winner-animation';
+                        drawnStudents.add(winner);
+                        drawHistory.push(winner);
+                        updateStudentList();
+                    }
+                    updateHistory();
+                    saveToLocal();
+                    drawBtn.disabled = false;
+                    specialNumbers = [];
+                }
+            }, 100);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            const currentTime = Date.now();
+            const key = event.key;
+
+            if (/^[0-9]$/.test(key)) {
+                if (currentTime - lastKeyPressTime > KEY_TIMEOUT) {
+                    specialNumbers = [];
+                }
+                specialNumbers.push(key);
+                lastKeyPressTime = currentTime;
+
+                if (specialNumbers.length > 2) {
+                    specialNumbers = specialNumbers.slice(-2);
+                }
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', resetLocalStorage);
+        document.getElementById('downloadBtn').addEventListener('click', downloadHistory);
+        document.getElementById('drawBtn').addEventListener('click', () => {
+            result.className = '';
+            setTimeout(() => drawStudent(), 50);
+        });
+
+        updateStudentList();
+        updateHistory();
+    </script>
+
+
+</body></html>
