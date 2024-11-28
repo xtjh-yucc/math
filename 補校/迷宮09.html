@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>迷宮遊戲</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+      display: block;
+      margin: auto;
+    }
+    #timer {
+      font-size: 30px;
+      font-weight: bold;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+    #startGame, #nextLevel, #gameOver {
+      display: none;
+      font-size: 20px;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #startGame {
+      display: block;
+      background-color: #008CBA;
+    }
+    #gameOver {
+      background-color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div id="timer">30</div>
+  <canvas id="mazeCanvas" width="600" height="600"></canvas>
+  <button id="startGame">開始遊戲</button>
+  <button id="nextLevel">下一關</button>
+  <button id="gameOver">遊戲結束</button>
+
+  <script>
+    const canvas = document.getElementById("mazeCanvas");
+    const ctx = canvas.getContext("2d");
+    const timerDisplay = document.getElementById("timer");
+    const startGameButton = document.getElementById("startGame");
+    const nextLevelButton = document.getElementById("nextLevel");
+    const gameOverButton = document.getElementById("gameOver");
+
+    let timer = 30;
+    let interval;
+    let isGameOver = false;
+    let levelsCompleted = 0; // 玩家完成的關卡數
+
+    // 初始化迷宮設定
+    const mazeSize = 21;
+    const cellSize = canvas.width / mazeSize;
+    let maze = generateMaze(mazeSize);
+
+    // 玩家紅點
+    const player = { x: 1, y: 1 };
+
+    // 玩家目標點
+    const goal = { x: mazeSize - 2, y: mazeSize - 2 };
+
+    // 畫迷宮
+    function drawMaze() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let y = 0; y < mazeSize; y++) {
+        for (let x = 0; x < mazeSize; x++) {
+          if (maze[y][x] === 1) {
+            ctx.fillStyle = "black";
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+
+      // 繪製出口
+      ctx.fillStyle = "green";
+      ctx.fillRect(goal.x * cellSize, goal.y * cellSize, cellSize, cellSize);
+
+      drawPlayer();
+    }
+
+    // 隨機生成迷宮
+    function generateMaze(size) {
+      const maze = Array.from({ length: size }, () => Array(size).fill(1));
+      const stack = [[1, 1]];
+      maze[1][1] = 0;
+
+      const directions = [
+        [0, -2], [0, 2], [-2, 0], [2, 0],
+      ];
+
+      while (stack.length) {
+        const [cx, cy] = stack.pop();
+        directions.sort(() => Math.random() - 0.5);
+
+        for (const [dx, dy] of directions) {
+          const nx = cx + dx, ny = cy + dy;
+          if (
+            nx > 0 && nx < size - 1 &&
+            ny > 0 && ny < size - 1 &&
+            maze[ny][nx] === 1
+          ) {
+            maze[cy + dy / 2][cx + dx / 2] = 0;
+            maze[ny][nx] = 0;
+            stack.push([nx, ny]);
+          }
+        }
+      }
+      return maze;
+    }
+
+    // 畫玩家紅點
+    function drawPlayer() {
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(
+        player.x * cellSize + cellSize / 2,
+        player.y * cellSize + cellSize / 2,
+        cellSize / 4,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    // 滑鼠與觸控事件
+    let dragging = false;
+
+    function handlePointerDown(x, y) {
+      const playerX = player.x * cellSize + cellSize / 2;
+      const playerY = player.y * cellSize + cellSize / 2;
+
+      const distance = Math.sqrt(
+        (x - playerX) ** 2 + (y - playerY) ** 2
+      );
+
+      if (distance < cellSize / 2) {
+        dragging = true;
+      }
+    }
+
+    function handlePointerMove(x, y) {
+      if (!dragging || isGameOver) return;
+
+      const newX = Math.floor(x / cellSize);
+      const newY = Math.floor(y / cellSize);
+
+      if (
+        newX >= 0 && newX < mazeSize &&
+        newY >= 0 && newY < mazeSize &&
+        maze[newY][newX] === 0 &&
+        (Math.abs(newX - player.x) + Math.abs(newY - player.y)) === 1
+      ) {
+        player.x = newX;
+        player.y = newY;
+        drawMaze();
+        checkWin();
+      }
+    }
+
+    canvas.addEventListener("mousedown", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      handlePointerDown(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      handlePointerMove(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener("mouseup", () => dragging = false);
+
+    // 觸控事件
+    canvas.addEventListener("touchstart", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      handlePointerDown(touch.clientX - rect.left, touch.clientY - rect.top);
+      e.preventDefault();
+    });
+
+    canvas.addEventListener("touchmove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      handlePointerMove(touch.clientX - rect.left, touch.clientY - rect.top);
+      e.preventDefault();
+    });
+
+    canvas.addEventListener("touchend", () => dragging = false);
+
+    // 計時器
+    function startTimer() {
+      timer = 30;
+      timerDisplay.style.color = "black";
+      interval = setInterval(() => {
+        timer--;
+        if (timer <= 5) timerDisplay.style.color = "red";
+        if (timer <= 0) {
+          clearInterval(interval);
+          endGame(false);
+        }
+        timerDisplay.textContent = timer;
+      }, 1000);
+    }
+
+    function endGame(win) {
+      isGameOver = true;
+      clearInterval(interval);
+      if (win) {
+        levelsCompleted++;
+        nextLevelButton.style.display = "block";
+      } else {
+        gameOverButton.textContent = `遊戲結束，你共闖過 ${levelsCompleted} 關!`;
+        gameOverButton.style.display = "block";
+      }
+    }
+
+    function resetGame() {
+      isGameOver = false;
+      player.x = 1;
+      player.y = 1;
+      maze = generateMaze(mazeSize);
+      drawMaze();
+      startTimer();
+      nextLevelButton.style.display = "none";
+      gameOverButton.style.display = "none";
+    }
+
+    startGameButton.addEventListener("click", () => {
+      startGameButton.style.display = "none";
+      resetGame();
+    });
+    nextLevelButton.addEventListener("click", resetGame);
+    gameOverButton.addEventListener("click", () => {
+      levelsCompleted = 0;
+      startGameButton.style.display = "block";
+      gameOverButton.style.display = "none";
+    });
+
+    drawMaze();
+    startGameButton.style.display = "block";
+  </script>
+</body>
+</html>
