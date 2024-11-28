@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小蜜蜂遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #add8e6;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .bee-image {
+            width: 100px;
+            height: auto;
+            position: absolute;
+            cursor: pointer;
+        }
+        .start-button, .next-button {
+            background-color: green;
+            color: white;
+
+            padding: 10px 20px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .next-button {
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            display: none;
+            margin-top: 20px;
+        }
+        .score {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+        .game-over {
+            font-size: 30px;
+            font-weight: bold;
+            color: green;
+        }
+        .countdown {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+        }
+        .countdown.red {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>歡迎來到小蜜蜂遊戲</h1>
+        <button class="start-button" onclick="startGame()">開始遊戲</button>
+        <div class="score">分數: 0</div>
+        <button class="next-button" id="next-button" onclick="nextLevel()">下一關</button>
+        <div class="countdown" id="countdown">第1關剩30秒</div>
+        <img src="bee02.gif" alt="小蜜蜂" class="bee-image" id="bee" style="display:none;">
+    </div>
+
+    <script>
+        let score = 0;
+        let level = 1;
+        let beeSpeed = 1500; // 初始速度設為1500毫秒
+        let gameInterval;
+        let countdownInterval;
+        let countdown = 30;
+
+        function startGame() {
+            score = 0;
+            document.querySelector('.score').innerText = '分數: 0';
+            document.getElementById('bee').style.display = 'block';
+            document.getElementById('countdown').innerText = `第${level}關剩30秒`;
+            document.getElementById('countdown').classList.remove('red');
+            document.getElementById('next-button').style.display = 'none';
+            moveBee();
+            startCountdown();
+        }
+
+        function moveBee() {
+            const bee = document.getElementById('bee');
+            const maxX = window.innerWidth - bee.width;
+            const maxY = window.innerHeight - bee.height;
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+
+            bee.style.left = randomX + 'px';
+            bee.style.top = randomY + 'px';
+
+            gameInterval = setTimeout(moveBee, beeSpeed);
+        }
+
+        function startCountdown() {
+            countdown = 30;
+            countdownInterval = setInterval(() => {
+                countdown--;
+                document.getElementById('countdown').innerText = `第${level}關剩${countdown}秒`;
+                if (countdown <= 5) {
+                    document.getElementById('countdown').classList.add('red');
+                }
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    clearTimeout(gameInterval);
+                    if (score >= 10) {
+                        document.getElementById('next-button').style.display = 'block';
+                    } else {
+                        gameOver();
+                    }
+                }
+            }, 1000);
+        }
+
+        function nextLevel() {
+            level++;
+            beeSpeed -= 100; // 每關速度增加100毫秒
+            if (beeSpeed < 100) beeSpeed = 100; // 確保速度不會太快
+            document.getElementById('next-button').style.display = 'none';
+            startGame();
+        }
+
+        function gameOver() {
+            document.getElementById('bee').style.display = 'none';
+            document.querySelector('.container').innerHTML += `<div class="game-over">恭喜你闖到第${level}關!</div>`;
+        }
+
+        document.getElementById('bee').addEventListener('click', () => {
+            score++;
+            document.querySelector('.score').innerText = '分數: ' + score;
+        });
+    </script>
+</body>
+</html>
