@@ -223,6 +223,13 @@
       }
     }
 
+    // 檢查是否過關
+    function checkWin() {
+      if (Math.abs(player.x - goal.x) < 1 && Math.abs(player.y - goal.y) < 1) {
+        endGame(true); // 玩家抵達出口
+      }
+    }
+
     function resetGame() {
       isGameOver = false;
       player.x = 1;
