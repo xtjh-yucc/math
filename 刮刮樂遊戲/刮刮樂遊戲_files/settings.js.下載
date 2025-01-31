@@ -3,15 +3,15 @@ class SettingsManager {
     this.symbols = ["🍒", "💰", "⭐", "7", "🍇", "🍈", "🍉", "🍅", "💎"];
 
     this.defaultPrizes = [
-      { symbol: "🍒", prize: 100, description: "紅利獎金", probability: 15 },
-      { symbol: "💰", prize: 500, description: "現金獎勵", probability: 12 },
-      { symbol: "⭐", prize: 1000, description: "幸運星獎", probability: 10 },
-      { symbol: "7", prize: 2000, description: "頭獎獎金", probability: 6 },
-      { symbol: "🍇", prize: 300, description: "幸運獎項", probability: 12 },
-      { symbol: "🍈", prize: 400, description: "好運獎金", probability: 10 },
-      { symbol: "🍉", prize: 600, description: "超級獎項", probability: 8 },
-      { symbol: "🍅", prize: 800, description: "驚喜獎金", probability: 4 },
-      { symbol: "💎", prize: 3000, description: "鑽石大獎", probability: 3 },
+      { symbol: "🍒", prize: 1, description: "糖菓1顆", probability: 40 },
+      { symbol: "💰", prize: 2, description: "糖菓2顆", probability: 30 },
+      { symbol: "⭐", prize: 3, description: "糖菓3顆", probability: 10 },
+      { symbol: "7", prize: 4, description: "糖菓4顆", probability: 5 },
+      { symbol: "🍇", prize: -1, description: "糖菓0顆", probability: 2 },
+      { symbol: "🍈", prize: -2, description: "糖菓0顆", probability: 0 },
+      { symbol: "🍉", prize: -3, description: "糖菓0顆", probability: 0 },
+      { symbol: "🍅", prize: -4, description: "糖菓0顆", probability: 0 },
+      { symbol: "💎", prize: 5, description: "糖菓5顆", probability: 5 },
     ];
 
     this.prizes = [];
