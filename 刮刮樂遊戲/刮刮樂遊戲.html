@@ -1,0 +1,68 @@
+
+<!-- saved from url=(0036)https://happyscratchlotto.glitch.me/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刮刮樂遊戲</title>
+    <link rel="stylesheet" href="./刮刮樂遊戲_files/style.css">
+</head>
+<body>
+    <div id="gamePage" class="page" style="display: block;">
+        <div class="container">
+            <h1>💰 歡樂刮刮樂 💰</h1>
+			<p id="gameInstruction" style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+				刮出三個相同的圖案即獲獎！
+			</p>
+            <div class="game-section">
+                <div class="canvas-container">
+                    <canvas id="scratchCard" width="300" height="200"></canvas>
+                    <canvas id="symbolCanvas" width="300" height="200"></canvas>
+                </div>
+                <div id="resultDisplay" style="font-size: 20px; margin-top: 10px; text-align: center; font-weight: bold;"></div><div class="button-group">
+                    <button id="newGame">開始新遊戲</button>
+                    <button id="checkWin" disabled="" style="display: inline-block;">檢查結果</button>
+                    <button id="openSettings">遊戲設定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsPage" class="page" style="display: none;">
+        <div class="container">
+            <h1>⚙️ 遊戲設定 ⚙️</h1>
+            <div class="settings-section">
+                <h2>獎項設定</h2>
+                <table id="prizeTable">
+				<thead>
+					<tr>
+						<th>圖案</th>
+						<th>加分</th>
+						<th>獎品描述</th>
+						<th>機率 (%)</th>
+						<th>操作</th>
+					</tr>
+				</thead>
+                    <tbody><tr><td>🍒</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>💰</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>⭐</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>7</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>🍇</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>🍈</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>🍉</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>🍅</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr><tr><td>💎</td><td><input type="number" min="0" max="999999"></td><td><input type="text" maxlength="20"></td><td><input type="number" min="0" max="100" step="0.1"></td><td><button class="delete-row">刪除</button></td></tr></tbody>
+                </table>
+                <button id="clearSettings">清除設定</button>
+            </div>
+
+            <div class="upload-section">
+                <h2>刮刮樂背景設定</h2>
+                <input type="file" id="coverImage" accept="image/*">
+                <div id="imagePreview"></div>
+            </div>
+
+            <div class="button-group">
+                <button id="backToGame" class="secondary-button">返回遊戲</button>
+            </div>
+		  <h3>⚒️ 程式設計：阿凱老師 ⚒️</h3>
+        </div>
+    </div>
+<script src="./刮刮樂遊戲_files/settings.js.下載" charset="UTF-8"></script>
+    <script src="./刮刮樂遊戲_files/imageHandler.js.下載"></script>
+    <script src="./刮刮樂遊戲_files/gameCore.js.下載"></script>
+    <script src="./刮刮樂遊戲_files/script.js.下載"></script>
+
+</body></html>

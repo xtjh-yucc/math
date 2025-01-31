@@ -1,0 +1,71 @@
+class GameManager {
+    constructor() {
+        this.initializeComponents();
+    }
+
+    initializeComponents() {
+        this.settingsManager = new SettingsManager();
+        this.imageHandler = new ImageHandler();
+        this.game = new GameCore(this.settingsManager, this.imageHandler);
+        
+        this.bindEventListeners();
+        
+        this.showPage('gamePage');
+        this.game.startNewGame();
+    }
+
+    bindEventListeners() {
+        // Touch event prevention
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.id === 'scratchCard') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Settings button
+        const settingsBtn = document.getElementById('openSettings');
+        if (settingsBtn) {
+            settingsBtn.onclick = () => this.showPage('settingsPage');
+        }
+
+        // Back to game button - 修改返回遊戲按鈕的行為
+        const backBtn = document.getElementById('backToGame');
+        if (backBtn) {
+            backBtn.onclick = () => {
+                this.showPage('gamePage');
+                this.game.startNewGame(); // 直接開始新遊戲
+            }
+        }
+
+        // New game button
+        const newGameBtn = document.getElementById('newGame');
+        if (newGameBtn) {
+            newGameBtn.onclick = () => {
+                console.log('Starting new game...');
+                this.game.startNewGame();
+            }
+        }
+
+        // Clear settings button
+        const clearBtn = document.getElementById('clearSettings');
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                if (confirm('確定要清除所有設定嗎？')) {
+                    this.settingsManager.clearSettings(this.imageHandler);
+                    this.game.startNewGame();
+                }
+            }
+        }
+    }
+
+    showPage(pageId) {
+        document.querySelectorAll('.page').forEach(page => {
+            page.style.display = 'none';
+        });
+        document.getElementById(pageId).style.display = 'block';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.gameManager = new GameManager();
+});

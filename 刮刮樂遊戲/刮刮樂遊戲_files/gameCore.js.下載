@@ -1,0 +1,256 @@
+class GameCore {
+    constructor(settingsManager, imageHandler) {
+        this.settingsManager = settingsManager;
+        this.imageHandler = imageHandler;
+
+        this.scratchCanvas = document.getElementById('scratchCard');
+        this.scratchCtx = this.scratchCanvas.getContext('2d');
+
+        this.symbolCanvas = document.getElementById('symbolCanvas');
+        this.symbolCtx = this.symbolCanvas.getContext('2d');
+
+        this.resultDisplay = document.createElement('div');
+        this.resultDisplay.id = 'resultDisplay';
+        this.resultDisplay.style.fontSize = '20px';
+        this.resultDisplay.style.marginTop = '10px';
+        this.resultDisplay.style.textAlign = 'center';
+        this.resultDisplay.style.fontWeight = 'bold';
+        
+        const buttonGroup = document.querySelector('.button-group');
+        if (buttonGroup) {
+            buttonGroup.before(this.resultDisplay);
+        }
+
+        this.isDrawing = false;
+        this.currentSymbols = [];
+        this.scratchedPixels = 0;
+        this.totalPixels = this.scratchCanvas.width * this.scratchCanvas.height;
+        this.hasChecked = false;
+        this.lastX = 0;
+        this.lastY = 0;
+
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Mouse events
+        this.scratchCanvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+        this.scratchCanvas.addEventListener('mousemove', (e) => this.drawing(e));
+        this.scratchCanvas.addEventListener('mouseup', () => this.stopDrawing());
+        this.scratchCanvas.addEventListener('mouseleave', () => this.stopDrawing());
+
+        // Touch events
+        this.scratchCanvas.addEventListener('touchstart', (e) => this.startDrawing(e));
+        this.scratchCanvas.addEventListener('touchmove', (e) => this.drawing(e));
+        this.scratchCanvas.addEventListener('touchend', () => this.stopDrawing());
+
+        // Button events
+        const checkWinBtn = document.getElementById('checkWin');
+        if (checkWinBtn) {
+            checkWinBtn.onclick = () => this.checkWinning();
+        }
+    }
+
+    startDrawing(e) {
+        e.preventDefault();
+        this.isDrawing = true;
+        const rect = this.scratchCanvas.getBoundingClientRect();
+        const event = e.touches ? e.touches[0] : e;
+        this.lastX = event.clientX - rect.left;
+        this.lastY = event.clientY - rect.top;
+    }
+
+    drawing(e) {
+        e.preventDefault();
+        if (!this.isDrawing) return;
+
+        const rect = this.scratchCanvas.getBoundingClientRect();
+        const event = e.touches ? e.touches[0] : e;
+        const currentX = event.clientX - rect.left;
+        const currentY = event.clientY - rect.top;
+
+        this.scratchCtx.beginPath();
+        this.scratchCtx.lineWidth = 20;
+        this.scratchCtx.lineCap = 'round';
+        this.scratchCtx.moveTo(this.lastX, this.lastY);
+        this.scratchCtx.lineTo(currentX, currentY);
+        this.scratchCtx.stroke();
+
+        this.lastX = currentX;
+        this.lastY = currentY;
+
+        this.checkScratchPercentage();
+    }
+
+    stopDrawing() {
+        this.isDrawing = false;
+    }
+
+    startNewGame() {
+        console.log('Starting new game in GameCore...');
+        
+        const checkWinBtn = document.getElementById('checkWin');
+        if (checkWinBtn) {
+            checkWinBtn.style.display = 'inline-block';
+            checkWinBtn.disabled = true;
+        }
+        
+        this.hasChecked = false;
+        this.symbolCanvas.classList.remove('win-animation');
+        this.resultDisplay.textContent = '';
+
+        const prizes = this.settingsManager.getPrizes();
+        if (!prizes || prizes.length === 0) {
+            alert('請先設定獎項！');
+            return;
+        }
+
+        if (!this.settingsManager.validateProbabilities()) {
+            return;
+        }
+
+        // 決定是否中獎以及中什麼獎
+        let winningPrize = null;
+        const random = Math.random() * 100;
+        let accumulatedProb = 0;
+        
+        for (const prize of prizes) {
+            accumulatedProb += prize.probability;
+            if (random <= accumulatedProb) {
+                winningPrize = prize;
+                break;
+            }
+        }
+
+        // 初始化9個位置
+        const positions = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+        this.currentSymbols = new Array(9);
+
+        if (winningPrize) {
+            // 如果中獎，放置3個中獎符號
+            for (let i = 0; i < 3; i++) {
+                const randomPosIndex = Math.floor(Math.random() * positions.length);
+                const position = positions.splice(randomPosIndex, 1)[0];
+                this.currentSymbols[position] = winningPrize.symbol;
+            }
+        }
+
+        // 為剩餘位置填充隨機符號
+        const allSymbols = this.settingsManager.getAllSymbols();
+        const symbolCounts = new Map(); // 追踪每個符號的出現次數
+
+        // 初始化symbolCounts
+        allSymbols.forEach(symbol => symbolCounts.set(symbol, 0));
+        // 如果有中獎符號，更新其計數
+        if (winningPrize) {
+            symbolCounts.set(winningPrize.symbol, 3);
+        }
+
+        // 填充剩餘位置
+        positions.forEach(position => {
+            let availableSymbols = allSymbols.filter(symbol => 
+                symbolCounts.get(symbol) < 2 && // 確保每個非中獎符號最多出現2次
+                (!winningPrize || symbol !== winningPrize.symbol) // 不重複使用中獎符號
+            );
+
+            if (availableSymbols.length === 0) {
+                // 如果沒有可用符號，重置所有非中獎符號的計數
+                allSymbols.forEach(symbol => {
+                    if (!winningPrize || symbol !== winningPrize.symbol) {
+                        symbolCounts.set(symbol, 0);
+                    }
+                });
+                availableSymbols = allSymbols.filter(symbol => 
+                    !winningPrize || symbol !== winningPrize.symbol
+                );
+            }
+
+            const randomSymbol = availableSymbols[Math.floor(Math.random() * availableSymbols.length)];
+            this.currentSymbols[position] = randomSymbol;
+            symbolCounts.set(randomSymbol, symbolCounts.get(randomSymbol) + 1);
+        });
+
+        this.scratchCtx.clearRect(0, 0, this.scratchCanvas.width, this.scratchCanvas.height);
+        this.symbolCtx.clearRect(0, 0, this.symbolCanvas.width, this.symbolCanvas.height);
+
+        this.drawSymbols();
+        this.setupScratchLayer();
+    }
+
+    drawSymbols() {
+        this.symbolCtx.font = '30px Arial';
+        this.symbolCtx.textAlign = 'center';
+        this.symbolCtx.textBaseline = 'middle';
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                const symbol = this.currentSymbols[i * 3 + j];
+                this.symbolCtx.fillText(
+                    symbol,
+                    j * 100 + 50,
+                    i * 66 + 33
+                );
+            }
+        }
+    }
+
+    setupScratchLayer() {
+        this.scratchCtx.globalCompositeOperation = 'source-over';
+        const coverImage = this.imageHandler.getCoverImage();
+        
+        if (coverImage) {
+            this.scratchCtx.drawImage(coverImage, 0, 0, this.scratchCanvas.width, this.scratchCanvas.height);
+        } else {
+            this.scratchCtx.fillStyle = '#C0C0C0';
+            this.scratchCtx.fillRect(0, 0, this.scratchCanvas.width, this.scratchCanvas.height);
+        }
+
+        this.scratchCtx.globalCompositeOperation = 'destination-out';
+    }
+
+    checkScratchPercentage() {
+        if (this.hasChecked) return;
+
+        const imageData = this.scratchCtx.getImageData(0, 0, this.scratchCanvas.width, this.scratchCanvas.height);
+        let transparent = 0;
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            if (imageData.data[i + 3] === 0) {
+                transparent++;
+            }
+        }
+
+        const percentage = (transparent / this.totalPixels) * 100;
+        document.getElementById('checkWin').disabled = percentage < 60;
+
+        if (percentage >=75) {
+            this.checkWinning();
+        }
+    }
+
+    checkWinning() {
+        if (this.hasChecked) return;
+        this.hasChecked = true;
+        document.getElementById('checkWin').style.display = 'none';
+
+        const symbolCount = {};
+        this.currentSymbols.forEach(symbol => {
+            symbolCount[symbol] = (symbolCount[symbol] || 0) + 1;
+        });
+
+        let winningSymbol = null;
+        for (const [symbol, count] of Object.entries(symbolCount)) {
+            if (count >= 3) {
+                winningSymbol = symbol;
+                break;
+            }
+        }
+
+        if (winningSymbol) {
+            const prize = this.settingsManager.getPrizes().find(p => p.symbol === winningSymbol);
+            this.resultDisplay.textContent = `🎉 恭喜中獎！獎項：${prize.description} (${winningSymbol} x3)- 加分: ${prize.prize} 🎉`;
+            this.symbolCanvas.classList.add('win-animation');
+        } else {
+            this.resultDisplay.textContent = '❌ 很遺憾，未中獎。請再接再厲！';
+        }
+    }
+}

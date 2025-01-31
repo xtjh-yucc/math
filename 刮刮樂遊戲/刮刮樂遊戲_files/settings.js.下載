@@ -1,0 +1,190 @@
+class SettingsManager {
+  constructor() {
+    this.symbols = ["🍒", "💰", "⭐", "7", "🍇", "🍈", "🍉", "🍅", "💎"];
+
+    this.defaultPrizes = [
+      { symbol: "🍒", prize: 100, description: "紅利獎金", probability: 15 },
+      { symbol: "💰", prize: 500, description: "現金獎勵", probability: 12 },
+      { symbol: "⭐", prize: 1000, description: "幸運星獎", probability: 10 },
+      { symbol: "7", prize: 2000, description: "頭獎獎金", probability: 6 },
+      { symbol: "🍇", prize: 300, description: "幸運獎項", probability: 12 },
+      { symbol: "🍈", prize: 400, description: "好運獎金", probability: 10 },
+      { symbol: "🍉", prize: 600, description: "超級獎項", probability: 8 },
+      { symbol: "🍅", prize: 800, description: "驚喜獎金", probability: 4 },
+      { symbol: "💎", prize: 3000, description: "鑽石大獎", probability: 3 },
+    ];
+
+    this.prizes = [];
+    this.loadSettings();
+    this.setupPrizeTable();
+  }
+
+  createPrizeRow(prize, index) {
+    const row = document.createElement("tr");
+
+    // Symbol cell
+    const symbolCell = document.createElement("td");
+    symbolCell.textContent = prize.symbol;
+    row.appendChild(symbolCell);
+
+    // Prize amount cell
+    const prizeCell = document.createElement("td");
+    const prizeInput = document.createElement("input");
+    prizeInput.type = "number";
+    prizeInput.value = prize.prize;
+    prizeInput.min = "0";
+    prizeInput.max = "999999";
+    prizeCell.appendChild(prizeInput);
+    row.appendChild(prizeCell);
+
+    // Description cell
+    const descCell = document.createElement("td");
+    const descInput = document.createElement("input");
+    descInput.type = "text";
+    descInput.value = prize.description;
+    descInput.maxLength = "20";
+    descCell.appendChild(descInput);
+    row.appendChild(descCell);
+
+    // Probability cell
+    const probCell = document.createElement("td");
+    const probInput = document.createElement("input");
+    probInput.type = "number";
+    probInput.value = prize.probability;
+    probInput.min = "0";
+    probInput.max = "100";
+    probInput.step = "0.1";
+    probCell.appendChild(probInput);
+    row.appendChild(probCell);
+
+    // Action cell
+    const actionCell = document.createElement("td");
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "刪除";
+    deleteButton.className = "delete-row";
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
+
+    // Event listeners
+    prizeInput.onchange = () => {
+      this.prizes[index].prize = parseInt(prizeInput.value) || 0;
+      this.saveSettings();
+    };
+
+    descInput.onchange = () => {
+      this.prizes[index].description = descInput.value;
+      this.saveSettings();
+    };
+
+    probInput.onchange = () => {
+      this.prizes[index].probability = parseFloat(probInput.value) || 0;
+      this.validateProbabilities();
+      this.saveSettings();
+    };
+
+    deleteButton.onclick = () => {
+      if (this.prizes.length <= 1) {
+        alert("至少要保留一個獎項！");
+        return;
+      }
+      this.prizes.splice(index, 1);
+      this.saveSettings();
+      this.setupPrizeTable();
+    };
+
+    return row;
+  }
+
+  validateProbabilities() {
+    const total = this.prizes.reduce(
+      (sum, prize) => sum + (prize.probability || 0),
+      0
+    );
+    if (total > 100) {
+      alert(`所有獎項機率總和不能超過100%，目前總和為${total.toFixed(1)}%`);
+      return false;
+    }
+    return true;
+  }
+
+  setupPrizeTable() {
+    const tbody = document.querySelector("#prizeTable tbody");
+    if (tbody) {
+      tbody.innerHTML = "";
+      this.prizes.forEach((prize, index) => {
+        tbody.appendChild(this.createPrizeRow(prize, index));
+      });
+    }
+  }
+
+  loadSettings() {
+    try {
+      const settings = localStorage.getItem("scratchCardSettings");
+      if (settings) {
+        const parsedSettings = JSON.parse(settings);
+        this.prizes = parsedSettings.prizes || [];
+        // 確保所有獎項都有機率值
+        this.prizes.forEach((prize) => {
+          if (typeof prize.probability === "undefined") {
+            prize.probability = 100 / this.prizes.length;
+          }
+        });
+      } else {
+        this.prizes = JSON.parse(JSON.stringify(this.defaultPrizes)); // 深拷貝
+        this.saveSettings();
+      }
+    } catch (error) {
+      console.error("載入設定時發生錯誤:", error);
+      this.prizes = JSON.parse(JSON.stringify(this.defaultPrizes)); // 深拷貝
+    }
+  }
+
+  saveSettings() {
+    try {
+      const settings = {
+        prizes: this.prizes,
+      };
+      localStorage.setItem("scratchCardSettings", JSON.stringify(settings));
+    } catch (error) {
+      console.error("儲存設定時發生錯誤:", error);
+    }
+  }
+
+  clearSettings(imageHandler) {
+    try {
+      localStorage.removeItem("scratchCardSettings");
+      localStorage.removeItem("scratchCardCover");
+
+      // 使用深拷貝來重設預設值
+      this.prizes = JSON.parse(JSON.stringify(this.defaultPrizes));
+      this.saveSettings();
+      this.setupPrizeTable();
+
+      const imagePreview = document.getElementById("imagePreview");
+      if (imagePreview) {
+        imagePreview.innerHTML = "";
+      }
+
+      const fileInput = document.getElementById("coverImage");
+      if (fileInput) {
+        fileInput.value = "";
+      }
+
+      if (imageHandler) {
+        imageHandler.coverImage = null;
+      }
+
+      console.log("設定已成功清除");
+    } catch (error) {
+      console.error("清除設定時發生錯誤:", error);
+    }
+  }
+
+  getPrizes() {
+    return this.prizes;
+  }
+
+  getAllSymbols() {
+    return this.symbols;
+  }
+}
