@@ -1,0 +1,66 @@
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    console.log('系統初始化中...');
+
+    // 檢查是否為分享模式
+    const isShareMode = new URLSearchParams(window.location.search).has('settings');
+    if (isShareMode) {
+      document.getElementById('modeIndicator').style.display = 'block';
+    }
+
+    // 初始化所有元件
+    const imageHandler = new ImageHandler();
+    const settingsManager = new SettingsManager();
+    const gameCore = new GameCore(settingsManager, imageHandler);
+
+    // 按鈕事件綁定
+    document.getElementById('newGame').addEventListener('click', () => {
+      console.log('點擊「開始新遊戲」按鈕');
+      gameCore.startNewGame();
+    });
+
+    document.getElementById('openSettings').addEventListener('click', () => {
+      if (isShareMode) {
+        alert('分享模式無法修改設定！');
+        return;
+      }
+      console.log('切換至設定頁面');
+      document.getElementById('gamePage').style.display = 'none';
+      document.getElementById('settingsPage').style.display = 'block';
+      settingsManager.setupPrizeTable(); // 確保表格刷新
+    });
+
+    document.getElementById('backToGame').addEventListener('click', () => {
+      console.log('返回遊戲主頁面');
+      document.getElementById('settingsPage').style.display = 'none';
+      document.getElementById('gamePage').style.display = 'block';
+	   gameCore.startNewGame();
+    });
+
+    document.getElementById('clearSettings').addEventListener('click', () => {
+      if (isShareMode) {
+        alert('分享模式無法清除設定！');
+        return;
+      }
+      console.log('清除所有設定');
+      if (confirm('確定要清除所有設定並恢復預設值嗎？')) {
+        settingsManager.clearSettings(imageHandler);
+      }
+    });
+
+    // 初始載入遊戲
+    gameCore.startNewGame();
+    console.log('系統初始化完成');
+
+  } catch (error) {
+    console.error('嚴重錯誤:', error);
+    alert(`系統初始化失敗: ${error.message}`);
+    document.body.innerHTML = `
+      <div style="text-align:center;padding:20px;">
+        <h1 style="color:red">系統發生嚴重錯誤</h1>
+        <p>${error.message}</p>
+        <button onclick="window.location.reload()">重新載入頁面</button>
+      </div>
+    `;
+  }
+});

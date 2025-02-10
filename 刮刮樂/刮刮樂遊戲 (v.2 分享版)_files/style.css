@@ -1,0 +1,226 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    min-height: 100vh;
+}
+
+.page {
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h3 {
+    text-align: center;
+    color: #0094f7;
+}
+
+h1 {
+    text-align: center;
+    color: #D4380D;
+    margin-bottom: 30px;
+    font-size: 2em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section,
+.upload-section,
+.game-section {
+    margin-bottom: 30px;
+}
+
+.game-section {
+    text-align: center;
+}
+
+.canvas-container {
+    position: relative;
+    width: 300px;
+    height: 200px;
+    margin: 0 auto 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#scratchCard, #symbolCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#scratchCard {
+    cursor: pointer;
+    z-index: 2;
+}
+
+#symbolCanvas {
+    z-index: 1;
+}
+
+h2 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    background: white;
+}
+
+th, td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+th {
+    background-color: #f5f5f5;
+}
+
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #D4380D;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1em;
+}
+
+button:hover {
+    background-color: #FF4D4F;
+    transform: translateY(-1px);
+}
+
+button.secondary-button {
+    background-color: #52C41A;
+}
+
+button.secondary-button:hover {
+    background-color: #73D13D;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+    transform: none;
+}
+
+input[type="file"] {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    width: 100%;
+}
+
+#imagePreview {
+    max-width: 300px;
+    margin-top: 10px;
+}
+
+#imagePreview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+@keyframes win-animation {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.win-animation {
+    animation: win-animation 0.5s ease-in-out 3;
+}
+
+input[type="number"],
+input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.error {
+    border-color: #FF4D4F;
+}
+
+/* 新增分享按鈕樣式 */
+.share-button {
+    background: #1890ff;
+    color: white;
+    margin-left: 10px;
+    transition: all 0.3s;
+}
+
+.share-button:hover {
+    background: #40a9ff;
+    transform: translateY(-2px);
+}
+
+/* 過期警告樣式 */
+.expiry-warning {
+    color: #ff6b6b;
+    padding: 10px;
+    margin: 10px 0;
+    border: 2px solid #ff6b6b;
+    border-radius: 5px;
+    background: #fff3f3;
+    font-size: 14px;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+    
+    table {
+        font-size: 14px;
+    }
+    
+    button {
+        padding: 6px 12px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    .button-group {
+        flex-wrap: wrap;
+    }
+
+    .share-button {
+        margin-left: 0;
+        margin-top: 10px;
+        width: 100%;
+    }
+}

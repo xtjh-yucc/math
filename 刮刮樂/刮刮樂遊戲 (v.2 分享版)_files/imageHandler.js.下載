@@ -1,0 +1,77 @@
+// imageHandler.js
+class ImageHandler {
+  constructor() {
+    this.coverImage = null;
+    this.imageSizeLimit = 5242880; // 5MB
+    this.loadSavedImage();
+    this.setupEventListeners();
+  }
+
+  loadSavedImage() {
+    const coverImageData = localStorage.getItem('scratchCardCover');
+    if (coverImageData && coverImageData.length <= this.imageSizeLimit) {
+      this.createImageElement(coverImageData);
+    } else {
+      localStorage.removeItem('scratchCardCover');
+    }
+  }
+
+  setupEventListeners() {
+    document.getElementById('coverImage').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > this.imageSizeLimit) {
+        alert(`圖片大小超過限制 (最大 ${this.imageSizeLimit/1024/1024}MB)`);
+        e.target.value = '';
+        return;
+      }
+
+      this.loadCoverImage(file);
+    });
+  }
+
+  async loadCoverImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        if (e.target.result.length > this.imageSizeLimit) {
+          alert('圖片編碼後大小超出限制');
+          return reject();
+        }
+
+        this.createImageElement(e.target.result);
+        try {
+          await window.settingsManager?.saveSettings();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  createImageElement(dataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      this.coverImage = img;
+      this.updatePreview(dataUrl);
+    };
+    img.src = dataUrl;
+    localStorage.setItem('scratchCardCover', dataUrl);
+  }
+
+  updatePreview(imageData) {
+    const preview = document.getElementById('imagePreview');
+    preview.innerHTML = `<img src="${imageData}" style="max-width: 200px;">`;
+  }
+
+  clearImage() {
+    // 保持原有方法
+  }
+
+  getCoverImage() {
+    return this.coverImage;
+  }
+}

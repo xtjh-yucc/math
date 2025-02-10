@@ -1,0 +1,291 @@
+class SettingsManager {
+  constructor() {
+    // 初始化檢查
+    if (!window.supabaseClient) {
+      console.error('Supabase 客戶端未初始化!');
+      throw new Error('系統初始化失敗');
+    }
+
+    this.symbols = ['🍒', '💰', '⭐', '7', '🍇', '🍈', '🍉', '🍅', '💎'];
+    this.defaultPrizes = [
+     { symbol: "🍒", prize: 1, description: "糖菓1顆", probability: 40 },
+      { symbol: "💰", prize: 2, description: "糖菓2顆", probability: 30 },
+      { symbol: "⭐", prize: 3, description: "糖菓3顆", probability: 10 },
+      { symbol: "7", prize: 4, description: "糖菓4顆", probability: 2 },
+      { symbol: "🍇", prize: 1, description: "小王子麵1包", probability: 2 },
+      { symbol: "🍈", prize: 2, description: "小王子麵1包", probability: 1 },
+      { symbol: "🍉", prize: 3, description: "小王子麵1包", probability: 1 },
+      { symbol: "🍅", prize: 3, description: "小王子麵2包", probability: 1 },
+      { symbol: "💎", prize: 5, description: "小王子麵2包", probability: 1 },
+
+    ];
+
+    this.prizes = [];
+    this.currentSettingsId = null;
+    this.expiresAt = null;
+    this.setupShareButton();
+    this.loadSettings().catch(e => console.error('初始載入錯誤:', e));
+  }
+
+  setupShareButton() {
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'shareSettings';
+    shareBtn.textContent = '🔗 建立分享連結';
+    shareBtn.className = 'share-button';
+    shareBtn.onclick = () => this.handleShareSettings();
+    
+    const clearBtn = document.getElementById('clearSettings');
+    if (clearBtn) {
+      clearBtn.insertAdjacentElement('afterend', shareBtn);
+    }
+  }
+
+  async loadSettings() {
+    console.log('開始載入設定');
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const settingsId = urlParams.get('settings');
+
+      if (settingsId) {
+        const serverSettings = await window.supabaseClient.loadSettingsFromServer(settingsId);
+        if (serverSettings) {
+          this.currentSettingsId = serverSettings.id;
+          this.expiresAt = new Date(serverSettings.expires_at);
+          this.prizes = serverSettings.data.prizes;
+          
+          if (serverSettings.data.cover_image) {
+            this.applyServerImage(serverSettings.data.cover_image, serverSettings.image_size_limit);
+          }
+          
+          this.setupPrizeTable();
+          this.showExpiryWarning();
+          return;
+        }
+      }
+      this.loadLocalSettings();
+    } catch (error) {
+      console.error('載入設定失敗:', error);
+      this.loadLocalSettings();
+    }
+  }
+
+  applyServerImage(imageData, sizeLimit) {
+    if (imageData.length > sizeLimit) {
+      alert('伺服器圖片大小限制已更改，已重置為預設背景');
+      localStorage.removeItem('scratchCardCover');
+      return;
+    }
+    
+    localStorage.setItem('scratchCardCover', imageData);
+    document.getElementById('imagePreview').innerHTML = `<img src="${imageData}">`;
+  }
+
+  loadLocalSettings() {
+    const localSettings = localStorage.getItem('scratchCardSettings');
+    if (localSettings) {
+      const { prizes } = JSON.parse(localSettings);
+      this.prizes = prizes;
+    } else {
+      this.prizes = JSON.parse(JSON.stringify(this.defaultPrizes));
+    }
+    this.setupPrizeTable();
+  }
+
+  async saveSettings() {
+	   // 新增分享模式檢查
+    const isShareMode = new URLSearchParams(window.location.search).has('settings');
+    if (isShareMode) {
+      console.warn('分享模式禁止保存設定');
+      return;
+    }
+    console.log('開始本地儲存流程');
+    try {
+      const settingsData = {
+        prizes: this.prizes,
+        coverImage: localStorage.getItem('scratchCardCover'),
+        imageSizeLimit: 5242880
+      };
+
+      if (this.currentSettingsId) {
+        settingsData.settingsId = this.currentSettingsId;
+      }
+
+      // 新增網路狀態檢查
+      if (!navigator.onLine) {
+        console.warn('離線狀態，僅儲存本地');
+        localStorage.setItem('scratchCardSettings', JSON.stringify(settingsData));
+        return;
+      }
+
+      const { id, expiresAt } = await window.supabaseClient.saveSettingsToServer(settingsData);
+      console.log('伺服器儲存完成');
+      this.currentSettingsId = id;
+      this.expiresAt = new Date(expiresAt);
+      localStorage.setItem('scratchCardSettings', JSON.stringify(settingsData));
+    } catch (error) {
+      console.warn('伺服器儲存失敗，改存本地:', error);
+      localStorage.setItem('scratchCardSettings', JSON.stringify(settingsData));
+    }
+  }
+
+  showExpiryWarning() {
+    if (!this.expiresAt) return;
+    
+    const daysLeft = Math.ceil((this.expiresAt - Date.now()) / 86400000);
+    const warning = document.createElement('div');
+    warning.className = 'expiry-warning';
+    warning.innerHTML = `⚠️ 此設定將在 ${daysLeft} 天後過期`;
+    document.querySelector('.settings-section').prepend(warning);
+  }
+
+  async handleShareSettings() {
+    try {
+      console.log('開始分享流程');
+      await this.saveSettings();
+      if (!this.currentSettingsId) throw new Error('無效的設定ID');
+      
+      const shareUrl = `${window.location.origin}${window.location.pathname}?settings=${this.currentSettingsId}`;
+      console.log('生成分享連結:', shareUrl);
+      
+      if (navigator.share) {
+        navigator.share({ title: '刮刮樂設定', url: shareUrl });
+      } else {
+        navigator.clipboard.writeText(shareUrl);
+        alert('連結已複製！');
+      }
+    } catch (error) {
+      console.error('分享失敗:', error);
+      alert(`分享失敗: ${error.message}`);
+    }
+  }
+
+  createPrizeRow(prize, index) {
+    const row = document.createElement('tr');
+
+    // Symbol cell
+    const symbolCell = document.createElement('td');
+    symbolCell.textContent = prize.symbol;
+    row.appendChild(symbolCell);
+
+    // Prize amount cell
+    const prizeCell = document.createElement('td');
+    const prizeInput = document.createElement('input');
+    prizeInput.type = 'number';
+    prizeInput.value = prize.prize;
+    prizeInput.min = '0';
+    prizeInput.max = '999999';
+    prizeInput.onchange = () => {
+      this.prizes[index].prize = parseInt(prizeInput.value) || 0;
+      this.saveSettings();
+    };
+    prizeCell.appendChild(prizeInput);
+    row.appendChild(prizeCell);
+
+    // Description cell
+    const descCell = document.createElement('td');
+    const descInput = document.createElement('input');
+    descInput.type = 'text';
+    descInput.value = prize.description;
+    descInput.maxLength = '20';
+    descInput.onchange = () => {
+      this.prizes[index].description = descInput.value;
+      this.saveSettings();
+    };
+    descCell.appendChild(descInput);
+    row.appendChild(descCell);
+
+    // Probability cell
+    const probCell = document.createElement('td');
+    const probInput = document.createElement('input');
+    probInput.type = 'number';
+    probInput.value = prize.probability;
+    probInput.min = '0';
+    probInput.max = '100';
+    probInput.step = '0.1';
+    probInput.onchange = () => {
+      this.prizes[index].probability = parseFloat(probInput.value) || 0;
+      if (!this.validateProbabilities()) {
+        probInput.value = prize.probability; // 恢復原值
+      } else {
+        this.saveSettings();
+      }
+    };
+    probCell.appendChild(probInput);
+    row.appendChild(probCell);
+
+    // Action cell
+    const actionCell = document.createElement('td');
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '刪除';
+    deleteButton.className = 'delete-row';
+    deleteButton.onclick = () => {
+      if (this.prizes.length <= 1) {
+        alert('至少要保留一個獎項！');
+        return;
+      }
+      this.prizes.splice(index, 1);
+      this.saveSettings();
+      this.setupPrizeTable();
+    };
+    actionCell.appendChild(deleteButton);
+    row.appendChild(actionCell);
+
+    return row;
+  }
+
+  validateProbabilities() {
+    const total = this.prizes.reduce((sum, prize) => sum + (prize.probability || 0), 0);
+    if (total > 100) {
+      alert(`所有獎項機率總和不能超過100%，目前總和為${total.toFixed(1)}%`);
+      return false;
+    }
+    return true;
+  }
+
+  setupPrizeTable() {
+    const tbody = document.querySelector('#prizeTable tbody');
+    if (tbody) {
+      tbody.innerHTML = '';
+      this.prizes.forEach((prize, index) => {
+        tbody.appendChild(this.createPrizeRow(prize, index));
+      });
+    }
+  }
+
+  clearSettings(imageHandler) {
+    try {
+      localStorage.removeItem('scratchCardSettings');
+      localStorage.removeItem('scratchCardCover');
+      
+      this.prizes = JSON.parse(JSON.stringify(this.defaultPrizes));
+      this.saveSettings();
+      this.setupPrizeTable();
+      
+      const imagePreview = document.getElementById('imagePreview');
+      if (imagePreview) {
+        imagePreview.innerHTML = '';
+      }
+      
+      const fileInput = document.getElementById('coverImage');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      if (imageHandler) {
+        imageHandler.coverImage = null;
+      }
+      
+      console.log('設定已成功清除');
+    } catch (error) {
+      console.error('清除設定時發生錯誤:', error);
+    }
+  }
+
+  getPrizes() {
+    return this.prizes;
+  }
+
+  getAllSymbols() {
+    return this.symbols;
+  }
+}

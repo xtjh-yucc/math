@@ -1,0 +1,67 @@
+const SUPABASE_URL = 'https://ycanzobhnbxsaljvgtzy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljYW56b2JobmJ4c2FsanZndHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg3NDE3NzcsImV4cCI6MjA1NDMxNzc3N30.XSHbAiluODYFFmpTkXtKV_YPihHrA93ff0r8xHSE7BI';
+
+// Move the initialization after the Supabase SDK is loaded
+let supabase;
+
+// Ensure the initialization happens after the script is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof window.supabase !== 'undefined') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Connection test
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('Supabase connection status:', data.session ? 'Connected' : 'Unauthorized');
+    });
+  } else {
+    console.error('Supabase SDK not loaded correctly!');
+  }
+});
+
+async function saveSettingsToServer(settingsData) {
+  try {
+    const { data, error } = await supabase
+      .from('scratch_card_settings')
+      .upsert([
+        {
+          // 移除強制 id 要求
+          data: { prizes: settingsData.prizes },
+          cover_image: settingsData.coverImage,
+          expires_at: new Date(Date.now() + 7 * 86400000).toISOString()
+        }
+      ])
+      .select();
+
+    if (error) throw error;
+    return { id: data[0].id, expiresAt: data[0].expires_at };
+  } catch (error) {
+    console.error('儲存錯誤:', error);
+    throw error;
+  }
+}
+
+async function loadSettingsFromServer(settingsId) {
+  console.log('Starting to load settings:', settingsId);
+  try {
+    const { data, error } = await supabase
+      .from('scratch_card_settings')
+      .select('*')
+      .eq('id', settingsId)
+      .gte('expires_at', new Date().toISOString())
+      .single();
+
+    if (error) throw error;
+    console.log('Load successful:', data);
+    return data;
+  } catch (error) {
+    console.error('Complete load error:', error);
+    throw error;
+  }
+}
+
+// Global export
+window.supabaseClient = { 
+  saveSettingsToServer,
+  loadSettingsFromServer,
+  supabase // for debugging
+};
