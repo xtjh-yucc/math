@@ -274,7 +274,7 @@ class GameCore {
 
     if (winningSymbol) {
       const prize = this.settingsManager.getPrizes().find(p => p.symbol === winningSymbol);
-      this.resultDisplay.textContent = `🎉 恭喜中獎！獎項：${prize.description} (${winningSymbol} x3)- 獎金: ${prize.prize} 🎉`;
+      this.resultDisplay.textContent = `🎉 恭喜中獎！獎項：${prize.description} (${winningSymbol} x3)- 加分: ${prize.prize} 🎉`;
       this.symbolCanvas.classList.add('win-animation');
     } else {
       this.resultDisplay.textContent = '❌ 很遺憾，未中獎。請再接再厲！';
