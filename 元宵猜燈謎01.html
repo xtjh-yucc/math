@@ -413,7 +413,7 @@
       const q = questions[index];
       document.getElementById('questionDisplay').innerHTML = 
         "<h2 style='font-size:50px;'>第 " + (index + 1) + " 題</h2>" +
-        "<p style='font-size:100px; margin-top:1em;'>" + q.question + "</p>";
+        "<p style='font-size:80px; margin-top:1em;'>" + q.question + "</p>";
       showOverlay('questionOverlay');
       const overlayContent = document.querySelector('#questionOverlay .overlay-content');
       const oldLanterns = overlayContent.querySelectorAll('.random-lantern');
