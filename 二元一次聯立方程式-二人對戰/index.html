@@ -1,0 +1,58 @@
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ㄚ杰的二元一次聯立方程式練習</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-container">
+    <!-- Player 1 (Left) -->
+    <div class="container player-one">
+      <div id="score-player-one" class="score">分數：0</div>
+      <h1>ㄚ杰的二元一次聯立方程式練習</h1>
+      <h2>集滿100分結束喔</h2>
+      <div id="feedback-player-one" class="feedback"></div>
+      <div class="equation-system">
+        <div class="equations">
+          <div class="brace">{</div>
+          <div id="equations-player-one" class="equations-display"></div>
+        </div>
+        <div class="question-area">
+          <div id="question-player-one" class="question"></div>
+        </div>
+      </div>
+      <div class="options">
+        <button onclick="checkAnswer(0, 'player-one')">A</button>
+        <button onclick="checkAnswer(1, 'player-one')">B</button> 
+        <button onclick="checkAnswer(2, 'player-one')">C</button>
+        <button onclick="checkAnswer(3, 'player-one')">D</button>
+      </div>
+    </div>
+
+    <!-- Player 2 (Right) -->
+    <div class="container player-two">
+      <div id="score-player-two" class="score">分數：0</div>
+      <h1>ㄚ杰的二元一次聯立方程式練習</h1>
+      <h2>集滿100分結束喔</h2>
+      <div id="feedback-player-two" class="feedback"></div>
+      <div class="equation-system">
+        <div class="equations">
+          <div class="brace">{</div>
+          <div id="equations-player-two" class="equations-display"></div>
+        </div>
+        <div class="question-area">
+          <div id="question-player-two" class="question"></div>
+        </div>
+      </div>
+      <div class="options">
+        <button onclick="checkAnswer(0, 'player-two')">A</button>
+        <button onclick="checkAnswer(1, 'player-two')">B</button> 
+        <button onclick="checkAnswer(2, 'player-two')">C</button>
+        <button onclick="checkAnswer(3, 'player-two')">D</button>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
