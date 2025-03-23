@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二元一次聯立方程式練習器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .mode-button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-button.active {
+            background-color: #1a73e8;
+            color: white;
+        }
+
+        .question-area {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            line-height: 2;
+        }
+
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        input[type="number"] {
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            width: 80px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            font-size: 1.2rem;
+            padding: 0.5rem 1.5rem;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1557b0;
+        }
+
+        .result {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+
+        .correct {
+            background-color: #e6f4ea;
+            color: #137333;
+        }
+
+        .incorrect {
+            background-color: #fce8e6;
+            color: #c5221f;
+        }
+
+        .solution {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #1a73e8;
+            margin-top: 1rem;
+        }
+
+        .suggestion {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #1a73e8;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background-color: #e8f0fe;
+            border-radius: 5px;
+            display: none;
+        }
+
+        #hardModeButton {
+            display: none;
+            background-color: #ff4d4d;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        #hardModeButton:hover {
+            background-color: #ff6666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>二元一次聯立方程式練習器</h1>
+        <div class="mode-selector">
+            <button class="mode-button active" onclick="setMode(0)">基礎題</button>
+            <button class="mode-button" onclick="setMode(1)">進階題</button>
+            <button id="hardModeButton" class="mode-button" onclick="toggleHardMode()">困難模式</button>
+        </div>
+        <div class="question-area" id="question"></div>
+        <div class="input-area">
+            <div class="input-group">
+                <label>x = </label>
+                <input type="number" id="x-answer" step="0.1">
+            </div>
+            <div class="input-group">
+                <label>y = </label>
+                <input type="number" id="y-answer" step="0.1">
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button onclick="checkAnswer()">確認答案</button>
+            <button onclick="showSolution()">查看解答</button>
+            <button onclick="nextQuestion()">下一題</button>
+        </div>
+        <div class="result" id="result"></div>
+        <div class="solution" id="solution"></div>
+        <div class="score" id="score">基礎題：0 / 0 | 進階題：0 / 0</div>
+        <div class="suggestion" id="suggestion"></div>
+    </div>
+
+    <script>
+        let currentMode = 0;
+        let basicCorrect = 0;
+        let basicIncorrect = 0;
+        let advancedCorrect = 0;
+        let advancedIncorrect = 0;
+        let currentQuestion = null;
+        let hardMode = false;
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-button').forEach((btn, index) => {
+                if (index < 2) { // 只處理基礎題和進階題按鈕
+                    btn.classList.toggle('active', index === mode);
+                }
+            });
+            updateScoreDisplay();
+            nextQuestion();
+        }
+
+        function toggleHardMode() {
+            hardMode = !hardMode;
+            const hardModeButton = document.getElementById('hardModeButton');
+            hardModeButton.textContent = hardMode ? '關閉困難模式' : '困難模式';
+            hardModeButton.style.backgroundColor = hardMode ? '#a31f1d' : '#c5221f';
+            nextQuestion();
+        }
+
+        function updateScoreDisplay() {
+            const scoreElement = document.getElementById('score');
+            scoreElement.textContent = `基礎題：${basicCorrect} / ${basicCorrect + basicIncorrect} | 進階題：${advancedCorrect} / ${advancedCorrect + advancedIncorrect}`;
+
+            // 檢查是否應該顯示建議
+            const suggestionElement = document.getElementById('suggestion');
+            const hardModeButton = document.getElementById('hardModeButton');
+
+            if (currentMode === 0 && basicCorrect - basicIncorrect >= 5) {
+                suggestionElement.textContent = '你在基礎題表現得很好！建議嘗試進階題。';
+                suggestionElement.style.display = 'block';
+            } else if (currentMode === 1 && advancedCorrect - advancedIncorrect >= 5) {
+                hardModeButton.style.display = 'inline-block';
+                suggestionElement.textContent = '你在進階題表現優秀！可以嘗試困難模式。';
+                suggestionElement.style.display = 'block';
+            } else {
+                suggestionElement.style.display = 'none';
+                if (currentMode === 0 || (currentMode === 1 && advancedCorrect - advancedIncorrect < 5)) {
+                    hardModeButton.style.display = 'none';
+                }
+            }
+        }
+
+        function generateQuestion() {
+            let x, y, a1, b1, c1, a2, b2, c2;
+            
+            // 計算最大公因數的輔助函數
+            function gcd(a, b) {
+                a = Math.abs(a);
+                b = Math.abs(b);
+                while (b) {
+                    let t = b;
+                    b = a % b;
+                    a = t;
+                }
+                return a;
+            }
+
+            // 生成不為零的隨機整數
+            function generateNonZeroInt(min, max) {
+                let num;
+                do {
+                    num = Math.floor(Math.random() * (max - min + 1)) + min;
+                } while (num === 0);
+                return num;
+            }
+            
+            // 生成互質的數對
+            function generateCoprime(min, max) {
+                let a, b;
+                do {
+                    a = generateNonZeroInt(min, max);
+                    b = generateNonZeroInt(min, max);
+                } while (gcd(a, b) !== 1);
+                return [a, b];
+            }
+
+            // 根據難度生成係數範圍
+            const range = hardMode ? { min: -10, max: 10 } : { min: -5, max: 5 };
+            
+            switch(currentMode) {
+                case 0: // 基礎題：確保x項或y項係數相同或有倍數關係
+                    x = generateNonZeroInt(range.min, range.max);
+                    y = generateNonZeroInt(range.min, range.max);
+                    
+                    if (Math.random() < 0.5) {
+                        // x項係數相同或倍數關係
+                        a1 = generateNonZeroInt(range.min, range.max);
+                        a2 = a1 * (Math.random() < 0.5 ? 1 : generateNonZeroInt(2, 3));
+                        [b1, b2] = generateCoprime(range.min, range.max);
+                    } else {
+                        // y項係數相同或倍數關係
+                        [a1, a2] = generateCoprime(range.min, range.max);
+                        b1 = generateNonZeroInt(range.min, range.max);
+                        b2 = b1 * (Math.random() < 0.5 ? 1 : generateNonZeroInt(2, 3));
+                    }
+                    break;
+                    
+                case 1: // 進階題：係數互不相同且互質
+                    x = generateNonZeroInt(range.min, range.max);
+                    y = generateNonZeroInt(range.min, range.max);
+                    
+                    do {
+                        [a1, a2] = generateCoprime(range.min, range.max);
+                        [b1, b2] = generateCoprime(range.min, range.max);
+                    } while (a1 === a2 || b1 === b2 || 
+                             gcd(a1, b1) !== 1 || gcd(a2, b2) !== 1);
+                    break;
+            }
+            
+            c1 = a1 * x + b1 * y;
+            c2 = a2 * x + b2 * y;
+
+            currentQuestion = { x, y, a1, b1, c1, a2, b2, c2 };
+            
+            // 格式化方程式顯示
+            function formatCoefficient(coef, variable) {
+                if (coef === 1) return variable;
+                if (coef === -1) return `-${variable}`;
+                return `${coef}${variable}`;
+            }
+
+            const equation1 = `${formatCoefficient(a1, 'x')} ${b1 >= 0 ? '+' : ''}${formatCoefficient(b1, 'y')} = ${c1}`;
+            const equation2 = `${formatCoefficient(a2, 'x')} ${b2 >= 0 ? '+' : ''}${formatCoefficient(b2, 'y')} = ${c2}`;
+            
+            document.getElementById('question').innerHTML = `${equation1}<br>${equation2}`;
+            document.getElementById('x-answer').value = '';
+            document.getElementById('y-answer').value = '';
+            document.getElementById('result').className = 'result';
+            document.getElementById('result').textContent = '';
+            document.getElementById('solution').style.display = 'none';
+        }
+
+        function checkAnswer() {
+            const xAnswer = parseFloat(document.getElementById('x-answer').value);
+            const yAnswer = parseFloat(document.getElementById('y-answer').value);
+            
+            if (isNaN(xAnswer) || isNaN(yAnswer)) {
+                document.getElementById('result').className = 'result incorrect';
+                document.getElementById('result').textContent = '請輸入有效的數字！';
+                return;
+            }
+            
+            const tolerance = 0.1; // 允許的誤差範圍
+            const isCorrect = Math.abs(xAnswer - currentQuestion.x) < tolerance && 
+                             Math.abs(yAnswer - currentQuestion.y) < tolerance;
+            
+            const resultElement = document.getElementById('result');
+            if (isCorrect) {
+                resultElement.className = 'result correct';
+                resultElement.textContent = '答對了！';
+                if (currentMode === 0) {
+                    basicCorrect++;
+                } else {
+                    advancedCorrect++;
+                }
+            } else {
+                resultElement.className = 'result incorrect';
+                resultElement.textContent = '答錯了，再試一次！';
+                if (currentMode === 0) {
+                    basicIncorrect++;
+                } else {
+                    advancedIncorrect++;
+                }
+            }
+            
+            updateScoreDisplay();
+        }
+
+        function showSolution() {
+            const solutionElement = document.getElementById('solution');
+            solutionElement.style.display = 'block';
+            solutionElement.innerHTML = `解答：<br>x = ${currentQuestion.x}<br>y = ${currentQuestion.y}`;
+        }
+
+        function nextQuestion() {
+            generateQuestion();
+        }
+
+        // 頁面載入完成後自動生成第一道題目
+        window.onload = nextQuestion;
+    </script>
+</body>
+</html>
