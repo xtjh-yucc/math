@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>等差數列練習器</title>
+    <style>
+        body {
+            font-family: 'Arial', '微軟正黑體', sans-serif;
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #00796b;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .topic-selector {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .topic-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #4db6ac;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .topic-button:hover {
+            background-color: #00897b;
+            transform: translateY(-2px);
+        }
+
+        .topic-button.active {
+            background-color: #00695c;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .question-area {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            font-size: 1.2em;
+        }
+
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 8px 12px;
+            border: 2px solid #80cbc4;
+            border-radius: 6px;
+            font-size: 1.1em;
+            width: 120px;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #26a69a;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #00897b;
+        }
+
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .result.correct {
+            background-color: #a5d6a7;
+            color: #2e7d32;
+        }
+
+        .result.incorrect {
+            background-color: #ef9a9a;
+            color: #c62828;
+        }
+
+        .solution {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .score {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #00695c;
+        }
+
+        .image-area {
+            margin: 20px 0;
+            max-width: 100%;
+        }
+
+        .image-area img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>等差數列練習器</h1>
+        <div class="topic-selector">
+            <button class="topic-button active" onclick="setTopic(0)">數列規律</button>
+            <button class="topic-button" onclick="setTopic(1)">等差數列各項</button>
+            <button class="topic-button" onclick="setTopic(2)">首項公差求第n項</button>
+            <button class="topic-button" onclick="setTopic(3)">求項數</button>
+            <button class="topic-button" onclick="setTopic(4)">圖形規律</button>
+            <button class="topic-button" onclick="setTopic(5)">等差中項</button>
+        </div>
+        <div class="question-area" id="question"></div>
+        <div class="input-area" id="input-area"></div>
+        <div class="image-area" id="image-area"></div>
+        <div class="action-buttons">
+            <button onclick="checkAnswer()">確認答案</button>
+            <button onclick="showSolution()">查看解答</button>
+            <button onclick="nextQuestion()">下一題</button>
+        </div>
+        <div class="result" id="result" style="display: none;"></div>
+        <div class="solution" id="solution"></div>
+        <div class="score" id="score">得分：0 分</div>
+    </div>
+
+    <script>
+        let currentTopic = 0;
+        let score = 0;
+        let totalQuestions = 0;
+        let currentQuestion = null;
+
+        // 題目生成函數
+        function generateQuestion(topic) {
+            let question = {};
+            switch(topic) {
+                case 0: // 數列規律
+                    question = generatePatternQuestion();
+                    break;
+                case 1: // 等差數列各項
+                    question = generateArithmeticSequenceQuestion();
+                    break;
+                case 2: // 首項公差求第n項
+                    question = generateNthTermQuestion();
+                    break;
+                case 3: // 求項數
+                    question = generateTermCountQuestion();
+                    break;
+                case 4: // 圖形規律
+                    question = generatePatternShapeQuestion();
+                    break;
+                case 5: // 等差中項
+                    question = generateMiddleTermQuestion();
+                    break;
+            }
+            return question;
+        }
+
+        // 生成數列規律題目
+        function generatePatternQuestion() {
+            const patterns = [
+                {
+                    sequence: [1, 3, 5, 7, null, 11],
+                    answer: 9,
+                    type: 'arithmetic',
+                    explanation: '這是一個公差為2的等差數列。'
+                },
+                {
+                    sequence: [3, 9, 27, null, 243, 729],
+                    answer: 81,
+                    type: 'geometric',
+                    explanation: '這是一個公比為3的等比數列。'
+                },
+                {
+                    sequence: [1, -2, 3, -4, 5, null, 7, -8, 9, -10],
+                    answer: -6,
+                    type: 'alternating',
+                    explanation: '這是一個正負交錯的數列，奇數項遞增1，偶數項遞減2。'
+                }
+            ];
+            return {
+                type: 'pattern',
+                data: patterns[Math.floor(Math.random() * patterns.length)],
+                inputCount: 1
+            };
+        }
+
+        // 生成等差數列各項題目
+        function generateArithmeticSequenceQuestion() {
+            const a = Math.floor(Math.random() * 20) - 10; // 首項
+            const d = Math.floor(Math.random() * 8) - 4; // 公差
+            const sequence = [null, a + d, a + 2*d, null];
+            return {
+                type: 'arithmetic_sequence',
+                data: {
+                    sequence: sequence,
+                    answers: [a, a + 3*d],
+                    explanation: `這是一個首項為${a}，公差為${d}的等差數列。`
+                },
+                inputCount: 2
+            };
+        }
+
+        // 生成首項公差求第n項題目
+        function generateNthTermQuestion() {
+            const a = Math.floor(Math.random() * 40) - 20; // 首項
+            const d = Math.floor(Math.random() * 10) - 5; // 公差
+            const n = Math.floor(Math.random() * 10) + 5; // 第n項
+            return {
+                type: 'nth_term',
+                data: {
+                    a: a,
+                    d: d,
+                    n: n,
+                    answer: a + (n-1)*d,
+                    explanation: `使用等差數列通項公式：an = a1 + (n-1)d
+                                代入：a1 = ${a}, d = ${d}, n = ${n}
+                                計算：${a} + (${n}-1)×${d} = ${a + (n-1)*d}`
+                },
+                inputCount: 1
+            };
+        }
+
+        // 生成求項數題目
+        function generateTermCountQuestion() {
+            const a = Math.floor(Math.random() * 20) - 10; // 首項
+            const d = Math.floor(Math.random() * 8) + 1; // 公差
+            const l = a + (Math.floor(Math.random() * 10) + 5) * d; // 末項
+            return {
+                type: 'term_count',
+                data: {
+                    a: a,
+                    d: d,
+                    l: l,
+                    answer: (l - a)/d + 1,
+                    explanation: `使用等差數列項數公式：n = (an - a1)/d + 1
+                                代入：a1 = ${a}, an = ${l}, d = ${d}
+                                計算：(${l} - ${a})/${d} + 1 = ${(l - a)/d + 1}`
+                },
+                inputCount: 1
+            };
+        }
+
+        // 生成圖形規律題目
+        function generatePatternShapeQuestion() {
+            const patterns = [
+                {
+                    type: 'squares',
+                    n: Math.floor(Math.random() * 5) + 6,
+                    formula: n => 3*n + 1,
+                    explanation: n => `第n個圖形需要的吸管數 = 3n + 1
+                                代入n = ${n}
+                                計算：3 × ${n} + 1 = ${3*n + 1}`
+                },
+                {
+                    type: 'hexagons',
+                    n: Math.floor(Math.random() * 5) + 6,
+                    formula: n => 5*n + 1,
+                    explanation: n => `第n個正六邊形需要的吸管數 = 5n + 1
+                                代入n = ${n}
+                                計算：5 × ${n} + 1 = ${5*n + 1}`
+                }
+            ];
+            const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+            return {
+                type: 'pattern_shape',
+                data: {
+                    n: pattern.n,
+                    sticks: pattern.formula(pattern.n),
+                    explanation: pattern.explanation(pattern.n),
+                    shapeType: pattern.type
+                },
+                inputCount: 1,
+                showImage: true
+            };
+        }
+
+        // 生成等差中項題目
+        function generateMiddleTermQuestion() {
+            const a = Math.floor(Math.random() * 40) - 20; // 首項
+            const c = Math.floor(Math.random() * 40) - 20; // 末項
+            return {
+                type: 'middle_term',
+                data: {
+                    a: a,
+                    c: c,
+                    answer: (a + c)/2,
+                    explanation: `等差中項公式：p = (a + c)/2
+                                代入：a = ${a}, c = ${c}
+                                計算：(${a} + ${c})/2 = ${(a + c)/2}`
+                },
+                inputCount: 1
+            };
+        }
+
+        // 設置題目
+        function setQuestion(question) {
+            currentQuestion = question;
+            const questionArea = document.getElementById('question');
+            const inputArea = document.getElementById('input-area');
+            const imageArea = document.getElementById('image-area');
+            const resultArea = document.getElementById('result');
+            const solutionArea = document.getElementById('solution');
+
+            // 清空之前的內容
+            inputArea.innerHTML = '';
+            imageArea.innerHTML = '';
+            resultArea.style.display = 'none';
+            solutionArea.style.display = 'none';
+
+            // 根據題目類型設置顯示內容
+            switch(question.type) {
+                case 'pattern':
+                    questionArea.innerHTML = `觀察數列規律，填入空格中的數：<br>${formatSequence(question.data.sequence)}`;
+                    break;
+                case 'arithmetic_sequence':
+                    questionArea.innerHTML = `在下列空格中填入適當的數，使其成為等差數列：<br>${formatSequence(question.data.sequence)}`;
+                    break;
+                case 'nth_term':
+                    questionArea.innerHTML = `若等差數列的首項為 ${question.data.a}，公差為 ${question.data.d}，求此等差數列的第 ${question.data.n} 項。`;
+                    break;
+                case 'term_count':
+                    questionArea.innerHTML = `已知 ${question.data.a}, ${question.data.a + question.data.d}, ${question.data.a + 2*question.data.d}, ..., ${question.data.l} 為等差數列，求此等差數列共有幾項？`;
+                    break;
+                case 'pattern_shape':
+                    questionArea.innerHTML = `觀察下圖的規律：<br>如果要排出圖 ${question.data.n}，需要幾根吸管？`;
+                    // 這裡可以添加圖形顯示
+                    const drawShape = (type) => {
+                        if (type === 'squares') {
+                            return `<svg width="400" height="200" viewBox="0 0 400 200">
+                                <g transform="translate(20, 20)">
+                                    <rect x="0" y="0" width="40" height="40" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <text x="20" y="60" text-anchor="middle" fill="#00695c">圖1</text>
+                                </g>
+                                <g transform="translate(120, 20)">
+                                    <rect x="0" y="0" width="40" height="40" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <rect x="40" y="0" width="40" height="40" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <text x="40" y="60" text-anchor="middle" fill="#00695c">圖2</text>
+                                </g>
+                                <g transform="translate(220, 20)">
+                                    <rect x="0" y="0" width="40" height="40" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <rect x="40" y="0" width="40" height="40" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <rect x="80" y="0" width="40" height="40" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <text x="60" y="60" text-anchor="middle" fill="#00695c">圖3</text>
+                                </g>
+                            </svg>`;
+                        } else if (type === 'hexagons') {
+                            return `<svg width="400" height="200" viewBox="0 0 400 200">
+                                <g transform="translate(20, 20)">
+                                    <polygon points="20,0 40,10 40,30 20,40 0,30 0,10" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <text x="20" y="60" text-anchor="middle" fill="#00695c">圖1</text>
+                                </g>
+                                <g transform="translate(120, 20)">
+                                    <polygon points="20,0 40,10 40,30 20,40 0,30 0,10" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <polygon points="60,0 80,10 80,30 60,40 40,30 40,10" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <text x="40" y="60" text-anchor="middle" fill="#00695c">圖2</text>
+                                </g>
+                                <g transform="translate(220, 20)">
+                                    <polygon points="20,0 40,10 40,30 20,40 0,30 0,10" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <polygon points="60,0 80,10 80,30 60,40 40,30 40,10" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <polygon points="100,0 120,10 120,30 100,40 80,30 80,10" fill="none" stroke="#26a69a" stroke-width="2"/>
+                                    <text x="60" y="60" text-anchor="middle" fill="#00695c">圖3</text>
+                                </g>
+                            </svg>`;
+                        }
+                    };
+                    imageArea.innerHTML = drawShape(question.data.shapeType);
+                    break;
+                case 'middle_term':
+                    questionArea.innerHTML = `已知 ${question.data.a}, p, ${question.data.c} 成等差數列，求 ${question.data.a} 與 ${question.data.c} 的等差中項 p。`;
+                    break;
+            }
+
+            // 設置輸入區域
+            for(let i = 0; i < question.inputCount; i++) {
+                const inputGroup = document.createElement('div');
+                inputGroup.className = 'input-group';
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.step = '0.1';
+                inputGroup.appendChild(input);
+                inputArea.appendChild(inputGroup);
+            }
+        }
+
+        // 格式化數列顯示
+        function formatSequence(sequence) {
+            return sequence.map(item => item === null ? '□' : item).join(' , ');
+        }
+
+        // 檢查答案
+        function checkAnswer() {
+            if (!currentQuestion) return;
+
+            const inputs = document.querySelectorAll('.input-group input');
+            const resultArea = document.getElementById('result');
+            const solutionArea = document.getElementById('solution');
+            let correct = false;
+
+            switch(currentQuestion.type) {
+                case 'pattern':
+                case 'nth_term':
+                case 'term_count':
+                case 'middle_term':
+                    const answer = parseFloat(inputs[0].value);
+                    correct = Math.abs(answer - currentQuestion.data.answer) < 0.1;
+                    break;
+                case 'pattern_shape':
+                    const studentAnswer = parseFloat(inputs[0].value);
+                    correct = Math.abs(studentAnswer - currentQuestion.data.sticks) < 0.1;
+                    break;
+                case 'arithmetic_sequence':
+                    const answers = Array.from(inputs).map(input => parseFloat(input.value));
+                    correct = answers.every((answer, index) => 
+                        Math.abs(answer - currentQuestion.data.answers[index]) < 0.1
+                    );
+                    break;
+            }
+
+            resultArea.textContent = correct ? '答對了！' : '答錯了，再試一次。';
+            resultArea.className = `result ${correct ? 'correct' : 'incorrect'}`;
+            resultArea.style.display = 'block';
+            solutionArea.style.display = 'none';
+
+            if (correct) {
+                score++;
+                totalQuestions++;
+            } else {
+                totalQuestions++;
+            }
+
+            document.getElementById('score').textContent = `得分：${score} / ${totalQuestions} 分`;
+        }
+
+        // 顯示解答
+        function showSolution() {
+            if (!currentQuestion) return;
+
+            const solutionArea = document.getElementById('solution');
+            solutionArea.textContent = currentQuestion.data.explanation;
+            solutionArea.style.display = 'block';
+        }
+
+        // 下一題
+        function nextQuestion() {
+            setQuestion(generateQuestion(currentTopic));
+        }
+
+        // 設置主題
+        function setTopic(topic) {
+            currentTopic = topic;
+            const buttons = document.querySelectorAll('.topic-button');
+            buttons.forEach((button, index) => {
+                button.className = `topic-button ${index === topic ? 'active' : ''}`;
+            });
+            nextQuestion();
+        }
+
+        // 初始化第一題
+        setTopic(0);
+    </script>
+</body>
+</html>(20,
