@@ -15,6 +15,32 @@
             padding: 20px;
         }
 
+        .solution-section {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .solution-section.answer {
+            background-color: #e8f5e9;
+        }
+
+        .step {
+            margin: 10px 0;
+            color: #1a73e8;
+            font-weight: 500;
+        }
+
+        .equation {
+            margin: 8px 0;
+            padding: 5px;
+            font-family: monospace;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
         .container {
             background-color: white;
             padding: 2rem;
@@ -372,14 +398,128 @@
 
         function showSolution() {
             const solutionElement = document.getElementById('solution');
+            if (!solutionElement || !currentQuestion) return;
+            
+            // 重置解答區域的樣式
             solutionElement.style.display = 'block';
-            solutionElement.innerHTML = `解答：<br>x = ${currentQuestion.x}<br>y = ${currentQuestion.y}`;
+            solutionElement.style.backgroundColor = '#fff';
+            solutionElement.style.padding = '20px';
+            solutionElement.style.borderRadius = '8px';
+            solutionElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            solutionElement.style.marginTop = '20px';
+            if (!solutionElement) return;
+            
+            // 計算最大公因數
+            function gcd(a, b) {
+                a = Math.abs(a);
+                b = Math.abs(b);
+                while (b) {
+                    let t = b;
+                    b = a % b;
+                    a = t;
+                }
+                return a;
+            }
+            
+            // 格式化係數顯示
+            function formatTerm(coef, variable) {
+                if (coef === 0) return '';
+                if (coef === 1) return variable;
+                if (coef === -1) return `-${variable}`;
+                return `${coef}${variable}`;
+            }
+            
+            // 格式化完整方程式
+            function formatEquation(a, b, c, eqNum) {
+                let terms = [];
+                if (a !== 0) terms.push(formatTerm(a, 'x'));
+                if (b !== 0) terms.push((b > 0 ? '+' : '') + formatTerm(b, 'y'));
+                return `方程式${eqNum}：${terms.join(' ')} = ${c}`;
+            }
+            
+            const {x, y, a1, b1, c1, a2, b2, c2} = currentQuestion;
+            let steps = [];
+            
+            // 顯示原始方程式
+            steps.push(`<div class="solution-section"><strong>原始方程式：</strong>`);
+            steps.push(`<div class="equation">${formatEquation(a1, b1, c1, '(1)')}</div>`);
+            steps.push(`<div class="equation">${formatEquation(a2, b2, c2, '(2)')}</div></div>`);
+            
+            // 決定要消去x還是y
+            const eliminateX = Math.abs(a1) <= Math.abs(a2);
+            const target = eliminateX ? 'x' : 'y';
+            const coef1 = eliminateX ? a1 : b1;
+            const coef2 = eliminateX ? a2 : b2;
+            
+            // 計算倍數
+            const lcm = Math.abs(coef1 * coef2 / gcd(coef1, coef2));
+            const mul1 = lcm / Math.abs(coef1);
+            const mul2 = lcm / Math.abs(coef2);
+            
+            steps.push(`<div class="solution-section"><strong>解題步驟：</strong>`);
+            steps.push(`<div class="step">1. 為消去${target}，將方程式(1)乘以${mul1}，方程式(2)乘以${mul2}：</div>`);
+            
+            // 顯示調整後的方程式
+            const eq1 = {
+                a: a1 * mul1,
+                b: b1 * mul1,
+                c: c1 * mul1
+            };
+            const eq2 = {
+                a: a2 * mul2,
+                b: b2 * mul2,
+                c: c2 * mul2
+            };
+            
+            steps.push(`<div class="equation">${formatEquation(eq1.a, eq1.b, eq1.c, '(1)')}</div>`);
+            steps.push(`<div class="equation">${formatEquation(eq2.a, eq2.b, eq2.c, '(2)')}</div>`);
+            
+            // 相加或相減消去變數
+            const shouldAdd = (eliminateX ? eq1.a : eq1.b) * (eliminateX ? eq2.a : eq2.b) < 0;
+            steps.push(`<div class="step">2. 將兩式${shouldAdd ? '相加' : '相減'}消去${target}：</div>`);
+            
+            const resultCoef = shouldAdd ? 
+                (eliminateX ? eq1.b + eq2.b : eq1.a + eq2.a) :
+                (eliminateX ? eq1.b - eq2.b : eq1.a - eq2.a);
+            const resultC = shouldAdd ? eq1.c + eq2.c : eq1.c - eq2.c;
+            
+            // 求出第一個變數
+            const firstVar = eliminateX ? y : x;
+            steps.push(`<div class="equation">${resultCoef}${eliminateX ? 'y' : 'x'} = ${resultC}</div>`);
+            steps.push(`<div class="equation">${eliminateX ? 'y' : 'x'} = ${firstVar}</div>`);
+            
+            // 代回求第二個變數
+            steps.push(`<div class="step">3. 代回方程式(1)求${eliminateX ? 'x' : 'y'}：</div>`);
+            steps.push(`<div class="equation">${formatEquation(a1, b1, c1, '(1)')}</div>`);
+            const secondVar = eliminateX ? x : y;
+            
+            if (eliminateX) {
+                steps.push(`<div class="equation">${a1}x + ${b1}(${y}) = ${c1}</div>`);
+                steps.push(`<div class="equation">${a1}x = ${c1} - ${b1 * y}</div>`);
+                steps.push(`<div class="equation">x = ${x}</div>`);
+            } else {
+                steps.push(`<div class="equation">${a1}(${x}) + ${b1}y = ${c1}</div>`);
+                steps.push(`<div class="equation">${b1}y = ${c1} - ${a1 * x}</div>`);
+                steps.push(`<div class="equation">y = ${y}</div>`);
+            }
+            steps.push('</div>');
+            
+            // 顯示最終答案
+            steps.push(`<div class="solution-section answer"><strong>答案：</strong>`);
+            steps.push(`<div class="equation">x = ${x}</div>`);
+            steps.push(`<div class="equation">y = ${y}</div></div>`);
+            
+            // 設定解答區塊的樣式和內容
+            solutionElement.style.display = 'block';
+            solutionElement.innerHTML = steps.join('');
         }
 
         function nextQuestion() {
             generateQuestion();
         }
 
+    </script>
+    <script>
         // 頁面載入完成後自動生成第一道題目
         window.onload = nextQuestion;
     </script>
