@@ -1,19 +1,64 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 .game-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 20px;
-    background: #f5f5f5;
     min-height: 100vh;
+    background: #f5f5f5;
+}
+
+.game-info {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.player-status {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.player {
+    padding: 15px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.ready-button {
+    margin-left: 10px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.ready-button:hover {
+    background: #45a049;
+}
+
+.ready-button.disabled {
+    background: #ccc;
+    cursor: not-allowed;
 }
 
 .chess-board {
     background: #DEB887;
     padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
     display: grid;
     grid-template-columns: repeat(9, 60px);
+    gap: 1px;
 }
 
 .board-cell {
@@ -38,11 +83,18 @@
     justify-content: center;
     font-size: 24px;
     font-weight: bold;
+    transition: transform 0.3s;
 }
 
-.chess-piece.red { color: #ff0000; }
-.chess-piece.black { color: #000000; }
+.chess-piece.red {
+    color: #ff0000;
+}
+
+.chess-piece.black {
+    color: #000000;
+}
+
 .chess-piece.selected {
     transform: scale(1.1);
-    box-shadow: 0 0 10px yellow;
+    box-shadow: 0 0 10px rgba(255,255,0,0.5);
 }

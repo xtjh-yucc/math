@@ -9,8 +9,17 @@
 <body>
     <div class="game-container">
         <div class="game-info">
-            <h2 id="status-message">等待遊戲開始</h2>
-            <button id="start-button">開始遊戲</button>
+            <h2 id="status-message">等待玩家準備</h2>
+            <div class="player-status">
+                <div class="player red">
+                    <span>紅方</span>
+                    <button id="red-ready" class="ready-button">準備開始</button>
+                </div>
+                <div class="player black">
+                    <span>黑方</span>
+                    <button id="black-ready" class="ready-button">準備開始</button>
+                </div>
+            </div>
         </div>
         <div id="chess-board" class="chess-board"></div>
     </div>
