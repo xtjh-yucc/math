@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>鑰匙製造所 PWA 版</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.png">
+  <meta name="theme-color" content="#ffffff">
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      text-align: center;
+      background-color: #f9fafb;
+      padding: 10px;
+      margin: 0;
+    }
+    h1 {
+      margin: 10px;
+      color: #1f2937;
+    }
+    .key-image {
+      width: 80px;
+      margin: 10px;
+      cursor: pointer;
+      border: 3px solid transparent;
+      border-radius: 10px;
+      transition: transform 0.2s;
+    }
+    .key-image:hover {
+      border-color: #0ea5e9;
+    }
+    #targetKey {
+      width: 120px;
+      margin: 10px;
+    }
+    #choices {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    #scoreboard {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    #timer {
+      font-weight: bold;
+      color: #dc2626;
+    }
+    #result {
+      font-size: 20px;
+      margin-top: 10px;
+      height: 30px;
+    }
+    #endScreen {
+      display: none;
+      font-size: 24px;
+      margin-top: 30px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      background-color: #e0e7ff;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔑 鑰匙製造所 PWA 版</h1>
+
+  <div id="scoreboard">
+    分數：<span id="score">0</span> |
+    關卡：<span id="level">1</span>/10 |
+    倒數：<span id="timer">10</span> 秒
+  </div>
+
+  <div>目標鑰匙：</div>
+  <img id="targetKey" src="">
+
+  <div id="choices"></div>
+  <div id="result"></div>
+
+  <button onclick="toggleMute()">🔊 音效開關</button>
+
+  <div id="endScreen">
+    🎉 遊戲結束！<br>
+    你總共答對了 <span id="finalScore"></span> 題！
+  </div>
+
+  <!-- 音效資源 -->
+  <audio id="correctSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_8b12f63b3f.mp3"></audio>
+  <audio id="wrongSound"   src="https://cdn.pixabay.com/audio/2022/03/15/audio_1a9a1cd292.mp3"></audio>
+  <audio id="timeoutSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_2e7c84a239.mp3"></audio>
+
+  <script>
+    const correctSound = document.getElementById("correctSound");
+    const wrongSound = document.getElementById("wrongSound");
+    const timeoutSound = document.getElementById("timeoutSound");
+    let mute = false;
+
+    const keys = [
+      "https://i.imgur.com/fqL3YtS.png",
+      "https://i.imgur.com/2u9zOW0.png",
+      "https://i.imgur.com/bOlc5e1.png",
+      "https://i.imgur.com/m8L8dTf.png",
+      "https://i.imgur.com/OjEn0Ta.png",
+      "https://i.imgur.com/hWJMyzQ.png"
+    ];
+
+    const totalLevels = 10;
+    let currentLevel = 1;
+    let score = 0;
+    let answer = "";
+    let timerInterval;
+    let timeLeft = 10;
+
+    const targetEl = document.getElementById("targetKey");
+    const choicesEl = document.getElementById("choices");
+    const scoreEl = document.getElementById("score");
+    const levelEl = document.getElementById("level");
+    const timerEl = document.getElementById("timer");
+    const resultEl = document.getElementById("result");
+    const endScreen = document.getElementById("endScreen");
+    const finalScore = document.getElementById("finalScore");
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function randomRotate() {
+      const angles = [0, 90, 180, 270];
+      return angles[Math.floor(Math.random() * angles.length)];
+    }
+
+    function playSound(sound) {
+      if (!mute) {
+        sound.currentTime = 0;
+        sound.play();
+      }
+    }
+
+    function toggleMute() {
+      mute = !mute;
+      alert(mute ? "🔇 音效已關閉" : "🔊 音效已開啟");
+    }
+
+    function newQuestion() {
+      if (currentLevel > totalLevels) return showEnd();
+
+      resultEl.textContent = "";
+      levelEl.textContent = currentLevel;
+      timeLeft = 10;
+      timerEl.textContent = timeLeft;
+
+      const allChoices = shuffle([...keys]).slice(0, 4);
+      answer = allChoices[Math.floor(Math.random() * allChoices.length)];
+      targetEl.src = answer;
+
+      choicesEl.innerHTML = "";
+      allChoices.forEach(src => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.className = "key-image";
+        img.style.transform = `rotate(${randomRotate()}deg)`;
+        img.onclick = () => checkAnswer(src);
+        choicesEl.appendChild(img);
+      });
+
+      startTimer();
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          resultEl.textContent = "⏰ 超時！";
+          playSound(timeoutSound);
+          setTimeout(() => {
+            currentLevel++;
+            newQuestion();
+          }, 1000);
+        }
+      }, 1000);
+    }
+
+    function checkAnswer(selected) {
+      clearInterval(timerInterval);
+      if (selected === answer) {
+        score++;
+        scoreEl.textContent = score;
+        resultEl.textContent = "✅ 正確！";
+        playSound(correctSound);
+      } else {
+        resultEl.textContent = "❌ 錯誤！";
+        playSound(wrongSound);
+      }
+      setTimeout(() => {
+        currentLevel++;
+        newQuestion();
+      }, 1000);
+    }
+
+    function showEnd() {
+      document.getElementById("targetKey").style.display = "none";
+      choicesEl.style.display = "none";
+      resultEl.style.display = "none";
+      document.getElementById("scoreboard").style.display = "none";
+      endScreen.style.display = "block";
+      finalScore.textContent = score;
+    }
+
+    window.onload = newQuestion;
+  </script>
+
+</body>
+</html>
