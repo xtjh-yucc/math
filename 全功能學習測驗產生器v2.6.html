@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全功能學習測驗產生器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --english-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #ecf0f1;
+            --dark-text: #34495e;
+        }
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI Emoji', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--light-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h1, h2 {
+            color: var(--dark-text);
+            text-align: center;
+        }
+        /* --- Panels --- */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* --- Main Menu --- */
+        #main-menu .mode-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .mode-btn {
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .mode-btn[data-mode="english"] {
+            border-color: var(--english-color);
+            color: var(--english-color);
+        }
+        .mode-btn:hover { background-color: #f8f9fa; }
+        .mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        .mode-btn[data-mode="english"].active {
+             background: var(--english-color);
+        }
+        
+        /* --- Options Panel --- */
+        #options-panel {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .option-group { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+        .option-group label { font-size: 1.1em; }
+        .option-group input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            font-size: 1.1em;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .sub-category-btn {
+            padding: 10px 15px;
+            font-size: 1em;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .sub-category-btn.active {
+            background: var(--english-color);
+            color: white;
+            border-color: var(--english-color);
+        }
+        
+        /* --- Action Buttons --- */
+        #action-buttons { display: flex; gap: 15px; }
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            transition: opacity 0.3s ease;
+        }
+        .action-btn:hover { opacity: 0.9; }
+        #start-quiz-btn { background-color: var(--secondary-color); }
+        #download-btn { background-color: #9b59b6; }
+
+        /* --- Quiz Panel --- */
+        #quiz-panel { text-align: center; }
+        #progress-info { font-size: 1.2em; color: var(--dark-text); margin-bottom: 15px; }
+        #question-area {
+            font-size: 6em;
+            font-weight: bold;
+            margin: 20px 0;
+            color: var(--primary-color);
+            line-height: 1;
+        }
+        #question-instruction {
+            font-size: 1.2em;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        #answer-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .answer-btn {
+            padding: 20px;
+            font-size: 1.5em;
+            background-color: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .answer-btn:hover { border-color: var(--primary-color); }
+        #feedback { font-size: 1.2em; font-weight: bold; height: 30px; }
+        #back-to-menu { margin-top: 20px; background: #7f8c8d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;}
+        
+        /* --- Modal --- */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: white; padding: 30px 40px; border-radius: 15px;
+            text-align: center; box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+        }
+        .modal h2 { margin-top: 0; }
+        .modal-buttons { margin-top: 20px; display: flex; gap: 15px; justify-content: center; }
+        .modal-btn { padding: 10px 25px; border-radius: 5px; border: none; font-size: 1em; cursor: pointer;}
+        #modal-confirm { background: var(--secondary-color); color: white; }
+        #modal-cancel { background: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="main-menu" class="panel active">
+            <h1>全功能學習測驗</h1>
+            <div class="mode-buttons">
+                <button class="mode-btn" data-mode="multiplication">✖️ 99乘法</button>
+                <button class="mode-btn" data-mode="addition">➕ 加法</button>
+                <button class="mode-btn" data-mode="subtraction">➖ 減法</button>
+                <button class="mode-btn" data-mode="english">🖼️ 看圖學英文</button>
+            </div>
+            <div id="options-panel" class="panel">
+                <h2 id="options-title"></h2>
+                <div id="range-options" class="option-group">
+                    <label for="min-num">數字範圍:</label>
+                    <input type="number" id="min-num" value="1">
+                    <label>～</label>
+                    <input type="number" id="max-num" value="10">
+                </div>
+                <div id="english-options" class="option-group">
+                    <button class="sub-category-btn" data-category="fruits">🍎 水果</button>
+                    <button class="sub-category-btn" data-category="vegetables">🥦 蔬菜</button>
+                    <button class="sub-category-btn" data-category="animals">🐶 動物</button>
+                    <button class="sub-category-btn" data-category="objects">🛵 物品</button>
+                </div>
+            </div>
+            <div id="action-buttons" class="panel">
+                <button id="start-quiz-btn" class="action-btn">開始線上測驗</button>
+                <button id="download-btn" class="action-btn">生成下載檔</button>
+            </div>
+        </div>
+
+        <div id="quiz-panel" class="panel">
+            <h2 id="quiz-title">線上測驗</h2>
+            <div id="progress-info">第 1 關 | 已答對 0 / 10 題</div>
+            <div id="question-instruction"></div>
+            <div id="question-area">?</div>
+            <div id="answer-options">
+                <button class="answer-btn"></button>
+                <button class="answer-btn"></button>
+                <button class="answer-btn"></button>
+                <button class="answer-btn"></button>
+            </div>
+            <div id="feedback"></div>
+            <button id="back-to-menu">返回主選單</button>
+        </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div class="modal">
+            <h2 id="modal-title">恭喜過關！</h2>
+            <p id="modal-message">你已答對10題，要繼續挑戰下一關嗎？</p>
+            <div class="modal-buttons">
+                <button id="modal-cancel" class="modal-btn">結束挑戰</button>
+                <button id="modal-confirm" class="modal-btn">繼續下一關</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // --- DATA ---
+    const englishData = {
+        fruits: [
+            { icon: '🍎', name: 'Apple' }, { icon: '🍌', name: 'Banana' }, { icon: '🍓', name: 'Strawberry' },
+            { icon: '🍇', name: 'Grapes' }, { icon: '🍉', name: 'Watermelon' }, { icon: '🍍', name: 'Pineapple' },
+            { icon: '🍊', name: 'Orange' }, { icon: '🍑', name: 'Peach' }, { icon: '🍒', name: 'Cherry' },
+            { icon: '🥝', name: 'Kiwi' }, { icon: '🥭', name: 'Mango' }, { icon: '🍋', name: 'Lemon' }
+        ],
+        vegetables: [
+            { icon: '🥕', name: 'Carrot' }, { icon: '🥦', name: 'Broccoli' }, { icon: '🍅', name: 'Tomato' },
+            { icon: '🍆', name: 'Eggplant' }, { icon: '🌽', name: 'Corn' }, { icon: '🥔', name: 'Potato' },
+            { icon: '🍄', name: 'Mushroom' }, { icon: '🧅', name: 'Onion' }, { icon: '🥬', name: 'Lettuce' },
+            { icon: '🥒', name: 'Cucumber' }, { icon: '🌶️', name: 'Chili' }, { icon: '🫑', name: 'Bell Pepper' }
+        ],
+        animals: [
+            { icon: '🐶', name: 'Dog' }, { icon: '🐱', name: 'Cat' }, { icon: '🦁', name: 'Lion' },
+            { icon: '🐯', name: 'Tiger' }, { icon: '🐘', name: 'Elephant' }, { icon: '🐵', name: 'Monkey' },
+            { icon: '🐼', name: 'Panda' }, { icon: '🐨', name: 'Koala' }, { icon: '🦊', name: 'Fox' },
+            { icon: '🐻', name: 'Bear' }, { icon: '🐧', name: 'Penguin' }, { icon: '🐸', name: 'Frog' }, { icon: '🐭', name: 'mouse' },{ icon: '🐰', name: 'rabbit' },{ icon: '🧸', name: 'bear' }, { icon: '🐷', name: 'pig' },{ icon: '🐦', name: 'bird' },{ icon: '🐥', name: 'chick' }, { icon: '🦓', name: 'zebra' }, { icon: '🐴', name: 'horse' }, { icon: '🦒', name: 'giraffe' }, { icon: '🦌', name: 'deer' },  { icon: '🦘', name: 'kangaroo' },  { icon: '🐝', name: 'bee' },  { icon: '🦋', name: 'butterfly' },  { icon: '🐌', name: 'snail' },  { icon: '🦎', name: 'lizard' },  { icon: '🐠', name: 'fish' }, { icon: '🐓', name: 'rooster' }, { icon: '🐫', name: 'camel' },  { icon: '🐎', name: 'racehorse' }, { icon: '🦆', name: 'duck' }, { icon: '🦢 ', name: 'swan' }, { icon: '🐇 ', name: 'bunny' } 
+  
+
+        ],
+        objects: [
+            { icon: '🛵', name: 'Scooter' }, { icon: '🚲', name: 'Bicycle' }, { icon: '⛴', name: 'Ferry' },
+            { icon: '✈', name: 'Airplane' }, { icon: '⌚', name: 'Watch' }, { icon: '📷', name: 'Camera' },
+            { icon: '☎', name: 'Telephone' }, { icon: '🔪', name: 'Knife' }, { icon: '🔑', name: 'Key' },
+            { icon: '🪑', name: 'Chair' }, { icon: '🪟', name: 'Window' }, { icon: '✂', name: 'Scissors' },
+            { icon: '✏', name: 'Pencil' }, { icon: '🧢', name: 'Cap' }, { icon: '👚', name: 'Blouse' },
+            { icon: '🧦', name: 'Socks' }, { icon: '🥾', name: 'Boot' }, { icon: '☂', name: 'Umbrella' },
+            { icon: '🏀', name: 'Basketball' }, { icon: '⚾', name: 'Baseball' }
+        ]
+    };
+    
+    // --- DOM Elements ---
+    const mainMenu = document.getElementById('main-menu');
+    const optionsPanel = document.getElementById('options-panel');
+    const actionButtons = document.getElementById('action-buttons');
+    const quizPanel = document.getElementById('quiz-panel');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    const subCategoryButtons = document.querySelectorAll('.sub-category-btn');
+
+    // --- State Management ---
+    let state = {
+        mode: null,
+        category: null,
+        min: 1, max: 10,
+        quizActive: false,
+        level: 1,
+        correctInLevel: 0,
+        currentQuestion: null,
+        englishQuestionPool: [],
+    };
+
+    // --- Event Listeners ---
+    modeButtons.forEach(button => button.addEventListener('click', () => selectMode(button.dataset.mode)));
+    subCategoryButtons.forEach(button => button.addEventListener('click', () => selectCategory(button.dataset.category)));
+    document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+    document.getElementById('download-btn').addEventListener('click', generateDownload);
+    document.getElementById('back-to-menu').addEventListener('click', resetToMainMenu);
+    document.getElementById('answer-options').addEventListener('click', handleAnswerClick);
+    document.getElementById('modal-confirm').addEventListener('click', handleModalConfirm);
+    document.getElementById('modal-cancel').addEventListener('click', resetToMainMenu);
+
+    // --- UI Flow Functions ---
+    function selectMode(mode) {
+        state.mode = mode;
+        state.category = null;
+        modeButtons.forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.mode-btn[data-mode="${mode}"]`).classList.add('active');
+
+        const rangeOptions = document.getElementById('range-options');
+        const englishOptions = document.getElementById('english-options');
+        const optionsTitle = document.getElementById('options-title');
+        
+        actionButtons.classList.remove('active');
+        subCategoryButtons.forEach(btn => btn.classList.remove('active'));
+
+        if (mode === 'english') {
+            optionsTitle.textContent = "請選擇一個類別";
+            rangeOptions.style.display = 'none';
+            englishOptions.style.display = 'flex';
+        } else {
+            const titles = { 'multiplication': '練習九九乘法', 'addition': '自訂加法範圍', 'subtraction': '自訂減法範圍' };
+            optionsTitle.textContent = titles[mode];
+            rangeOptions.style.display = mode === 'multiplication' ? 'none' : 'flex';
+            englishOptions.style.display = 'none';
+            actionButtons.classList.add('active');
+        }
+        
+        optionsPanel.classList.add('active');
+    }
+
+    function selectCategory(category) {
+        state.category = category;
+        subCategoryButtons.forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.sub-category-btn[data-category="${category}"]`).classList.add('active');
+        actionButtons.classList.add('active');
+    }
+
+    function startQuiz() {
+        if (!state.mode) { alert("請先選擇一個模式！"); return; }
+        if (state.mode === 'english' && !state.category) { alert("請選擇一個英文類別！"); return; }
+        
+        state.quizActive = true;
+        state.level = 1;
+        state.correctInLevel = 0;
+        
+        if (state.mode === 'english') {
+            state.englishQuestionPool = [...englishData[state.category]].sort(() => Math.random() - 0.5);
+        }
+
+        mainMenu.classList.remove('active');
+        quizPanel.classList.add('active');
+        
+        let quizTitleText = '';
+        switch(state.mode) {
+            case 'multiplication': quizTitleText = '九九乘法'; break;
+            case 'addition': quizTitleText = '加法練習'; break;
+            case 'subtraction': quizTitleText = '減法練習'; break;
+            case 'english': 
+                quizTitleText = `看圖學英文 - ${document.querySelector(`.sub-category-btn[data-category="${state.category}"]`).textContent}`;
+                break;
+        }
+        document.getElementById('quiz-title').textContent = quizTitleText;
+
+        updateProgress();
+        generateAndDisplayQuestion();
+    }
+
+    function resetToMainMenu() {
+        state = { ...state, quizActive: false, mode: null, category: null, englishQuestionPool: [] };
+        quizPanel.classList.remove('active');
+        modalOverlay.style.display = 'none';
+        mainMenu.classList.add('active');
+        optionsPanel.classList.remove('active');
+        actionButtons.classList.remove('active');
+        modeButtons.forEach(btn => btn.classList.remove('active'));
+        subCategoryButtons.forEach(btn => btn.classList.remove('active'));
+    }
+
+    function updateProgress() {
+        const correctCount = state.correctInLevel;
+        const levelTarget = state.mode === 'english' ? 5 : 10;
+        document.getElementById('progress-info').textContent = `第 ${state.level} 關 | 已答對 ${correctCount} / ${levelTarget} 題`;
+    }
+
+    // --- Question Generation ---
+    function generateQuestion() {
+        let questionText, correctAnswer, shuffledOptions;
+        
+        switch(state.mode) {
+            case 'english': {
+                if (state.englishQuestionPool.length === 0) return null;
+                const correctItem = state.englishQuestionPool[state.englishQuestionPool.length - 1];
+                questionText = correctItem.icon;
+                correctAnswer = correctItem.name;
+                
+                const options = new Set([correctAnswer]);
+                const fullWordList = englishData[state.category];
+                while(options.size < 4 && options.size < fullWordList.length) {
+                    const wrongItem = fullWordList[Math.floor(Math.random() * fullWordList.length)];
+                    options.add(wrongItem.name);
+                }
+                shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+                return { questionText, options: shuffledOptions, correctAnswer };
+            }
+            
+            case 'addition': 
+            case 'subtraction':
+            case 'multiplication': {
+                state.min = parseInt(document.getElementById('min-num').value);
+                state.max = parseInt(document.getElementById('max-num').value);
+                if (state.max < state.min) {
+                    [state.min, state.max] = [state.max, state.min];
+                    [document.getElementById('min-num').value, document.getElementById('max-num').value] = [state.min, state.max];
+                }
+
+                let num1, num2;
+                if (state.mode === 'multiplication') {
+                    num1 = Math.floor(Math.random() * 9) + 1;
+                    num2 = Math.floor(Math.random() * 9) + 1;
+                    questionText = `${num1} × ${num2}`;
+                    correctAnswer = num1 * num2;
+                } else if (state.mode === 'addition') {
+                    num1 = Math.floor(Math.random() * (state.max - state.min + 1)) + state.min;
+                    num2 = Math.floor(Math.random() * (state.max - state.min + 1)) + state.min;
+                    questionText = `${num1} + ${num2}`;
+                    correctAnswer = num1 + num2;
+                } else {
+                    num1 = Math.floor(Math.random() * (state.max - state.min + 1)) + state.min;
+                    num2 = Math.floor(Math.random() * (state.max - state.min + 1)) + state.min;
+                    if (num1 < num2) [num1, num2] = [num2, num1];
+                    questionText = `${num1} - ${num2}`;
+                    correctAnswer = num1 - num2;
+                }
+
+                const options = new Set([correctAnswer]);
+                while(options.size < 4) {
+                    let wrongOption = correctAnswer + (Math.floor(Math.random() * 10) - 5);
+                    if (wrongOption >= 0) options.add(wrongOption);
+                }
+                shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+                return { questionText, options: shuffledOptions, correctAnswer };
+            }
+        }
+    }
+
+    function generateAndDisplayQuestion() {
+        state.currentQuestion = generateQuestion();
+        
+        if (state.currentQuestion === null) {
+            handleGameComplete(state.mode === 'english' ? '英文' : '數學');
+            return;
+        }
+
+        const qArea = document.getElementById('question-area');
+        const qInstruction = document.getElementById('question-instruction');
+
+        if (state.mode === 'english') {
+            qInstruction.textContent = '這是什麼呢？';
+            qArea.textContent = state.currentQuestion.questionText;
+            qArea.style.fontSize = '6em';
+        } else {
+            qInstruction.textContent = '';
+            qArea.textContent = `${state.currentQuestion.questionText} = ?`;
+            qArea.style.fontSize = '3em';
+        }
+        
+        const answerButtons = document.querySelectorAll('.answer-btn');
+        answerButtons.forEach((btn, index) => {
+            btn.textContent = state.currentQuestion.options[index];
+            btn.dataset.answer = state.currentQuestion.options[index];
+            btn.disabled = false;
+            btn.style.borderColor = '#bdc3c7';
+        });
+    }
+    
+    // --- Speech Synthesis Function ---
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // --- Quiz & Answer Logic ---
+    function handleAnswerClick(event) {
+        if (!event.target.classList.contains('answer-btn') || !state.quizActive) return;
+
+        const selectedAnswer = event.target.dataset.answer;
+        const correctAnswerString = state.currentQuestion.correctAnswer.toString();
+        const feedbackEl = document.getElementById('feedback');
+        
+        document.querySelectorAll('.answer-btn').forEach(btn => btn.disabled = true);
+        state.quizActive = false;
+
+        if (state.mode === 'english') {
+            speak(correctAnswerString);
+        }
+
+        if (selectedAnswer === correctAnswerString) {
+            event.target.style.borderColor = 'var(--secondary-color)';
+            feedbackEl.textContent = "答對了！";
+            feedbackEl.style.color = 'var(--secondary-color)';
+            state.correctInLevel++;
+            
+            if (state.mode === 'english') {
+                state.englishQuestionPool.pop();
+            }
+            
+            const levelTarget = state.mode === 'english' ? 5 : 10;
+            if (state.englishQuestionPool.length === 0 && state.mode === 'english') {
+                 setTimeout(() => handleGameComplete('英文'), 1000);
+            } else if (state.correctInLevel >= levelTarget) {
+                setTimeout(handleLevelComplete, 1000);
+            } else {
+                setTimeout(nextQuestion, 1000);
+            }
+        } else {
+            feedbackEl.textContent = `答錯了，正確答案是 ${correctAnswerString}`;
+            feedbackEl.style.color = 'var(--danger-color)';
+            
+            if (state.mode === 'english') {
+                state.englishQuestionPool.sort(() => Math.random() - 0.5);
+            }
+            setTimeout(nextQuestion, 2000);
+        }
+        updateProgress();
+    }
+
+    function nextQuestion() {
+        state.quizActive = true;
+        document.getElementById('feedback').textContent = '';
+        generateAndDisplayQuestion();
+    }
+
+    function handleLevelComplete() {
+        state.level++;
+        if (state.mode !== 'english' && state.level > 5) {
+            handleGameComplete('數學');
+        } else {
+            const levelTarget = state.mode === 'english' ? 5 : 10;
+            showModal("恭喜過關！", `你已答對${levelTarget}題，要繼續挑戰第 ${state.level} 關嗎？`, "繼續下一關");
+        }
+    }
+    
+    function handleGameComplete(type) {
+        const message = type === '英文' 
+            ? "恭喜你完成所有關卡，你是英文單字王!"
+            : "恭喜你完成所有關卡，你是數學小天才!";
+        showModal("挑戰成功！", message, "完成挑戰");
+    }
+
+    function handleModalConfirm() {
+        const isMathFinished = state.mode !== 'english' && state.level > 5;
+        const isEnglishFinished = state.mode === 'english' && state.englishQuestionPool.length === 0;
+
+        if (isMathFinished || isEnglishFinished) {
+            resetToMainMenu();
+        } else {
+            state.correctInLevel = 0;
+            modalOverlay.style.display = 'none';
+            updateProgress();
+            nextQuestion();
+        }
+    }
+
+    // --- Modal & Download ---
+    function showModal(title, message, confirmText) {
+        const isFinal = (confirmText === "完成挑戰");
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-message').textContent = message;
+        document.getElementById('modal-confirm').textContent = confirmText;
+        document.getElementById('modal-cancel').style.display = isFinal ? 'none' : 'inline-block';
+        modalOverlay.style.display = 'flex';
+    }
+
+    function generateDownload() {
+        if (!state.mode) { alert("請先選擇一個模式！"); return; }
+        if (state.mode === 'english' && !state.category) { alert("請選擇一個英文類別！"); return; }
+
+        let questions = [];
+        if (state.mode === 'english') {
+            questions = englishData[state.category].map(item => {
+                const correctAnswer = item.name;
+                const options = new Set([correctAnswer]);
+                const fullWordList = englishData[state.category];
+                while(options.size < 4 && options.size < fullWordList.length) {
+                    const wrongItem = fullWordList[Math.floor(Math.random() * fullWordList.length)];
+                    options.add(wrongItem.name);
+                }
+                const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+                const correctIndex = shuffledOptions.indexOf(correctAnswer) + 1;
+                return {
+                    question: item.icon, answer: correctIndex || '?', 
+                    option1: shuffledOptions[0], option2: shuffledOptions[1], 
+                    option3: shuffledOptions[2], option4: shuffledOptions[3]
+                };
+            });
+        } else {
+            const tempState = { ...state }; // Create a temporary state for generation
+            for(let i=0; i<50; i++) {
+                 const q = generateQuestion();
+                 const correctIndex = q.options.indexOf(q.correctAnswer) + 1;
+                 questions.push({
+                    question: `${q.questionText} = ?`, answer: correctIndex,
+                    option1: q.options[0], option2: q.options[1], 
+                    option3: q.options[2], option4: q.options[3]
+                 });
+            }
+        }
+        
+        const header = (state.mode === 'english') ? ['圖示', '答案', '選項1', '選項2', '選項3', '選項4'] : ['題目', '答案', '選項1', '選項2', '選項3', '選項4'];
+        const excelData = [header, ...questions.map(q => Object.values(q))];
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        ws['!cols'] = [{ width: 15 }, { width: 8 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 }];
+        
+        const fileName = `${state.mode}_${state.category || '練習題'}.xlsx`;
+        XLSX.utils.book_append_sheet(wb, ws, '練習題');
+        XLSX.writeFile(wb, fileName);
+    }
+    </script>
+</body>
+</html>
