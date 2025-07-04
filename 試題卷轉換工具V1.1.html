@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>試題卷轉換工具</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- xlsx.js for creating Excel files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- mammoth.js for reading .docx files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- pdf.js for reading .pdf files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- Tesseract.js for OCR on images -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <!-- Google Fonts: Inter & Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        /* Custom styles for file input */
+        .file-input-label {
+            transition: all 0.3s ease;
+        }
+        .file-input-label:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+        /* Spinner animation */
+        .spinner {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-6">
+        
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800">試題卷轉換工具</h1>
+            <p class="text-gray-500 mt-2">輕鬆將您的試題轉換為 Wordwall, Kahoot, 和 Quizizz 的格式。</p>
+        </div>
+
+        <!-- Step 1: Input -->
+        <div class="space-y-4">
+            <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">1. 輸入試題內容</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Text Area Input -->
+                <div class="space-y-2">
+                    <label for="text-input" class="font-medium text-gray-600">直接貼上文字:</label>
+                    <textarea id="text-input" rows="10" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="(A) 1. 這是第一題...&#10;(A) 選項一 (B) 選項二..."></textarea>
+                </div>
+                <!-- File Input -->
+                <div class="space-y-2">
+                    <label class="font-medium text-gray-600">或上傳檔案:</label>
+                    <label for="file-input" class="file-input-label flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">點擊上傳</span> 或拖曳檔案至此</p>
+                            <p class="text-xs text-gray-500">支援 DOCX, PDF, PNG, JPG</p>
+                        </div>
+                        <input id="file-input" type="file" class="hidden" accept=".docx,.pdf,.png,.jpg">
+                    </label>
+                    <p id="file-name" class="text-sm text-center text-gray-500 mt-1"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: AI Configuration -->
+        <div class="space-y-4">
+            <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">2. AI 輔助 (選用)</h2>
+            <p class="text-sm text-gray-600">如果自動解析失敗，或想從圖片/PDF中提取文字，請啟用 AI。目前僅支援 Gemini API Key。</p>
+            <div class="bg-gray-50 p-4 rounded-lg border">
+                <div class="flex items-center space-x-4">
+                    <label for="gemini-api-key" class="font-medium text-gray-700">Gemini API Key:</label>
+                    <input type="password" id="gemini-api-key" class="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="請輸入您的 Gemini API Key">
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                    <p class="text-xs text-gray-500">您的 API Key 只會儲存在您的瀏覽器中。</p>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline font-semibold">申請API Key</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Conversion -->
+        <div class="space-y-4 text-center">
+            <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">3. 開始轉換</h2>
+            <button id="convert-btn" class="w-full md:w-1/2 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out transform hover:scale-105">
+                開始轉換
+            </button>
+        </div>
+
+        <!-- Status & Results -->
+        <div id="status-area" class="hidden text-center space-y-4 p-4 bg-blue-50 rounded-lg">
+            <div class="flex items-center justify-center space-x-2">
+                <div class="spinner w-6 h-6 rounded-full border-4 border-gray-200"></div>
+                <p id="status-message" class="text-blue-700 font-medium">處理中...</p>
+            </div>
+        </div>
+        
+        <div id="result-area" class="hidden space-y-4">
+            <h2 class="text-xl font-semibold text-gray-700 border-b pb-2">轉換結果</h2>
+            <div id="result-summary" class="p-4 bg-green-50 text-green-800 rounded-lg border border-green-200"></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button data-format="wordwall" class="download-btn bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-all transform hover:scale-105">下載 Wordwall 格式</button>
+                <button data-format="kahoot" class="download-btn bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-700 transition-all transform hover:scale-105">下載 Kahoot 格式</button>
+                <button data-format="quizizz" class="download-btn bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-all transform hover:scale-105">下載 Quizizz 格式</button>
+            </div>
+        </div>
+
+        <!-- Credit Line -->
+        <div class="text-right text-xs text-gray-400 mt-4">
+            Made by Xtjh-Yuccucc
+        </div>
+
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const textInput = document.getElementById('text-input');
+        const fileInput = document.getElementById('file-input');
+        const fileNameDisplay = document.getElementById('file-name');
+        const geminiApiKeyInput = document.getElementById('gemini-api-key');
+        const convertBtn = document.getElementById('convert-btn');
+        const statusArea = document.getElementById('status-area');
+        const statusMessage = document.getElementById('status-message');
+        const resultArea = document.getElementById('result-area');
+        const resultSummary = document.getElementById('result-summary');
+        const downloadButtons = document.querySelectorAll('.download-btn');
+
+        // --- State ---
+        let parsedQuestions = [];
+
+        // --- Event Listeners ---
+        fileInput.addEventListener('change', handleFileSelect);
+        convertBtn.addEventListener('click', handleConversion);
+        downloadButtons.forEach(btn => {
+            btn.addEventListener('click', () => handleDownload(btn.dataset.format));
+        });
+
+        // --- Functions ---
+
+        /**
+         * 處理檔案選擇事件，顯示檔案名稱
+         */
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = `已選擇檔案: ${file.name}`;
+                textInput.value = ''; // Clear text area if file is selected
+                textInput.disabled = true;
+            } else {
+                fileNameDisplay.textContent = '';
+                textInput.disabled = false;
+            }
+        }
+
+        /**
+         * 主轉換流程處理函數
+         */
+        async function handleConversion() {
+            const file = fileInput.files[0];
+            const text = textInput.value;
+            const apiKey = geminiApiKeyInput.value.trim();
+
+            if (!file && !text) {
+                alert('請貼上文字或上傳一個檔案！');
+                return;
+            }
+
+            // 顯示處理中狀態
+            showStatus('開始處理...');
+            resultArea.classList.add('hidden');
+
+            try {
+                let extractedText = text;
+                if (file) {
+                    // 如果有檔案，則從檔案中提取文字
+                    extractedText = await extractTextFromFile(file, apiKey);
+                }
+
+                if (!extractedText || extractedText.trim() === '') {
+                    throw new Error("無法從來源提取任何文字。");
+                }
+
+                // 第一階段：使用正規表示式解析
+                showStatus('正在解析題目格式...');
+                parsedQuestions = parseQuestionsFromText(extractedText);
+                
+                // 如果正規表示式解析失敗，且有提供 API Key，則嘗試使用 AI
+                if (parsedQuestions.length === 0 && apiKey) {
+                    showStatus('自動解析失敗，嘗試使用 Gemini AI 輔助...');
+                    const aiFormattedText = await formatTextWithGemini(extractedText, apiKey);
+                    parsedQuestions = parseQuestionsFromText(aiFormattedText);
+                }
+
+                if (parsedQuestions.length === 0) {
+                    throw new Error("解析失敗，無法識別任何題目。請檢查您的文字格式，或嘗試使用 Gemini AI 輔助。");
+                }
+                
+                // 顯示成功結果
+                showResult(parsedQuestions.length);
+
+            } catch (error) {
+                console.error('轉換錯誤:', error);
+                showStatus(`錯誤: ${error.message}`, true);
+            }
+        }
+
+        /**
+         * 根據檔案類型提取文字
+         * @param {File} file - 使用者上傳的檔案
+         * @param {string} apiKey - Gemini API Key，用於 OCR
+         * @returns {Promise<string>} - 提取出的文字
+         */
+        async function extractTextFromFile(file, apiKey) {
+            const extension = file.name.split('.').pop().toLowerCase();
+            showStatus(`正在讀取 ${extension} 檔案...`);
+
+            if (extension === 'docx') {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                return result.value;
+            } else if (extension === 'pdf') {
+                const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                }
+                return fullText;
+            } else if (['png', 'jpg', 'jpeg'].includes(extension)) {
+                showStatus('正在使用 OCR 辨識圖片中的文字...');
+                const worker = await Tesseract.createWorker('eng+chi_tra');
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+                return text;
+            } else {
+                throw new Error(`不支援的檔案格式: .${extension}`);
+            }
+        }
+
+        /**
+         * 使用正規表示式從文字中解析問題
+         * @param {string} text - 包含問題的完整文字
+         * @returns {Array<Object>} - 解析後的問題物件陣列
+         */
+        function parseQuestionsFromText(text) {
+            const questions = [];
+            // Regex to split text into question blocks. It looks for the pattern (Answer) QuestionNumber.
+            const questionBlocks = text.split(/(?=\(\s*[A-D]\s*\)\s*\d+\.)/g);
+
+            const questionRegex = /^\(\s*([A-D])\s*\)\s*(\d+)\.\s*([\s\S]*)/;
+            const optionRegex = /\(([A-D])\)\s*([^()]+)/g;
+
+            for (const block of questionBlocks) {
+                if (block.trim().length === 0) continue;
+
+                const questionMatch = block.match(questionRegex);
+                if (!questionMatch) continue;
+
+                const [, correctLetter, number, remainingText] = questionMatch;
+                
+                let questionText = remainingText;
+                const options = [];
+                let optionMatch;
+
+                // Find where options start and separate question text from options
+                const firstOptionMatch = remainingText.match(/\(A\)/);
+                if (firstOptionMatch) {
+                    questionText = remainingText.substring(0, firstOptionMatch.index).trim();
+                    const optionsText = remainingText.substring(firstOptionMatch.index);
+                    
+                    while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
+                        options.push({
+                            letter: optionMatch[1],
+                            text: optionMatch[2].trim()
+                        });
+                    }
+                }
+                
+                if (questionText && options.length >= 2) {
+                    questions.push({
+                        number: parseInt(number),
+                        question: questionText,
+                        options: options,
+                        correctAnswer: correctLetter
+                    });
+                }
+            }
+            return questions;
+        }
+
+        /**
+         * 使用 Gemini API 整理文字格式
+         * @param {string} rawText - 原始、未格式化的文字
+         * @param {string} apiKey - 使用者的 Gemini API Key
+         * @returns {Promise<string>} - Gemini 整理後的文字
+         */
+        async function formatTextWithGemini(rawText, apiKey) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            
+            const prompt = `請將以下文字整理成標準的選擇題格式。每一題都必須以 "(正確答案) 題號." 開頭，例如 "(A) 1."。接著是題目內容，然後是選項，例如 "(A) 選項文字 (B) 選項文字"。請嚴格遵守此格式，不要有任何多餘的解釋或文字。這是需要整理的文字：\n\n"${rawText}"`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Gemini API 請求失敗: ${errorData.error.message}`);
+            }
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("Gemini API 未返回有效的格式化文字。");
+            }
+        }
+
+        /**
+         * 處理下載請求，生成對應格式的 Excel 檔案
+         * @param {string} format - 'wordwall', 'kahoot', or 'quizizz'
+         */
+        function handleDownload(format) {
+            if (parsedQuestions.length === 0) {
+                alert('沒有可供下載的題目！');
+                return;
+            }
+
+            let data, header, fileName;
+            const wb = XLSX.utils.book_new();
+
+            switch (format) {
+                case 'wordwall':
+                    header = ['題目', '答案', '選項2', '選項3', '選項4'];
+                    data = parsedQuestions.map(q => {
+                        const correctAnswerText = q.options.find(opt => opt.letter === q.correctAnswer)?.text;
+                        const wrongOptions = q.options.filter(opt => opt.letter !== q.correctAnswer).map(opt => opt.text);
+                        return [q.question, correctAnswerText, ...wrongOptions];
+                    });
+                    fileName = 'wordwall_import.xlsx';
+                    break;
+
+                case 'kahoot':
+                    header = ['Question', 'Answer 1', 'Answer 2', 'Answer 3', 'Answer 4', 'Time limit (sec)', 'Correct answer(s)'];
+                    data = parsedQuestions.map(q => {
+                        const optionsText = q.options.map(opt => opt.text);
+                        const correctIndex = q.options.findIndex(opt => opt.letter === q.correctAnswer) + 1;
+                        return [
+                            q.question,
+                            optionsText[0] || '',
+                            optionsText[1] || '',
+                            optionsText[2] || '',
+                            optionsText[3] || '',
+                            30, // Default time updated to 30 seconds
+                            correctIndex
+                        ];
+                    });
+                    fileName = 'kahoot_import.xlsx';
+                    break;
+
+                case 'quizizz':
+                    header = ['Question Text', 'Question Type', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Correct Answer', 'Time in seconds'];
+                    data = parsedQuestions.map(q => {
+                        // Find the 1-based index of the correct answer
+                        const correctIndex = q.options.findIndex(opt => opt.letter === q.correctAnswer) + 1;
+                        return [
+                            q.question,
+                            'Multiple Choice',
+                            q.options[0]?.text || '',
+                            q.options[1]?.text || '',
+                            q.options[2]?.text || '',
+                            q.options[3]?.text || '',
+                            correctIndex, // Use the numeric index for the correct answer
+                            30 // Default time
+                        ];
+                    });
+                    fileName = 'quizizz_import.xlsx';
+                    break;
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+            XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+            XLSX.writeFile(wb, fileName);
+        }
+
+        /**
+         * 顯示狀態訊息
+         * @param {string} message - 要顯示的訊息
+         * @param {boolean} isError - 是否為錯誤訊息
+         */
+        function showStatus(message, isError = false) {
+            statusArea.classList.remove('hidden');
+            statusMessage.textContent = message;
+            if (isError) {
+                statusArea.classList.remove('bg-blue-50');
+                statusArea.classList.add('bg-red-50');
+                statusMessage.classList.remove('text-blue-700');
+                statusMessage.classList.add('text-red-700');
+                statusArea.querySelector('.spinner').classList.add('hidden');
+            } else {
+                statusArea.classList.add('bg-blue-50');
+                statusArea.classList.remove('bg-red-50');
+                statusMessage.classList.add('text-blue-700');
+                statusMessage.classList.remove('text-red-700');
+                statusArea.querySelector('.spinner').classList.remove('hidden');
+            }
+        }
+
+        /**
+         * 顯示轉換成功後的結果
+         * @param {number} count - 成功解析的題目數量
+         */
+        function showResult(count) {
+            statusArea.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            resultSummary.innerHTML = `🎉 成功解析了 <strong>${count}</strong> 道題目！現在您可以下載適用於各平台的格式。`;
+        }
+
+    </script>
+</body>
+</html>
