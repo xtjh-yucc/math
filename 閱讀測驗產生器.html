@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIRLS 閱讀測驗產生器</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and Babel for running React component in browser -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Adding a default font for better readability */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Helper components to replace lucide-react icons with inline SVGs
+        const Icon = ({ className, children }) => (
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={className}
+            >
+                {children}
+            </svg>
+        );
+
+        const FileText = ({ className }) => (
+            <Icon className={className}>
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <line x1="10" y1="9" x2="8" y2="9" />
+            </Icon>
+        );
+
+        const Upload = ({ className }) => (
+            <Icon className={className}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+            </Icon>
+        );
+
+        const Brain = ({ className }) => (
+            <Icon className={className}>
+                 <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v1.23a.5.5 0 0 0 .34.47c1.33.53 2.16 1.83 2.16 3.3V12a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2V9.5a.5.5 0 0 0 .34-.47c1.33-.53 2.16-1.83 2.16-3.3V2.5A2.5 2.5 0 0 1 9.5 2z" />
+                 <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v1.23a.5.5 0 0 1-.34.47c-1.33.53-2.16 1.83-2.16 3.3V12a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V9.5a.5.5 0 0 1-.34-.47c-1.33-.53-2.16-1.83-2.16-3.3V2.5A2.5 2.5 0 0 0 14.5 2z" />
+                 <path d="M12 14v1a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-1a2 2 0 0 0-2 2z" />
+                 <path d="M12 14v1a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2z" />
+                 <path d="M16 18.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 8 18.5v-1a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5v1z" />
+                 <path d="M20 12v1a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2z" />
+                 <path d="M4 12v1a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z" />
+            </Icon>
+        );
+
+        const Download = ({ className }) => (
+            <Icon className={className}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+            </Icon>
+        );
+
+        const ExternalLink = ({ className }) => (
+            <Icon className={className}>
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+            </Icon>
+        );
+
+        const Settings = ({ className }) => (
+            <Icon className={className}>
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+            </Icon>
+        );
+
+        const AlertCircle = ({ className }) => (
+            <Icon className={className}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+            </Icon>
+        );
+
+        const CheckCircle = ({ className }) => (
+            <Icon className={className}>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+            </Icon>
+        );
+
+        const ReadingQuizGenerator = () => {
+            const { useState, useRef } = React;
+
+            const [inputMode, setInputMode] = useState('text');
+            const [textInput, setTextInput] = useState('');
+            const [isTopicMode, setIsTopicMode] = useState(false);
+            const [articleLength, setArticleLength] = useState('medium');
+            const [numQuestions, setNumQuestions] = useState(5);
+            const [uploadedFile, setUploadedFile] = useState(null);
+            const [generatedArticle, setGeneratedArticle] = useState('');
+            const [generatedQuestions, setGeneratedQuestions] = useState([]);
+            const [showAPIKeyInput, setShowAPIKeyInput] = useState(false);
+            const [geminiAPIKey, setGeminiAPIKey] = useState('');
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [showQuizPage, setShowQuizPage] = useState(false);
+            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+            const [userAnswers, setUserAnswers] = useState([]);
+            const [showResults, setShowResults] = useState(false);
+            const fileInputRef = useRef(null);
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    setUploadedFile(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        setTextInput(e.target.result);
+                        setGeneratedArticle('');
+                        setGeneratedQuestions([]);
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            
+            const callGeminiAPI = async (prompt) => {
+                const apiKey = geminiAPIKey || ""; // Use provided key or "" for proxy
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`API 請求失敗: ${errorBody.error?.message || response.statusText}`);
+                }
+
+                const data = await response.json();
+                if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+                    throw new Error("從 API 收到的回應格式不正確。");
+                }
+                return data.candidates[0].content.parts[0].text;
+            };
+
+            const generateContent = async () => {
+                if (!textInput && !uploadedFile) {
+                    alert('請先輸入內容或上傳檔案。');
+                    return;
+                }
+                
+                setIsProcessing(true);
+                setGeneratedArticle('');
+                setGeneratedQuestions([]);
+                
+                try {
+                    let articleToProcess = textInput;
+
+                    if (isTopicMode) {
+                        const articlePrompt = `請撰寫一篇關於「${textInput}」的${articleLength === 'short' ? '簡短（約150字）' : articleLength === 'medium' ? '中等長度（約400字）' : '詳細（約700字）'}文章。`;
+                        articleToProcess = await callGeminiAPI(articlePrompt);
+                        setGeneratedArticle(articleToProcess);
+                    } else {
+                        setGeneratedArticle(articleToProcess);
+                    }
+
+                    const questionPrompt = `
+                        請就以下文章內容設計 ${numQuestions} 道符合 PIRLS 閱讀理解四個層次的選擇題。
+                        在設計問題時，請不要使用「根據文章」、「根據本文」或類似的詞語作為問題的開頭。
+                        請盡量讓四個層次的問題數量平均分配。
+                        層次包含：(直接理解), (推論理解), (詮釋理解), (評鑑理解)。
+                        每題需要有四個選項，其中只有一個是正確答案。
+
+                        文章內容：
+                        """
+                        ${articleToProcess}
+                        """
+
+                        請嚴格遵循以下 JSON 格式輸出，不要有任何 Markdown 標記或額外說明：
+                        {
+                            "questions": [
+                                {
+                                    "question": "問題內容...",
+                                    "level": "對應的層次",
+                                    "options": ["選項A", "選項B", "選項C", "選項D"],
+                                    "correct": 0,
+                                    "explanation": "解釋為什麼這個是正確答案"
+                                }
+                            ]
+                        }
+                    `;
+
+                    const questionsResponse = await callGeminiAPI(questionPrompt);
+                    const cleanedResponse = questionsResponse.replace(/```json/g, '').replace(/```/g, '');
+                    const parsedQuestions = JSON.parse(cleanedResponse);
+                    setGeneratedQuestions(parsedQuestions.questions || []);
+
+                } catch (error) {
+                    console.error('生成內容時發生錯誤:', error);
+                    alert(`生成內容時發生錯誤: ${error.message}`);
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            const exportToHtml = () => {
+                if (generatedQuestions.length === 0) {
+                    alert('請先生成題目');
+                    return;
+                }
+
+                const escapedArticle = JSON.stringify(generatedArticle);
+                const escapedQuestions = JSON.stringify(generatedQuestions);
+
+                const htmlTemplate = `
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIRLS 閱讀測驗</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div id="quiz-container" class="p-4"></div>
+
+    <script>
+        const article = \${escapedArticle};
+        const questions = \${escapedQuestions};
+        
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+        
+        const quizContainer = document.getElementById('quiz-container');
+
+        const renderQuestion = () => {
+            const q = questions[currentQuestionIndex];
+            if (!q) return;
+
+            quizContainer.innerHTML = \`
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">線上測驗</h2>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 my-4">
+                                <div class="bg-blue-500 h-2.5 rounded-full" style="width: \${((currentQuestionIndex + 1) / questions.length) * 100}%"></div>
+                            </div>
+                            <div class="text-sm text-gray-600 text-right">第 \${currentQuestionIndex + 1} 題 / 共 \${questions.length} 題</div>
+                        </div>
+                        <div class="mb-8 p-4 bg-gray-50 rounded-lg border max-h-48 overflow-y-auto">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800">閱讀文章</h3>
+                            <div class="text-gray-700 leading-relaxed text-sm">\${article}</div>
+                        </div>
+                        <div class="mb-8">
+                            <h3 class="text-xl font-semibold mb-2 text-gray-800">\${q.question}</h3>
+                            <span class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">\${q.level}</span>
+                            <div class="space-y-3 mt-4">
+                                \${q.options.map((option, index) => \`
+                                    <button 
+                                        onclick="selectAnswer(\${index})"
+                                        class="w-full p-4 text-left rounded-lg border-2 transition-all duration-200 flex items-center \${userAnswers[currentQuestionIndex] === index ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300' : 'border-gray-200 bg-white hover:border-blue-400'}">
+                                        <span class="font-bold mr-4 text-gray-600">\${String.fromCharCode(65 + index)}.</span>
+                                        <span class="text-gray-800">\${option}</span>
+                                    </button>
+                                \`).join('')}
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button id="next-btn" onclick="nextQuestion()" \${userAnswers[currentQuestionIndex] === null ? 'disabled' : ''} class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold">
+                                \${currentQuestionIndex === questions.length - 1 ? '完成測驗' : '下一題'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            \`;
+        };
+
+        const renderResults = () => {
+            const score = userAnswers.reduce((acc, answer, i) => acc + (answer === questions[i].correct ? 1 : 0), 0);
+            const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+            
+            quizContainer.innerHTML = \`
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                        <div class="text-center mb-8">
+                            <div class="text-6xl mb-4">\${percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪'}</div>
+                            <h2 class="text-3xl font-bold text-gray-800 mb-4">測驗完成！</h2>
+                            <div class="text-xl text-gray-600 mb-6">您的分數：\${score} / \${questions.length} (\${percentage}%)</div>
+                        </div>
+                        <div class="space-y-4 mb-8">
+                            \${questions.map((q, index) => \`
+                                <div class="border rounded-lg p-4 \${userAnswers[index] === q.correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}">
+                                    <div class="flex items-start gap-3 mb-2">
+                                        <span class="text-xl">\${userAnswers[index] === q.correct ? '✅' : '❌'}</span>
+                                        <div>
+                                            <span class="font-semibold text-gray-800">第 \${index + 1} 題: \${q.question}</span>
+                                            <span class="text-xs ml-2 font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">\${q.level}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm text-gray-700 pl-8">
+                                        <p><span class="font-semibold text-green-700">正確答案：</span>\${q.options[q.correct]}</p>
+                                        \${userAnswers[index] !== q.correct ? \`<p><span class="font-semibold text-red-700">您的答案：</span>\${userAnswers[index] !== null ? q.options[userAnswers[index]] : '未作答'}</p>\` : ''}
+                                        <p class="mt-1 text-gray-600"><span class="font-semibold">說明：</span>\${q.explanation}</p>
+                                    </div>
+                                </div>
+                            \`).join('')}
+                        </div>
+                        <div class="flex justify-center gap-4">
+                            <button onclick="restartQuiz()" class="w-full sm:w-auto px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold">
+                                重新測驗
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            \`;
+        };
+        
+        window.selectAnswer = (index) => {
+            userAnswers[currentQuestionIndex] = index;
+            renderQuestion();
+        };
+
+        window.nextQuestion = () => {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                renderResults();
+            }
+        };
+
+        window.restartQuiz = () => {
+            currentQuestionIndex = 0;
+            userAnswers = new Array(questions.length).fill(null);
+            renderQuestion();
+        };
+
+        renderQuestion();
+    <\/script>
+</body>
+</html>
+    `;
+
+                const blob = new Blob([htmlTemplate], { type: 'text/html;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'index.html'; // Changed filename to index.html
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const exportToFormat = (format) => {
+                if (generatedQuestions.length === 0) {
+                    alert('請先生成題目');
+                    return;
+                }
+                let csvContent = '';
+                let filename = '';
+                switch (format) {
+                    case 'wordwall':
+                        csvContent = 'Question,Option 1,Option 2,Option 3,Option 4,Answer\n';
+                        generatedQuestions.forEach(q => {
+                            csvContent += `"${q.question}","${q.options[0]}","${q.options[1]}","${q.options[2]}","${q.options[3]}","${q.options[q.correct]}"\n`;
+                        });
+                        filename = 'wordwall_quiz.csv';
+                        break;
+                    case 'kahoot':
+                        csvContent = 'Question,Answer 1,Answer 2,Answer 3,Answer 4,Correct Answer,Time\n';
+                        generatedQuestions.forEach(q => {
+                            csvContent += `"${q.question}","${q.options[0]}","${q.options[1]}","${q.options[2]}","${q.options[3]}","${q.correct + 1}","30"\n`;
+                        });
+                        filename = 'kahoot_quiz.csv';
+                        break;
+                    case 'quizizz':
+                        csvContent = 'Question,Option A,Option B,Option C,Option D,Correct Answer,Question Type\n';
+                        generatedQuestions.forEach(q => {
+                            const correctLetter = String.fromCharCode(65 + q.correct);
+                            csvContent += `"${q.question}","${q.options[0]}","${q.options[1]}","${q.options[2]}","${q.options[3]}","${correctLetter}","Multiple Choice"\n`;
+                        });
+                        filename = 'quizizz_quiz.csv';
+                        break;
+                    default: return;
+                }
+                const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const startQuiz = () => {
+                if (generatedQuestions.length === 0) {
+                    alert('請先生成題目');
+                    return;
+                }
+                setShowQuizPage(true);
+                setCurrentQuestionIndex(0);
+                setUserAnswers(new Array(generatedQuestions.length).fill(null));
+                setShowResults(false);
+            };
+
+            const handleAnswerSelect = (answerIndex) => {
+                const newAnswers = [...userAnswers];
+                newAnswers[currentQuestionIndex] = answerIndex;
+                setUserAnswers(newAnswers);
+            };
+
+            const nextQuestion = () => {
+                if (currentQuestionIndex < generatedQuestions.length - 1) {
+                    setCurrentQuestionIndex(currentQuestionIndex + 1);
+                } else {
+                    setShowResults(true);
+                }
+            };
+
+            const calculateScore = () => {
+                return userAnswers.reduce((score, answer, index) => {
+                    return score + (answer === generatedQuestions[index].correct ? 1 : 0);
+                }, 0);
+            };
+
+            const renderQuizPage = () => {
+                if (!showQuizPage) return null;
+
+                if (showResults) {
+                    const score = calculateScore();
+                    const percentage = generatedQuestions.length > 0 ? Math.round((score / generatedQuestions.length) * 100) : 0;
+                    return (
+                        <div className="fixed inset-0 bg-white z-50 p-4 overflow-y-auto">
+                            <div className="max-w-4xl mx-auto">
+                                <div className="bg-white rounded-xl p-6 sm:p-8">
+                                    <div className="text-center mb-8">
+                                        <div className="text-6xl mb-4">
+                                            {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪'}
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-800 mb-4">測驗完成！</h2>
+                                        <div className="text-xl text-gray-600 mb-6">
+                                            您的分數：{score} / {generatedQuestions.length} ({percentage}%)
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 mb-8">
+                                        {generatedQuestions.map((q, index) => (
+                                            <div key={index} className={`border rounded-lg p-4 ${userAnswers[index] === q.correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                                                <div className="flex items-start gap-3 mb-2">
+                                                    {userAnswers[index] === q.correct ? (<CheckCircle className="text-green-500 w-5 h-5 flex-shrink-0 mt-1" />) : (<AlertCircle className="text-red-500 w-5 h-5 flex-shrink-0 mt-1" />)}
+                                                    <div>
+                                                        <span className="font-semibold text-gray-800">第 {index + 1} 題: {q.question}</span>
+                                                        <span className="text-xs ml-2 font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{q.level}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm text-gray-700 pl-8">
+                                                    <p><span className="font-semibold text-green-700">正確答案：</span>{q.options[q.correct]}</p>
+                                                    {userAnswers[index] !== q.correct && (<p><span className="font-semibold text-red-700">您的答案：</span>{userAnswers[index] !== null ? q.options[userAnswers[index]] : '未作答'}</p>)}
+                                                    <p className="mt-1 text-gray-600"><span className="font-semibold">說明：</span>{q.explanation}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-center gap-4">
+                                        <button onClick={startQuiz} className="w-full sm:w-auto px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold">
+                                            重新測驗
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
+                const currentQuestion = generatedQuestions[currentQuestionIndex];
+                if (!currentQuestion) return null;
+
+                return (
+                    <div className="fixed inset-0 bg-white z-50 p-4 overflow-y-auto">
+                        <div className="max-w-4xl mx-auto">
+                            <div className="bg-white rounded-xl p-6 sm:p-8">
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-2xl font-bold text-gray-800">線上測驗</h2>
+                                        <button onClick={() => setShowQuizPage(false)} className="text-gray-500 hover:text-gray-700 font-semibold">結束測驗</button>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                                        <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${((currentQuestionIndex + 1) / generatedQuestions.length) * 100}%` }}></div>
+                                    </div>
+                                    <div className="text-sm text-gray-600 text-right">
+                                        第 {currentQuestionIndex + 1} 題 / 共 {generatedQuestions.length} 題
+                                    </div>
+                                </div>
+                                <div className="mb-8 p-4 bg-gray-50 rounded-lg border max-h-48 overflow-y-auto">
+                                    <h3 className="text-lg font-semibold mb-2 text-gray-800">閱讀文章</h3>
+                                    <div className="text-gray-700 leading-relaxed text-sm">{generatedArticle}</div>
+                                </div>
+                                <div className="mb-8">
+                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">{currentQuestion.question}</h3>
+                                    <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{currentQuestion.level}</span>
+                                    <div className="space-y-3 mt-4">
+                                        {currentQuestion.options.map((option, index) => (
+                                            <button key={index} onClick={() => handleAnswerSelect(index)} className={`w-full p-4 text-left rounded-lg border-2 transition-all duration-200 flex items-center ${userAnswers[currentQuestionIndex] === index ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300' : 'border-gray-200 hover:border-blue-400 bg-white'}`}>
+                                                <span className={`font-bold mr-4 ${userAnswers[currentQuestionIndex] === index ? 'text-blue-700' : 'text-gray-600'}`}>{String.fromCharCode(65 + index)}.</span>
+                                                <span className={`${userAnswers[currentQuestionIndex] === index ? 'text-blue-800' : 'text-gray-800'}`}>{option}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex justify-end">
+                                    <button onClick={nextQuestion} disabled={userAnswers[currentQuestionIndex] === null} className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold">
+                                        {currentQuestionIndex === generatedQuestions.length - 1 ? '完成測驗' : '下一題'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <>
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                                <div className="mb-8 text-center">
+                                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">PIRLS 閱讀測驗產生器</h1>
+                                    <p className="text-gray-600">根據文章或主題，智能生成四個閱讀理解層次的題目</p>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Left Panel: Input & Settings */}
+                                    <div className="space-y-6">
+                                        <div className="bg-gray-50 rounded-lg p-6 border">
+                                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-gray-700"><FileText className="w-6 h-6 text-blue-500" />1. 內容輸入</h2>
+                                            <div className="flex gap-2 mb-4 p-1 bg-gray-200 rounded-lg">
+                                                <button onClick={() => setInputMode('text')} className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-semibold ${inputMode === 'text' ? 'bg-white text-blue-600 shadow' : 'bg-transparent text-gray-600'}`}>文字/主題</button>
+                                                <button onClick={() => setInputMode('file')} className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-semibold ${inputMode === 'file' ? 'bg-white text-blue-600 shadow' : 'bg-transparent text-gray-600'}`}>檔案上傳</button>
+                                            </div>
+                                            {inputMode === 'text' ? (
+                                                <div className="space-y-4">
+                                                    <div className="flex gap-2 p-1 bg-gray-200 rounded-lg">
+                                                        <button onClick={() => setIsTopicMode(false)} className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-semibold ${!isTopicMode ? 'bg-white text-blue-600 shadow' : 'bg-transparent text-gray-600'}`}>貼上完整文章</button>
+                                                        <button onClick={() => setIsTopicMode(true)} className={`w-full px-4 py-2 rounded-md transition-colors text-sm font-semibold ${isTopicMode ? 'bg-white text-blue-600 shadow' : 'bg-transparent text-gray-600'}`}>由主題生成</button>
+                                                    </div>
+                                                    <textarea value={textInput} onChange={(e) => setTextInput(e.target.value)} placeholder={isTopicMode ? "請輸入主題（例如：臺灣黑熊的保育）" : "請在此貼上完整的文章內容"} className="w-full h-40 p-3 border rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                                    {isTopicMode && (
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">文章長度</label>
+                                                            <select value={articleLength} onChange={(e) => setArticleLength(e.target.value)} className="w-full p-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                                <option value="short">短文（約150字）</option>
+                                                                <option value="medium">中篇（約400字）</option>
+                                                                <option value="long">長文（約700字）</option>
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors" onClick={() => fileInputRef.current?.click()}>
+                                                        <Upload className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+                                                        <p className="font-semibold text-blue-600">{uploadedFile ? uploadedFile.name : '點擊或拖曳檔案到此處'}</p>
+                                                        <p className="text-xs text-gray-500 mt-1">支援格式：TXT, PDF, DOCX 等</p>
+                                                    </div>
+                                                    <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleFileUpload} className="hidden" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="bg-gray-50 rounded-lg p-6 border">
+                                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-gray-700"><Settings className="w-6 h-6 text-blue-500" />2. 測驗設定</h2>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label htmlFor="numQuestions" className="block text-sm font-medium text-gray-700 mb-2">題目數量</label>
+                                                    <input type="number" id="numQuestions" value={numQuestions} onChange={(e) => setNumQuestions(Math.max(1, parseInt(e.target.value) || 1))} className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" min="1" max="10" />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <input type="checkbox" id="aiAssist" checked={showAPIKeyInput} onChange={(e) => setShowAPIKeyInput(e.target.checked)} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" />
+                                                    <label htmlFor="aiAssist" className="text-sm font-medium text-gray-700">使用自己的 Gemini API Key</label>
+                                                </div>
+                                                {showAPIKeyInput && (
+                                                    <div className="space-y-2">
+                                                        <input type="password" value={geminiAPIKey} onChange={(e) => setGeminiAPIKey(e.target.value)} placeholder="貼上您的 Gemini API Key" className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                                        <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1"><ExternalLink className="w-3 h-3" />如何取得 API Key</a>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button onClick={generateContent} disabled={isProcessing} className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 font-semibold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                            {isProcessing ? (<><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>處理中...</>) : (<><Brain className="w-6 h-6" />生成 PIRLS 測驗</>)}
+                                        </button>
+                                    </div>
+                                    {/* Right Panel: Output */}
+                                    <div className="space-y-6">
+                                        {(generatedArticle || generatedQuestions.length > 0) ? (
+                                            <>
+                                                {generatedArticle && (<div className="bg-gray-50 rounded-lg p-6 border"><h3 className="text-lg font-semibold mb-2 text-gray-700">文章預覽</h3><div className="bg-white p-3 rounded-lg border max-h-40 overflow-y-auto text-sm text-gray-800 leading-relaxed">{generatedArticle}</div></div>)}
+                                                {generatedQuestions.length > 0 && (
+                                                    <div className="bg-gray-50 rounded-lg p-6 border">
+                                                        <h3 className="text-lg font-semibold mb-2 text-gray-700">題目預覽</h3>
+                                                        <div className="space-y-4 pr-2">
+                                                            {generatedQuestions.map((q, index) => (
+                                                                <div key={index} className="bg-white p-4 rounded-lg border text-sm">
+                                                                    <p className="font-semibold text-gray-800 mb-2">{index + 1}. {q.question}</p>
+                                                                    <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full mb-2 inline-block">{q.level}</span>
+                                                                    <ul className="space-y-1 text-xs list-none">
+                                                                        {q.options.map((option, optIndex) => (
+                                                                            <li key={optIndex} className={`pl-2 py-1 rounded ${optIndex === q.correct ? 'text-green-800 bg-green-100 font-bold' : 'text-gray-700'}`}>
+                                                                                {String.fromCharCode(65 + optIndex)}. {option}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {generatedQuestions.length > 0 && (
+                                                    <div className="bg-gray-50 rounded-lg p-6 border">
+                                                        <h3 className="text-lg font-semibold mb-4 text-gray-700">主要操作</h3>
+                                                        <div className="space-y-3">
+                                                            <button onClick={startQuiz} className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold flex items-center justify-center gap-2">
+                                                                <ExternalLink className="w-5 h-5" />線上立即測驗
+                                                            </button>
+                                                            <button onClick={exportToHtml} className="w-full py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold flex items-center justify-center gap-2">
+                                                                <Download className="w-5 h-5" />匯出成 HTML 檔案
+                                                            </button>
+                                                            <a href="https://yay.boo" target="_blank" rel="noopener noreferrer" className="w-full py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-semibold flex items-center justify-center gap-2">
+                                                                <Upload className="w-5 h-5" />上傳至 yay.boo 平台
+                                                            </a>
+                                                        </div>
+                                                        <div className="mt-4 pt-4 border-t">
+                                                            <h4 className="text-md font-semibold mb-3 text-gray-600 text-center">匯出至其他測驗平台</h4>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                                <button onClick={() => exportToFormat('wordwall')} className="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center gap-2 text-sm"><Download className="w-4 h-4" />Wordwall</button>
+                                                                <button onClick={() => exportToFormat('kahoot')} className="w-full py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 text-sm"><Download className="w-4 h-4" />Kahoot</button>
+                                                                <button onClick={() => exportToFormat('quizizz')} className="w-full py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2 text-sm"><Download className="w-4 h-4" />Quizizz</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border border-dashed">
+                                                <div className="text-center text-gray-500">
+                                                    <FileText size={48} className="mx-auto mb-4" />
+                                                    <h3 className="text-lg font-semibold">結果將顯示於此</h3>
+                                                    <p className="text-sm">請先輸入內容並生成測驗</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {renderQuizPage()}
+                </>
+            );
+        };
+
+        ReactDOM.render(<ReadingQuizGenerator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
