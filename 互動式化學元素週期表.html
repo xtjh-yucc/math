@@ -102,8 +102,9 @@
             overflow-x: auto;
             flex: 1;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            padding-top: 30px;
         }
         
         .table-grid {
@@ -180,13 +181,9 @@
         .alkali-metal { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
         .alkaline-earth { background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); color: white; }
         .transition-metal { background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%); color: white; }
-        .post-transition { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
-        .metalloid { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
-        .reactive-nonmetal { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .other-metal { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .reactive-nonmetal { background: linear-gradient(135deg, #c3f0ca 0%, #fad0c4 100%); }
         .noble-gas { background: linear-gradient(135deg, #e0c3fc 0%, #9bb5ff 100%); }
-        .lanthanide { background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%); }
-        .actinide { background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%); }
-        .unknown { background: linear-gradient(135deg, #ddd 0%, #bbb 100%); }
         
         /* 物質狀態顯示模式 */
         .state-solid { background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; }
@@ -404,6 +401,7 @@
             
             .periodic-table {
                 padding: 10px;
+                padding-top: 20px;
             }
             
             .table-grid {
@@ -577,11 +575,11 @@
                     <div class="stat-label">氣體元素</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">35</div>
+                    <div class="stat-number">38</div>
                     <div class="stat-label">過渡金屬</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">11</div>
+                    <div class="stat-number">21</div>
                     <div class="stat-label">活性非金屬</div>
                 </div>
             </div>
@@ -601,475 +599,475 @@
         </div>
         
         <div class="periodic-table">
-            <div class="table-grid" id="periodicTable"><div class="element reactive-nonmetal">
+            <div class="table-grid" id="periodicTable"><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">1</div>
                     <div class="symbol">H</div>
                     <div class="name">氫</div>
-                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element noble-gas">
+                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element noble-gas" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">2</div>
                     <div class="symbol">He</div>
                     <div class="name">氦</div>
-                </div><div class="element alkali-metal">
+                </div><div class="element alkali-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">3</div>
                     <div class="symbol">Li</div>
                     <div class="name">鋰</div>
-                </div><div class="element alkaline-earth">
+                </div><div class="element alkaline-earth" style="border-color: rgb(255, 215, 0); box-shadow: rgb(255, 215, 0) 0px 0px 15px;">
                     <div class="atomic-number">4</div>
                     <div class="symbol">Be</div>
                     <div class="name">鈹</div>
-                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element metalloid">
+                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">5</div>
                     <div class="symbol">B</div>
                     <div class="name">硼</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">6</div>
                     <div class="symbol">C</div>
                     <div class="name">碳</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">7</div>
                     <div class="symbol">N</div>
                     <div class="name">氮</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">8</div>
                     <div class="symbol">O</div>
                     <div class="name">氧</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">9</div>
                     <div class="symbol">F</div>
                     <div class="name">氟</div>
-                </div><div class="element noble-gas">
+                </div><div class="element noble-gas" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">10</div>
                     <div class="symbol">Ne</div>
                     <div class="name">氖</div>
-                </div><div class="element alkali-metal">
+                </div><div class="element alkali-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">11</div>
                     <div class="symbol">Na</div>
                     <div class="name">鈉</div>
-                </div><div class="element alkaline-earth">
+                </div><div class="element alkaline-earth" style="border-color: rgb(255, 215, 0); box-shadow: rgb(255, 215, 0) 0px 0px 15px;">
                     <div class="atomic-number">12</div>
                     <div class="symbol">Mg</div>
                     <div class="name">鎂</div>
-                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element post-transition">
+                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">13</div>
                     <div class="symbol">Al</div>
                     <div class="name">鋁</div>
-                </div><div class="element metalloid">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">14</div>
                     <div class="symbol">Si</div>
                     <div class="name">矽</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">15</div>
                     <div class="symbol">P</div>
                     <div class="name">磷</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">16</div>
                     <div class="symbol">S</div>
                     <div class="name">硫</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">17</div>
                     <div class="symbol">Cl</div>
                     <div class="name">氯</div>
-                </div><div class="element noble-gas">
+                </div><div class="element noble-gas" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">18</div>
                     <div class="symbol">Ar</div>
                     <div class="name">氬</div>
-                </div><div class="element alkali-metal">
+                </div><div class="element alkali-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">19</div>
                     <div class="symbol">K</div>
                     <div class="name">鉀</div>
-                </div><div class="element alkaline-earth">
+                </div><div class="element alkaline-earth" style="border-color: rgb(255, 215, 0); box-shadow: rgb(255, 215, 0) 0px 0px 15px;">
                     <div class="atomic-number">20</div>
                     <div class="symbol">Ca</div>
                     <div class="name">鈣</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">21</div>
                     <div class="symbol">Sc</div>
                     <div class="name">鈧</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">22</div>
                     <div class="symbol">Ti</div>
                     <div class="name">鈦</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">23</div>
                     <div class="symbol">V</div>
                     <div class="name">釩</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">24</div>
                     <div class="symbol">Cr</div>
                     <div class="name">鉻</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">25</div>
                     <div class="symbol">Mn</div>
                     <div class="name">錳</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">26</div>
                     <div class="symbol">Fe</div>
                     <div class="name">鐵</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">27</div>
                     <div class="symbol">Co</div>
                     <div class="name">鈷</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">28</div>
                     <div class="symbol">Ni</div>
                     <div class="name">鎳</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">29</div>
                     <div class="symbol">Cu</div>
                     <div class="name">銅</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">30</div>
                     <div class="symbol">Zn</div>
                     <div class="name">鋅</div>
-                </div><div class="element post-transition">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">31</div>
                     <div class="symbol">Ga</div>
                     <div class="name">鎵</div>
-                </div><div class="element metalloid">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">32</div>
                     <div class="symbol">Ge</div>
                     <div class="name">鍺</div>
-                </div><div class="element metalloid">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">33</div>
                     <div class="symbol">As</div>
                     <div class="name">砷</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">34</div>
                     <div class="symbol">Se</div>
                     <div class="name">硒</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">35</div>
                     <div class="symbol">Br</div>
                     <div class="name">溴</div>
-                </div><div class="element noble-gas">
+                </div><div class="element noble-gas" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">36</div>
                     <div class="symbol">Kr</div>
                     <div class="name">氪</div>
-                </div><div class="element alkali-metal">
+                </div><div class="element alkali-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">37</div>
                     <div class="symbol">Rb</div>
                     <div class="name">銣</div>
-                </div><div class="element alkaline-earth">
+                </div><div class="element alkaline-earth" style="border-color: rgb(255, 215, 0); box-shadow: rgb(255, 215, 0) 0px 0px 15px;">
                     <div class="atomic-number">38</div>
                     <div class="symbol">Sr</div>
                     <div class="name">鍶</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">39</div>
                     <div class="symbol">Y</div>
                     <div class="name">釔</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">40</div>
                     <div class="symbol">Zr</div>
                     <div class="name">鋯</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">41</div>
                     <div class="symbol">Nb</div>
                     <div class="name">鈮</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">42</div>
                     <div class="symbol">Mo</div>
                     <div class="name">鉬</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">43</div>
                     <div class="symbol">Tc</div>
                     <div class="name">鎝</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">44</div>
                     <div class="symbol">Ru</div>
                     <div class="name">釕</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">45</div>
                     <div class="symbol">Rh</div>
                     <div class="name">銠</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">46</div>
                     <div class="symbol">Pd</div>
                     <div class="name">鈀</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">47</div>
                     <div class="symbol">Ag</div>
                     <div class="name">銀</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">48</div>
                     <div class="symbol">Cd</div>
                     <div class="name">鎘</div>
-                </div><div class="element post-transition">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">49</div>
                     <div class="symbol">In</div>
                     <div class="name">銦</div>
-                </div><div class="element post-transition">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">50</div>
                     <div class="symbol">Sn</div>
                     <div class="name">錫</div>
-                </div><div class="element metalloid">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">51</div>
                     <div class="symbol">Sb</div>
                     <div class="name">銻</div>
-                </div><div class="element metalloid">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">52</div>
                     <div class="symbol">Te</div>
                     <div class="name">碲</div>
-                </div><div class="element reactive-nonmetal">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">53</div>
                     <div class="symbol">I</div>
                     <div class="name">碘</div>
-                </div><div class="element noble-gas">
+                </div><div class="element noble-gas" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">54</div>
                     <div class="symbol">Xe</div>
                     <div class="name">氙</div>
-                </div><div class="element alkali-metal">
+                </div><div class="element alkali-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">55</div>
                     <div class="symbol">Cs</div>
                     <div class="name">銫</div>
-                </div><div class="element alkaline-earth">
+                </div><div class="element alkaline-earth" style="border-color: rgb(255, 215, 0); box-shadow: rgb(255, 215, 0) 0px 0px 15px;">
                     <div class="atomic-number">56</div>
                     <div class="symbol">Ba</div>
                     <div class="name">鋇</div>
-                </div><div class="element empty"></div><div class="element transition-metal">
+                </div><div class="element empty"></div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">72</div>
                     <div class="symbol">Hf</div>
                     <div class="name">鉿</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">73</div>
                     <div class="symbol">Ta</div>
                     <div class="name">鉭</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">74</div>
                     <div class="symbol">W</div>
                     <div class="name">鎢</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">75</div>
                     <div class="symbol">Re</div>
                     <div class="name">錸</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">76</div>
                     <div class="symbol">Os</div>
                     <div class="name">鋨</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">77</div>
                     <div class="symbol">Ir</div>
                     <div class="name">銥</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">78</div>
                     <div class="symbol">Pt</div>
                     <div class="name">鉑</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">79</div>
                     <div class="symbol">Au</div>
                     <div class="name">金</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">80</div>
                     <div class="symbol">Hg</div>
                     <div class="name">汞</div>
-                </div><div class="element post-transition">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">81</div>
                     <div class="symbol">Tl</div>
                     <div class="name">鉈</div>
-                </div><div class="element post-transition">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">82</div>
                     <div class="symbol">Pb</div>
                     <div class="name">鉛</div>
-                </div><div class="element post-transition">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">83</div>
                     <div class="symbol">Bi</div>
                     <div class="name">鉍</div>
-                </div><div class="element post-transition">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">84</div>
                     <div class="symbol">Po</div>
                     <div class="name">釙</div>
-                </div><div class="element metalloid">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">85</div>
                     <div class="symbol">At</div>
                     <div class="name">砈</div>
-                </div><div class="element noble-gas">
+                </div><div class="element noble-gas" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">86</div>
                     <div class="symbol">Rn</div>
                     <div class="name">氡</div>
-                </div><div class="element alkali-metal">
+                </div><div class="element alkali-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">87</div>
                     <div class="symbol">Fr</div>
                     <div class="name">鍅</div>
-                </div><div class="element alkaline-earth">
+                </div><div class="element alkaline-earth" style="border-color: rgb(255, 215, 0); box-shadow: rgb(255, 215, 0) 0px 0px 15px;">
                     <div class="atomic-number">88</div>
                     <div class="symbol">Ra</div>
                     <div class="name">鐳</div>
-                </div><div class="element empty"></div><div class="element transition-metal">
+                </div><div class="element empty"></div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">104</div>
                     <div class="symbol">Rf</div>
                     <div class="name">鑪</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">105</div>
                     <div class="symbol">Db</div>
                     <div class="name">𨧀</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">106</div>
                     <div class="symbol">Sg</div>
                     <div class="name">𨭎</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">107</div>
                     <div class="symbol">Bh</div>
                     <div class="name">𨨏</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">108</div>
                     <div class="symbol">Hs</div>
                     <div class="name">𨭆</div>
-                </div><div class="element unknown">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">109</div>
                     <div class="symbol">Mt</div>
                     <div class="name">鿏</div>
-                </div><div class="element unknown">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">110</div>
                     <div class="symbol">Ds</div>
                     <div class="name">𨭎</div>
-                </div><div class="element unknown">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">111</div>
                     <div class="symbol">Rg</div>
                     <div class="name">錀</div>
-                </div><div class="element transition-metal">
+                </div><div class="element transition-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">112</div>
                     <div class="symbol">Cn</div>
                     <div class="name">鎶</div>
-                </div><div class="element unknown">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">113</div>
                     <div class="symbol">Nh</div>
                     <div class="name">鉨</div>
-                </div><div class="element unknown">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">114</div>
                     <div class="symbol">Fl</div>
                     <div class="name">鈇</div>
-                </div><div class="element unknown">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">115</div>
                     <div class="symbol">Mc</div>
                     <div class="name">鏌</div>
-                </div><div class="element unknown">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">116</div>
                     <div class="symbol">Lv</div>
                     <div class="name">鉝</div>
-                </div><div class="element unknown">
+                </div><div class="element reactive-nonmetal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">117</div>
                     <div class="symbol">Ts</div>
                     <div class="name">鿬</div>
-                </div><div class="element unknown">
+                </div><div class="element noble-gas" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">118</div>
                     <div class="symbol">Og</div>
                     <div class="name">鿫</div>
-                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element lanthanide">
+                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">57</div>
                     <div class="symbol">La</div>
                     <div class="name">鑭</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">58</div>
                     <div class="symbol">Ce</div>
                     <div class="name">鈰</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">59</div>
                     <div class="symbol">Pr</div>
                     <div class="name">鐠</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">60</div>
                     <div class="symbol">Nd</div>
                     <div class="name">釹</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">61</div>
                     <div class="symbol">Pm</div>
                     <div class="name">鉕</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">62</div>
                     <div class="symbol">Sm</div>
                     <div class="name">釤</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">63</div>
                     <div class="symbol">Eu</div>
                     <div class="name">銪</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">64</div>
                     <div class="symbol">Gd</div>
                     <div class="name">釓</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">65</div>
                     <div class="symbol">Tb</div>
                     <div class="name">鋱</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">66</div>
                     <div class="symbol">Dy</div>
                     <div class="name">鏑</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">67</div>
                     <div class="symbol">Ho</div>
                     <div class="name">鈥</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">68</div>
                     <div class="symbol">Er</div>
                     <div class="name">鉺</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">69</div>
                     <div class="symbol">Tm</div>
                     <div class="name">銩</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">70</div>
                     <div class="symbol">Yb</div>
                     <div class="name">鐿</div>
-                </div><div class="element lanthanide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">71</div>
                     <div class="symbol">Lu</div>
                     <div class="name">鎦</div>
-                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element actinide">
+                </div><div class="element empty"></div><div class="element empty"></div><div class="element empty"></div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">89</div>
                     <div class="symbol">Ac</div>
                     <div class="name">錒</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">90</div>
                     <div class="symbol">Th</div>
                     <div class="name">釷</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">91</div>
                     <div class="symbol">Pa</div>
                     <div class="name">鏷</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">92</div>
                     <div class="symbol">U</div>
                     <div class="name">鈾</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">93</div>
                     <div class="symbol">Np</div>
                     <div class="name">錼</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">94</div>
                     <div class="symbol">Pu</div>
                     <div class="name">鈽</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">95</div>
                     <div class="symbol">Am</div>
                     <div class="name">鋂</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">96</div>
                     <div class="symbol">Cm</div>
                     <div class="name">鋦</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">97</div>
                     <div class="symbol">Bk</div>
                     <div class="name">錇</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">98</div>
                     <div class="symbol">Cf</div>
                     <div class="name">鐦</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">99</div>
                     <div class="symbol">Es</div>
                     <div class="name">鑀</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">100</div>
                     <div class="symbol">Fm</div>
                     <div class="name">鐨</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">101</div>
                     <div class="symbol">Md</div>
                     <div class="name">鍆</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">102</div>
                     <div class="symbol">No</div>
                     <div class="name">鍩</div>
-                </div><div class="element actinide">
+                </div><div class="element other-metal" style="border-color: rgb(221, 221, 221);">
                     <div class="atomic-number">103</div>
                     <div class="symbol">Lr</div>
                     <div class="name">鐒</div>
@@ -1080,33 +1078,103 @@
                     <div class="legend-item"><div class="legend-color alkali-metal"></div><span>鹼金屬 (6個)</span></div>
                     <div class="legend-item"><div class="legend-color alkaline-earth"></div><span>鹼土金屬 (6個)</span></div>
                     <div class="legend-item"><div class="legend-color transition-metal"></div><span>過渡金屬 (38個)</span></div>
-                    <div class="legend-item"><div class="legend-color post-transition"></div><span>後過渡金屬 (7個)</span></div>
-                    <div class="legend-item"><div class="legend-color metalloid"></div><span>類金屬 (7個)</span></div>
-                    <div class="legend-item"><div class="legend-color reactive-nonmetal"></div><span>活性非金屬 (16個)</span></div>
+                    <div class="legend-item"><div class="legend-color other-metal"></div><span>其他金屬 (51個)</span></div>
+                    <div class="legend-item"><div class="legend-color reactive-nonmetal"></div><span>非金屬 (10個)</span></div>
                     <div class="legend-item"><div class="legend-color noble-gas"></div><span>惰性氣體 (7個)</span></div>
-                    <div class="legend-item"><div class="legend-color lanthanide"></div><span>鑭系元素 (15個)</span></div>
-                    <div class="legend-item"><div class="legend-color actinide"></div><span>錒系元素 (15個)</span></div>
-                    <div class="legend-item"><div class="legend-color unknown"></div><span>未知性質 (1個)</span></div>
                 </div>
     </div>
     
-    <div class="overlay" id="overlay" onclick="closePanel()"></div>
+    <div class="overlay show" id="overlay" onclick="closePanel()"></div>
     
     <div class="info-panel" id="infoPanel">
         <button class="close-btn" onclick="closePanel()">×</button>
         <div id="elementInfo">
-            <!-- 元素詳細資訊將在這裡顯示 -->
-        </div>
+                <h2 style="color: #333; margin-bottom: 20px; text-align: center;">
+                    鋰 (Li)
+                </h2>
+                <div style="display: grid; gap: 15px;">
+                    <div><strong>原子序：</strong>3</div>
+                    <div><strong>週期：</strong>2</div>
+                    <div><strong>族：</strong>1</div>
+                    <div><strong>狀態：</strong>固體</div>
+                    <div><strong>分類：</strong>鹼金屬</div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                        <strong>生活應用：</strong><br>
+                        鋰電池、精神科藥物、合金
+                    </div>
+                </div>
+            </div>
     </div>
     
-    <div class="quiz-panel" id="quizPanel">
+    <div class="quiz-panel show" id="quizPanel">
         <button class="close-btn" onclick="closeQuiz()">×</button>
-        <div class="quiz-score" id="quizScore" style="color: #ffd700; font-weight: bold;">關卡：1 / 12</div>
-        <div id="levelTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 15px; color: #ffd700;"></div>
-        <div id="storyText" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; line-height: 1.6;"></div>
-        <div class="quiz-question" id="quizQuestion" style="font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 20px;"></div>
-        <div id="answerButtons" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;"></div>
-        <div class="quiz-feedback" id="quizFeedback" style="display: none;"></div>
+        <div class="quiz-score" id="quizScore" style="color: #ffd700; font-weight: bold;">關卡：5 / 8 | 題目：1 / 10</div>
+        <div id="levelTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 15px; color: #ffd700;">🦴 鹼土金屬分類室</div>
+        <div id="storyText" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; line-height: 1.6;">骨骼實驗室中，你需要識別出所有的鹼土金屬元素！</div>
+        <div class="quiz-question" id="quizQuestion" style="font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 20px;">將屬於「鹼土金屬」的元素拖曳到下方區域</div>
+        <div id="answerButtons" style="display: block; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #ffd700; margin-bottom: 10px;">可選元素：</h4>
+                    <div id="elementPool" style="display: flex; flex-wrap: wrap; gap: 10px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; min-height: 80px;">
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Li" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Li
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Be" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Be
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Na" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Na
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Mg" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Mg
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Al" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Al
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Ca" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Ca
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Si" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Si
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Sr" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Sr
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Ba" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Ba
+                            </div>
+                        
+                            <div class="draggable-element" draggable="true" data-symbol="Ra" style="padding: 8px 12px; background: rgba(255,215,0,0.8); color: #1e3c72; border-radius: 5px; cursor: move; font-weight: bold;">
+                                Ra
+                            </div>
+                        
+                    </div>
+                </div>
+                <div>
+                    <h4 style="color: #ffd700; margin-bottom: 10px;">鹼土金屬區域：</h4>
+                    <div id="dropZone" style="min-height: 100px; padding: 15px; background: rgba(0,255,0,0.1); border: 2px dashed #ffd700; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 10px;">
+                        <span style="color: #ccc; align-self: center;">將正確的元素拖曳到這裡</span>
+                    </div>
+                </div>
+                <button id="checkClassification" onclick="checkClassificationAnswer()" style="margin-top: 15px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    檢查答案
+                </button>
+            </div>
+        <div class="quiz-feedback correct" id="quizFeedback" style="display: none;">
+                <div style="text-align: center;">
+                    <h3>🎉 關卡完成！</h3>
+                    <p>準備進入下一關...</p>
+                </div>
+            </div>
         <div style="text-align: center; margin-top: 20px;">
             <button onclick="nextLevel()" id="nextBtn" style="display: none; background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">下一關</button>
             <button onclick="closeQuiz()" id="finishBtn" style="display: none; background: #ffd700; color: #1e3c72; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">完成逃脫！</button>
@@ -1133,7 +1201,7 @@
     </div>
 
     <script>
-        // 完整的118個元素資料
+        // 國中階段適用的元素資料（移除不適合的分類）
         const elements = [
             // 第1週期
             {symbol: 'H', name: '氫', english: 'Hydrogen', number: 1, period: 1, group: 1, classification: 'reactive-nonmetal', state: 'gas', uses: '燃料電池、氣球充氣、化學反應', row: 0, col: 0},
@@ -1142,7 +1210,7 @@
             // 第2週期
             {symbol: 'Li', name: '鋰', english: 'Lithium', number: 3, period: 2, group: 1, classification: 'alkali-metal', state: 'solid', uses: '鋰電池、精神科藥物、合金', row: 1, col: 0},
             {symbol: 'Be', name: '鈹', english: 'Beryllium', number: 4, period: 2, group: 2, classification: 'alkaline-earth', state: 'solid', uses: '合金材料、X光窗口、核反應器', row: 1, col: 1},
-            {symbol: 'B', name: '硼', english: 'Boron', number: 5, period: 2, group: 13, classification: 'metalloid', state: 'solid', uses: '玻璃纖維、清潔劑、半導體', row: 1, col: 12},
+            {symbol: 'B', name: '硼', english: 'Boron', number: 5, period: 2, group: 13, classification: 'reactive-nonmetal', state: 'solid', uses: '玻璃纖維、清潔劑、半導體', row: 1, col: 12},
             {symbol: 'C', name: '碳', english: 'Carbon', number: 6, period: 2, group: 14, classification: 'reactive-nonmetal', state: 'solid', uses: '鑽石、石墨、有機化合物、鋼鐵', row: 1, col: 13},
             {symbol: 'N', name: '氮', english: 'Nitrogen', number: 7, period: 2, group: 15, classification: 'reactive-nonmetal', state: 'gas', uses: '肥料、液氮冷凍、炸藥', row: 1, col: 14},
             {symbol: 'O', name: '氧', english: 'Oxygen', number: 8, period: 2, group: 16, classification: 'reactive-nonmetal', state: 'gas', uses: '呼吸、燃燒助燃、醫療用氧', row: 1, col: 15},
@@ -1152,8 +1220,8 @@
             // 第3週期
             {symbol: 'Na', name: '鈉', english: 'Sodium', number: 11, period: 3, group: 1, classification: 'alkali-metal', state: 'solid', uses: '食鹽、肥皂、路燈', row: 2, col: 0},
             {symbol: 'Mg', name: '鎂', english: 'Magnesium', number: 12, period: 3, group: 2, classification: 'alkaline-earth', state: 'solid', uses: '合金、煙火、鎂帶燃燒', row: 2, col: 1},
-            {symbol: 'Al', name: '鋁', english: 'Aluminum', number: 13, period: 3, group: 13, classification: 'post-transition', state: 'solid', uses: '鋁罐、飛機材料、建築', row: 2, col: 12},
-            {symbol: 'Si', name: '矽', english: 'Silicon', number: 14, period: 3, group: 14, classification: 'metalloid', state: 'solid', uses: '電腦晶片、玻璃、太陽能板', row: 2, col: 13},
+            {symbol: 'Al', name: '鋁', english: 'Aluminum', number: 13, period: 3, group: 13, classification: 'other-metal', state: 'solid', uses: '鋁罐、飛機材料、建築', row: 2, col: 12},
+            {symbol: 'Si', name: '矽', english: 'Silicon', number: 14, period: 3, group: 14, classification: 'reactive-nonmetal', state: 'solid', uses: '電腦晶片、玻璃、太陽能板', row: 2, col: 13},
             {symbol: 'P', name: '磷', english: 'Phosphorus', number: 15, period: 3, group: 15, classification: 'reactive-nonmetal', state: 'solid', uses: '火柴、肥料、DNA結構', row: 2, col: 14},
             {symbol: 'S', name: '硫', english: 'Sulfur', number: 16, period: 3, group: 16, classification: 'reactive-nonmetal', state: 'solid', uses: '硫酸、橡膠硫化、火藥', row: 2, col: 15},
             {symbol: 'Cl', name: '氯', english: 'Chlorine', number: 17, period: 3, group: 17, classification: 'reactive-nonmetal', state: 'gas', uses: '漂白水、游泳池消毒、PVC塑膠', row: 2, col: 16},
@@ -1172,9 +1240,9 @@
             {symbol: 'Ni', name: '鎳', english: 'Nickel', number: 28, period: 4, group: 10, classification: 'transition-metal', state: 'solid', uses: '硬幣、不鏽鋼、電池', row: 3, col: 9},
             {symbol: 'Cu', name: '銅', english: 'Copper', number: 29, period: 4, group: 11, classification: 'transition-metal', state: 'solid', uses: '電線、硬幣、水管', row: 3, col: 10},
             {symbol: 'Zn', name: '鋅', english: 'Zinc', number: 30, period: 4, group: 12, classification: 'transition-metal', state: 'solid', uses: '電池、防鏽塗層、營養補充', row: 3, col: 11},
-            {symbol: 'Ga', name: '鎵', number: 31, period: 4, group: 13, classification: 'post-transition', state: 'solid', uses: '半導體、LED、溫度計', row: 3, col: 12},
-            {symbol: 'Ge', name: '鍺', number: 32, period: 4, group: 14, classification: 'metalloid', state: 'solid', uses: '半導體、光纖、紅外線探測器', row: 3, col: 13},
-            {symbol: 'As', name: '砷', number: 33, period: 4, group: 15, classification: 'metalloid', state: 'solid', uses: '半導體、殺蟲劑、合金', row: 3, col: 14},
+            {symbol: 'Ga', name: '鎵', number: 31, period: 4, group: 13, classification: 'other-metal', state: 'solid', uses: '半導體、LED、溫度計', row: 3, col: 12},
+            {symbol: 'Ge', name: '鍺', number: 32, period: 4, group: 14, classification: 'reactive-nonmetal', state: 'solid', uses: '半導體、光纖、紅外線探測器', row: 3, col: 13},
+            {symbol: 'As', name: '砷', number: 33, period: 4, group: 15, classification: 'reactive-nonmetal', state: 'solid', uses: '半導體、殺蟲劑、合金', row: 3, col: 14},
             {symbol: 'Se', name: '硒', number: 34, period: 4, group: 16, classification: 'reactive-nonmetal', state: 'solid', uses: '光電池、營養補充、玻璃脫色', row: 3, col: 15},
             {symbol: 'Br', name: '溴', number: 35, period: 4, group: 17, classification: 'reactive-nonmetal', state: 'liquid', uses: '消毒劑、阻燃劑、攝影', row: 3, col: 16},
             {symbol: 'Kr', name: '氪', number: 36, period: 4, group: 18, classification: 'noble-gas', state: 'gas', uses: '雷射、高效燈泡、窗戶隔熱', row: 3, col: 17},
@@ -1192,31 +1260,31 @@
             {symbol: 'Pd', name: '鈀', number: 46, period: 5, group: 10, classification: 'transition-metal', state: 'solid', uses: '催化劑、珠寶、牙科', row: 4, col: 9},
             {symbol: 'Ag', name: '銀', number: 47, period: 5, group: 11, classification: 'transition-metal', state: 'solid', uses: '珠寶、抗菌材料、攝影', row: 4, col: 10},
             {symbol: 'Cd', name: '鎘', number: 48, period: 5, group: 12, classification: 'transition-metal', state: 'solid', uses: '電池、顏料、電鍍', row: 4, col: 11},
-            {symbol: 'In', name: '銦', number: 49, period: 5, group: 13, classification: 'post-transition', state: 'solid', uses: '觸控螢幕、LED、合金', row: 4, col: 12},
-            {symbol: 'Sn', name: '錫', number: 50, period: 5, group: 14, classification: 'post-transition', state: 'solid', uses: '焊接、罐頭、合金', row: 4, col: 13},
-            {symbol: 'Sb', name: '銻', number: 51, period: 5, group: 15, classification: 'metalloid', state: 'solid', uses: '阻燃劑、合金、半導體', row: 4, col: 14},
-            {symbol: 'Te', name: '碲', number: 52, period: 5, group: 16, classification: 'metalloid', state: 'solid', uses: '合金、太陽能板、光碟', row: 4, col: 15},
+            {symbol: 'In', name: '銦', number: 49, period: 5, group: 13, classification: 'other-metal', state: 'solid', uses: '觸控螢幕、LED、合金', row: 4, col: 12},
+            {symbol: 'Sn', name: '錫', number: 50, period: 5, group: 14, classification: 'other-metal', state: 'solid', uses: '焊接、罐頭、合金', row: 4, col: 13},
+            {symbol: 'Sb', name: '銻', number: 51, period: 5, group: 15, classification: 'reactive-nonmetal', state: 'solid', uses: '阻燃劑、合金、半導體', row: 4, col: 14},
+            {symbol: 'Te', name: '碲', number: 52, period: 5, group: 16, classification: 'reactive-nonmetal', state: 'solid', uses: '合金、太陽能板、光碟', row: 4, col: 15},
             {symbol: 'I', name: '碘', number: 53, period: 5, group: 17, classification: 'reactive-nonmetal', state: 'solid', uses: '消毒劑、甲狀腺激素、攝影', row: 4, col: 16},
             {symbol: 'Xe', name: '氙', number: 54, period: 5, group: 18, classification: 'noble-gas', state: 'gas', uses: '汽車頭燈、麻醉劑、離子推進器', row: 4, col: 17},
             
             // 第6週期
             {symbol: 'Cs', name: '銫', number: 55, period: 6, group: 1, classification: 'alkali-metal', state: 'solid', uses: '原子鐘、光電管、鑽井', row: 5, col: 0},
             {symbol: 'Ba', name: '鋇', number: 56, period: 6, group: 2, classification: 'alkaline-earth', state: 'solid', uses: 'X光造影、煙火、鑽井泥漿', row: 5, col: 1},
-            {symbol: 'La', name: '鑭', number: 57, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '催化劑、光學玻璃、電池', row: 8, col: 3},
-            {symbol: 'Ce', name: '鈰', number: 58, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '催化劑、打火石、拋光粉', row: 8, col: 4},
-            {symbol: 'Pr', name: '鐠', number: 59, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '磁鐵、合金、玻璃著色', row: 8, col: 5},
-            {symbol: 'Nd', name: '釹', number: 60, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '強力磁鐵、雷射、玻璃著色', row: 8, col: 6},
-            {symbol: 'Pm', name: '鉕', number: 61, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '核電池、發光塗料', row: 8, col: 7},
-            {symbol: 'Sm', name: '釤', number: 62, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '磁鐵、核反應器、癌症治療', row: 8, col: 8},
-            {symbol: 'Eu', name: '銪', number: 63, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '螢光燈、電視螢幕、防偽', row: 8, col: 9},
-            {symbol: 'Gd', name: '釓', number: 64, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: 'MRI造影、核反應器、磁鐵', row: 8, col: 10},
-            {symbol: 'Tb', name: '鋱', number: 65, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '螢光燈、磁鐵、雷射', row: 8, col: 11},
-            {symbol: 'Dy', name: '鏑', number: 66, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '磁鐵、核反應器控制棒', row: 8, col: 12},
-            {symbol: 'Ho', name: '鈥', number: 67, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '磁鐵、雷射、醫療', row: 8, col: 13},
-            {symbol: 'Er', name: '鉺', number: 68, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '光纖放大器、雷射、合金', row: 8, col: 14},
-            {symbol: 'Tm', name: '銩', number: 69, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: 'X光機、雷射', row: 8, col: 15},
-            {symbol: 'Yb', name: '鐿', number: 70, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: '雷射、合金、原子鐘', row: 8, col: 16},
-            {symbol: 'Lu', name: '鎦', number: 71, period: 6, group: 3, classification: 'lanthanide', state: 'solid', uses: 'PET掃描、催化劑', row: 8, col: 17},
+            {symbol: 'La', name: '鑭', number: 57, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '催化劑、光學玻璃、電池', row: 8, col: 3},
+            {symbol: 'Ce', name: '鈰', number: 58, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '催化劑、打火石、拋光粉', row: 8, col: 4},
+            {symbol: 'Pr', name: '鐠', number: 59, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '磁鐵、合金、玻璃著色', row: 8, col: 5},
+            {symbol: 'Nd', name: '釹', number: 60, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '強力磁鐵、雷射、玻璃著色', row: 8, col: 6},
+            {symbol: 'Pm', name: '鉕', number: 61, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '核電池、發光塗料', row: 8, col: 7},
+            {symbol: 'Sm', name: '釤', number: 62, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '磁鐵、核反應器、癌症治療', row: 8, col: 8},
+            {symbol: 'Eu', name: '銪', number: 63, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '螢光燈、電視螢幕、防偽', row: 8, col: 9},
+            {symbol: 'Gd', name: '釓', number: 64, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: 'MRI造影、核反應器、磁鐵', row: 8, col: 10},
+            {symbol: 'Tb', name: '鋱', number: 65, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '螢光燈、磁鐵、雷射', row: 8, col: 11},
+            {symbol: 'Dy', name: '鏑', number: 66, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '磁鐵、核反應器控制棒', row: 8, col: 12},
+            {symbol: 'Ho', name: '鈥', number: 67, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '磁鐵、雷射、醫療', row: 8, col: 13},
+            {symbol: 'Er', name: '鉺', number: 68, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '光纖放大器、雷射、合金', row: 8, col: 14},
+            {symbol: 'Tm', name: '銩', number: 69, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: 'X光機、雷射', row: 8, col: 15},
+            {symbol: 'Yb', name: '鐿', number: 70, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: '雷射、合金、原子鐘', row: 8, col: 16},
+            {symbol: 'Lu', name: '鎦', number: 71, period: 6, group: 3, classification: 'other-metal', state: 'solid', uses: 'PET掃描、催化劑', row: 8, col: 17},
             {symbol: 'Hf', name: '鉿', number: 72, period: 6, group: 4, classification: 'transition-metal', state: 'solid', uses: '核反應器、超合金', row: 5, col: 3},
             {symbol: 'Ta', name: '鉭', number: 73, period: 6, group: 5, classification: 'transition-metal', state: 'solid', uses: '電容器、手術器械、超合金', row: 5, col: 4},
             {symbol: 'W', name: '鎢', number: 74, period: 6, group: 6, classification: 'transition-metal', state: 'solid', uses: '燈泡燈絲、鑽頭、X光管', row: 5, col: 5},
@@ -1226,46 +1294,46 @@
             {symbol: 'Pt', name: '鉑', number: 78, period: 6, group: 10, classification: 'transition-metal', state: 'solid', uses: '催化劑、珠寶、化療藥物', row: 5, col: 9},
             {symbol: 'Au', name: '金', number: 79, period: 6, group: 11, classification: 'transition-metal', state: 'solid', uses: '珠寶、電子元件、牙科', row: 5, col: 10},
             {symbol: 'Hg', name: '汞', number: 80, period: 6, group: 12, classification: 'transition-metal', state: 'liquid', uses: '溫度計、節能燈泡、牙科填料', row: 5, col: 11},
-            {symbol: 'Tl', name: '鉈', number: 81, period: 6, group: 13, classification: 'post-transition', state: 'solid', uses: '電子元件、玻璃、殺鼠劑', row: 5, col: 12},
-            {symbol: 'Pb', name: '鉛', number: 82, period: 6, group: 14, classification: 'post-transition', state: 'solid', uses: '電池、輻射防護、水管', row: 5, col: 13},
-            {symbol: 'Bi', name: '鉍', number: 83, period: 6, group: 15, classification: 'post-transition', state: 'solid', uses: '合金、化妝品、醫藥', row: 5, col: 14},
-            {symbol: 'Po', name: '釙', number: 84, period: 6, group: 16, classification: 'post-transition', state: 'solid', uses: '核電池、抗靜電刷', row: 5, col: 15},
-            {symbol: 'At', name: '砈', number: 85, period: 6, group: 17, classification: 'metalloid', state: 'solid', uses: '癌症治療研究', row: 5, col: 16},
+            {symbol: 'Tl', name: '鉈', number: 81, period: 6, group: 13, classification: 'other-metal', state: 'solid', uses: '電子元件、玻璃、殺鼠劑', row: 5, col: 12},
+            {symbol: 'Pb', name: '鉛', number: 82, period: 6, group: 14, classification: 'other-metal', state: 'solid', uses: '電池、輻射防護、水管', row: 5, col: 13},
+            {symbol: 'Bi', name: '鉍', number: 83, period: 6, group: 15, classification: 'other-metal', state: 'solid', uses: '合金、化妝品、醫藥', row: 5, col: 14},
+            {symbol: 'Po', name: '釙', number: 84, period: 6, group: 16, classification: 'other-metal', state: 'solid', uses: '核電池、抗靜電刷', row: 5, col: 15},
+            {symbol: 'At', name: '砈', number: 85, period: 6, group: 17, classification: 'reactive-nonmetal', state: 'solid', uses: '癌症治療研究', row: 5, col: 16},
             {symbol: 'Rn', name: '氡', number: 86, period: 6, group: 18, classification: 'noble-gas', state: 'gas', uses: '放射性治療、地震預測', row: 5, col: 17},
             
             // 第7週期
             {symbol: 'Fr', name: '鍅', number: 87, period: 7, group: 1, classification: 'alkali-metal', state: 'solid', uses: '科學研究', row: 6, col: 0},
             {symbol: 'Ra', name: '鐳', number: 88, period: 7, group: 2, classification: 'alkaline-earth', state: 'solid', uses: '癌症治療、發光塗料', row: 6, col: 1},
-            {symbol: 'Ac', name: '錒', number: 89, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '中子源、癌症治療', row: 9, col: 3},
-            {symbol: 'Th', name: '釷', number: 90, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '核燃料、燈罩、合金', row: 9, col: 4},
-            {symbol: 'Pa', name: '鏷', number: 91, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '科學研究', row: 9, col: 5},
-            {symbol: 'U', name: '鈾', number: 92, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '核燃料、核武器、玻璃著色', row: 9, col: 6},
-            {symbol: 'Np', name: '錼', number: 93, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '核反應器、探測器', row: 9, col: 7},
-            {symbol: 'Pu', name: '鈽', number: 94, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '核燃料、核武器、太空電池', row: 9, col: 8},
-            {symbol: 'Am', name: '鋂', number: 95, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '煙霧探測器、中子源', row: 9, col: 9},
-            {symbol: 'Cm', name: '鋦', number: 96, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '太空探測器電源、科學研究', row: 9, col: 10},
-            {symbol: 'Bk', name: '錇', number: 97, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '科學研究', row: 9, col: 11},
-            {symbol: 'Cf', name: '鐦', number: 98, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '中子源、癌症治療', row: 9, col: 12},
-            {symbol: 'Es', name: '鑀', number: 99, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '科學研究', row: 9, col: 13},
-            {symbol: 'Fm', name: '鐨', number: 100, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '科學研究', row: 9, col: 14},
-            {symbol: 'Md', name: '鍆', number: 101, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '科學研究', row: 9, col: 15},
-            {symbol: 'No', name: '鍩', number: 102, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '科學研究', row: 9, col: 16},
-            {symbol: 'Lr', name: '鐒', number: 103, period: 7, group: 3, classification: 'actinide', state: 'solid', uses: '科學研究', row: 9, col: 17},
+            {symbol: 'Ac', name: '錒', number: 89, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '中子源、癌症治療', row: 9, col: 3},
+            {symbol: 'Th', name: '釷', number: 90, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '核燃料、燈罩、合金', row: 9, col: 4},
+            {symbol: 'Pa', name: '鏷', number: 91, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 9, col: 5},
+            {symbol: 'U', name: '鈾', number: 92, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '核燃料、核武器、玻璃著色', row: 9, col: 6},
+            {symbol: 'Np', name: '錼', number: 93, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '核反應器、探測器', row: 9, col: 7},
+            {symbol: 'Pu', name: '鈽', number: 94, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '核燃料、核武器、太空電池', row: 9, col: 8},
+            {symbol: 'Am', name: '鋂', number: 95, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '煙霧探測器、中子源', row: 9, col: 9},
+            {symbol: 'Cm', name: '鋦', number: 96, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '太空探測器電源、科學研究', row: 9, col: 10},
+            {symbol: 'Bk', name: '錇', number: 97, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 9, col: 11},
+            {symbol: 'Cf', name: '鐦', number: 98, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '中子源、癌症治療', row: 9, col: 12},
+            {symbol: 'Es', name: '鑀', number: 99, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 9, col: 13},
+            {symbol: 'Fm', name: '鐨', number: 100, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 9, col: 14},
+            {symbol: 'Md', name: '鍆', number: 101, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 9, col: 15},
+            {symbol: 'No', name: '鍩', number: 102, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 9, col: 16},
+            {symbol: 'Lr', name: '鐒', number: 103, period: 7, group: 3, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 9, col: 17},
             {symbol: 'Rf', name: '鑪', number: 104, period: 7, group: 4, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 3},
             {symbol: 'Db', name: '𨧀', number: 105, period: 7, group: 5, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 4},
             {symbol: 'Sg', name: '𨭎', number: 106, period: 7, group: 6, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 5},
             {symbol: 'Bh', name: '𨨏', number: 107, period: 7, group: 7, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 6},
             {symbol: 'Hs', name: '𨭆', number: 108, period: 7, group: 8, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 7},
-            {symbol: 'Mt', name: '鿏', number: 109, period: 7, group: 9, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 8},
-            {symbol: 'Ds', name: '𨭎', number: 110, period: 7, group: 10, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 9},
-            {symbol: 'Rg', name: '錀', number: 111, period: 7, group: 11, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 10},
+            {symbol: 'Mt', name: '鿏', number: 109, period: 7, group: 9, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 8},
+            {symbol: 'Ds', name: '𨭎', number: 110, period: 7, group: 10, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 9},
+            {symbol: 'Rg', name: '錀', number: 111, period: 7, group: 11, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 10},
             {symbol: 'Cn', name: '鎶', number: 112, period: 7, group: 12, classification: 'transition-metal', state: 'solid', uses: '科學研究', row: 6, col: 11},
-            {symbol: 'Nh', name: '鉨', number: 113, period: 7, group: 13, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 12},
-            {symbol: 'Fl', name: '鈇', number: 114, period: 7, group: 14, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 13},
-            {symbol: 'Mc', name: '鏌', number: 115, period: 7, group: 15, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 14},
-            {symbol: 'Lv', name: '鉝', number: 116, period: 7, group: 16, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 15},
-            {symbol: 'Ts', name: '鿬', number: 117, period: 7, group: 17, classification: 'unknown', state: 'solid', uses: '科學研究', row: 6, col: 16},
-            {symbol: 'Og', name: '鿫', number: 118, period: 7, group: 18, classification: 'unknown', state: 'gas', uses: '科學研究', row: 6, col: 17}
+            {symbol: 'Nh', name: '鉨', number: 113, period: 7, group: 13, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 6, col: 12},
+            {symbol: 'Fl', name: '鈇', number: 114, period: 7, group: 14, classification: 'other-metal', state: 'solid', uses: '科學研究', row: 6, col: 13},
+            {symbol: 'Mc', name: '鏌', number: 115, period: 7, group: 15, classification: 'reactive-nonmetal', state: 'solid', uses: '科學研究', row: 6, col: 14},
+            {symbol: 'Lv', name: '鉝', number: 116, period: 7, group: 16, classification: 'reactive-nonmetal', state: 'solid', uses: '科學研究', row: 6, col: 15},
+            {symbol: 'Ts', name: '鿬', number: 117, period: 7, group: 17, classification: 'reactive-nonmetal', state: 'solid', uses: '科學研究', row: 6, col: 16},
+            {symbol: 'Og', name: '鿫', number: 118, period: 7, group: 18, classification: 'noble-gas', state: 'gas', uses: '科學研究', row: 6, col: 17}
         ];
 
         let currentQuiz = null;
@@ -1293,6 +1361,12 @@
             },
             {
                 level: 3,
+                title: '✏️ 元素符號填空室',
+                story: '你來到填空測驗室！看到中文元素名稱，需要正確填入對應的元素符號才能通過！',
+                type: 'fill-in-blank'
+            },
+            {
+                level: 4,
                 title: '🔥 鹼金屬分類室',
                 story: '你來到元素分類實驗室！需要將鹼金屬元素拖曳到正確的分類區域才能通過！',
                 type: 'drag-classification',
@@ -1300,7 +1374,7 @@
                 elements: ['H', 'Li', 'He', 'Na', 'Ca', 'K', 'Mg', 'Rb', 'Cs', 'Fr']
             },
             {
-                level: 4,
+                level: 5,
                 title: '🦴 鹼土金屬分類室',
                 story: '骨骼實驗室中，你需要識別出所有的鹼土金屬元素！',
                 type: 'drag-classification',
@@ -1308,7 +1382,7 @@
                 elements: ['Li', 'Be', 'Na', 'Mg', 'Al', 'Ca', 'Si', 'Sr', 'Ba', 'Ra']
             },
             {
-                level: 5,
+                level: 6,
                 title: '⚔️ 過渡金屬分類室',
                 story: '金屬工坊中，找出所有的過渡金屬元素來鍛造通關鑰匙！',
                 type: 'drag-classification',
@@ -1316,7 +1390,7 @@
                 elements: ['Al', 'Fe', 'Si', 'Cu', 'Zn', 'P', 'Ag', 'Au', 'Pt', 'Ti']
             },
             {
-                level: 6,
+                level: 7,
                 title: '🎈 惰性氣體分類室',
                 story: '氣球工廠中，選出所有安全的惰性氣體來充氣逃生！',
                 type: 'drag-classification',
@@ -1324,52 +1398,12 @@
                 elements: ['H', 'He', 'N', 'Ne', 'O', 'Ar', 'Cl', 'Kr', 'Xe', 'Rn']
             },
             {
-                level: 7,
-                title: '🔬 類金屬分類室',
-                story: '半導體實驗室中，找出所有具有類金屬性質的元素！',
-                type: 'drag-classification',
-                targetClassification: 'metalloid',
-                elements: ['C', 'B', 'Al', 'Si', 'P', 'Ge', 'As', 'Sb', 'Te', 'At']
-            },
-            {
                 level: 8,
-                title: '💨 活性非金屬分類室',
-                story: '化學反應室中，識別出所有活性非金屬元素來完成實驗！',
+                title: '💨 非金屬分類室',
+                story: '化學反應室中，識別出所有非金屬元素來完成實驗！',
                 type: 'drag-classification',
                 targetClassification: 'reactive-nonmetal',
                 elements: ['He', 'H', 'Ne', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl']
-            },
-            {
-                level: 9,
-                title: '🏭 後過渡金屬分類室',
-                story: '工業區中，找出所有後過渡金屬元素來修復機器！',
-                type: 'drag-classification',
-                targetClassification: 'post-transition',
-                elements: ['Fe', 'Al', 'Cu', 'Ga', 'In', 'Sn', 'Tl', 'Pb', 'Bi', 'Po']
-            },
-            {
-                level: 10,
-                title: '🌟 鑭系元素分類室',
-                story: '稀土元素庫房中，識別出所有鑭系元素來解鎖寶庫！',
-                type: 'drag-classification',
-                targetClassification: 'lanthanide',
-                elements: ['Ac', 'La', 'Th', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd']
-            },
-            {
-                level: 11,
-                title: '☢️ 錒系元素分類室',
-                story: '放射性實驗室中，小心地識別出所有錒系元素！',
-                type: 'drag-classification',
-                targetClassification: 'actinide',
-                elements: ['La', 'Ac', 'Ce', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm']
-            },
-            {
-                level: 12,
-                title: '🏆 終極挑戰：未知元素',
-                story: '最後的挑戰！找出所有性質未知的超重元素，證明你是真正的元素大師！',
-                type: 'drag-classification',
-                targetClassification: 'unknown',
-                elements: ['Cn', 'Mt', 'Ds', 'Rg', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
             }
         ];
 
@@ -1469,13 +1503,9 @@
                 'alkali-metal': '鹼金屬',
                 'alkaline-earth': '鹼土金屬',
                 'transition-metal': '過渡金屬',
-                'post-transition': '後過渡金屬',
-                'metalloid': '類金屬',
-                'reactive-nonmetal': '活性非金屬',
-                'noble-gas': '惰性氣體',
-                'lanthanide': '鑭系元素',
-                'actinide': '錒系元素',
-                'unknown': '未知性質'
+                'other-metal': '其他金屬',
+                'reactive-nonmetal': '非金屬',
+                'noble-gas': '惰性氣體'
             };
             return names[classification] || classification;
         }
@@ -1512,6 +1542,8 @@
             // 初始化關卡
             if (level.type === 'symbol-to-chinese' || level.type === 'chinese-to-symbol') {
                 levelQuestions = generateRandomQuestions(level.type);
+            } else if (level.type === 'fill-in-blank') {
+                levelQuestions = generateFillInBlankQuestions();
             }
             
             currentQuestion = 0;
@@ -1562,6 +1594,27 @@
             });
         }
         
+        function generateFillInBlankQuestions() {
+            // 從前30個常見元素中隨機選擇20個不重複的元素
+            const commonElements = elements.slice(0, 30);
+            const selectedElements = [];
+            const usedIndices = new Set();
+            
+            while (selectedElements.length < 20 && usedIndices.size < commonElements.length) {
+                const randomIndex = Math.floor(Math.random() * commonElements.length);
+                if (!usedIndices.has(randomIndex)) {
+                    usedIndices.add(randomIndex);
+                    selectedElements.push(commonElements[randomIndex]);
+                }
+            }
+            
+            return selectedElements.map(element => ({
+                question: element.name,
+                correct: element.symbol,
+                type: 'fill-in-blank'
+            }));
+        }
+        
         function getRandomWrongOptions(correctAnswer, type) {
             const wrongOptions = [];
             let availableElements;
@@ -1587,7 +1640,12 @@
         function showQuestion() {
             const level = currentQuiz[currentLevel];
             
-            document.getElementById('quizScore').textContent = `關卡：${currentLevel + 1} / ${quizTotal} | 題目：${currentQuestion + 1} / 10`;
+            let totalQuestions = 10;
+            if (level.type === 'fill-in-blank') {
+                totalQuestions = 20;
+            }
+            
+            document.getElementById('quizScore').textContent = `關卡：${currentLevel + 1} / ${quizTotal} | 題目：${currentQuestion + 1} / ${totalQuestions}`;
             document.getElementById('levelTitle').textContent = level.title;
             document.getElementById('storyText').textContent = level.story;
             document.getElementById('quizFeedback').style.display = 'none';
@@ -1599,6 +1657,8 @@
             
             if (level.type === 'symbol-to-chinese' || level.type === 'chinese-to-symbol') {
                 showMultipleChoiceQuestion(level);
+            } else if (level.type === 'fill-in-blank') {
+                showFillInBlankQuestion(level);
             } else if (level.type === 'drag-classification') {
                 showDragClassificationQuestion(level);
             }
@@ -1648,6 +1708,46 @@
                 button.onclick = () => checkMultipleChoiceAnswer(answer, questionData);
                 answerContainer.appendChild(button);
             });
+        }
+        
+        function showFillInBlankQuestion(level) {
+            let questionData;
+            
+            if (isRetryMode && wrongAnswers.length > 0) {
+                questionData = wrongAnswers[currentQuestion];
+                document.getElementById('quizQuestion').textContent = `重做題目：${questionData.question} 的元素符號是？`;
+            } else {
+                questionData = levelQuestions[currentQuestion];
+                document.getElementById('quizQuestion').textContent = `${questionData.question} 的元素符號是？`;
+            }
+            
+            const answerContainer = document.getElementById('answerButtons');
+            answerContainer.style.display = 'block';
+            answerContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <input type="text" id="fillInInput" placeholder="請輸入元素符號" 
+                           style="padding: 15px; font-size: 1.2rem; border: 2px solid #ffd700; border-radius: 8px; 
+                                  background: rgba(255,255,255,0.9); color: #333; text-align: center; width: 200px;">
+                </div>
+                <div style="text-align: center;">
+                    <button onclick="checkFillInBlankAnswer()" 
+                            style="padding: 12px 30px; background: #28a745; color: white; border: none; 
+                                   border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">
+                        提交答案
+                    </button>
+                </div>
+            `;
+            
+            // 設置輸入框焦點和Enter鍵提交
+            setTimeout(() => {
+                const input = document.getElementById('fillInInput');
+                input.focus();
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        checkFillInBlankAnswer();
+                    }
+                });
+            }, 100);
         }
         
         function showDragClassificationQuestion(level) {
@@ -1740,6 +1840,54 @@
             }, 2000);
         }
         
+        function checkFillInBlankAnswer() {
+            const input = document.getElementById('fillInInput');
+            const userAnswer = input.value.trim();
+            const feedback = document.getElementById('quizFeedback');
+            
+            let questionData;
+            if (isRetryMode && wrongAnswers.length > 0) {
+                questionData = wrongAnswers[currentQuestion];
+            } else {
+                questionData = levelQuestions[currentQuestion];
+            }
+            
+            // 禁用輸入框和按鈕
+            input.disabled = true;
+            document.querySelector('#answerButtons button').disabled = true;
+            document.querySelector('#answerButtons button').style.opacity = '0.6';
+            
+            if (userAnswer.toLowerCase() === questionData.correct.toLowerCase()) {
+                feedback.className = 'quiz-feedback correct';
+                feedback.innerHTML = `
+                    <div style="text-align: center;">
+                        <h3>✅ 答對了！</h3>
+                        <p>${questionData.question} 的元素符號是：<strong>${questionData.correct}</strong></p>
+                    </div>
+                `;
+            } else {
+                feedback.className = 'quiz-feedback incorrect';
+                feedback.innerHTML = `
+                    <div style="text-align: center;">
+                        <h3>❌ 答錯了！</h3>
+                        <p>你的答案：<strong>${userAnswer || '(空白)'}</strong></p>
+                        <p>正確答案是：<strong>${questionData.correct}</strong></p>
+                    </div>
+                `;
+                
+                // 記錄錯誤答案
+                if (!isRetryMode) {
+                    wrongAnswers.push(questionData);
+                }
+            }
+            
+            feedback.style.display = 'block';
+            
+            setTimeout(() => {
+                nextQuestion();
+            }, 2500);
+        }
+        
         function checkClassificationAnswer() {
             const level = currentQuiz[currentLevel];
             const dropZone = document.getElementById('dropZone');
@@ -1788,9 +1936,36 @@
             const level = currentQuiz[currentLevel];
             
             if (level.type === 'symbol-to-chinese' || level.type === 'chinese-to-symbol') {
-                // 選擇題模式
+                // 選擇題模式 (10題)
                 if (!isRetryMode && currentQuestion >= 10) {
                     // 第一輪10題完成，開始重做錯題
+                    if (wrongAnswers.length > 0) {
+                        isRetryMode = true;
+                        currentQuestion = 0;
+                        document.getElementById('quizFeedback').innerHTML = `
+                            <div style="text-align: center;">
+                                <h3>📝 開始重做錯題</h3>
+                                <p>你需要重做 ${wrongAnswers.length} 道錯題</p>
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            showQuestion();
+                        }, 2000);
+                        return;
+                    } else {
+                        // 沒有錯題，直接進入下一關
+                        nextLevel();
+                        return;
+                    }
+                } else if (isRetryMode && currentQuestion >= wrongAnswers.length) {
+                    // 重做模式完成
+                    nextLevel();
+                    return;
+                }
+            } else if (level.type === 'fill-in-blank') {
+                // 填空題模式 (20題)
+                if (!isRetryMode && currentQuestion >= 20) {
+                    // 第一輪20題完成，開始重做錯題
                     if (wrongAnswers.length > 0) {
                         isRetryMode = true;
                         currentQuestion = 0;
@@ -2088,13 +2263,9 @@
                     <div class="legend-item"><div class="legend-color alkali-metal"></div><span>鹼金屬 (6個)</span></div>
                     <div class="legend-item"><div class="legend-color alkaline-earth"></div><span>鹼土金屬 (6個)</span></div>
                     <div class="legend-item"><div class="legend-color transition-metal"></div><span>過渡金屬 (38個)</span></div>
-                    <div class="legend-item"><div class="legend-color post-transition"></div><span>後過渡金屬 (7個)</span></div>
-                    <div class="legend-item"><div class="legend-color metalloid"></div><span>類金屬 (7個)</span></div>
-                    <div class="legend-item"><div class="legend-color reactive-nonmetal"></div><span>活性非金屬 (16個)</span></div>
+                    <div class="legend-item"><div class="legend-color other-metal"></div><span>其他金屬 (51個)</span></div>
+                    <div class="legend-item"><div class="legend-color reactive-nonmetal"></div><span>非金屬 (10個)</span></div>
                     <div class="legend-item"><div class="legend-color noble-gas"></div><span>惰性氣體 (7個)</span></div>
-                    <div class="legend-item"><div class="legend-color lanthanide"></div><span>鑭系元素 (15個)</span></div>
-                    <div class="legend-item"><div class="legend-color actinide"></div><span>錒系元素 (15個)</span></div>
-                    <div class="legend-item"><div class="legend-color unknown"></div><span>未知性質 (1個)</span></div>
                 `;
             } else if (mode === 'state') {
                 legend.innerHTML = `
@@ -2182,6 +2353,6 @@
         createStats();
         updateLegend('classification');
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95c8901e51794a51',t:'MTc1MjA3MTg4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;"></iframe>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95d030ccc3ac8439',t:'MTc1MjE1MTg2Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;"></iframe>
 
 </body></html>
