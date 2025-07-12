@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聲光彈珠檯 - 關卡版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            padding: 10px;
+            touch-action: manipulation;
+        }
+
+        .pinball-machine {
+            width: min(400px, 95vw);
+            height: min(600px, 90vh);
+            background: linear-gradient(145deg, #2c2c54, #40407a);
+            border: 8px solid #ffd700;
+            border-radius: 20px;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        .game-area {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(180deg, #0c2461, #1e3799);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #333;
+        }
+        
+        .guide-wall { position: absolute; width: 170px; height: 10px; background: linear-gradient(90deg, #888, #ccc); box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); top: 310px; }
+        .guide-wall.left { left: 15px; transform-origin: left center; transform: rotate(28deg); }
+        .guide-wall.right { right: 15px; transform-origin: right center; transform: rotate(-28deg); }
+
+        .side-wall { position: absolute; width: 15px; height: 100%; background: linear-gradient(90deg, #444, #666); top: 0; }
+        .side-wall.left { left: 0; }
+        .side-wall.right { right: 0px; }
+
+        .ball { width: 16px; height: 16px; background: radial-gradient(circle at 30% 30%, #ffffff, #ff6b6b, #ee5a52); border-radius: 50%; position: absolute; box-shadow: 0 0 10px rgba(255, 107, 107, 0.8); z-index: 20; }
+        .ball.glow { box-shadow: 0 0 20px rgba(255, 107, 107, 1); }
+
+        .flipper { width: 75px; height: 10px; background: linear-gradient(90deg, #ffd700, #ffed4e); position: absolute; border-radius: 5px; cursor: pointer; box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); transition: transform 0.08s ease-out; z-index: 5; }
+        .flipper-left { bottom: 45px; left: 105px; transform-origin: 10px center; transform: rotate(20deg); }
+        .flipper-right { bottom: 45px; right: 105px; transform-origin: 65px center; transform: rotate(-20deg); }
+        .flipper-left.active { transform: rotate(-45deg); }
+        .flipper-right.active { transform: rotate(45deg); }
+        
+        .bumper, .emoji-target, .star-target { transition: all 0.1s; position: absolute;}
+        .bumper { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ff6b6b, #ee5a52); box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); }
+        .bumper.hit { transform: scale(1.3); box-shadow: 0 0 25px rgba(255, 107, 107, 1); }
+        .emoji-target { width: 24px; height: 24px; font-size: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+        .emoji-target.hit { transform: scale(1.4); box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+        .star-target { width: 20px; height: 20px; background: #54a0ff; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); box-shadow: 0 0 10px rgba(84, 160, 255, 0.6); }
+        .star-target.hit { transform: scale(1.4); box-shadow: 0 0 20px rgba(84, 160, 255, 1); }
+        
+        .ui-container { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10;}
+        .ui-box { background: rgba(0, 0, 0, 0.8); padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; text-align: center; }
+        .score-display { color: #ffd700; border: 2px solid #ffd700; flex-grow: 1; margin: 0 10px;}
+        .balls-display { color: #ff6b6b; border: 2px solid #ff6b6b; }
+        .level-display { color: #34d399; border: 2px solid #34d399; }
+        
+        .controls { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 45px; align-items: center; }
+        .flipper-btn { width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(145deg, #ffd700, #ffed4e); border: none; color: #333; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); transition: all 0.1s; font-size: 18px; user-select: none; }
+        .flipper-btn:active { transform: scale(0.9); box-shadow: 0 0 20px rgba(255, 215, 0, 1); }
+
+        .flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 60%); pointer-events: none; opacity: 0; transition: opacity 0.3s ease-out; z-index: 50; }
+        #shockwave-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+        .shockwave { position: absolute; border-radius: 50%; background-color: transparent; border: 2px solid rgba(255, 255, 255, 0.8); animation: shockwave-animation 0.4s ease-out forwards; }
+        @keyframes shockwave-animation { from { width: 0; height: 0; opacity: 1; } to { width: 100px; height: 100px; opacity: 0; } }
+        .particle { position: absolute; width: 5px; height: 5px; border-radius: 50%; pointer-events: none; animation: particle-explosion 0.6s ease-out forwards; z-index: 51; }
+        @keyframes particle-explosion { from { transform: scale(1.5); opacity: 1; } to { transform: scale(0) translate(var(--tx), var(--ty)); opacity: 0; } }
+        
+        #level-up-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffd700; font-size: 48px; font-weight: bold; text-shadow: 0 0 20px #ff6b6b, 0 0 10px white; z-index: 101; pointer-events: none; opacity: 0; }
+        .level-up-anim { animation: level-up-animation 2s ease-out forwards; }
+        @keyframes level-up-animation { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 25% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 75% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        
+        .game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); color: #ffd700; padding: 30px; border-radius: 15px; text-align: center; border: 3px solid #ffd700; z-index: 100; }
+        .restart-btn { background: linear-gradient(145deg, #ffd700, #ffed4e); border: none; padding: 10px 20px; border-radius: 10px; color: #333; font-weight: bold; cursor: pointer; margin-top: 15px; transition: all 0.2s; }
+        .restart-btn:hover { transform: scale(1.05); }
+
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; transition: opacity 0.5s; }
+        #start-screen h1 { font-size: 32px; text-shadow: 0 0 10px #ff6b6b; margin-bottom: 20px; }
+        #speed-selection { display: flex; gap: 10px; margin-bottom: 30px; }
+        .speed-select-btn { padding: 8px 16px; font-size: 16px; background-color: #444; color: white; border: 2px solid #888; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .speed-select-btn.active { background-color: #2ed573; border-color: #fff; transform: scale(1.1); }
+
+        #start-btn { background: linear-gradient(145deg, #ff6b6b, #ee5a52); border: 2px solid #ffd700; padding: 15px 30px; border-radius: 15px; color: white; font-size: 24px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        #start-btn:hover { transform: scale(1.1); box-shadow: 0 0 20px rgba(255,107,107,0.8); }
+
+        .dev-button { position: absolute; bottom: 10px; left: 10px; width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(145deg, #667eea, #764ba2); border: none; color: white; font-size: 12px; cursor: pointer; box-shadow: 0 0 10px rgba(102, 126, 234, 0.6); transition: all 0.1s; display: flex; align-items: center; justify-content: center; }
+        .creator-credit { position: absolute; bottom: 8px; right: 15px; font-size: 10px; color: rgba(255, 215, 0, 0.6); font-family: 'Courier New', Courier, monospace; }
+        .light { width: 8px; height: 8px; border-radius: 50%; position: absolute; background: #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.8); animation: blink 1s infinite alternate; }
+        @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="pinball-machine">
+        <div class="game-area" id="gameArea">
+            <div class="side-wall left"></div>
+            <div class="side-wall right"></div>
+            <div class="guide-wall left"></div>
+            <div class="guide-wall right"></div>
+            <div class="flash-overlay"></div>
+            <div id="shockwave-container"></div>
+            <div class="ui-container">
+                <div class="ui-box level-display">關卡: <span id="level">1</span></div>
+                <div class="ui-box score-display">分數: <span id="score">0</span></div>
+                <div class="ui-box balls-display">彈珠: <span id="ballsLeft">3</span></div>
+            </div>
+            <div class="light" style="top: 50px; left: 30px;"></div>
+            <div class="light" style="top: 50px; right: 30px; animation-delay: 0.3s;"></div>
+            <div class="ball" id="ball"></div>
+            <div id="level-up-overlay">LEVEL UP!</div>
+            <div class="flipper flipper-left" id="leftFlipper"></div>
+            <div class="flipper flipper-right" id="rightFlipper"></div>
+        </div>
+        
+        <div id="start-screen">
+            <h1>聲光彈珠檯</h1>
+            <div id="speed-selection">
+                <button class="speed-select-btn" data-gravity="0.12">慢</button>
+                <button class="speed-select-btn active" data-gravity="0.20">中</button>
+                <button class="speed-select-btn" data-gravity="0.32">快</button>
+            </div>
+            <button id="start-btn">開始遊戲</button>
+        </div>
+        
+        <div class="controls">
+            <button class="flipper-btn" id="leftFlipperBtn">◀</button>
+            <button class="flipper-btn" id="rightFlipperBtn">▶</button>
+        </div>
+        
+        <button class="dev-button" id="devBtn" title="複製程式碼">💻</button>
+        <div class="creator-credit">Made by Xtjh-Yucc</div>
+        <div class="game-over" id="gameOver">
+            <h2>遊戲結束！</h2>
+            <p>最終分數: <span id="finalScore">0</span></p>
+            <button class="restart-btn" id="restartBtn">重新開始</button>
+        </div>
+    </div>
+
+    <script>
+        // 類別定義 (保持不變)
+        class PinballGame {
+            constructor() {
+                this.gameArea = document.getElementById('gameArea');
+                this.ball = document.getElementById('ball');
+                this.scoreElement = document.getElementById('score');
+                this.ballsLeftElement = document.getElementById('ballsLeft');
+                this.levelElement = document.getElementById('level');
+                this.flashOverlay = document.querySelector('.flash-overlay');
+                this.shockwaveContainer = document.getElementById('shockwave-container');
+                this.levelUpOverlay = document.getElementById('level-up-overlay');
+                this.leftFlipper = document.getElementById('leftFlipper');
+                this.rightFlipper = document.getElementById('rightFlipper');
+                
+                this.score = 0;
+                this.ballsLeft = 3;
+                this.isPaused = true;
+                this.ballInPlay = false;
+                this.gravity = 0.25; 
+
+                this.level = 1;
+                this.levelGoals = [10000, 22000, 36000, 52000, 70000, 90000, 120000];
+                this.scoreToNextLevel = this.levelGoals[0];
+                
+                this.audioContext = new(window.AudioContext || window.webkitAudioContext)();
+
+                this.init();
+            }
+            
+            init() {
+                this.setupField(this.level);
+                this.updateDisplays();
+                this.setupEventListeners();
+            }
+            
+            startGame(selectedGravity) {
+                if (!this.isPaused) return;
+                this.isPaused = false;
+                this.gravity = selectedGravity; 
+                
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume().catch(e => console.error("Audio resume failed:", e));
+                }
+
+                this.gameLoop();
+                this.startNewBall();
+            }
+
+            gameLoop() {
+                if (this.isPaused) return;
+                if (this.ballInPlay) {
+                    this.updateBall();
+                    this.checkCollisions();
+                }
+                requestAnimationFrame(() => this.gameLoop());
+            }
+
+            // --- 所有其他函式保持不變 ---
+            startNewBall() { if (this.ballsLeft <= 0) return; this.ballInPlay = true; this.ball.classList.add('glow'); this.ballX = 100 + Math.random() * (this.gameArea.clientWidth - 200); this.ballY = 20; this.ballVelX = (Math.random() - 0.5) * 4; this.ballVelY = 0; this.ball.style.left = `${this.ballX}px`; this.ball.style.top = `${this.ballY}px`; this.playSound('launch'); }
+            setupField(level) { this.gameArea.querySelectorAll('.bumper, .emoji-target, .star-target').forEach(el => el.remove()); let targetsData = [ { type: 'bumper', x: 50, y: 50, points: 100 }, { type: 'bumper', x: 330, y: 50, points: 100 }, { type: 'star', x: 190, y: 60, points: 250 }, { type: 'bumper', x: 120, y: 90, points: 100 }, { type: 'bumper', x: 260, y: 90, points: 100 }, { type: 'emoji', x: 60, y: 130, points: 150, content: '🐶' }, { type: 'emoji', x: 320, y: 130, points: 150, content: '🐱' }, { type: 'bumper', x: 190, y: 140, points: 150 }, { type: 'star', x: 30, y: 170, points: 200 }, { type: 'star', x: 350, y: 170, points: 200 }, { type: 'emoji', x: 90, y: 190, points: 150, content: '🦊' }, { type: 'emoji', x: 290, y: 190, points: 150, content: '🐻' }, { type: 'bumper', x: 40, y: 230, points: 100 }, { type: 'bumper', x: 340, y: 230, points: 100 }, { type: 'star', x: 190, y: 230, points: 250 }, { type: 'emoji', x: 190, y: 180, points: 300, content: '💎' }, { type: 'emoji', x: 40, y: 270, points: 150, content: '🐰' }, { type: 'emoji', x: 340, y: 270, points: 150, content: '🐼' }, { type: 'bumper', x: 190, y: 205, points: 100 }, { type: 'star', x: 100, y: 300, points: 200 }, { type: 'star', x: 280, y: 300, points: 200 }, { type: 'emoji', x: 80, y: 400, points: 150, content: '🔥' }, { type: 'emoji', x: 300, y: 400, points: 150, content: '⭐' }]; if (level >= 2) { targetsData.push({ type: 'star', x: 190, y: 330, points: 500 }); targetsData.push({ type: 'bumper', x: 40, y: 100, points: 150 }); targetsData.push({ type: 'bumper', x: 340, y: 100, points: 150 }); } if (level >= 3) { targetsData.push({ type: 'emoji', x: 190, y: 260, points: 500, content: '👑' }); targetsData.push({ type: 'star', x: 80, y: 250, points: 300 }); targetsData.push({ type: 'star', x: 300, y: 250, points: 300 }); } targetsData.forEach(data => { const el = document.createElement('div'); el.dataset.points = data.points; el.style.left = `${data.x}px`; el.style.top = `${data.y}px`; if (data.type === 'bumper') el.className = 'bumper'; else if (data.type === 'star') el.className = 'star-target'; else { el.className = 'emoji-target'; el.textContent = data.content; } this.gameArea.appendChild(el); }); };
+            setupEventListeners() { const flipperHandler = (flipper, action) => (e) => { e.preventDefault(); if (this.isPaused) return; if (flipper === 'left') { action === 'activate' ? this.activateLeftFlipper() : this.deactivateLeftFlipper(); } else { action === 'activate' ? this.activateRightFlipper() : this.deactivateRightFlipper(); } }; document.addEventListener('keydown', (e) => { if (e.code === 'ArrowLeft' || e.code === 'KeyA') flipperHandler('left', 'activate')(e); if (e.code === 'ArrowRight' || e.code === 'KeyD') flipperHandler('right', 'activate')(e); }); document.addEventListener('keyup', (e) => { if (e.code === 'ArrowLeft' || e.code === 'KeyA') flipperHandler('left', 'deactivate')(e); if (e.code === 'ArrowRight' || e.code === 'KeyD') flipperHandler('right', 'deactivate')(e); }); ['touchstart', 'mousedown'].forEach(evt => { document.getElementById('leftFlipperBtn').addEventListener(evt, flipperHandler('left', 'activate')); document.getElementById('rightFlipperBtn').addEventListener(evt, flipperHandler('right', 'activate')); }); ['touchend', 'mouseup'].forEach(evt => { document.getElementById('leftFlipperBtn').addEventListener(evt, flipperHandler('left', 'deactivate')); document.getElementById('rightFlipperBtn').addEventListener(evt, flipperHandler('right', 'deactivate')); }); };
+            activateLeftFlipper() { this.leftFlipper.classList.add('active'); this.playSound('flipper'); };
+            deactivateLeftFlipper() { this.leftFlipper.classList.remove('active'); };
+            activateRightFlipper() { this.rightFlipper.classList.add('active'); this.playSound('flipper'); };
+            deactivateRightFlipper() { this.rightFlipper.classList.remove('active'); };
+            updateBall() { this.ballVelY += this.gravity; this.ballX += this.ballVelX; this.ballY += this.ballVelY; if (this.ballX <= 23) { this.ballX = 23; this.ballVelX *= -0.7; this.playSound('wall'); } if (this.ballX >= this.gameArea.clientWidth - 23) { this.ballX = this.gameArea.clientWidth - 23; this.ballVelX *= -0.7; this.playSound('wall'); } if (this.ballY <= 8) { this.ballY = 8; this.ballVelY *= -0.7; this.playSound('wall'); } if (this.ballY > 500) { this.handleBallLost(); } this.ball.style.left = `${this.ballX}px`; this.ball.style.top = `${this.ballY}px`; };
+            checkGuideWallCollision(side) { const angleDeg = side === 'left' ? 28 : -28; const angleRad = angleDeg * Math.PI / 180; const wallNormal = { x: Math.sin(angleRad), y: -Math.cos(angleRad) }; if (this.ballY > 280 && this.ballY < 430 && (side === 'left' ? this.ballX < 200 : this.ballX > 180)) { const wallYatBallX = (side === 'left') ? (this.ballX - 15) * Math.tan(angleRad) + 310 : (this.ballX - (this.gameArea.clientWidth - 15)) * Math.tan(angleRad) + 310; if (Math.abs(this.ballY - wallYatBallX) < 10) { const dot = this.ballVelX * wallNormal.x + this.ballVelY * wallNormal.y; if (dot < 0) { this.ballVelX -= 2 * dot * wallNormal.x * 0.9; this.ballVelY -= 2 * dot * wallNormal.y * 0.9; this.playSound('wall'); } } } };
+            checkCollisions() { document.querySelectorAll('.bumper, .emoji-target, .star-target').forEach(target => { if (target.hit) return; const rect = target.getBoundingClientRect(); const gameRect = this.gameArea.getBoundingClientRect(); const targetX = rect.left - gameRect.left + rect.width / 2; const targetY = rect.top - gameRect.top + rect.height / 2; const distance = Math.hypot(this.ballX + 8 - targetX, this.ballY + 8 - targetY); if (distance < (target.classList.contains('bumper') ? 23 : 20)) { target.hit = true; const angle = Math.atan2(this.ballY + 8 - targetY, this.ballX + 8 - targetX); const normalX = Math.cos(angle); const normalY = Math.sin(angle); const dot = this.ballVelX * normalX + this.ballVelY * normalY; this.ballVelX -= 2 * dot * normalX; this.ballVelY -= 2 * dot * normalY; const kick = target.classList.contains('bumper') ? 6 : 4; this.ballVelX += normalX * kick; this.ballVelY += normalY * kick; this.addScore(parseInt(target.dataset.points)); this.playSound(target.classList.contains('bumper') ? 'bumper' : 'target'); this.triggerHitEffects(targetX, targetY); target.classList.add('hit'); setTimeout(() => { target.classList.remove('hit'); target.hit = false; }, 200); } }); this.checkFlipperCollision(this.leftFlipper); this.checkFlipperCollision(this.rightFlipper); this.checkGuideWallCollision('left'); this.checkGuideWallCollision('right'); };
+            checkFlipperCollision(flipper) { const rect = flipper.getBoundingClientRect(); const gameRect = this.gameArea.getBoundingClientRect(); if (this.ballX + 16 > rect.left - gameRect.left && this.ballX < rect.right - gameRect.left && this.ballY + 16 > rect.top - gameRect.top && this.ballY < rect.bottom - gameRect.top) { if (flipper.classList.contains('active')) { this.ballY = rect.top - gameRect.top - 16; this.ballVelY = -15 - Math.random() * 5; const sideForce = flipper.classList.contains('flipper-left') ? 1 : -1; const hitPos = (this.ballX - (rect.left - gameRect.left)) / rect.width; this.ballVelX += (sideForce * -1) * (hitPos - 0.5) * 15; this.playSound('flipper'); } } };
+            addScore(points) { if (this.isPaused || !this.ballInPlay) return; this.score += points; this.updateDisplays(); this.checkLevelUp(); };
+            levelUp() { this.level++; this.scoreToNextLevel = this.levelGoals[this.level - 1] || Infinity; this.ballsLeft++; this.playSound('levelUp'); this.triggerLevelUpAnimation(); this.updateDisplays(); setTimeout(() => { this.setupField(this.level); }, 1000); };
+            checkLevelUp() { if (this.level - 1 < this.levelGoals.length && this.score >= this.scoreToNextLevel) { this.levelUp(); } };
+            handleBallLost() { this.ballInPlay = false; this.ball.classList.remove('glow'); this.ballsLeft--; this.updateDisplays(); if (this.ballsLeft > 0) { this.playSound('ballLost'); setTimeout(() => this.startNewBall(), 1000); } else { this.isPaused = true; document.getElementById('finalScore').textContent = this.score; document.getElementById('gameOver').style.display = 'block'; this.playSound('gameOver'); } };
+            triggerLevelUpAnimation() { this.levelUpOverlay.classList.add('level-up-anim'); setTimeout(() => { this.levelUpOverlay.classList.remove('level-up-anim'); }, 2000); };
+            updateDisplays() { this.scoreElement.textContent = this.score; this.ballsLeftElement.textContent = this.ballsLeft; this.levelElement.textContent = this.level; };
+            triggerHitEffects(x, y) { this.flashOverlay.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 60%)`; this.flashOverlay.style.opacity = 1; setTimeout(() => this.flashOverlay.style.opacity = 0, 100); const shockwave = document.createElement('div'); shockwave.className = 'shockwave'; shockwave.style.left = `${x}px`; shockwave.style.top = `${y}px`; shockwave.style.transform = 'translate(-50%, -50%)'; this.shockwaveContainer.appendChild(shockwave); setTimeout(() => shockwave.remove(), 400); const particleColors = ['#ffd700', '#ffffff', '#87cefa']; for (let i = 0; i < 15; i++) { const p = document.createElement('div'); p.className = 'particle'; p.style.backgroundColor = particleColors[Math.floor(Math.random() * particleColors.length)]; p.style.setProperty('--tx', `${(Math.random() - 0.5) * 80}px`); p.style.setProperty('--ty', `${(Math.random() - 0.5) * 80}px`); p.style.left = `${x - 2}px`; p.style.top = `${y - 2}px`; this.gameArea.appendChild(p); setTimeout(() => p.remove(), 600); } };
+            playSound(type) { if (!this.audioContext) return; try { if (this.audioContext.state === 'suspended') {this.audioContext.resume();} const a = this.audioContext; const o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); let f, d, gain = 0.1, waveType = 'sine'; switch (type) { case 'launch': f = 80; d = 0.4; gain = 0.2; break; case 'bumper': f = 800; d = 0.1; gain = 0.15; waveType = 'square'; break; case 'target': f = 1200; d = 0.2; break; case 'flipper': f = 300; d = 0.1; gain = 0.08; break; case 'wall': f = 200; d = 0.1; gain = 0.05; break; case 'ballLost': f = 250; d = 0.4; waveType = 'triangle'; break; case 'gameOver': f = 150; d = 0.5; break; case 'levelUp': f = 440; d = 1.0; gain=0.3; waveType = 'sawtooth'; break; default: f = 600; d = 0.1; } o.type = waveType; o.frequency.setValueAtTime(f, a.currentTime); if(type === 'levelUp') { g.gain.setValueAtTime(0.01, a.currentTime); g.gain.linearRampToValueAtTime(gain, a.currentTime + d/2); g.gain.linearRampToValueAtTime(0.01, a.currentTime + d); o.frequency.linearRampToValueAtTime(f * 2, a.currentTime + d); } else { g.gain.setValueAtTime(gain, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + d); } o.start(a.currentTime); o.stop(a.currentTime + d); } catch (e) {console.error("無法播放音效: ", e);} };
+        }
+        
+        // --- 全新的 GameManager ---
+        const GameManager = {
+            game: null,
+            selectedGravity: 0.20, // 修正 #1: 更新預設速度
+
+            init() {
+                document.getElementById('start-btn').addEventListener('click', () => this.start());
+                document.getElementById('restartBtn').addEventListener('click', () => this.restart());
+                document.getElementById('devBtn').addEventListener('click', this.copyCode);
+
+                document.querySelectorAll('.speed-select-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelector('.speed-select-btn.active').classList.remove('active');
+                        e.target.classList.add('active');
+                        this.selectedGravity = parseFloat(e.target.dataset.gravity);
+                    });
+                });
+            },
+
+            start() {
+                const startScreen = document.getElementById('start-screen');
+                startScreen.style.opacity = '0';
+                setTimeout(() => {
+                    startScreen.style.display = 'none';
+                }, 500);
+
+                this.game = new PinballGame();
+                this.game.init();
+                this.game.startGame(this.selectedGravity);
+            },
+
+            restart() {
+                // 重新載入頁面是最乾淨、最穩定的重啟方式
+                window.location.reload();
+            },
+            
+            copyCode() {
+                const c = document.documentElement.outerHTML;
+                navigator.clipboard.writeText(c).then(() => {
+                    const b = document.getElementById('devBtn');
+                    const o = b.innerHTML;
+                    b.innerHTML = '✓';
+                    b.style.background = 'linear-gradient(145deg, #2ed573, #1e90ff)';
+                    setTimeout(() => {
+                        b.innerHTML = o;
+                        b.style.background = 'linear-gradient(145deg, #667eea, #764ba2)';
+                    }, 1500);
+                }).catch(() => alert('複製失敗'));
+            }
+        };
+        
+        function restartGame() {
+            GameManager.restart();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            GameManager.init();
+        });
+    </script>
+</body>
+</html>
