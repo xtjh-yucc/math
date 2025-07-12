@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>打磚塊：關卡挑戰版</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Tone.js 用於音效 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #gameCanvas {
+            background: #1a202c;
+            display: block;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 640px;
+            margin: auto;
+            transition: transform 0.1s ease-in-out;
+        }
+        /* 螢幕震動效果 */
+        .shake {
+            animation: shake 0.15s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            50% { transform: translateX(6px); }
+            75% { transform: translateX(-4px); }
+        }
+        /* 板子閃爍效果 */
+        .flash {
+            box-shadow: 0 0 25px 10px rgba(236, 72, 153, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen p-4">
+
+    <div class="w-full max-w-2xl text-center">
+        <h1 class="text-4xl font-bold mb-2 text-cyan-400">打磚塊</h1>
+        <div class="grid grid-cols-3 gap-4 mb-4 p-2 bg-gray-800 rounded-lg">
+            <div>分數: <span id="score" class="font-bold text-yellow-400">0</span></div>
+            <div>關卡: <span id="level" class="font-bold text-green-400">1</span></div>
+            <div>生命: <span id="lives" class="font-bold text-red-400">3</span></div>
+        </div>
+        
+        <div id="gameContainer" class="game-container relative">
+            <canvas id="gameCanvas"></canvas>
+            <div id="messageBox" class="absolute inset-0 flex-col items-center justify-center bg-black bg-opacity-70 rounded-lg text-white text-3xl font-bold hidden">
+                <p id="messageText"></p>
+                <button id="nextLevelButton" class="hidden mt-4 px-6 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-xl transition-colors">下一關</button>
+                <button id="restartButton" class="hidden mt-4 px-6 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-xl transition-colors">重新開始</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 遊戲設定 ---
+        const canvas = document.getElementById('gameCanvas');
+        const gameContainer = document.getElementById('gameContainer');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const levelEl = document.getElementById('level');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const restartButton = document.getElementById('restartButton');
+        const nextLevelButton = document.getElementById('nextLevelButton');
+
+        // --- 音效設定 ---
+        let audioInitialized = false;
+        const hitSound = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.1, release: 0.2 }, volume: -12 }).toDestination();
+        const breakSound = new Tone.PolySynth(Tone.MembraneSynth, { pitchDecay: 0.05, octaves: 10, envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: 'exponential' }, volume: -6 }).toDestination();
+        const loseLifeSound = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 1 }, volume: -10 }).toDestination();
+        const winSound = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, volume: -8 }).toDestination();
+        const levelUpSound = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle8' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.5 }, volume: -8 }).toDestination();
+
+        // --- 關卡設計 ---
+        const levels = [
+            [[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1]],
+            [[0,0,0,0,1,0,0,0,0],[0,0,0,1,1,1,0,0,0],[0,0,1,1,1,1,1,0,0],[0,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1]],
+            [[1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,1],[1,0,1,1,1,1,1,0,1],[1,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1]],
+            [[1,0,1,0,1,0,1,0,1],[0,1,0,1,0,1,0,1,0],[1,0,1,0,1,0,1,0,1],[0,1,0,1,0,1,0,1,0],[1,0,1,0,1,0,1,0,1]]
+        ];
+        
+        // --- 遊戲狀態 ---
+        let particles = [];
+        let ball = { x: 0, y: 0, dx: 0, dy: 0, radius: 10, baseSpeed: 4 };
+        const paddle = { height: 12, width: 100, x: 0 };
+        const brickInfo = { width: 0, height: 25, padding: 3, offsetTop: 40, offsetLeft: 0 };
+        let bricks = [];
+        let score = 0;
+        let lives = 3;
+        let currentLevel = 0;
+        let bricksRemaining = 0;
+        let gameRunning = true;
+        let animationFrameId = null;
+
+        // --- 遊戲流程控制 ---
+        function startGame() {
+            score = 0;
+            lives = 3;
+            currentLevel = 0;
+            resizeCanvas();
+            loadLevel(currentLevel);
+        }
+
+        function resetBallAndPaddle() {
+            gameRunning = true;
+            messageBox.style.display = 'none';
+            const speed = ball.baseSpeed + (currentLevel * 0.5);
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height - 50;
+            ball.dx = speed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = -speed;
+            paddle.x = (canvas.width / 2) - (paddle.width / 2);
+            if (!animationFrameId) {
+                draw();
+            }
+        }
+        
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const aspectRatio = 4 / 3;
+            const containerWidth = container.clientWidth;
+            canvas.width = containerWidth;
+            canvas.height = containerWidth / aspectRatio;
+
+            // 重新計算磚塊尺寸
+            if (levels[currentLevel] && levels[currentLevel][0]) {
+                const columnCount = levels[currentLevel][0].length;
+                const totalPaddingWidth = brickInfo.padding * (columnCount + 1);
+                brickInfo.width = (canvas.width - totalPaddingWidth) / columnCount;
+                brickInfo.offsetLeft = brickInfo.padding;
+            }
+        }
+
+        function loadLevel(levelIndex) {
+            levelEl.textContent = levelIndex + 1;
+            drawScore();
+            drawLives();
+            
+            bricksRemaining = 0;
+            const layout = levels[levelIndex];
+            const rowCount = layout.length;
+            const columnCount = layout[0].length;
+
+            bricks = [];
+            for (let r = 0; r < rowCount; r++) {
+                bricks[r] = [];
+                for (let c = 0; c < columnCount; c++) {
+                    const brickType = layout[r][c];
+                    if (brickType === 1) {
+                        bricks[r][c] = { x: 0, y: 0, status: 1, color: `hsl(${r * 360 / rowCount}, 80%, 60%)` };
+                        bricksRemaining++;
+                    } else {
+                        bricks[r][c] = { status: 0 };
+                    }
+                }
+            }
+            resetBallAndPaddle();
+        }
+
+        function proceedToNextLevel() {
+            currentLevel++;
+            if (currentLevel >= levels.length) {
+                winSound.triggerAttackRelease(["C5", "E5", "G5"], "2n");
+                showMessage("恭喜你，全部通關！", 'restart');
+            } else {
+                levelUpSound.triggerAttackRelease(["C4", "G4", "C5"], "4n");
+                resizeCanvas(); // 確保新關卡尺寸正確
+                loadLevel(currentLevel);
+            }
+        }
+
+        // --- 繪製與效果 ---
+        function drawBall() {
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#38bdf8'; ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 15;
+            ctx.fill(); ctx.closePath(); ctx.shadowBlur = 0;
+        }
+        function drawPaddle() {
+            ctx.beginPath(); ctx.rect(paddle.x, canvas.height - paddle.height - 10, paddle.width, paddle.height);
+            ctx.fillStyle = '#ec4899'; ctx.shadowColor = '#ec4899'; ctx.shadowBlur = 10;
+            ctx.fill(); ctx.closePath(); ctx.shadowBlur = 0;
+        }
+        function drawBricks() {
+             for (let r = 0; r < bricks.length; r++) {
+                for (let c = 0; c < bricks[r].length; c++) {
+                    const b = bricks[r][c];
+                    if (b.status === 1) {
+                        const brickX = c * (brickInfo.width + brickInfo.padding) + brickInfo.offsetLeft;
+                        const brickY = r * (brickInfo.height + brickInfo.padding) + brickInfo.offsetTop;
+                        b.x = brickX; b.y = brickY;
+                        ctx.beginPath(); ctx.rect(brickX, brickY, brickInfo.width, brickInfo.height);
+                        ctx.fillStyle = b.color; ctx.fill(); ctx.closePath();
+                    }
+                }
+            }
+        }
+        function createParticles(x, y, color) {
+            const particleCount = 30;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: x, y: y, dx: (Math.random() - 0.5) * 6, dy: (Math.random() - 0.5) * 6,
+                    radius: Math.random() * 3 + 1, color: color, life: 60, alpha: 1
+                });
+            }
+        }
+        function drawParticles() {
+            particles.forEach((p, index) => {
+                p.x += p.dx; p.y += p.dy; p.life--; p.alpha = p.life / 60;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha; ctx.fill(); ctx.closePath();
+                if (p.life <= 0) { particles.splice(index, 1); }
+            });
+            ctx.globalAlpha = 1;
+        }
+        function drawScore() { scoreEl.textContent = score; }
+        function drawLives() { livesEl.textContent = lives; }
+        function shakeScreen() {
+            gameContainer.classList.add('shake');
+            setTimeout(() => gameContainer.classList.remove('shake'), 150);
+        }
+        function flashPaddle() {
+            canvas.classList.add('flash');
+            setTimeout(() => canvas.classList.remove('flash'), 100);
+        }
+
+        // --- 碰撞偵測 ---
+        function collisionDetection() {
+            // 磚塊
+            for (let r = 0; r < bricks.length; r++) {
+                for (let c = 0; c < bricks[r].length; c++) {
+                    const b = bricks[r][c];
+                    if (b.status === 1 && ball.x > b.x && ball.x < b.x + brickInfo.width && ball.y > b.y && ball.y < b.y + brickInfo.height) {
+                        ball.dy = -ball.dy;
+                        b.status = 0;
+                        score++;
+                        bricksRemaining--;
+                        drawScore();
+                        breakSound.triggerAttackRelease("C2", "8n");
+                        createParticles(ball.x, ball.y, b.color);
+                        shakeScreen();
+                        if (bricksRemaining <= 0) {
+                            showMessage(`恭喜！通過第 ${currentLevel + 1} 關`, 'next');
+                        }
+                        return;
+                    }
+                }
+            }
+
+            // 牆壁
+            if (ball.x + ball.dx > canvas.width - ball.radius || ball.x + ball.dx < ball.radius) {
+                ball.dx = -ball.dx;
+                hitSound.set({ detune: (Math.random() - 0.5) * 200 });
+                hitSound.triggerAttackRelease("C5", "8n");
+            }
+
+            // 上方或板子
+            if (ball.y + ball.dy < ball.radius) {
+                ball.dy = -ball.dy;
+                hitSound.set({ detune: (Math.random() - 0.5) * 200 });
+                hitSound.triggerAttackRelease("C5", "8n");
+            } else if (ball.y + ball.dy > canvas.height - ball.radius) {
+                if (ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
+                    ball.dy = -ball.dy;
+                    let deltaX = ball.x - (paddle.x + paddle.width / 2);
+                    ball.dx = deltaX * 0.25;
+                    hitSound.triggerAttackRelease("G4", "8n");
+                    flashPaddle();
+                } else {
+                    lives--;
+                    loseLifeSound.triggerAttackRelease("C3", "2n");
+                    shakeScreen();
+                    drawLives();
+                    if (lives <= 0) {
+                        showMessage("遊戲結束", 'restart');
+                    } else {
+                        resetBallAndPaddle();
+                    }
+                }
+            }
+        }
+        
+        function showMessage(msg, buttonType) {
+            gameRunning = false;
+            messageText.textContent = msg;
+            messageBox.style.display = 'flex';
+            
+            // 根據類型顯示不同按鈕
+            restartButton.style.display = (buttonType === 'restart') ? 'block' : 'none';
+            nextLevelButton.style.display = (buttonType === 'next') ? 'block' : 'none';
+        }
+
+        // --- 主遊戲迴圈 ---
+        function draw() {
+            if (!gameRunning) {
+                animationFrameId = null;
+                return;
+            }
+            ctx.fillStyle = 'rgba(26, 32, 44, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawBricks();
+            drawPaddle();
+            drawBall();
+            drawParticles();
+            collisionDetection();
+
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            animationFrameId = requestAnimationFrame(draw);
+        }
+        
+        // --- 控制 ---
+        function initializeAudio() {
+            if (!audioInitialized && Tone.context.state !== 'running') {
+                Tone.start(); audioInitialized = true; console.log('Audio context started.');
+            }
+        }
+        function movePaddle(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            let relativeX = clientX - rect.left;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddle.x = relativeX - paddle.width / 2;
+                if (paddle.x < 0) paddle.x = 0;
+                if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+            }
+        }
+        function mouseMoveHandler(e) { initializeAudio(); movePaddle(e.clientX); }
+        function touchMoveHandler(e) { e.preventDefault(); initializeAudio(); if (e.touches.length > 0) { movePaddle(e.touches[0].clientX); } }
+        
+        // --- 事件監聽 ---
+        document.addEventListener('mousemove', mouseMoveHandler, false);
+        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.addEventListener('touchstart', initializeAudio, { once: true });
+        restartButton.addEventListener('click', startGame);
+        nextLevelButton.addEventListener('click', proceedToNextLevel);
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            // 視窗改變時，重繪整個場景以避免畫面錯亂
+            ctx.fillStyle = '#1a202c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawBricks();
+            drawPaddle();
+            drawBall();
+            drawParticles();
+        });
+
+        // --- 首次啟動 ---
+        startGame();
+    </script>
+</body>
+</html>
