@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>小精靈迷宮</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* 基本樣式與字體設定 */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 遊戲容器 */
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 遊戲標題 */
+        h1 {
+            color: #FFFF00;
+            text-shadow: 3px 3px #FF0000;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        /* 資訊顯示區 (分數和生命) */
+        #info-display {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 560px; /* 與畫布寬度一致 */
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        #info-display #score::before {
+            content: "分數: ";
+        }
+
+        #info-display #lives::before {
+            content: "生命: ";
+        }
+
+        /* 遊戲畫布 */
+        canvas {
+            background-color: #000;
+            border: 5px solid #0000FF;
+            border-radius: 10px;
+            box-shadow: 0 0 20px #0000FF;
+        }
+        
+        /* 行動裝置控制器 */
+        #mobile-controls {
+            display: none; /* 預設隱藏，由 JS 判斷是否顯示 */
+            margin-top: 20px;
+            width: 150px;
+            height: 150px;
+            position: relative;
+        }
+
+        .control-btn {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0, 0, 255, 0.5);
+            border: 2px solid #FFFF00;
+            border-radius: 10px;
+            color: #FFFF00;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none; /* 防止選取文字 */
+        }
+        .control-btn:active {
+            background-color: rgba(255, 255, 0, 0.5);
+        }
+
+        #btn-up { top: 0; left: 50px; }
+        #btn-down { bottom: 0; left: 50px; }
+        #btn-left { top: 50px; left: 0; }
+        #btn-right { top: 50px; right: 0; }
+
+        /* 遊戲訊息彈出視窗 */
+        #message-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            z-index: 100;
+        }
+
+        #message-content {
+            padding: 30px;
+            background-color: #000;
+            border: 5px solid #FFFF00;
+            border-radius: 15px;
+            box-shadow: 0 0 25px #FFFF00;
+        }
+
+        #message-text {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        #restart-button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            padding: 10px 20px;
+            background-color: #FFFF00;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        #restart-button:hover {
+            background-color: #fff;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            #info-display {
+                font-size: 0.8rem;
+            }
+            #mobile-controls {
+                display: grid; /* 在小螢幕上顯示 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>小精靈迷宮</h1>
+        <div id="info-display">
+            <div id="score">0</div>
+            <div id="lives">3</div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- 行動裝置控制器 -->
+    <div id="mobile-controls">
+        <div id="btn-up" class="control-btn">▲</div>
+        <div id="btn-left" class="control-btn">◄</div>
+        <div id="btn-right" class="control-btn">►</div>
+        <div id="btn-down" class="control-btn">▼</div>
+    </div>
+
+    <!-- 遊戲訊息彈出視窗 -->
+    <div id="message-modal" style="display: flex;">
+        <div id="message-content">
+            <div id="message-text">準備好了嗎？</div>
+            <button id="restart-button">開始遊戲</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 遊戲設定 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const messageModal = document.getElementById('message-modal');
+        const messageText = document.getElementById('message-text');
+        const restartButton = document.getElementById('restart-button');
+        
+        const TILE_SIZE = 20; // 每個格子的尺寸
+        const PLAYER_START_X = 13.5 * TILE_SIZE; // 玩家起始 X 座標
+        const PLAYER_START_Y = 20.5 * TILE_SIZE; // 玩家起始 Y 座標
+        
+        // 迷宮地圖 (1: 牆, 0: 路徑, 2: 豆豆, 3: 能量豆豆, 4: 鬼門)
+        let map = [];
+        const originalMap = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
+            [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+            [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
+            [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+            [1,1,1,1,1,1,2,1,1,0,1,1,1,4,4,1,1,1,0,1,1,2,1,1,1,1,1,1],
+            [1,0,0,0,0,0,2,0,0,0,1,0,0,0,0,0,0,1,0,0,0,2,0,0,0,0,0,1],
+            [1,1,1,1,1,1,2,1,1,0,1,0,0,0,0,0,0,1,0,1,1,2,1,1,1,1,1,1],
+            [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
+            [1,1,1,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,1,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
+            [1,2,2,2,1,1,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,1,1,2,2,2,1],
+            [1,1,2,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,2,1,1],
+            [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+            [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+        
+        let score = 0;
+        let lives = 3;
+        let pelletsCount = 0;
+        let gameLoopId;
+        let isFrightened = false;
+        let frightenTimer;
+
+        // --- 角色類別 ---
+        class Entity {
+            constructor(x, y, radius, speed) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.speed = speed;
+                this.direction = { x: 0, y: 0 };
+                this.nextDirection = { x: 0, y: 0 };
+            }
+
+            draw() {} // 每個子類別自己實現
+
+            update() {
+                const tileX = Math.floor(this.x / TILE_SIZE);
+                const tileY = Math.floor(this.y / TILE_SIZE);
+                const centerX = tileX * TILE_SIZE + TILE_SIZE / 2;
+                const centerY = tileY * TILE_SIZE + TILE_SIZE / 2;
+
+                // 只有在接近網格中心點時，才判斷轉彎或停止
+                if (Math.abs(this.x - centerX) < this.speed && Math.abs(this.y - centerY) < this.speed) {
+                    // 1. 對齊到網格中心
+                    this.x = centerX;
+                    this.y = centerY;
+
+                    // 2. 檢查是否可以轉向 (nextDirection)
+                    if (this.nextDirection.x !== 0 || this.nextDirection.y !== 0) {
+                        const nextTurnTileX = tileX + this.nextDirection.x;
+                        const nextTurnTileY = tileY + this.nextDirection.y;
+                        if (map[nextTurnTileY] && map[nextTurnTileY][nextTurnTileX] !== 1) {
+                            this.direction.x = this.nextDirection.x;
+                            this.direction.y = this.nextDirection.y;
+                        }
+                    }
+
+                    // 3. 檢查目前方向是否會撞牆
+                    const nextMoveTileX = tileX + this.direction.x;
+                    const nextMoveTileY = tileY + this.direction.y;
+                    if (map[nextMoveTileY] && map[nextMoveTileY][nextMoveTileX] === 1) {
+                        this.direction.x = 0;
+                        this.direction.y = 0;
+                    }
+                }
+
+                // 根據最終確定的方向移動
+                this.x += this.direction.x * this.speed;
+                this.y += this.direction.y * this.speed;
+
+                // 處理穿越通道
+                if (this.x < -this.radius) this.x = canvas.width + this.radius;
+                if (this.x > canvas.width + this.radius) this.x = -this.radius;
+            }
+        }
+
+        class Player extends Entity {
+            constructor(x, y, radius, speed) {
+                super(x, y, radius, speed);
+                this.mouthOpen = 0.2;
+                this.mouthOpening = true;
+            }
+
+            draw() {
+                ctx.fillStyle = '#FFFF00'; // 黃色
+                ctx.beginPath();
+                if (this.direction.x === 0 && this.direction.y === 0) {
+                     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                } else {
+                    let angle = Math.atan2(this.direction.y, this.direction.x);
+                    ctx.arc(this.x, this.y, this.radius, angle + this.mouthOpen, angle - this.mouthOpen);
+                }
+                ctx.lineTo(this.x, this.y);
+                ctx.fill();
+            }
+
+            update() {
+                super.update();
+                // 嘴巴動畫
+                if (this.mouthOpening) {
+                    this.mouthOpen += 0.05;
+                    if (this.mouthOpen >= 0.4) this.mouthOpening = false;
+                } else {
+                    this.mouthOpen -= 0.05;
+                    if (this.mouthOpen <= 0.05) this.mouthOpening = true;
+                }
+            }
+        }
+
+        class Ghost extends Entity {
+            constructor(x, y, radius, speed, color) {
+                super(x, y, radius, speed);
+                this.color = color;
+                this.initialColor = color;
+                this.state = 'chase'; // chase, frightened, eaten
+                this.homePos = { x, y };
+            }
+
+            draw() {
+                ctx.fillStyle = this.state === 'frightened' ? '#0000FF' : this.state === 'eaten' ? '#FFF' : this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, Math.PI, 0);
+                ctx.lineTo(this.x + this.radius, this.y + this.radius);
+                ctx.lineTo(this.x + this.radius * 0.66, this.y + this.radius * 0.7);
+                ctx.lineTo(this.x + this.radius * 0.33, this.y + this.radius);
+                ctx.lineTo(this.x, this.y + this.radius * 0.7);
+                ctx.lineTo(this.x - this.radius * 0.33, this.y + this.radius);
+                ctx.lineTo(this.x - this.radius * 0.66, this.y + this.radius * 0.7);
+                ctx.lineTo(this.x - this.radius, this.y + this.radius);
+                ctx.closePath();
+                ctx.fill();
+
+                // 眼睛
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.2, 0, Math.PI * 2);
+                ctx.arc(this.x + this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (this.state !== 'eaten') {
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.1, 0, Math.PI * 2);
+                    ctx.arc(this.x + this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.1, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            update() {
+                if (this.state === 'eaten') {
+                    // 回家
+                    const dx = this.homePos.x - this.x;
+                    const dy = this.homePos.y - this.y;
+                    const distance = Math.hypot(dx, dy);
+                    if (distance < this.speed) {
+                        this.x = this.homePos.x;
+                        this.y = this.homePos.y;
+                        this.state = 'chase';
+                        this.speed /= 2;
+                    } else {
+                        // 直接設定方向，不透過nextDirection
+                        this.direction.x = dx / distance;
+                        this.direction.y = dy / distance;
+                        this.x += this.direction.x * this.speed;
+                        this.y += this.direction.y * this.speed;
+                    }
+                } else {
+                     const tileX = Math.floor(this.x / TILE_SIZE);
+                     const tileY = Math.floor(this.y / TILE_SIZE);
+                     const centerX = tileX * TILE_SIZE + TILE_SIZE / 2;
+                     const centerY = tileY * TILE_SIZE + TILE_SIZE / 2;
+                    // 在交叉口選擇新方向
+                    if (Math.abs(this.x - centerX) < this.speed && Math.abs(this.y - centerY) < this.speed) {
+                        this.chooseDirection();
+                    }
+                    super.update();
+                }
+            }
+
+            chooseDirection() {
+                const tileX = Math.floor(this.x / TILE_SIZE);
+                const tileY = Math.floor(this.y / TILE_SIZE);
+
+                const possibleDirections = [];
+                const directions = [{x:0, y:-1}, {x:0, y:1}, {x:-1, y:0}, {x:1, y:0}];
+                
+                for (const dir of directions) {
+                    if (dir.x === -this.direction.x && dir.y === -this.direction.y) continue;
+                    
+                    const nextTileX = tileX + dir.x;
+                    const nextTileY = tileY + dir.y;
+                    if (map[nextTileY] && map[nextTileY][nextTileX] !== 1 && (this.state !== 'chase' || map[nextTileY][nextTileX] !== 4)) {
+                        possibleDirections.push(dir);
+                    }
+                }
+
+                if (possibleDirections.length > 0) {
+                    if (this.state === 'chase' || this.state === 'frightened') {
+                        let bestDir = possibleDirections[0];
+                        let bestDist = (this.state === 'frightened') ? -1 : Infinity;
+                        
+                        for (const dir of possibleDirections) {
+                            const dist = Math.hypot(player.x - (this.x + dir.x * TILE_SIZE), player.y - (this.y + dir.y * TILE_SIZE));
+                            if (this.state === 'chase' && dist < bestDist) {
+                                bestDist = dist;
+                                bestDir = dir;
+                            } else if (this.state === 'frightened' && dist > bestDist) {
+                                bestDist = dist;
+                                bestDir = dir;
+                            }
+                        }
+                        this.nextDirection = bestDir;
+
+                    } else { 
+                        this.nextDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
+                    }
+                } else {
+                    this.nextDirection = { x: -this.direction.x, y: -this.direction.y };
+                }
+            }
+        }
+
+        // --- 遊戲實體 ---
+        let player;
+        let ghosts = [];
+
+        // --- 遊戲初始化 ---
+        function init() {
+            canvas.width = originalMap[0].length * TILE_SIZE;
+            canvas.height = originalMap.length * TILE_SIZE;
+            
+            map = originalMap.map(arr => arr.slice());
+
+            pelletsCount = 0;
+            map.forEach(row => {
+                row.forEach(tile => {
+                    if (tile === 2 || tile === 3) pelletsCount++;
+                });
+            });
+
+            player = new Player(PLAYER_START_X, PLAYER_START_Y, TILE_SIZE / 2 - 2, 2);
+            
+            ghosts = [
+                new Ghost(13.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.8, '#FF0000'), // Blinky
+                new Ghost(14.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.8, '#FFB8FF'), // Pinky
+                new Ghost(12.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.8, '#00FFFF'), // Inky
+                new Ghost(15.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.8, '#FFB852')  // Clyde
+            ];
+            
+            score = 0;
+            lives = 3;
+            updateInfo();
+        }
+
+        function startGame() {
+            init();
+            messageModal.style.display = 'none';
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            gameLoop();
+        }
+
+        function updateInfo() {
+            scoreEl.textContent = score;
+            livesEl.textContent = lives;
+        }
+
+        // --- 繪圖函式 ---
+        function drawMap() {
+            for (let y = 0; y < map.length; y++) {
+                for (let x = 0; x < map[y].length; x++) {
+                    if (map[y][x] === 1) { // 牆
+                        ctx.fillStyle = '#0000FF';
+                        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    } else if (map[y][x] === 2) { // 豆豆
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.beginPath();
+                        ctx.arc(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 6, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (map[y][x] === 3) { // 能量豆豆
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.beginPath();
+                        ctx.arc(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        // --- 碰撞檢測 ---
+        function checkCollisions() {
+            const playerTileX = Math.floor(player.x / TILE_SIZE);
+            const playerTileY = Math.floor(player.y / TILE_SIZE);
+            if (map[playerTileY] && map[playerTileY][playerTileX] === 2) {
+                map[playerTileY][playerTileX] = 0;
+                score += 10;
+                pelletsCount--;
+                updateInfo();
+            } else if (map[playerTileY] && map[playerTileY][playerTileX] === 3) {
+                map[playerTileY][playerTileX] = 0;
+                score += 50;
+                pelletsCount--;
+                activateFrightenMode();
+                updateInfo();
+            }
+
+            ghosts.forEach(ghost => {
+                if (Math.hypot(player.x - ghost.x, player.y - ghost.y) < player.radius + ghost.radius) {
+                    if (ghost.state === 'frightened') {
+                        ghost.state = 'eaten';
+                        ghost.speed *= 2; 
+                        score += 200;
+                        updateInfo();
+                    } else if (ghost.state !== 'eaten') {
+                        playerLosesLife();
+                    }
+                }
+            });
+        }
+        
+        function activateFrightenMode() {
+            isFrightened = true;
+            ghosts.forEach(ghost => {
+                if (ghost.state !== 'eaten') {
+                    ghost.state = 'frightened';
+                    ghost.speed = 1;
+                }
+            });
+            clearTimeout(frightenTimer);
+            frightenTimer = setTimeout(() => {
+                isFrightened = false;
+                ghosts.forEach(ghost => {
+                    if (ghost.state === 'frightened') {
+                        ghost.state = 'chase';
+                        ghost.speed = 1.8;
+                    }
+                });
+            }, 7000); // 7秒
+        }
+
+        function playerLosesLife() {
+            lives--;
+            updateInfo();
+            cancelAnimationFrame(gameLoopId);
+            if (lives > 0) {
+                setTimeout(() => {
+                    resetPositions();
+                    gameLoop();
+                }, 1000);
+            } else {
+                gameOver(false);
+            }
+        }
+        
+        function resetPositions() {
+            player.x = PLAYER_START_X;
+            player.y = PLAYER_START_Y;
+            player.direction = {x: 0, y: 0};
+            player.nextDirection = {x: 0, y: 0};
+            
+            ghosts.forEach(ghost => {
+                ghost.x = ghost.homePos.x;
+                ghost.y = ghost.homePos.y;
+                ghost.state = 'chase';
+                ghost.speed = 1.8;
+            });
+        }
+
+        function gameOver(isWin) {
+            messageText.textContent = isWin ? '恭喜過關!' : '遊戲結束!';
+            restartButton.textContent = '重新開始';
+            messageModal.style.display = 'flex';
+        }
+
+        // --- 遊戲主迴圈 ---
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawMap();
+            
+            player.update();
+            ghosts.forEach(ghost => ghost.update());
+            
+            player.draw();
+            ghosts.forEach(ghost => ghost.draw());
+
+            checkCollisions();
+            
+            if (pelletsCount === 0) {
+                cancelAnimationFrame(gameLoopId);
+                gameOver(true);
+                return;
+            }
+
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- 事件監聽 ---
+        window.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': case 'w': player.nextDirection = { x: 0, y: -1 }; break;
+                case 'ArrowDown': case 's': player.nextDirection = { x: 0, y: 1 }; break;
+                case 'ArrowLeft': case 'a': player.nextDirection = { x: -1, y: 0 }; break;
+                case 'ArrowRight': case 'd': player.nextDirection = { x: 1, y: 0 }; break;
+            }
+        });
+        
+        const btnUp = document.getElementById('btn-up');
+        const btnDown = document.getElementById('btn-down');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+
+        btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: 0, y: -1 }; });
+        btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: 0, y: 1 }; });
+        btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: -1, y: 0 }; });
+        btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: 1, y: 0 }; });
+
+        restartButton.addEventListener('click', startGame);
+
+        function isTouchDevice() {
+            return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        }
+
+        if (isTouchDevice()) {
+            document.getElementById('mobile-controls').style.display = 'block';
+        }
+        
+        init();
+        drawMap();
+        player.draw();
+        ghosts.forEach(g => g.draw());
+    </script>
+</body>
+</html>
