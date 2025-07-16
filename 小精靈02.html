@@ -1,861 +1,149 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>小精靈迷宮</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
-    <style>
-        /* 基本樣式與字體設定 */
-        body {
-            margin: 0;
-            padding: 10px;
-            background-color: #000;
-            color: #fff;
-            font-family: 'Press Start 2P', cursive;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-around; /* 確保內容分散對齊 */
-            height: 100vh;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-
-        /* 遊戲容器 */
-        #game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0; /* 防止容器在小螢幕上被壓縮 */
-            width: 100%;
-        }
-
-        /* 遊戲標題 */
-        h1 {
-            color: #FFFF00;
-            text-shadow: 3px 3px #FF0000;
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 2rem;
-            text-align: center;
-        }
-
-        /* 資訊顯示區 (分數和生命) */
-        #info-display {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 560px; /* 與畫布寬度一致 */
-            margin-bottom: 15px;
-            font-size: 1rem;
-        }
-
-        #info-display #score::before {
-            content: "分數: ";
-        }
-
-        #info-display #lives::before {
-            content: "生命: ";
-        }
-
-        /* 遊戲畫布 */
-        canvas {
-            background-color: #000;
-            border: 5px solid #0000FF;
-            border-radius: 10px;
-            box-shadow: 0 0 20px #0000FF;
-            width: 100%;
-            height: auto;
-            max-width: 560px;
-            max-height: calc(100vh - 220px); /* 預留空間給標題和控制器 */
-            object-fit: contain;
-        }
-        
-        /* 行動裝置控制器 */
-        #mobile-controls {
-            display: none; /* 預設隱藏，由 JS 判斷是否顯示 */
-            margin-top: 15px;
-            margin-bottom: 10px;
-            width: 150px;
-            height: 150px;
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        .control-btn {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background-color: rgba(0, 0, 255, 0.5);
-            border: 2px solid #FFFF00;
-            border-radius: 10px;
-            color: #FFFF00;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none; /* 防止選取文字 */
-        }
-        .control-btn:active {
-            background-color: rgba(255, 255, 0, 0.5);
-        }
-
-        #btn-up { top: 0; left: 50px; }
-        #btn-down { bottom: 0; left: 50px; }
-        #btn-left { top: 50px; left: 0; }
-        #btn-right { top: 50px; right: 0; }
-
-        /* 遊戲訊息彈出視窗 */
-        #message-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            text-align: center;
-            z-index: 100;
-        }
-
-        #message-content {
-            padding: 30px;
-            background-color: #000;
-            border: 5px solid #FFFF00;
-            border-radius: 15px;
-            box-shadow: 0 0 25px #FFFF00;
-        }
-
-        #message-text {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-
-        #restart-button {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 1rem;
-            padding: 10px 20px;
-            background-color: #FFFF00;
-            color: #000;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        #restart-button:hover {
-            background-color: #fff;
-        }
-
-        /* 響應式設計 */
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 1.2rem;
-                margin-bottom: 5px;
-            }
-            #info-display {
-                font-size: 0.8rem;
-                margin-bottom: 10px;
-            }
-            #mobile-controls {
-                display: block; /* 在小螢幕上顯示 */
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>小精靈迷宮</title>
+  <style>
+    canvas {
+      border: 2px solid black;
+      display: block;
+      margin: 20px auto;
+      background-color: black;
+    }
+  </style>
 </head>
 <body>
+<canvas id="gameCanvas" width="480" height="320"></canvas>
 
-    <div id="game-container">
-        <h1>小精靈迷宮</h1>
-        <div id="info-display">
-            <div id="score">0</div>
-            <div id="lives">3</div>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-    </div>
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
 
-    <div id="mobile-controls">
-        <div id="btn-up" class="control-btn">▲</div>
-        <div id="btn-left" class="control-btn">◄</div>
-        <div id="btn-right" class="control-btn">►</div>
-        <div id="btn-down" class="control-btn">▼</div>
-    </div>
+  const TILE_SIZE = 32;
+  const ROWS = 10;
+  const COLS = 15;
 
-    <div id="message-modal" style="display: flex;">
-        <div id="message-content">
-            <div id="message-text">準備好了嗎？</div>
-            <button id="restart-button">開始遊戲</button>
-        </div>
-    </div>
+  // 0: 空地, 1: 牆壁
+  const map = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,0,1,1,1,1,1,0,1],
+    [1,0,1,0,1,0,0,0,0,0,0,0,1,0,1],
+    [1,0,1,0,1,1,1,1,1,1,1,0,1,0,1],
+    [1,0,1,0,0,0,0,0,0,0,1,0,1,0,1],
+    [1,0,1,1,1,1,1,1,1,0,1,0,1,0,1],
+    [1,0,0,0,0,0,0,0,1,0,0,0,1,0,1],
+    [1,0,1,1,1,1,1,0,1,1,1,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ];
 
-    <script>
-    window.addEventListener('load', () => {
-        // --- 遊戲設定 ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score');
-        const livesEl = document.getElementById('lives');
-        const messageModal = document.getElementById('message-modal');
-        const messageText = document.getElementById('message-text');
-        const restartButton = document.getElementById('restart-button');
-        
-        const TILE_SIZE = 20;
-        const PLAYER_START_X = 13.5 * TILE_SIZE;
-        const PLAYER_START_Y = 16.5 * TILE_SIZE;
-        
-        let map = [];
-        const originalMap = [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
-            [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
-            [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-            [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
-            [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
-            [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
-            [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
-            [1,1,1,1,1,1,2,1,1,0,1,1,1,4,4,1,1,1,0,1,1,2,1,1,1,1,1,1],
-            [1,0,0,0,0,0,2,0,0,0,1,0,0,0,0,0,0,1,0,0,0,2,0,0,0,0,0,1],
-            [1,1,1,1,1,1,2,1,1,0,1,0,0,0,0,0,0,1,0,1,1,2,1,1,1,1,1,1],
-            [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
-            [1,1,1,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,1,1,1,1,1],
-            [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
-            [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
-            [1,2,2,2,1,1,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,1,1,2,2,2,1],
-            [1,1,2,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,2,1,1],
-            [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
-            [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
-            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ];
-        
-        let score = 0;
-        let lives = 3;
-        let pelletsCount = 0;
-        let gameLoopId = null;
-        let isFrightened = false;
-        let frightenTimer;
-        let ghostReleaseTimers = [];
-        let extraLifeAwarded = false;
-
-        let particles = [];
-        let floatingTexts = [];
-        let sounds = {};
-        let audioReady = false;
-
-     class Entity {
+  class Entity {
     constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        this.radius = TILE_SIZE / 2 - 2;
-        this.direction = { x: 0, y: 0 };
-        this.nextDirection = { x: 0, y: 0 };
-        this.speed = 2;
+      this.x = x;
+      this.y = y;
+      this.color = color;
+      this.radius = TILE_SIZE / 2 - 2;
+      this.direction = { x: 0, y: 0 };
+      this.nextDirection = { x: 0, y: 0 };
+      this.speed = 2;
     }
 
     draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
     }
 
     isAtGridCenter() {
-        const gridX = Math.round(this.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
-        const gridY = Math.round(this.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
-        const dx = Math.abs(this.x - gridX);
-        const dy = Math.abs(this.y - gridY);
+      const gridX = Math.round(this.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+      const gridY = Math.round(this.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+      const dx = Math.abs(this.x - gridX);
+      const dy = Math.abs(this.y - gridY);
 
-        if (dx < this.speed && dy < this.speed) {
-            this.x = gridX;
-            this.y = gridY;
-            return true;
-        }
-        return false;
+      if (dx < this.speed && dy < this.speed) {
+        this.x = gridX;
+        this.y = gridY;
+        return true;
+      }
+      return false;
     }
 
     isPathAvailable(dir) {
-        const centerX = Math.round(this.x / TILE_SIZE);
-        const centerY = Math.round(this.y / TILE_SIZE);
-        const nextX = centerX + dir.x;
-        const nextY = centerY + dir.y;
+      const centerX = Math.round(this.x / TILE_SIZE);
+      const centerY = Math.round(this.y / TILE_SIZE);
+      const nextX = centerX + dir.x;
+      const nextY = centerY + dir.y;
 
-        if (map[nextY] && map[nextY][nextX] !== 1) {
-            return true;
-        }
-        return false;
+      if (map[nextY] && map[nextY][nextX] === 0) {
+        return true;
+      }
+      return false;
     }
 
     update() {
-        if (this.isAtGridCenter()) {
-            if (this.nextDirection.x !== 0 || this.nextDirection.y !== 0) {
-                if (this.isPathAvailable(this.nextDirection)) {
-                    this.direction = { ...this.nextDirection };
-                    this.nextDirection = { x: 0, y: 0 };
-                }
-            }
-
-            // 如果當前方向無路可走，就停下
-            if (!this.isPathAvailable(this.direction)) {
-                this.direction = { x: 0, y: 0 };
-            }
+      if (this.isAtGridCenter()) {
+        if (this.nextDirection.x !== 0 || this.nextDirection.y !== 0) {
+          if (this.isPathAvailable(this.nextDirection)) {
+            this.direction = { ...this.nextDirection };
+            this.nextDirection = { x: 0, y: 0 };
+          }
         }
 
-        this.x += this.direction.x * this.speed;
-        this.y += this.direction.y * this.speed;
+        if (!this.isPathAvailable(this.direction)) {
+          this.direction = { x: 0, y: 0 };
+        }
+      }
 
-        // 通道邊界穿越處理（例如畫面最左到最右）
-        if (this.x < -this.radius) this.x = canvas.width + this.radius;
-        if (this.x > canvas.width + this.radius) this.x = -this.radius;
+      this.x += this.direction.x * this.speed;
+      this.y += this.direction.y * this.speed;
     }
-}
+  }
 
+  const player = new Entity(TILE_SIZE * 1.5, TILE_SIZE * 1.5, "yellow");
 
-        class Player extends Entity {
-            constructor(x, y, radius, speed) {
-                super(x, y, radius, speed);
-                this.mouthOpen = 0.2;
-                this.mouthOpening = true;
-            }
-
-            draw() {
-                ctx.fillStyle = '#FFFF00';
-                ctx.beginPath();
-                if (this.direction.x === 0 && this.direction.y === 0) {
-                     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                } else {
-                    let angle = Math.atan2(this.direction.y, this.direction.x);
-                    ctx.arc(this.x, this.y, this.radius, angle + this.mouthOpen, angle - this.mouthOpen);
-                }
-                ctx.lineTo(this.x, this.y);
-                ctx.fill();
-            }
-
-            update() {
-                super.update();
-                if (this.mouthOpening) {
-                    this.mouthOpen += 0.05;
-                    if (this.mouthOpen >= 0.4) this.mouthOpening = false;
-                } else {
-                    this.mouthOpen -= 0.05;
-                    if (this.mouthOpen <= 0.05) this.mouthOpening = true;
-                }
-            }
+  function drawMap() {
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (map[y][x] === 1) {
+          ctx.fillStyle = "blue";
+          ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
+      }
+    }
+  }
 
-        class Ghost extends Entity {
-            constructor(x, y, radius, speed, color) {
-                super(x, y, radius, speed);
-                this.color = color;
-                this.state = 'in_pen';
-                this.homePos = { x, y };
-            }
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawMap();
+    player.update();
+    player.draw();
+    requestAnimationFrame(gameLoop);
+  }
 
-            draw() {
-                ctx.fillStyle = this.state === 'frightened' ? '#0000FF' : this.state === 'eaten' ? '#FFF' : this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, Math.PI, 0);
-                ctx.lineTo(this.x + this.radius, this.y + this.radius);
-                ctx.lineTo(this.x + this.radius * 0.66, this.y + this.radius * 0.7);
-                ctx.lineTo(this.x + this.radius * 0.33, this.y + this.radius);
-                ctx.lineTo(this.x, this.y + this.radius * 0.7);
-                ctx.lineTo(this.x - this.radius * 0.33, this.y + this.radius);
-                ctx.lineTo(this.x - this.radius * 0.66, this.y + this.radius * 0.7);
-                ctx.lineTo(this.x - this.radius, this.y + this.radius);
-                ctx.closePath();
-                ctx.fill();
+  document.addEventListener("keydown", (e) => {
+    switch (e.key) {
+      case "ArrowUp":
+      case "w":
+        player.nextDirection = { x: 0, y: -1 };
+        break;
+      case "ArrowDown":
+      case "s":
+        player.nextDirection = { x: 0, y: 1 };
+        break;
+      case "ArrowLeft":
+      case "a":
+        player.nextDirection = { x: -1, y: 0 };
+        break;
+      case "ArrowRight":
+      case "d":
+        player.nextDirection = { x: 1, y: 0 };
+        break;
+    }
+  });
 
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.2, 0, Math.PI * 2);
-                ctx.arc(this.x + this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.2, 0, Math.PI * 2);
-                ctx.fill();
-
-                if (this.state !== 'eaten') {
-                    ctx.fillStyle = 'black';
-                    ctx.beginPath();
-                    ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.1, 0, Math.PI * 2);
-                    ctx.arc(this.x + this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.1, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            
-            update() {
-                if (this.state === 'in_pen') return;
-
-                if (this.state === 'exiting') {
-                    const targetY = 8.5 * TILE_SIZE; // Exit point just above the ghost house door
-                    if (this.y > targetY) {
-                        this.y -= this.speed / 2; // Move up towards the exit
-                    } else {
-                        this.y = targetY;
-                        this.state = 'chase'; // Transition to chase mode once out
-                    }
-                    return;
-                }
-                
-                // Only allow ghosts to choose a new direction when they are centered on a tile
-                if (this.isAtGridCenter()) {
-                    this.chooseDirection();
-                }
-                super.update(); // Call parent update for movement based on chosen direction
-            }
-
-            chooseDirection() {
-                const tileX = Math.floor(this.x / TILE_SIZE);
-                const tileY = Math.floor(this.y / TILE_SIZE);
-                const possibleDirections = [];
-                const directions = [{x:0, y:-1}, {x:0, y:1}, {x:-1, y:0}, {x:1, y:0}];
-                
-                for (const dir of directions) {
-                    // Prevent immediate reversal
-                    if (this.direction.x === -dir.x && this.direction.y === -dir.y) continue;
-                    
-                    const nextTileX = tileX + dir.x;
-                    const nextTileY = tileY + dir.y;
-                    
-                    // Handle wrap-around for tile checking
-                    let effectiveNextTileX = nextTileX;
-                    if (nextTileX < 0) effectiveNextTileX = map[0].length - 1;
-                    if (nextTileX >= map[0].length) effectiveNextTileX = 0;
-
-                    const nextTile = map[nextTileY] ? map[nextTileY][effectiveNextTileX] : 1;
-
-                    // Do not allow ghosts (unless eaten) to enter walls (1) or the ghost house door (4)
-                    if (nextTile === 1) continue;
-                    if (nextTile === 4 && this.state !== 'eaten') continue; // Ghosts can only re-enter pen when eaten
-
-                    possibleDirections.push(dir);
-                }
-
-                if (possibleDirections.length > 0) {
-                    if (this.state === 'chase') {
-                        // Chase player: find direction that minimizes distance to player
-                        let bestDir = possibleDirections[0];
-                        let bestDist = Infinity;
-                        
-                        for (const dir of possibleDirections) {
-                            const dist = Math.hypot(player.x - (tileX + dir.x) * TILE_SIZE, player.y - (tileY + dir.y) * TILE_SIZE);
-                            if (dist < bestDist) {
-                                bestDist = dist;
-                                bestDir = dir;
-                            }
-                        }
-                        this.nextDirection = bestDir;
-                    } else if (this.state === 'frightened') {
-                        // Frightened: find direction that maximizes distance to player (run away)
-                        let bestDir = possibleDirections[0];
-                        let bestDist = -1; // Initialize with a very small number
-                        
-                        for (const dir of possibleDirections) {
-                            const dist = Math.hypot(player.x - (tileX + dir.x) * TILE_SIZE, player.y - (tileY + dir.y) * TILE_SIZE);
-                            if (dist > bestDist) {
-                                bestDist = dist;
-                                bestDir = dir;
-                            }
-                        }
-                        this.nextDirection = bestDir;
-                    } else { // Scatter mode or other states (e.g., exiting, in_pen but not yet exiting)
-                        // For simplicity, ghosts in other states (not chase/frightened) might just pick a random direction
-                        this.nextDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
-                    }
-                } else {
-                    // If no valid paths, reverse direction (shouldn't happen often in a well-designed maze)
-                    this.nextDirection = { x: -this.direction.x, y: -this.direction.y };
-                }
-            }
-        }
-
-        class Particle {
-            constructor(x, y, radius, color, velocity) {
-                this.x = x;
-                this.y = y;
-                this.radius = radius;
-                this.color = color;
-                this.velocity = velocity;
-                this.alpha = 1;
-            }
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = this.alpha;
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-            update() {
-                this.x += this.velocity.x;
-                this.y += this.velocity.y;
-                this.alpha -= 0.02;
-            }
-        }
-
-        class FloatingText {
-            constructor(text, x, y, color) {
-                this.text = text;
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.alpha = 1;
-            }
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = this.alpha;
-                ctx.fillStyle = this.color;
-                ctx.font = "12px 'Press Start 2P'";
-                ctx.fillText(this.text, this.x, this.y);
-                ctx.restore();
-            }
-            update() {
-                this.y -= 1;
-                this.alpha -= 0.02;
-            }
-        }
-        
-        function initAudio() {
-            if (audioReady) return;
-            sounds.chomp = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.1 } }).toDestination();
-            sounds.powerPellet = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.1 } }).toDestination();
-            sounds.eatGhost = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination();
-            sounds.death = new Tone.NoiseSynth().toDestination();
-            sounds.extraLife = new Tone.Synth().toDestination();
-            audioReady = true;
-        }
-
-        function playSound(sound) {
-            if (!audioReady) return;
-            try {
-                switch(sound) {
-                    case 'chomp': sounds.chomp.triggerAttackRelease('C4', '16n'); break;
-                    case 'powerPellet': sounds.powerPellet.triggerAttackRelease('G5', '8n'); break;
-                    case 'eatGhost': sounds.eatGhost.triggerAttackRelease('C6', '8n'); break;
-                    case 'death': sounds.death.triggerAttackRelease('2n'); break;
-                    case 'extraLife': sounds.extraLife.triggerAttackRelease('C5', '8n', Tone.now()); sounds.extraLife.triggerAttackRelease('G5', '8n', Tone.now() + 0.2); break;
-                    case 'win': sounds.extraLife.triggerAttackRelease('C5', '8n', Tone.now()); sounds.extraLife.triggerAttackRelease('E5', '8n', Tone.now() + 0.2); sounds.extraLife.triggerAttackRelease('G5', '8n', Tone.now() + 0.4); break;
-                }
-            } catch (error) {
-                console.error("音效播放失敗:", error);
-            }
-        }
-
-        let player;
-        let ghosts = [];
-
-        function init() {
-            canvas.width = originalMap[0].length * TILE_SIZE;
-            canvas.height = originalMap.length * TILE_SIZE;
-            
-            map = originalMap.map(arr => arr.slice()); // Create a deep copy of the map
-            pelletsCount = 0;
-            map.forEach(row => row.forEach(tile => { if (tile === 2 || tile === 3) pelletsCount++; }));
-
-            player = new Player(PLAYER_START_X, PLAYER_START_Y, TILE_SIZE / 2 - 2, 2.1);
-            ghosts = [
-                new Ghost(13.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.7, '#FF0000'),
-                new Ghost(14.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.7, '#FFB8FF'),
-                new Ghost(12.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.7, '#00FFFF'),
-                new Ghost(15.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.7, '#FFB852')
-            ];
-            
-            ghostReleaseTimers.forEach(timer => clearTimeout(timer));
-            ghostReleaseTimers = [
-                setTimeout(() => ghosts[0].state = 'exiting', 1000),
-                setTimeout(() => ghosts[1].state = 'exiting', 3000),
-                setTimeout(() => ghosts[2].state = 'exiting', 5000),
-                setTimeout(() => ghosts[3].state = 'exiting', 7000)
-            ];
-
-            score = 0;
-            lives = 3;
-            extraLifeAwarded = false;
-            updateInfo();
-        }
-
-        async function startGame() {
-            if (!audioReady && typeof Tone !== 'undefined') {
-                await Tone.start();
-                initAudio();
-            }
-            init();
-            messageModal.style.display = 'none';
-            if (gameLoopId) cancelAnimationFrame(gameLoopId);
-            gameLoop();
-        }
-
-        function updateInfo() {
-            scoreEl.textContent = score;
-            livesEl.textContent = lives;
-        }
-
-        function drawMap() {
-            for (let y = 0; y < map.length; y++) {
-                for (let x = 0; x < map[y].length; x++) {
-                    if (map[y][x] === 1) {
-                        ctx.fillStyle = '#0000FF';
-                        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                    } else if (map[y][x] === 2) {
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.beginPath();
-                        ctx.arc(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 6, 0, Math.PI * 2);
-                        ctx.fill();
-                    } else if (map[y][x] === 3) {
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.beginPath();
-                        ctx.arc(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 3, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-            }
-        }
-
-        function checkCollisions() {
-            const playerTileX = Math.floor(player.x / TILE_SIZE);
-            const playerTileY = Math.floor(player.y / TILE_SIZE);
-
-            // Pellet collision
-            // Use 0.5 * TILE_SIZE offset to check the tile the player is truly centered on for eating.
-            const pelletCheckX = Math.round(player.x / TILE_SIZE);
-            const pelletCheckY = Math.round(player.y / TILE_SIZE);
-
-            if (map[pelletCheckY] && map[pelletCheckY][pelletCheckX] === 2) {
-                map[pelletCheckY][pelletCheckX] = 0;
-                score += 10;
-                pelletsCount--;
-                playSound('chomp');
-            } else if (map[pelletCheckY] && map[pelletCheckY][pelletCheckX] === 3) {
-                map[pelletCheckY][pelletCheckX] = 0;
-                score += 50;
-                pelletsCount--;
-                activateFrightenMode();
-                playSound('powerPellet');
-                for (let i = 0; i < 20; i++) {
-                    particles.push(new Particle(player.x, player.y, Math.random() * 3, '#FFFF00', { x: (Math.random() - 0.5) * 4, y: (Math.random() - 0.5) * 4 }));
-                }
-            }
-
-            if (score >= 10000 && !extraLifeAwarded) {
-                lives++;
-                extraLifeAwarded = true;
-                playSound('extraLife');
-                floatingTexts.push(new FloatingText('1UP', player.x, player.y, '#00FF00'));
-            }
-            updateInfo();
-
-            // Ghost collision
-            ghosts.forEach((ghost, index) => {
-                const distance = Math.hypot(player.x - ghost.x, player.y - ghost.y);
-                if (distance < player.radius + ghost.radius) {
-                    if (ghost.state === 'frightened') {
-                        ghost.state = 'eaten';
-                        ghost.speed = 4; // Eaten ghosts move faster back to pen
-                        const points = 200 * Math.pow(2, index);
-                        score += points;
-                        floatingTexts.push(new FloatingText(points, ghost.x, ghost.y, '#00FFFF'));
-                        playSound('eatGhost');
-                        for (let i = 0; i < 15; i++) {
-                            particles.push(new Particle(ghost.x, ghost.y, Math.random() * 2, '#00FFFF', { x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3 }));
-                        }
-                    } else if (ghost.state !== 'eaten' && ghost.state !== 'in_pen' && ghost.state !== 'exiting') {
-                        playerLosesLife();
-                    }
-                }
-            });
-        }
-        
-        function activateFrightenMode() {
-            isFrightened = true;
-            ghosts.forEach(ghost => {
-                if (ghost.state === 'chase') {
-                    ghost.state = 'frightened';
-                    ghost.speed = 1; // Frightened ghosts move slower
-                }
-            });
-            clearTimeout(frightenTimer);
-            frightenTimer = setTimeout(() => {
-                isFrightened = false;
-                ghosts.forEach(ghost => {
-                    if (ghost.state === 'frightened') {
-                        ghost.state = 'chase';
-                        ghost.speed = 1.7; // Revert to normal speed
-                    }
-                });
-            }, 7000);
-        }
-
-        function playerLosesLife() {
-            lives--;
-            playSound('death');
-            updateInfo();
-            if (gameLoopId) cancelAnimationFrame(gameLoopId);
-            gameLoopId = null;
-            ghostReleaseTimers.forEach(timer => clearTimeout(timer));
-            if (lives > 0) {
-                setTimeout(() => {
-                    resetPositions();
-                    gameLoop();
-                }, 2000);
-            } else {
-                gameOver(false);
-            }
-        }
-        
-        function resetPositions() {
-            player.x = PLAYER_START_X;
-            player.y = PLAYER_START_Y;
-            player.direction = {x: 0, y: 0};
-            player.nextDirection = {x: 0, y: 0};
-            
-            ghosts.forEach(ghost => {
-                // Reset ghosts to their initial positions inside the pen
-                // Using specific coordinates here based on map layout
-                if (ghost.color === '#FF0000') { // Red ghost (Blinky)
-                    ghost.x = 13.5 * TILE_SIZE;
-                    ghost.y = 10.5 * TILE_SIZE;
-                } else if (ghost.color === '#FFB8FF') { // Pink ghost (Pinky)
-                    ghost.x = 14.5 * TILE_SIZE;
-                    ghost.y = 10.5 * TILE_SIZE;
-                } else if (ghost.color === '#00FFFF') { // Cyan ghost (Inky)
-                    ghost.x = 12.5 * TILE_SIZE;
-                    ghost.y = 10.5 * TILE_SIZE;
-                } else if (ghost.color === '#FFB852') { // Orange ghost (Clyde)
-                    ghost.x = 15.5 * TILE_SIZE;
-                    ghost.y = 10.5 * TILE_SIZE;
-                }
-                ghost.state = 'in_pen';
-                ghost.speed = 1.7; // Reset to normal ghost speed
-                ghost.direction = {x: 0, y: 0}; // Stop movement
-                ghost.nextDirection = {x: 0, y: 0};
-            });
-
-            // Re-schedule ghost releases after reset
-            ghostReleaseTimers = [
-                setTimeout(() => ghosts[0].state = 'exiting', 1000),
-                setTimeout(() => ghosts[1].state = 'exiting', 3000),
-                setTimeout(() => ghosts[2].state = 'exiting', 5000),
-                setTimeout(() => ghosts[3].state = 'exiting', 7000)
-            ];
-        }
-
-        function gameOver(isWin) {
-            if (gameLoopId) cancelAnimationFrame(gameLoopId);
-            gameLoopId = null;
-            if (isWin) playSound('win');
-            messageText.textContent = isWin ? '恭喜過關!' : '遊戲結束!';
-            restartButton.textContent = '重新開始';
-            messageModal.style.display = 'flex';
-            ghostReleaseTimers.forEach(timer => clearTimeout(timer));
-        }
-
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawMap();
-            player.update();
-            ghosts.forEach(ghost => ghost.update());
-            
-            particles.forEach((particle, index) => {
-                if (particle.alpha <= 0) particles.splice(index, 1);
-                else { particle.update(); particle.draw(); }
-            });
-
-            floatingTexts.forEach((text, index) => {
-                if (text.alpha <= 0) floatingTexts.splice(index, 1);
-                else { text.update(); text.draw(); }
-            });
-
-            player.draw();
-            ghosts.forEach(ghost => ghost.draw());
-            checkCollisions();
-            
-            if (pelletsCount === 0) {
-                gameOver(true);
-                return;
-            }
-            gameLoopId = requestAnimationFrame(gameLoop);
-        }
-
-        window.addEventListener('keydown', (e) => {
-            if (!gameLoopId && e.key !== 'Enter' && e.key !== ' ') return; // Allow 'Enter' or 'Space' to start game from modal
-            e.preventDefault(); 
-            switch(e.key) {
-                case 'ArrowUp': case 'w': player.nextDirection = { x: 0, y: -1 }; break;
-                case 'ArrowDown': case 's': player.nextDirection = { x: 0, y: 1 }; break;
-                case 'ArrowLeft': case 'a': player.nextDirection = { x: -1, y: 0 }; break;
-                case 'ArrowRight': case 'd': player.nextDirection = { x: 1, y: 0 }; break;
-                case 'Enter':
-                case ' ': // Allow spacebar to start game
-                    if (messageModal.style.display === 'flex') {
-                        startGame();
-                    }
-                    break;
-            }
-        });
-        
-        const btnUp = document.getElementById('btn-up');
-        const btnDown = document.getElementById('btn-down');
-        const btnLeft = document.getElementById('btn-left');
-        const btnRight = document.getElementById('btn-right');
-
-        btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: 0, y: -1 }; });
-        btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: 0, y: 1 }; });
-        btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: -1, y: 0 }; });
-        btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: 1, y: 0 }; });
-
-        restartButton.addEventListener('click', startGame);
-
-        let touchStartX = 0;
-        let touchStartY = 0;
-        function handleTouchStart(e) {
-            if (messageModal.style.display === 'flex') { // If modal is open, trigger start game
-                startGame();
-                return;
-            }
-            if (!gameLoopId) return;
-            e.preventDefault();
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }
-        function handleTouchEnd(e) {
-            if (!gameLoopId) return;
-            e.preventDefault();
-            const touchEndX = e.changedTouches[0].screenX;
-            const touchEndY = e.changedTouches[0].screenY;
-            handleSwipe(touchEndX - touchStartX, touchEndY - touchStartY);
-        }
-        function handleSwipe(diffX, diffY) {
-            const swipeThreshold = 20;
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (Math.abs(diffX) > swipeThreshold) {
-                    player.nextDirection = diffX > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 };
-                }
-            } else {
-                if (Math.abs(diffY) > swipeThreshold) {
-                    player.nextDirection = diffY > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 };
-                }
-            }
-        }
-        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-
-        function isTouchDevice() {
-            return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        }
-
-        if (isTouchDevice()) {
-            document.getElementById('mobile-controls').style.display = 'block';
-        }
-        
-        init();
-    });
-    </script>
+  gameLoop();
+</script>
 </body>
 </html>
