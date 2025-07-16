@@ -11,15 +11,16 @@
         /* 基本樣式與字體設定 */
         body {
             margin: 0;
-            padding: 0;
+            padding: 10px 0;
             background-color: #000;
             color: #fff;
             font-family: 'Press Start 2P', cursive;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            justify-content: space-between; /* 確保內容分散對齊 */
+            height: 100vh;
+            box-sizing: border-box;
             overflow: hidden;
         }
 
@@ -35,6 +36,7 @@
         h1 {
             color: #FFFF00;
             text-shadow: 3px 3px #FF0000;
+            margin-top: 0;
             margin-bottom: 10px;
             font-size: 2rem;
         }
@@ -68,7 +70,8 @@
         /* 行動裝置控制器 */
         #mobile-controls {
             display: none; /* 預設隱藏，由 JS 判斷是否顯示 */
-            margin-top: 20px;
+            margin-top: 15px;
+            margin-bottom: 10px;
             width: 150px;
             height: 150px;
             position: relative;
@@ -142,15 +145,17 @@
         }
 
         /* 響應式設計 */
-        @media (max-width: 600px) {
+        @media (max-width: 600px) and (max-height: 800px) {
             h1 {
-                font-size: 1.5rem;
+                font-size: 1.2rem;
+                margin-bottom: 5px;
             }
             #info-display {
                 font-size: 0.8rem;
+                margin-bottom: 10px;
             }
             #mobile-controls {
-                display: grid; /* 在小螢幕上顯示 */
+                display: block; /* 在小螢幕上顯示 */
             }
         }
     </style>
@@ -194,7 +199,7 @@
         
         const TILE_SIZE = 20; // 每個格子的尺寸
         const PLAYER_START_X = 13.5 * TILE_SIZE; // 玩家起始 X 座標
-        const PLAYER_START_Y = 20.5 * TILE_SIZE; // 玩家起始 Y 座標
+        const PLAYER_START_Y = 16.5 * TILE_SIZE; // 玩家起始 Y 座標
         
         // 迷宮地圖 (1: 牆, 0: 路徑, 2: 豆豆, 3: 能量豆豆, 4: 鬼門)
         let map = [];
@@ -229,6 +234,7 @@
         let gameLoopId;
         let isFrightened = false;
         let frightenTimer;
+        let ghostReleaseTimers = [];
 
         // --- 角色類別 ---
         class Entity {
@@ -249,13 +255,10 @@
                 const centerX = tileX * TILE_SIZE + TILE_SIZE / 2;
                 const centerY = tileY * TILE_SIZE + TILE_SIZE / 2;
 
-                // 只有在接近網格中心點時，才判斷轉彎或停止
                 if (Math.abs(this.x - centerX) < this.speed && Math.abs(this.y - centerY) < this.speed) {
-                    // 1. 對齊到網格中心
                     this.x = centerX;
                     this.y = centerY;
 
-                    // 2. 檢查是否可以轉向 (nextDirection)
                     if (this.nextDirection.x !== 0 || this.nextDirection.y !== 0) {
                         const nextTurnTileX = tileX + this.nextDirection.x;
                         const nextTurnTileY = tileY + this.nextDirection.y;
@@ -265,7 +268,6 @@
                         }
                     }
 
-                    // 3. 檢查目前方向是否會撞牆
                     const nextMoveTileX = tileX + this.direction.x;
                     const nextMoveTileY = tileY + this.direction.y;
                     if (map[nextMoveTileY] && map[nextMoveTileY][nextMoveTileX] === 1) {
@@ -274,11 +276,9 @@
                     }
                 }
 
-                // 根據最終確定的方向移動
                 this.x += this.direction.x * this.speed;
                 this.y += this.direction.y * this.speed;
 
-                // 處理穿越通道
                 if (this.x < -this.radius) this.x = canvas.width + this.radius;
                 if (this.x > canvas.width + this.radius) this.x = -this.radius;
             }
@@ -292,7 +292,7 @@
             }
 
             draw() {
-                ctx.fillStyle = '#FFFF00'; // 黃色
+                ctx.fillStyle = '#FFFF00';
                 ctx.beginPath();
                 if (this.direction.x === 0 && this.direction.y === 0) {
                      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -306,7 +306,6 @@
 
             update() {
                 super.update();
-                // 嘴巴動畫
                 if (this.mouthOpening) {
                     this.mouthOpen += 0.05;
                     if (this.mouthOpen >= 0.4) this.mouthOpening = false;
@@ -321,9 +320,9 @@
             constructor(x, y, radius, speed, color) {
                 super(x, y, radius, speed);
                 this.color = color;
-                this.initialColor = color;
-                this.state = 'chase'; // chase, frightened, eaten
+                this.state = 'in_pen'; // in_pen, chase, frightened, eaten
                 this.homePos = { x, y };
+                this.penExit = { x: 13.5 * TILE_SIZE, y: 8.5 * TILE_SIZE };
             }
 
             draw() {
@@ -340,7 +339,6 @@
                 ctx.closePath();
                 ctx.fill();
 
-                // 眼睛
                 ctx.fillStyle = 'white';
                 ctx.beginPath();
                 ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.2, this.radius * 0.2, 0, Math.PI * 2);
@@ -357,40 +355,41 @@
             }
             
             update() {
+                if (this.state === 'in_pen') return;
+                
                 if (this.state === 'eaten') {
-                    // 回家
                     const dx = this.homePos.x - this.x;
                     const dy = this.homePos.y - this.y;
                     const distance = Math.hypot(dx, dy);
                     if (distance < this.speed) {
-                        this.x = this.homePos.x;
-                        this.y = this.homePos.y;
-                        this.state = 'chase';
-                        this.speed /= 2;
+                        this.state = 'in_pen'; // 回到家了
+                        setTimeout(() => this.state = 'chase', 2000); // 兩秒後再次出動
                     } else {
-                        // 直接設定方向，不透過nextDirection
                         this.direction.x = dx / distance;
                         this.direction.y = dy / distance;
                         this.x += this.direction.x * this.speed;
                         this.y += this.direction.y * this.speed;
                     }
-                } else {
-                     const tileX = Math.floor(this.x / TILE_SIZE);
-                     const tileY = Math.floor(this.y / TILE_SIZE);
-                     const centerX = tileX * TILE_SIZE + TILE_SIZE / 2;
-                     const centerY = tileY * TILE_SIZE + TILE_SIZE / 2;
-                    // 在交叉口選擇新方向
-                    if (Math.abs(this.x - centerX) < this.speed && Math.abs(this.y - centerY) < this.speed) {
-                        this.chooseDirection();
-                    }
-                    super.update();
+                    return;
                 }
+
+                const tileX = Math.floor(this.x / TILE_SIZE);
+                const tileY = Math.floor(this.y / TILE_SIZE);
+                const centerX = tileX * TILE_SIZE + TILE_SIZE / 2;
+                const centerY = tileY * TILE_SIZE + TILE_SIZE / 2;
+
+                if (Math.abs(this.x - centerX) < this.speed && Math.abs(this.y - centerY) < this.speed) {
+                    this.x = centerX;
+                    this.y = centerY;
+                    this.chooseDirection();
+                }
+
+                super.update();
             }
 
             chooseDirection() {
                 const tileX = Math.floor(this.x / TILE_SIZE);
                 const tileY = Math.floor(this.y / TILE_SIZE);
-
                 const possibleDirections = [];
                 const directions = [{x:0, y:-1}, {x:0, y:1}, {x:-1, y:0}, {x:1, y:0}];
                 
@@ -399,9 +398,12 @@
                     
                     const nextTileX = tileX + dir.x;
                     const nextTileY = tileY + dir.y;
-                    if (map[nextTileY] && map[nextTileY][nextTileX] !== 1 && (this.state !== 'chase' || map[nextTileY][nextTileX] !== 4)) {
-                        possibleDirections.push(dir);
-                    }
+                    const nextTile = map[nextTileY] ? map[nextTileY][nextTileX] : 1;
+
+                    if (nextTile === 1) continue;
+                    if (nextTile === 4 && this.state !== 'eaten') continue;
+
+                    possibleDirections.push(dir);
                 }
 
                 if (possibleDirections.length > 0) {
@@ -420,7 +422,6 @@
                             }
                         }
                         this.nextDirection = bestDir;
-
                     } else { 
                         this.nextDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
                     }
@@ -457,6 +458,14 @@
                 new Ghost(15.5 * TILE_SIZE, 10.5 * TILE_SIZE, TILE_SIZE / 2 - 2, 1.8, '#FFB852')  // Clyde
             ];
             
+            ghostReleaseTimers.forEach(timer => clearTimeout(timer));
+            ghostReleaseTimers = [
+                setTimeout(() => ghosts[0].state = 'chase', 1000),
+                setTimeout(() => ghosts[1].state = 'chase', 3000),
+                setTimeout(() => ghosts[2].state = 'chase', 5000),
+                setTimeout(() => ghosts[3].state = 'chase', 7000)
+            ];
+
             score = 0;
             lives = 3;
             updateInfo();
@@ -478,15 +487,15 @@
         function drawMap() {
             for (let y = 0; y < map.length; y++) {
                 for (let x = 0; x < map[y].length; x++) {
-                    if (map[y][x] === 1) { // 牆
+                    if (map[y][x] === 1) {
                         ctx.fillStyle = '#0000FF';
                         ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                    } else if (map[y][x] === 2) { // 豆豆
+                    } else if (map[y][x] === 2) {
                         ctx.fillStyle = '#FFFFFF';
                         ctx.beginPath();
                         ctx.arc(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 6, 0, Math.PI * 2);
                         ctx.fill();
-                    } else if (map[y][x] === 3) { // 能量豆豆
+                    } else if (map[y][x] === 3) {
                         ctx.fillStyle = '#FFFFFF';
                         ctx.beginPath();
                         ctx.arc(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 3, 0, Math.PI * 2);
@@ -520,7 +529,7 @@
                         ghost.speed *= 2; 
                         score += 200;
                         updateInfo();
-                    } else if (ghost.state !== 'eaten') {
+                    } else if (ghost.state !== 'eaten' && ghost.state !== 'in_pen') {
                         playerLosesLife();
                     }
                 }
@@ -530,7 +539,7 @@
         function activateFrightenMode() {
             isFrightened = true;
             ghosts.forEach(ghost => {
-                if (ghost.state !== 'eaten') {
+                if (ghost.state === 'chase') {
                     ghost.state = 'frightened';
                     ghost.speed = 1;
                 }
@@ -544,13 +553,14 @@
                         ghost.speed = 1.8;
                     }
                 });
-            }, 7000); // 7秒
+            }, 7000);
         }
 
         function playerLosesLife() {
             lives--;
             updateInfo();
             cancelAnimationFrame(gameLoopId);
+            ghostReleaseTimers.forEach(timer => clearTimeout(timer));
             if (lives > 0) {
                 setTimeout(() => {
                     resetPositions();
@@ -570,29 +580,33 @@
             ghosts.forEach(ghost => {
                 ghost.x = ghost.homePos.x;
                 ghost.y = ghost.homePos.y;
-                ghost.state = 'chase';
+                ghost.state = 'in_pen';
                 ghost.speed = 1.8;
             });
+
+            ghostReleaseTimers = [
+                setTimeout(() => ghosts[0].state = 'chase', 1000),
+                setTimeout(() => ghosts[1].state = 'chase', 3000),
+                setTimeout(() => ghosts[2].state = 'chase', 5000),
+                setTimeout(() => ghosts[3].state = 'chase', 7000)
+            ];
         }
 
         function gameOver(isWin) {
             messageText.textContent = isWin ? '恭喜過關!' : '遊戲結束!';
             restartButton.textContent = '重新開始';
             messageModal.style.display = 'flex';
+            ghostReleaseTimers.forEach(timer => clearTimeout(timer));
         }
 
         // --- 遊戲主迴圈 ---
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             drawMap();
-            
             player.update();
             ghosts.forEach(ghost => ghost.update());
-            
             player.draw();
             ghosts.forEach(ghost => ghost.draw());
-
             checkCollisions();
             
             if (pelletsCount === 0) {
@@ -600,7 +614,6 @@
                 gameOver(true);
                 return;
             }
-
             gameLoopId = requestAnimationFrame(gameLoop);
         }
 
@@ -625,6 +638,36 @@
         btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); player.nextDirection = { x: 1, y: 0 }; });
 
         restartButton.addEventListener('click', startGame);
+
+        // --- 滑動控制 ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        function handleTouchStart(e) {
+            e.preventDefault();
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            handleSwipe(touchEndX - touchStartX, touchEndY - touchStartY);
+        }
+        function handleSwipe(diffX, diffY) {
+            const swipeThreshold = 30; // 最小滑動距離
+            if (Math.abs(diffX) > Math.abs(diffY)) { // 水平滑動
+                if (Math.abs(diffX) > swipeThreshold) {
+                    player.nextDirection = diffX > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 };
+                }
+            } else { // 垂直滑動
+                if (Math.abs(diffY) > swipeThreshold) {
+                    player.nextDirection = diffY > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 };
+                }
+            }
+        }
+        canvas.addEventListener('touchstart', handleTouchStart);
+        canvas.addEventListener('touchend', handleTouchEnd);
+
 
         function isTouchDevice() {
             return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
