@@ -266,24 +266,26 @@
             draw() {} 
 
             update() {
-                // --- FIX: Completely new movement logic ---
                 if (this.isAtGridCenter()) {
-                    // Try to honor the next direction first
-                    if (this.isPathAvailable(this.nextDirection)) {
-                        this.direction = { ...this.nextDirection };
-                        this.nextDirection = { x: 0, y: 0 };
-                    } 
-                    // If no next direction or it's blocked, check if current direction is blocked
-                    else if (!this.isPathAvailable(this.direction)) {
-                        this.direction = { x: 0, y: 0 }; // Stop
+                    let turned = false;
+                    if (this.nextDirection.x !== 0 || this.nextDirection.y !== 0) {
+                        if (this.isPathAvailable(this.nextDirection)) {
+                            this.direction = { ...this.nextDirection };
+                            this.nextDirection = { x: 0, y: 0 };
+                            turned = true;
+                        }
+                    }
+                    
+                    if (!turned) {
+                        if (!this.isPathAvailable(this.direction)) {
+                            this.direction = { x: 0, y: 0 };
+                        }
                     }
                 }
 
-                // Move based on the final direction
                 this.x += this.direction.x * this.speed;
                 this.y += this.direction.y * this.speed;
 
-                // Handle tunnel
                 if (this.x < -this.radius) this.x = canvas.width + this.radius;
                 if (this.x > canvas.width + this.radius) this.x = -this.radius;
             }
@@ -294,7 +296,6 @@
                 const centerX = tileX * TILE_SIZE + TILE_SIZE / 2;
                 const centerY = tileY * TILE_SIZE + TILE_SIZE / 2;
                 
-                // Check if we are close enough to the center to snap
                 if (Math.abs(this.x - centerX) < this.speed && Math.abs(this.y - centerY) < this.speed) {
                     this.x = centerX;
                     this.y = centerY;
@@ -305,7 +306,8 @@
 
             isPathAvailable(dir) {
                 if (!dir || (dir.x === 0 && dir.y === 0)) {
-                    return false; // Not trying to move
+                    // For stopping, path is always "available"
+                    return this.direction.x === 0 && this.direction.y === 0;
                 }
                 const currentTileX = Math.floor(this.x / TILE_SIZE);
                 const currentTileY = Math.floor(this.y / TILE_SIZE);
@@ -415,25 +417,10 @@
                     return;
                 }
 
-                if (this.isAtGridCenter() && this.isAtIntersection()) {
+                if (this.isAtGridCenter()) {
                     this.chooseDirection();
                 }
                 super.update();
-            }
-
-            isAtIntersection() {
-                const tileX = Math.floor(this.x / TILE_SIZE);
-                const tileY = Math.floor(this.y / TILE_SIZE);
-                let openPaths = 0;
-                const directions = [{x:0, y:-1}, {x:0, y:1}, {x:-1, y:0}, {x:1, y:0}];
-                for(const dir of directions) {
-                    const nextTileX = tileX + dir.x;
-                    const nextTileY = tileY + dir.y;
-                    if (map[nextTileY] && map[nextTileY][nextTileX] !== 1) {
-                        openPaths++;
-                    }
-                }
-                return openPaths > 2;
             }
 
             chooseDirection() {
