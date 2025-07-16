@@ -18,7 +18,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* 確保內容分散對齊 */
+            justify-content: center; /* 確保內容垂直置中 */
             height: 100vh;
             box-sizing: border-box;
             overflow: hidden;
@@ -30,6 +30,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0; /* 防止容器在小螢幕上被壓縮 */
         }
 
         /* 遊戲標題 */
@@ -75,6 +76,7 @@
             width: 150px;
             height: 150px;
             position: relative;
+            flex-shrink: 0;
         }
 
         .control-btn {
@@ -145,7 +147,7 @@
         }
 
         /* 響應式設計 */
-        @media (max-width: 600px) and (max-height: 800px) {
+        @media (max-width: 600px) {
             h1 {
                 font-size: 1.2rem;
                 margin-bottom: 5px;
@@ -247,7 +249,7 @@
                 this.nextDirection = { x: 0, y: 0 };
             }
 
-            draw() {} // 每個子類別自己實現
+            draw() {} 
 
             update() {
                 const tileX = Math.floor(this.x / TILE_SIZE);
@@ -320,9 +322,8 @@
             constructor(x, y, radius, speed, color) {
                 super(x, y, radius, speed);
                 this.color = color;
-                this.state = 'in_pen'; // in_pen, chase, frightened, eaten
+                this.state = 'in_pen'; // in_pen, exiting, chase, frightened, eaten
                 this.homePos = { x, y };
-                this.penExit = { x: 13.5 * TILE_SIZE, y: 8.5 * TILE_SIZE };
             }
 
             draw() {
@@ -356,14 +357,25 @@
             
             update() {
                 if (this.state === 'in_pen') return;
+
+                if (this.state === 'exiting') {
+                    const targetY = 8.5 * TILE_SIZE;
+                    if (this.y > targetY) {
+                        this.y -= this.speed / 2;
+                    } else {
+                        this.y = targetY;
+                        this.state = 'chase';
+                    }
+                    return;
+                }
                 
                 if (this.state === 'eaten') {
                     const dx = this.homePos.x - this.x;
                     const dy = this.homePos.y - this.y;
                     const distance = Math.hypot(dx, dy);
                     if (distance < this.speed) {
-                        this.state = 'in_pen'; // 回到家了
-                        setTimeout(() => this.state = 'chase', 2000); // 兩秒後再次出動
+                        this.state = 'in_pen';
+                        setTimeout(() => this.state = 'exiting', 2000);
                     } else {
                         this.direction.x = dx / distance;
                         this.direction.y = dy / distance;
@@ -460,10 +472,10 @@
             
             ghostReleaseTimers.forEach(timer => clearTimeout(timer));
             ghostReleaseTimers = [
-                setTimeout(() => ghosts[0].state = 'chase', 1000),
-                setTimeout(() => ghosts[1].state = 'chase', 3000),
-                setTimeout(() => ghosts[2].state = 'chase', 5000),
-                setTimeout(() => ghosts[3].state = 'chase', 7000)
+                setTimeout(() => ghosts[0].state = 'exiting', 1000),
+                setTimeout(() => ghosts[1].state = 'exiting', 3000),
+                setTimeout(() => ghosts[2].state = 'exiting', 5000),
+                setTimeout(() => ghosts[3].state = 'exiting', 7000)
             ];
 
             score = 0;
@@ -529,7 +541,7 @@
                         ghost.speed *= 2; 
                         score += 200;
                         updateInfo();
-                    } else if (ghost.state !== 'eaten' && ghost.state !== 'in_pen') {
+                    } else if (ghost.state !== 'eaten' && ghost.state !== 'in_pen' && ghost.state !== 'exiting') {
                         playerLosesLife();
                     }
                 }
@@ -585,10 +597,10 @@
             });
 
             ghostReleaseTimers = [
-                setTimeout(() => ghosts[0].state = 'chase', 1000),
-                setTimeout(() => ghosts[1].state = 'chase', 3000),
-                setTimeout(() => ghosts[2].state = 'chase', 5000),
-                setTimeout(() => ghosts[3].state = 'chase', 7000)
+                setTimeout(() => ghosts[0].state = 'exiting', 1000),
+                setTimeout(() => ghosts[1].state = 'exiting', 3000),
+                setTimeout(() => ghosts[2].state = 'exiting', 5000),
+                setTimeout(() => ghosts[3].state = 'exiting', 7000)
             ];
         }
 
@@ -665,8 +677,8 @@
                 }
             }
         }
-        canvas.addEventListener('touchstart', handleTouchStart);
-        canvas.addEventListener('touchend', handleTouchEnd);
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
 
         function isTouchDevice() {
