@@ -250,92 +250,74 @@
         let sounds = {};
         let audioReady = false;
 
-        class Entity {
-            constructor(x, y, radius, speed) {
-                this.x = x;
-                this.y = y;
-                this.radius = radius;
-                this.speed = speed;
+     class Entity {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.radius = TILE_SIZE / 2 - 2;
+        this.direction = { x: 0, y: 0 };
+        this.nextDirection = { x: 0, y: 0 };
+        this.speed = 2;
+    }
+
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+    }
+
+    isAtGridCenter() {
+        const gridX = Math.round(this.x / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+        const gridY = Math.round(this.y / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+        const dx = Math.abs(this.x - gridX);
+        const dy = Math.abs(this.y - gridY);
+
+        if (dx < this.speed && dy < this.speed) {
+            this.x = gridX;
+            this.y = gridY;
+            return true;
+        }
+        return false;
+    }
+
+    isPathAvailable(dir) {
+        const centerX = Math.round(this.x / TILE_SIZE);
+        const centerY = Math.round(this.y / TILE_SIZE);
+        const nextX = centerX + dir.x;
+        const nextY = centerY + dir.y;
+
+        if (map[nextY] && map[nextY][nextX] !== 1) {
+            return true;
+        }
+        return false;
+    }
+
+    update() {
+        if (this.isAtGridCenter()) {
+            if (this.nextDirection.x !== 0 || this.nextDirection.y !== 0) {
+                if (this.isPathAvailable(this.nextDirection)) {
+                    this.direction = { ...this.nextDirection };
+                    this.nextDirection = { x: 0, y: 0 };
+                }
+            }
+
+            // 如果當前方向無路可走，就停下
+            if (!this.isPathAvailable(this.direction)) {
                 this.direction = { x: 0, y: 0 };
-                this.nextDirection = { x: 0, y: 0 };
-            }
-
-            draw() {} 
-
-            update() {
-                // Determine current tile coordinates
-                const currentTileX = Math.floor(this.x / TILE_SIZE);
-                const currentTileY = Math.floor(this.y / TILE_SIZE);
-                const centerX = currentTileX * TILE_SIZE + TILE_SIZE / 2;
-                const centerY = currentTileY * TILE_SIZE + TILE_SIZE / 2;
-
-                // Check if the entity is near the center of a tile
-                const nearCenterX = Math.abs(this.x - centerX) < this.speed;
-                const nearCenterY = Math.abs(this.y - centerY) < this.speed;
-
-                if (nearCenterX && nearCenterY) {
-                    // Snap to center if close enough
-                    this.x = centerX;
-                    this.y = centerY;
-
-                    let changedDirection = false;
-                    // Try to apply nextDirection first
-                    if (this.nextDirection.x !== 0 || this.nextDirection.y !== 0) {
-                        if (this.isPathAvailable(this.nextDirection)) {
-                            this.direction = { ...this.nextDirection };
-                            this.nextDirection = { x: 0, y: 0 }; // Clear nextDirection once applied
-                            changedDirection = true;
-                        }
-                    }
-                    
-                    // If no new direction was taken, or if nextDirection was blocked, check current direction
-                    if (!changedDirection) {
-                        if (!this.isPathAvailable(this.direction)) {
-                            this.direction = { x: 0, y: 0 }; // Stop if current path is blocked
-                        }
-                    }
-                }
-
-                // Move the entity based on its current direction and speed
-                this.x += this.direction.x * this.speed;
-                this.y += this.direction.y * this.speed;
-
-                // Handle teleportation through side tunnels
-                if (this.x < -this.radius) this.x = canvas.width + this.radius;
-                if (this.x > canvas.width + this.radius) this.x = -this.radius;
-            }
-
-            isAtGridCenter() {
-                const tileX = Math.floor(this.x / TILE_SIZE);
-                const tileY = Math.floor(this.y / TILE_SIZE);
-                const centerX = tileX * TILE_SIZE + TILE_SIZE / 2;
-                const centerY = tileY * TILE_SIZE + TILE_SIZE / 2;
-                
-                // Return true if the entity is within 'speed' distance of the grid center
-                return Math.abs(this.x - centerX) < this.speed && Math.abs(this.y - centerY) < this.speed;
-            }
-
-            isPathAvailable(dir) {
-                // Calculate potential next tile coordinates based on current position and desired direction
-                const currentTileX = Math.floor(this.x / TILE_SIZE);
-                const currentTileY = Math.floor(this.y / TILE_SIZE);
-                
-                const nextTileX = currentTileX + dir.x;
-                const nextTileY = currentTileY + dir.y;
-                
-                // Check if the next tile is within map bounds and is not a wall (1)
-                // Also handle wrap-around for side tunnels (0, map[0].length-1 for X axis)
-                if (nextTileX < 0) { // Moving left past boundary
-                    return map[currentTileY] && map[currentTileY][map[currentTileY].length - 1] !== 1;
-                }
-                if (nextTileX >= map[0].length) { // Moving right past boundary
-                    return map[currentTileY] && map[currentTileY][0] !== 1;
-                }
-                
-                // For regular movement, check the specific next tile
-                return (map[nextTileY] && map[nextTileY][nextTileX] !== 1);
             }
         }
+
+        this.x += this.direction.x * this.speed;
+        this.y += this.direction.y * this.speed;
+
+        // 通道邊界穿越處理（例如畫面最左到最右）
+        if (this.x < -this.radius) this.x = canvas.width + this.radius;
+        if (this.x > canvas.width + this.radius) this.x = -this.radius;
+    }
+}
+
 
         class Player extends Entity {
             constructor(x, y, radius, speed) {
