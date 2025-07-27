@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>植物辨識系統</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: "微軟正黑體", Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f8f0;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #2e7d32;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .api-key-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #e8f5e9;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .api-key-section label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .api-key-section input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 60%;
+    }
+    .api-key-section a {
+      color: #388e3c;
+      text-decoration: none;
+      margin-left: 10px;
+    }
+    .upload-section {
+      border: 2px dashed #aed581;
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+      background-color: #f1f8e9;
+    }
+    .camera-section { display: none; text-align: center; margin-bottom: 20px; }
+    .btn {
+      display: inline-block; padding: 10px 20px; margin: 10px 5px;
+      background-color: #4caf50; color: white; border: none;
+      border-radius: 5px; cursor: pointer; font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    .btn:hover { background-color: #388e3c; }
+    .btn-secondary { background-color: #78909c; }
+    .btn-secondary:hover { background-color: #546e7a; }
+    #preview { max-width: 100%; max-height: 300px; margin: 15px auto; display: none; }
+    #video { max-width: 100%; max-height: 300px; margin: 0 auto; border-radius: 8px; display: none; }
+    #canvas { display: none; }
+    #result { margin-top: 20px; padding: 15px; border-radius: 8px; background-color: #e8f5e9; display: none; white-space: pre-line; }
+    #loading { display: none; text-align: center; margin: 20px 0; }
+    .spinner {
+      display: inline-block; width: 40px; height: 40px;
+      border: 4px solid rgba(76, 175, 80, 0.3); border-radius: 50%;
+      border-top-color: #4caf50; animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+    .result-title { font-weight: bold; color: #2e7d32; margin-bottom: 10px; }
+    /* 響應式設計 */
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .container { padding: 15px; }
+      .api-key-section input { width: 90%; margin-top: 10px; }
+      .btn { width: 100%; margin: 5px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><i class="fas fa-leaf"></i> 植物辨識系統</h1>
+
+    <div class="api-key-section">
+      <label for="apiKeyInput"><i class="fas fa-key"></i> API 金鑰:</label>
+      <input type="password" id="apiKeyInput" placeholder="請在此貼上您的 Gemini API 金鑰">
+      <a href="https://aistudio.google.com/app/apikey" target="_blank">申請金鑰 <i class="fas fa-external-link-alt"></i></a>
+    </div>
+    
+    <div class="upload-section" id="dropArea">
+      <p><i class="fas fa-upload"></i> 拖曳或點擊此處上傳植物圖片</p>
+      <input type="file" id="fileInput" accept="image/*" style="display: none;">
+      <button class="btn" id="uploadBtn">選擇圖片</button>
+      <button class="btn" id="cameraBtn" style="display: none;"><i class="fas fa-camera"></i> 使用相機</button>
+    </div>
+    
+    <div class="camera-section" id="cameraSection">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas"></canvas>
+      <div>
+        <button class="btn" id="captureBtn"><i class="fas fa-camera"></i> 拍照</button>
+        <button class="btn btn-secondary" id="cancelCameraBtn">取消</button>
+      </div>
+    </div>
+    
+    <img id="preview" alt="預覽圖片">
+    
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>辨識中，請稍候...</p>
+    </div>
+    
+    <div id="result" class="result-section"></div>
+    
+    <div id="actions" style="text-align: center; margin-top: 20px; display: none;">
+      <button class="btn" id="identifyBtn">開始辨識</button>
+      <button class="btn btn-secondary" id="resetBtn">重置</button>
+    </div>
+    
+    <footer>
+      Vincent Wang | 植物辨識系統 | 使用 Google Gemini API 開發
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // ▼▼▼ 新增偵測裝置並顯示相機按鈕的邏輯 ▼▼▼
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        document.getElementById('cameraBtn').style.display = 'inline-block';
+      }
+      
+      const fileInput = document.getElementById('fileInput');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const dropArea = document.getElementById('dropArea');
+      const preview = document.getElementById('preview');
+      const actions = document.getElementById('actions');
+      const identifyBtn = document.getElementById('identifyBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const resultDiv = document.getElementById('result');
+      const loading = document.getElementById('loading');
+      // ▼▼▼ 新增相機相關元素的變數 ▼▼▼
+      const cameraBtn = document.getElementById('cameraBtn');
+      const cameraSection = document.getElementById('cameraSection');
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const captureBtn = document.getElementById('captureBtn');
+      const cancelCameraBtn = document.getElementById('cancelCameraBtn');
+      const apiKeyInput = document.getElementById('apiKeyInput');
+      
+      // 綁定事件
+      uploadBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+      dropArea.addEventListener('dragover', (e) => { e.preventDefault(); });
+      dropArea.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+      // ▼▼▼ 新增相機按鈕的事件綁定 ▼▼▼
+      cameraBtn.addEventListener('click', startCamera);
+      captureBtn.addEventListener('click', capturePhoto);
+      cancelCameraBtn.addEventListener('click', stopCamera);
+      identifyBtn.addEventListener('click', identifyPlant);
+      resetBtn.addEventListener('click', resetAll);
+      
+      function handleFile(file) {
+        if (!file || !file.type.match('image.*')) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+          actions.style.display = 'block';
+          resultDiv.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+      
+      // ▼▼▼ 新增啟動相機的函式 ▼▼▼
+      function startCamera() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => {
+              video.srcObject = stream;
+              cameraSection.style.display = 'block';
+              dropArea.style.display = 'none';
+              video.style.display = 'block';
+            })
+            .catch(error => alert('無法訪問相機，請確保您已授予相機權限。'));
+        } else {
+          alert('您的瀏覽器不支持相機功能。');
+        }
+      }
+      
+      // ▼▼▼ 新增拍照的函式 ▼▼▼
+      function capturePhoto() {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        preview.src = canvas.toDataURL('image/jpeg');
+        preview.style.display = 'block';
+        actions.style.display = 'block';
+        stopCamera();
+      }
+      
+      // ▼▼▼ 新增停止相機的函式 ▼▼▼
+      function stopCamera() {
+        if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+        cameraSection.style.display = 'none';
+        video.style.display = 'none';
+        dropArea.style.display = 'block';
+      }
+      
+      function resetAll() {
+        preview.src = '';
+        preview.style.display = 'none';
+        actions.style.display = 'none';
+        resultDiv.style.display = 'none';
+        fileInput.value = '';
+        stopCamera();
+      }
+
+      async function identifyPlant() {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+          alert('請輸入您的 Gemini API 金鑰！');
+          return;
+        }
+        if (!preview.src) {
+          alert('請先上傳或拍攝植物圖片！');
+          return;
+        }
+        
+        loading.style.display = 'block';
+        actions.style.display = 'none';
+        resultDiv.style.display = 'none';
+
+        try {
+          const base64Data = preview.src.split(',')[1];
+          const model = 'gemini-1.5-flash';
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          
+          const requestBody = {
+            contents: [{
+              parts: [
+                { text: "請辨識這張圖片中的植物，並提供以下信息：1. 植物名稱（中文和拉丁學名）2. 簡短描述 3. 生長習性 4. 常見用途。請以繁體中文回答。" },
+                { inline_data: { mime_type: "image/jpeg", data: base64Data } }
+              ]
+            }],
+            generation_config: {
+              temperature: 0.4,
+              max_output_tokens: 800
+            }
+          };
+
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`API 請求失敗 (狀態 ${response.status}): ${errorData.error.message}`);
+          }
+
+          const responseData = await response.json();
+          const textResult = responseData.candidates[0].content.parts[0].text;
+          
+          resultDiv.innerHTML = `<div class="result-title">辨識結果</div><p>${textResult}</p>`;
+
+        } catch (error) {
+          console.error('辨識失敗:', error);
+          resultDiv.innerHTML = `<div class="result-title">辨識失敗</div><p>${error.message}</p>`;
+        } finally {
+          loading.style.display = 'none';
+          resultDiv.style.display = 'block';
+          actions.style.display = 'block';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
