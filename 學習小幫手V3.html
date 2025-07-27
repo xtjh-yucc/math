@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <title>學習小幫手</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css" integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js" integrity="sha384-PwRUT/YqbnEjkZO0zZxNqcxACrXe+j766U2amXcgMg5457rve2Y7I6ZJSm2A0mS4" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+    
+    <style>
+      /* --- Keyframes for background animation --- */
+      @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
+      /* --- 全局與動態背景 --- */
+      body {
+        background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #4f4f7f);
+        background-size: 400% 400%;
+        animation: gradient-animation 15s ease infinite;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* --- 玻璃擬態容器 --- */
+      .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 2rem;
+        background: rgba(15, 12, 41, 0.6);
+        backdrop-filter: blur(10px) saturate(120%);
+        -webkit-backdrop-filter: blur(10px) saturate(120%);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+
+      /* --- API 金鑰設定區域 --- */
+      .api-key-section {
+        background-color: rgba(0,0,0,0.2);
+        border: 1px solid #575cf9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+      }
+      .api-key-section h3 {
+        margin-top: 0;
+        color: #00f2fe;
+        text-shadow: 0 0 5px rgba(0, 242, 254, 0.7);
+      }
+      .api-key-input-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .api-key-input-group input {
+        flex-grow: 1;
+        margin-bottom: 0;
+      }
+      .api-key-input-group button {
+        padding: 10px 15px;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .api-key-link {
+        margin-top: 10px;
+        font-size: 14px;
+      }
+      .api-key-link a {
+        color: #f957d0;
+        text-decoration: none;
+      }
+      .api-key-link a:hover {
+        text-decoration: underline;
+      }
+      #api-key-status {
+        margin-left: 15px;
+        font-weight: bold;
+      }
+      .status-ok { color: #2ecc71; }
+      .status-error { color: #e74c3c; }
+
+
+      /* --- 漸層霓虹標題 --- */
+      h1 {
+        font-size: 2.8em;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 2rem;
+        background: linear-gradient(90deg, #f957d0, #575cf9, #00f2fe);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 10px rgba(249, 87, 208, 0.5), 0 0 25px rgba(87, 92, 249, 0.4);
+      }
+      h2 {
+        color: #00f2fe;
+        text-shadow: 0 0 5px rgba(0, 242, 254, 0.7);
+        border-bottom: 1px solid rgba(0, 242, 254, 0.3);
+        padding-bottom: 0.5rem;
+        margin-top: 1.5rem;
+      }
+      
+      h1:after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        width: 100%;
+        height: 4px;
+        transform: translateX(-50%);
+      }
+      
+      /* --- 檔案預覽 & 上傳按鈕 --- */
+      .file-input-area {
+        margin-top: -10px;
+        margin-bottom: 15px;
+      }
+      .file-preview-container {
+        padding: 10px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 5px;
+        text-align: center;
+        margin-top: 10px;
+      }
+      .preview-image {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 5px;
+        border: 1px solid #575cf9;
+      }
+      .preview-filename {
+        color: #e0e0e0;
+        font-style: italic;
+      }
+      .file-preview-container button {
+        background: #e74c3c;
+        font-size: 12px;
+        padding: 5px 10px;
+        margin-top: 10px;
+        box-shadow: none;
+      }
+       .file-upload-button {
+        display: inline-block;
+        padding: 8px 12px;
+        font-size: 14px;
+        cursor: pointer;
+        background: linear-gradient(45deg, #3a547a, #678acb);
+        color: white;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        transition: all 0.3s;
+        box-shadow: 0 0 8px rgba(103, 138, 203, 0.5);
+      }
+       .file-upload-button:hover {
+        transform: scale(1.05);
+      }
+
+      
+      /* 主標籤頁樣式 */
+      .main-tabs {
+        display: flex;
+        background-color: rgba(20, 30, 45, 0.7);
+        border-radius: 4px;
+        overflow: hidden;
+        padding: 2px;
+        margin-bottom: 25px;
+      }
+      
+      .main-tab {
+        padding: 12px 24px;
+        cursor: pointer;
+        border: none;
+        margin-right: 2px;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        background: transparent;
+        color: #a9a9d4;
+        border-bottom: 3px solid transparent;
+        border-radius: 6px 6px 0 0;
+        flex: 1;
+        text-align: center;
+      }
+      
+      .main-tab.active, .sub-tab.active {
+        color: #ffffff;
+        font-weight: bold;
+        border-bottom: 3px solid #00f2fe;
+        text-shadow: 0 0 8px #00f2fe;
+      }
+      
+      .main-tab:hover:not(.active) {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      
+      .main-tab-content {
+        display: none;
+      }
+      
+      .main-tab-content.active {
+        display: block;
+      }
+      
+      /* 子標籤頁樣式 */
+      .sub-tabs {
+        display: flex;
+        border-bottom: 2px solid rgba(87, 92, 249, 0.5);
+        margin-bottom: 20px;
+      }
+      
+      .sub-tab {
+        padding: 10px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-bottom: 3px solid transparent;
+        border-radius: 6px 6px 0 0;
+        margin-right: 5px;
+        transition: all 0.3s;
+        background: transparent;
+        color: #a9a9d4;
+      }
+
+      .sub-tab:hover:not(.active) {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .tab-container {
+        width: 100%;
+      }
+
+      .tab-content {
+        display: none;
+      }
+      
+      .tab-content.active {
+        display: block;
+        padding: 20px 0;
+      }
+      
+      /* 表單元素樣式 */
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #a9a9d4;
+        text-shadow: 0 0 2px rgba(0,0,0,0.5);
+      }
+      
+      select, input, textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        background-color: rgba(0, 0, 0, 0.4);
+        border: 1px solid #575cf9;
+        color: #e0e0e0;
+        border-radius: 5px;
+        box-sizing: border-box;
+        transition: all 0.3s;
+        font-size: 1rem;
+      }
+      
+      select:focus, input:focus, textarea:focus {
+        border-color: #00f2fe;
+        box-shadow: 0 0 10px rgba(0, 242, 254, 0.7);
+        outline: none;
+      }
+      
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      
+      .unit-converter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+      
+      .unit-section {
+        flex: 1;
+        min-width: 240px;
+      }
+      
+      button {
+        background: linear-gradient(45deg, #e734a7, #671acb);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 8px rgba(231, 52, 167, 0.6), 0 0 15px rgba(103, 26, 203, 0.5);
+      }
+      
+      button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(231, 52, 167, 1), 0 0 30px rgba(103, 26, 203, 0.8);
+      }
+      
+      /* 載入動畫 */
+      .loading {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+      }
+      
+      .spinner {
+        border: 4px solid rgba(0, 242, 254, 0.2);
+        border-top: 4px solid #FFFF00;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* 結果區域 */
+      .result {
+        margin-top: 10px;
+        border-top: 1px solid rgba(87, 92, 249, 0.3);
+        padding-top: 20px;
+      }
+      
+      .result h2 {
+        color: #fff;
+        animation: glow 3s infinite;
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+      }
+      
+      @keyframes glow {
+        0% { text-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
+        50% { text-shadow: 0 0 15px rgba(0, 242, 254, 0.8); }
+        100% { text-shadow: 0 0 5px rgba(0, 242, 254, 0.5); }
+      }
+      
+      .result-box {
+        background-color: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(87, 92, 249, 0.5);
+        border-radius: 5px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+        min-height: 100px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        color: #fff;
+      }
+      
+      .error {
+        color: #ff6b6b;
+        font-weight: bold;
+      }
+      
+      /* 增強版單位換算結果 */
+      .conversion-result {
+        font-size: 22px;
+        font-weight: bold;
+        padding: 18px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        background-color: rgba(0, 242, 254, 0.1);
+        border-radius: 6px;
+        text-align: center;
+        border: 2px solid rgba(0, 242, 254, 0.4);
+        color: #5dbbff;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        transition: all 0.3s ease;
+        min-height: 30px;
+      }
+      
+      .conversion-result:not(:empty) {
+        animation: highlight-result 1s ease-in-out;
+      }
+
+      @keyframes highlight-result {
+        0% { transform: scale(1); background-color: rgba(0, 242, 254, 0.2); }
+        50% { transform: scale(1.03); background-color: rgba(0, 242, 254, 0.15); }
+        100% { transform: scale(1); background-color: rgba(0, 242, 254, 0.1); }
+      }
+
+      
+      /* 表格樣式 */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background-color: rgba(30, 40, 55, 0.5);
+      }
+      
+      th, td {
+        padding: 10px;
+        border: 1px solid rgba(87, 92, 249, 0.2);
+        text-align: left;
+      }
+      
+      th {
+        background-color: rgba(87, 92, 249, 0.1);
+        color: #b8d8ff;
+      }
+      
+      tr:nth-child(even) {
+        background-color: rgba(40, 50, 65, 0.5);
+      }
+      
+      /* 數學公式樣式 */
+      .katex-display {
+        overflow-x: auto;
+        padding: 10px 0;
+        color: #e0e0e0;
+      }
+      
+      /* 物理公式相關樣式 */
+      .physics-formula,
+      .physics-law,
+      .physics-example,
+      .physics-section {
+        background-color: rgba(30, 40, 55, 0.7);
+        border-left: 5px solid #3498db;
+        padding: 12px;
+        margin: 12px 0;
+        border-radius: 3px;
+        overflow: auto;
+      }
+      
+      .physics-formula h4,
+      .physics-law h4,
+      .physics-example h4,
+      .physics-section h4 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        color: #4db5ff;
+        font-weight: bold;
+      }
+      
+      .physics-formula {
+        background-color: rgba(30, 40, 60, 0.7);
+        border-left-color: #3498db;
+      }
+      
+      .physics-law {
+        background-color: rgba(35, 45, 65, 0.7);
+        border-left-color: #2980b9;
+      }
+      
+      .physics-example {
+        background-color: rgba(30, 50, 40, 0.7);
+        border-left-color: #27ae60;
+      }
+      
+      .physics-section {
+        background-color: rgba(35, 35, 45, 0.7);
+        border-left-color: #7f8c8d;
+      }
+      
+      .physics-constant {
+        color: #e74c3c;
+        font-weight: bold;
+      }
+      
+      .physics-variable {
+        color: #3498db;
+        font-style: italic;
+      }
+      
+      /* 成語查詢相關樣式 */
+      .idiom-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #9b59b6;
+        border-bottom: 2px solid #9b59b6;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+      }
+      
+      .idiom-pronunciation {
+        font-style: italic;
+        color: #95a5a6;
+        margin-bottom: 15px;
+      }
+      
+      .idiom-section {
+        margin-bottom: 15px;
+        padding: 12px;
+        border-radius: 5px;
+        background-color: rgba(30, 40, 55, 0.7);
+      }
+      
+      .idiom-section h4 {
+        color: #9b59b6;
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+      
+      .idiom-meaning {
+        background-color: rgba(155, 89, 182, 0.1);
+        border-left: 4px solid #9b59b6;
+      }
+      
+      .idiom-origin {
+        background-color: rgba(46, 204, 113, 0.1);
+        border-left: 4px solid #2ecc71;
+      }
+      
+      .idiom-usage {
+        background-color: rgba(52, 152, 219, 0.1);
+        border-left: 4px solid #3498db;
+      }
+      
+      .idiom-antonyms {
+        background-color: rgba(241, 196, 15, 0.1);
+        border-left: 4px solid #f1c40f;
+      }
+      
+      .idiom-story {
+        background-color: rgba(231, 76, 60, 0.1);
+        border-left: 4px solid #e74c3c;
+        padding-bottom: 15px;
+      }
+      
+      .idiom-example {
+        margin: 8px 0;
+        padding: 8px 12px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+      }
+      
+      .idiom-antonym {
+        display: inline-block;
+        margin: 3px 6px 3px 0;
+        padding: 4px 10px;
+        background-color: rgba(30, 40, 55, 0.7);
+        border-radius: 20px;
+        border: 1px solid #f1c40f;
+        font-weight: bold;
+        color: #f1c40f;
+      }
+      
+      .idiom-characters {
+        display: flex;
+        justify-content: center;
+        margin: 15px 0;
+      }
+      
+      .idiom-character {
+        width: 45px;
+        height: 45px;
+        margin: 0 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: bold;
+        color: #fff;
+        background-color: #9b59b6;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(155, 89, 182, 0.5);
+      }
+      
+      .idiom-reference {
+        font-size: 12px;
+        color: #95a5a6;
+        text-align: right;
+        margin-top: 15px;
+        font-style: italic;
+      }
+      
+      /* 英文單字查詢相關樣式 */
+      .english-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        background-color: rgba(30, 40, 55, 0.6);
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .sub-tab-content {
+        display: none;
+        padding: 20px 0;
+      }
+
+      .sub-tab-content.active {
+        display: block;
+      }
+      .english-options label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        margin-bottom: 0;
+      }
+      
+      .english-options input[type="checkbox"] {
+        margin-right: 8px;
+        width: auto;
+      }
+      
+      .word-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid rgba(0, 242, 254, 0.4);
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+      }
+      
+      .word-title {
+        font-size: 28px;
+        font-weight: bold;
+        color: #4db5ff;
+      }
+      
+      .word-type {
+        font-style: italic;
+        color: #95a5a6;
+        margin-left: 10px;
+      }
+      
+      .pronunciation {
+        padding: 10px;
+        background-color: rgba(30, 40, 55, 0.7);
+        border-radius: 5px;
+        margin-bottom: 15px;
+        color: #b0b0b0;
+      }
+
+      .pronunciation-item {
+        margin: 6px 0;
+        font-family: 'Courier New', monospace;
+      }
+      
+      .pronunciation-audio-btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      
+      .pronunciation-audio-btn:hover {
+        background-color: #2980b9;
+      }
+      
+      .definition-section {
+        min-height: 0;
+        margin-bottom: 15px;
+      }
+      
+      .definition-section h4 {
+        color: #4db5ff;
+        margin-bottom: 8px;
+        font-size: 18px;
+        border-left: 4px solid #4db5ff;
+        padding-left: 10px;
+      }
+      
+      .definition-list {
+        list-style-type: decimal;
+        padding-left: 25px;
+        margin-bottom: 15px;
+      }
+      
+      .definition-list li {
+        margin-bottom: 8px;
+        line-height: 1.6;
+      }
+      
+      .example-sentence {
+        background-color: rgba(52, 152, 219, 0.1);
+        padding: 8px 12px;
+        border-radius: 5px;
+        margin: 8px 0;
+        font-style: italic;
+        border-left: 3px solid #3498db;
+      }
+      
+      .example-translation {
+        color: #95a5a6;
+        margin-top: 3px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        padding-left: 12px;
+      }
+      
+      .synonym-tag, .antonym-tag {
+        display: inline-block;
+        margin: 3px 5px 3px 0;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 14px;
+      }
+      
+      .synonym-tag {
+        background-color: rgba(52, 152, 219, 0.1);
+        border: 1px solid #3498db;
+        color: #3498db;
+      }
+      
+      .antonym-tag {
+        background-color: rgba(231, 76, 60, 0.1);
+        border: 1px solid #e74c3c;
+        color: #e74c3c;
+      }
+      
+      .grammar-section {
+        background-color: rgba(30, 40, 55, 0.7);
+        border-left: 4px solid #27ae60;
+        min-height: 0;
+        margin-bottom: 10px;
+      }
+      
+      .grammar-section h4 {
+        color: #2ecc71;
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+      
+      .grammar-point {
+        margin-bottom: 12px;
+        line-height: 1.6;
+      }
+      
+      .grammar-example {
+        background-color: rgba(46, 204, 113, 0.1);
+        padding: 8px 12px;
+        border-radius: 5px;
+        margin: 8px 0;
+        border-left: 2px solid #2ecc71;
+      }
+      
+      .word-related {
+        min-height: 0;
+        margin-bottom: 15px;
+        border-top: 1px dashed rgba(87, 92, 249, 0.3);
+      }
+      
+      .word-forms {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      
+      .word-form {
+        display: inline-block;
+        padding: 5px 10px;
+        background-color: rgba(30, 40, 55, 0.7);
+        border-radius: 3px;
+        font-size: 14px;
+        border: 1px solid rgba(87, 92, 249, 0.3);
+      }
+      
+      .form-label {
+        font-weight: bold;
+        color: #4db5ff;
+        margin-right: 3px;
+      }
+      /* 針對空容器的處理 */
+      .definition-section:empty,
+      .grammar-section:empty,
+      .grammar-example:empty,
+      .example-sentence:empty,
+      .example-translation:empty {
+        display: none;
+      }
+      /* 適應不同尺寸屏幕 */
+      @media (max-width: 768px) {
+        .container {
+          padding: 15px;
+          margin: 10px;
+        }
+        
+        .main-tabs {
+          flex-wrap: wrap;
+        }
+        
+        .main-tab {
+          flex: 1 0 calc(33.33% - 4px);
+          padding: 10px;
+          margin-bottom: 2px;
+          font-size: 14px;
+        }
+        
+        .unit-converter {
+          flex-direction: column;
+        }
+        
+        .english-options {
+          flex-direction: column;
+          gap: 8px;
+        }
+      }
+      /* 翻譯結果樣式 */
+    .translation-result {
+      white-space: pre-wrap;
+      line-height: 1.6;
+      color: #ffffff;
+      font-size: 16px;
+      padding: 5px;
+    }
+
+    /* 唐詩宋詞查詢相關樣式 */
+    .poem-header {
+      text-align: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid rgba(155, 89, 182, 0.3);
+      padding-bottom: 15px;
+    }
+
+    .poem-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #9b59b6;
+      font-family: 'KaiTi', 'STKaiti', 'SimKai', serif;
+      margin-bottom: 5px;
+    }
+
+    .poem-author {
+      font-size: 18px;
+      color: #95a5a6;
+      font-style: italic;
+    }
+
+    .poem-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background-color: rgba(30, 40, 55, 0.7);
+    }
+
+    .poem-section h4 {
+      color: #9b59b6;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 18px;
+      border-left: 4px solid #9b59b6;
+      padding-left: 10px;
+    }
+
+    .poem-original {
+      background-color: rgba(30, 40, 55, 0.8);
+    }
+
+    .poem-text {
+      font-family: 'KaiTi', 'STKaiti', 'SimKai', serif;
+      font-size: 20px;
+      line-height: 1.8;
+      text-align: center;
+    }
+
+    .poem-line {
+      margin: 10px 0;
+    }
+
+    .poem-translation {
+      background-color: rgba(46, 204, 113, 0.1);
+      border-left: 4px solid #2ecc71;
+    }
+
+    .poem-analysis {
+      background-color: rgba(52, 152, 219, 0.1);
+      border-left: 4px solid #3498db;
+    }
+
+    .poem-background {
+      background-color: rgba(241, 196, 15, 0.1);
+      border-left: 4px solid #f1c40f;
+    }
+
+    /* 古文轉白話文相關樣式 */
+    .classical-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .classical-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #e67e22;
+      font-family: 'KaiTi', 'STKaiti', 'SimKai', serif;
+    }
+
+    .translation-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+      background-color: rgba(30, 40, 55, 0.6);
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .translation-options label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+
+    .translation-options input[type="checkbox"] {
+      margin-right: 8px;
+      width: auto;
+    }
+
+    .parallel-translation {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .original-text, .translated-text {
+      flex: 1;
+      min-width: 300px;
+      padding: 15px;
+      background-color: rgba(30, 40, 55, 0.7);
+      border-radius: 8px;
+    }
+
+    .original-text h4, .translated-text h4 {
+      color: #e67e22;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 18px;
+      border-left: 4px solid #e67e22;
+      padding-left: 10px;
+    }
+
+    .classical-text {
+      font-family: 'KaiTi', 'STKaiti', 'SimKai', serif;
+      font-size: 18px;
+      line-height: 1.8;
+      color: #e0e0e0;
+      white-space: pre-wrap;
+    }
+
+    .modern-text {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #e0e0e0;
+    }
+
+    .classical-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background-color: rgba(30, 40, 55, 0.7);
+    }
+
+    .classical-section h4 {
+      color: #e67e22;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 18px;
+      border-left: 4px solid #e67e22;
+      padding-left: 10px;
+    }
+
+    .classical-annotation {
+      background-color: rgba(46, 204, 113, 0.1);
+      border-left: 4px solid #2ecc71;
+    }
+
+    .classical-explanation {
+      background-color: rgba(52, 152, 219, 0.1);
+      border-left: 4px solid #3498db;
+    }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="api-key-section">
+            <h3>API 金鑰設定</h3>
+            <div class="api-key-input-group">
+                <input type="password" id="api-key-input" placeholder="請在此輸入您的 Google AI API Key">
+                <button onclick="saveApiKey()">儲存金鑰</button>
+                <span id="api-key-status"></span>
+            </div>
+            <div class="api-key-link">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank">如何取得 API 金鑰？</a>
+            </div>
+        </div>
+
+        <h1>學習小幫手</h1>
+        
+        <div class="main-tabs">
+            <div class="main-tab" onclick="showMainTab('idiom')">語文</div>
+            <div class="main-tab" onclick="showMainTab('english')">英文</div>
+            <div class="main-tab active" onclick="showMainTab('formula')">數學</div>
+            <div class="main-tab" onclick="showMainTab('chemistry')">化學</div>
+            <div class="main-tab" onclick="showMainTab('physics')">物理</div>
+            <div class="main-tab" onclick="showMainTab('units')">單位換算</div>
+        </div>
+        
+        <div id="formula-page" class="main-tab-content active">
+            <div>
+                <label for="category">公式類別:</label>
+                <select id="category">
+                    <option value="general">一般數學</option>
+                    <option value="algebra">代數</option>
+                    <option value="geometry">幾何</option>
+                    <option value="calculus">微積分</option>
+                    <option value="statistics">統計學</option>
+                    <option value="probability">機率論</option>
+                </select>
+            </div>
+            <div>
+                <label for="query">請輸入您的數學問題 (可貼上圖片或上傳檔案):</label>
+                <textarea id="query" placeholder="例如: 二次方程式求解公式、畢氏定理、面積公式..."></textarea>
+                <div class="file-input-area">
+                    <label for="query-file-input" class="file-upload-button">上傳檔案</label>
+                    <input type="file" id="query-file-input" style="display:none;" onchange="handleFileUpload(event)" accept="image/*,application/pdf,.doc,.docx,.xml,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                    <div id="query-preview-container" class="file-preview-container" style="display:none;">
+                        <div id="query-preview-content"></div>
+                        <button onclick="removeFile('query')">移除檔案</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="searchFormula()">查詢</button>
+            <div id="formula-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+            <div id="formula-result" class="result">
+                <h2>查詢結果</h2>
+                <div id="formula-result-box" class="result-box"><p>在此輸入您的查詢以獲取相關數學公式及說明。</p></div>
+            </div>
+        </div>
+        
+        <div id="units-page" class="main-tab-content">
+            <div class="sub-tabs">
+                <div class="sub-tab active" onclick="showSubTab('conversion')">單位換算</div>
+                <div class="sub-tab" onclick="showSubTab('reference')">常用單位參考</div>
+                <div class="sub-tab" onclick="showSubTab('search')">單位查詢</div>
+            </div>
+            <div id="conversion-tab" class="tab-content active">
+                <h2>單位換算</h2>
+                <div class="unit-converter">
+                    <div class="unit-section">
+                        <label for="unit-category">單位類別:</label>
+                        <select id="unit-category" onchange="updateUnitOptions()">
+                            <option value="length">長度</option>
+                            <option value="mass">質量</option>
+                            <option value="volume">體積</option>
+                            <option value="area">面積</option>
+                            <option value="temperature">溫度</option>
+                            <option value="time">時間</option>
+                            <option value="speed">速度</option>
+                            <option value="pressure">壓力</option>
+                            <option value="energy">能量</option>
+                            <option value="data">數據儲存</option>
+                        </select>
+                        <label for="from-value">數值:</label>
+                        <input type="number" id="from-value" placeholder="輸入數值" step="any">
+                        <label for="from-unit">從:</label>
+                        <select id="from-unit"></select>
+                    </div>
+                    <div class="unit-section">
+                        <label for="to-unit">到:</label>
+                        <select id="to-unit"></select>
+                        <button onclick="convertUnit()" style="margin-top: 70px">換算</button>
+                        <div class="conversion-result" id="conversion-result">換算結果將顯示在這裡</div>
+                    </div>
+                </div>
+            </div>
+            <div id="reference-tab" class="tab-content">
+                <h2>常用單位參考</h2>
+                <label for="reference-category">選擇類別:</label>
+                <select id="reference-category" onchange="showUnitReference()">
+                    <option value="length">長度單位</option>
+                    <option value="mass">質量單位</option>
+                    <option value="volume">體積單位</option>
+                    <option value="area">面積單位</option>
+                    <option value="temperature">溫度單位</option>
+                    <option value="time">時間單位</option>
+                    <option value="speed">速度單位</option>
+                    <option value="pressure">壓力單位</option>
+                    <option value="energy">能量單位</option>
+                    <option value="data">數據儲存單位</option>
+                    <option value="si">國際單位制 (SI)</option>
+                    <option value="prefixes">SI 前綴</option>
+                </select>
+                <div id="reference-content"></div>
+            </div>
+            <div id="search-tab" class="tab-content">
+                <h2>單位查詢</h2>
+                <div>
+                    <label for="unit-query">請輸入您想查詢的單位或單位類型:</label>
+                    <textarea id="unit-query" placeholder="例如: 公制、英制、帕斯卡、華氏溫度、卡路里、比特..."></textarea>
+                </div>
+                <button onclick="searchUnit()">查詢</button>
+                <div id="unit-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+                <div id="unit-result" class="result">
+                    <h2>查詢結果</h2>
+                    <div id="unit-result-box" class="result-box"><p>在此輸入您的查詢以獲取相關單位資訊。</p></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="chemistry-page" class="main-tab-content">
+            <div>
+                <label for="chem-category">化學類別:</label>
+                <select id="chem-category">
+                    <option value="general">一般化學</option>
+                    <option value="organic">有機化學</option>
+                    <option value="inorganic">無機化學</option>
+                    <option value="biochemistry">生物化學</option>
+                    <option value="physical">物理化學</option>
+                </select>
+            </div>
+            <div>
+                <label for="chem-query">請輸入您的化學問題 (可貼上圖片或上傳檔案):</label>
+                <textarea id="chem-query" placeholder="例如: 水的化學式、葡萄糖結構、鈉與水反應..."></textarea>
+                 <div class="file-input-area">
+                    <label for="chem-query-file-input" class="file-upload-button">上傳檔案</label>
+                    <input type="file" id="chem-query-file-input" style="display:none;" onchange="handleFileUpload(event)" accept="image/*,application/pdf,.doc,.docx,.xml,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                    <div id="chem-query-preview-container" class="file-preview-container" style="display:none;">
+                        <div id="chem-query-preview-content"></div>
+                        <button onclick="removeFile('chem-query')">移除檔案</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="searchChemistry()">查詢</button>
+            <div id="chemistry-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+            <div id="chemistry-result" class="result">
+                <h2>查詢結果</h2>
+                <div id="chemistry-result-box" class="result-box"><p>在此輸入您的查詢以獲取相關化學式及說明。</p></div>
+            </div>
+        </div>
+
+        <div id="physics-page" class="main-tab-content">
+            <div>
+                <label for="physics-category">物理類別:</label>
+                <select id="physics-category">
+                    <option value="mechanics">力學</option>
+                    <option value="thermodynamics">熱力學</option>
+                    <option value="electromagnetism">電磁學</option>
+                    <option value="optics">光學</option>
+                    <option value="modern">現代物理</option>
+                    <option value="relativity">相對論</option>
+                    <option value="quantum">量子力學</option>
+                    <option value="fluid">流體力學</option>
+                </select>
+            </div>
+            <div>
+                <label for="physics-query">請輸入您的物理問題 (可貼上圖片或上傳檔案):</label>
+                <textarea id="physics-query" placeholder="例如: 牛頓第二定律、萬有引力定律、電磁感應定律..."></textarea>
+                <div class="file-input-area">
+                    <label for="physics-query-file-input" class="file-upload-button">上傳檔案</label>
+                    <input type="file" id="physics-query-file-input" style="display:none;" onchange="handleFileUpload(event)" accept="image/*,application/pdf,.doc,.docx,.xml,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                    <div id="physics-query-preview-container" class="file-preview-container" style="display:none;">
+                        <div id="physics-query-preview-content"></div>
+                        <button onclick="removeFile('physics-query')">移除檔案</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="searchPhysics()">查詢</button>
+            <div id="physics-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+            <div id="physics-result" class="result">
+                <h2>查詢結果</h2>
+                <div id="physics-result-box" class="result-box"><p>在此輸入您的查詢以獲取相關物理公式及說明。</p></div>
+            </div>
+        </div>
+
+        <div id="idiom-page" class="main-tab-content">
+            <div class="sub-tabs">
+                <div class="sub-tab active" onclick="showSubTab('idiom-search')">成語查詢</div>
+                <div class="sub-tab" onclick="showSubTab('poetry-search')">唐詩宋詞查詢</div>
+                <div class="sub-tab" onclick="showSubTab('classical-modern')">古文轉白話文</div>
+            </div>
+            <div id="idiom-search-tab" class="tab-content active">
+                <div>
+                    <label for="idiom-query">請輸入您想查詢的成語:</label>
+                    <input type="text" id="idiom-query" placeholder="例如: 一心一意、守株待兔、背水一戰、亡羊補牢...">
+                </div>
+                <button onclick="searchIdiom()">查詢</button>
+                <div id="idiom-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+                <div id="idiom-result" class="result">
+                    <h2>查詢結果</h2>
+                    <div id="idiom-result-box" class="result-box"><p>在此輸入成語以獲取其典故、解釋、造句、相反成語及故事。</p></div>
+                </div>
+            </div>
+            <div id="poetry-search-tab" class="tab-content">
+                <div>
+                    <label for="poetry-type">詩詞類型:</label>
+                    <select id="poetry-type">
+                        <option value="tang-poem">唐詩</option>
+                        <option value="song-poem">宋詞</option>
+                        <option value="yuan-poem">元曲</option>
+                        <option value="other-poem">其他古詩詞</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="poetry-query">請輸入詩詞名稱、作者或詩句關鍵詞:</label>
+                    <input type="text" id="poetry-query" placeholder="例如: 李白、春曉、楓橋夜泊、靜夜思...">
+                </div>
+                <button onclick="searchPoetry()">查詢</button>
+                <div id="poetry-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+                <div id="poetry-result" class="result">
+                    <h2>查詢結果</h2>
+                    <div id="poetry-result-box" class="result-box"><p>在此輸入詩詞名稱、作者或關鍵詞以查詢相關唐詩宋詞。</p></div>
+                </div>
+            </div>
+            <div id="classical-modern-tab" class="tab-content">
+                <div>
+                    <label for="classical-text">請輸入要轉換的古文:</label>
+                    <textarea id="classical-text" placeholder="例如: 子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，不亦君子乎？」" rows="5"></textarea>
+                </div>
+                <div class="translation-options">
+                    <label><input type="checkbox" id="include-annotations" checked> 包含注釋說明</label>
+                    <label><input type="checkbox" id="include-word-explanations" checked> 包含字詞解釋</label>
+                </div>
+                <button onclick="translateClassicalText()">轉換</button>
+                <div id="classical-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+                <div id="classical-result" class="result">
+                    <h2>轉換結果</h2>
+                    <div id="classical-result-box" class="result-box"><p>在此輸入古文以獲取白話文翻譯及解釋。</p></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="english-page" class="main-tab-content">
+            <div class="sub-tabs">
+                <div class="sub-tab active" onclick="showSubTab('word-lookup')">單字查詢</div>
+                <div class="sub-tab" onclick="showSubTab('en-to-zh')">英翻中</div>
+                <div class="sub-tab" onclick="showSubTab('zh-to-en')">中翻英</div>
+            </div>
+            <div id="word-lookup-tab" class="tab-content active">
+                <div>
+                    <label for="english-query">請輸入您想查詢的英文單字:</label>
+                    <input type="text" id="english-query" placeholder="例如: adapt, profound, sustainable, integrity...">
+                </div>
+                <div class="english-options">
+                    <label><input type="checkbox" id="include-pronunciation" checked> 包含發音</label>
+                    <label><input type="checkbox" id="include-synonyms" checked> 包含同義詞</label>
+                    <label><input type="checkbox" id="include-grammar" checked> 包含文法應用</label>
+                </div>
+                <button onclick="searchEnglish()">查詢</button>
+                <div id="english-loading" class="loading"><div class="spinner"></div><p>處理中，請稍候...</p></div>
+                <div id="english-result" class="result">
+                    <h2>查詢結果</h2>
+                    <div id="english-result-box" class="result-box"><p>在此輸入英文單字以獲取其定義、發音、例句及文法應用。</p></div>
+                </div>
+            </div>
+            <div id="en-to-zh-tab" class="tab-content">
+                <div>
+                    <label for="en-to-zh-input">請輸入英文文本:</label>
+                    <textarea id="en-to-zh-input" placeholder="輸入您要翻譯的英文文本..." rows="5"></textarea>
+                </div>
+                <button onclick="translateEnToZh()">翻譯</button>
+                <div id="en-to-zh-loading" class="loading"><div class="spinner"></div><p>翻譯中，請稍候...</p></div>
+                <div id="en-to-zh-result" class="result">
+                    <h2>翻譯結果</h2>
+                    <div id="en-to-zh-result-box" class="result-box"><p>在上方輸入英文文本以獲取中文翻譯。</p></div>
+                </div>
+            </div>
+            <div id="zh-to-en-tab" class="tab-content">
+                <div>
+                    <label for="zh-to-en-input">請輸入中文文本:</label>
+                    <textarea id="zh-to-en-input" placeholder="輸入您要翻譯的中文文本..." rows="5"></textarea>
+                </div>
+                <button onclick="translateZhToEn()">翻譯</button>
+                <div id="zh-to-en-loading" class="loading"><div class="spinner"></div><p>翻譯中，請稍候...</p></div>
+                <div id="zh-to-en-result" class="result">
+                    <h2>翻譯結果</h2>
+                    <div id="zh-to-en-result-box" class="result-box"><p>在上方輸入中文文本以獲取英文翻譯。</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    // --- 全客戶端邏輯 ---
+
+    // --- 檔案處理的全域變數 ---
+    const uploadedFiles = {}; // 儲存上傳的檔案資料 { textareaId: { mimeType, data, fileName } }
+
+    // --- API 金鑰管理 ---
+    function saveApiKey() {
+        const apiKey = document.getElementById('api-key-input').value.trim();
+        if (apiKey) {
+            localStorage.setItem('geminiApiKey', apiKey);
+            updateApiKeyStatus();
+        }
+    }
+
+    function getApiKey() {
+        return localStorage.getItem('geminiApiKey');
+    }
+
+    function updateApiKeyStatus() {
+        const apiKey = getApiKey();
+        const statusEl = document.getElementById('api-key-status');
+        if (apiKey) {
+            statusEl.textContent = '金鑰已設定';
+            statusEl.className = 'status-ok';
+            document.getElementById('api-key-input').value = apiKey;
+        } else {
+            statusEl.textContent = '尚未設定金鑰';
+            statusEl.className = 'status-error';
+        }
+    }
+
+    // --- 通用 API 呼叫函式 (支援檔案) ---
+    async function callGeminiAPI(prompt, apiKey, file = null) {
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const parts = [{ text: prompt }];
+        if (file && file.data) {
+            parts.push({
+                inline_data: {
+                    mime_type: file.mimeType,
+                    data: file.data
+                }
+            });
+        }
+
+        const requestBody = {
+            contents: [{ parts: parts }],
+            safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            ]
+        };
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`API 錯誤: ${response.status} ${response.statusText}. ${errorData?.error?.message || ''}`);
+        }
+
+        const responseData = await response.json();
+        
+        if (responseData.candidates && responseData.candidates.length > 0 && responseData.candidates[0].content) {
+            return responseData.candidates[0].content.parts[0].text;
+        } else {
+            if (responseData.promptFeedback && responseData.promptFeedback.blockReason) {
+                 throw new Error(`請求因安全原因被阻擋: ${responseData.promptFeedback.blockReason}`);
+            }
+            throw new Error('API 回應格式無效或沒有內容。');
+        }
+    }
+    
+    // --- 通用請求處理器 ---
+    async function handleApiRequest(handlerName, query, options, resultBoxId, loadingId, buildPromptFunc, formatResponseFunc) {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            document.getElementById(resultBoxId).innerHTML = '<span class="error">錯誤：請先在頁面頂部設定您的 API 金鑰。</span>';
+            return;
+        }
+
+        const queryText = (typeof query === 'string' || query instanceof String) ? query : document.getElementById(options.textareaId).value.trim();
+        const file = uploadedFiles[options.textareaId];
+
+        if (!queryText && !file) {
+            document.getElementById(resultBoxId).innerHTML = `<span class="error">請輸入查詢內容或上傳檔案</span>`;
+            return;
+        }
+
+        const loadingEl = document.getElementById(loadingId);
+        const resultBoxEl = document.getElementById(resultBoxId);
+        
+        loadingEl.style.display = 'block';
+        resultBoxEl.innerHTML = '';
+
+        try {
+            const prompt = buildPromptFunc(queryText, options);
+            const resultText = await callGeminiAPI(prompt, apiKey, file);
+            const formattedHtml = formatResponseFunc(resultText, queryText, options);
+            resultBoxEl.innerHTML = formattedHtml;
+
+            if (['formula', 'physics', 'chemistry'].includes(handlerName)) {
+                 renderMathInElement(resultBoxEl, {
+                    delimiters: [ {left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false} ]
+                });
+            }
+        } catch (error) {
+            console.error(`${handlerName} 查詢失敗:`, error);
+            resultBoxEl.innerHTML = `<span class="error">查詢失敗: ${error.message}</span>`;
+        } finally {
+            loadingEl.style.display = 'none';
+            if (options.textareaId) {
+                removeFile(options.textareaId);
+            }
+        }
+    }
+
+    // --- 檔案處理函式 ---
+    function processAndDisplayFile(file, textareaId) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const dataUrl = reader.result;
+            const base64Data = dataUrl.split(',')[1];
+            
+            uploadedFiles[textareaId] = {
+                mimeType: file.type,
+                data: base64Data,
+                fileName: file.name
+            };
+            
+            // 顯示預覽
+            const previewContentEl = document.getElementById(`${textareaId}-preview-content`);
+            if (file.type.startsWith('image/')) {
+                previewContentEl.innerHTML = `<img class="preview-image" src="${dataUrl}" alt="圖片預覽">`;
+            } else {
+                previewContentEl.innerHTML = `<span class="preview-filename">已選擇檔案: ${file.name}</span>`;
+            }
+            document.getElementById(`${textareaId}-preview-container`).style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handlePaste(event) {
+        const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+        let imageFile = null;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                imageFile = items[i].getAsFile();
+                break;
+            }
+        }
+        if (!imageFile) return;
+
+        event.preventDefault();
+        const textareaId = event.target.id;
+        processAndDisplayFile(imageFile, textareaId);
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        const textareaId = event.target.id.replace('-file-input', '');
+        processAndDisplayFile(file, textareaId);
+    }
+
+    function removeFile(textareaId) {
+        uploadedFiles[textareaId] = null;
+        document.getElementById(`${textareaId}-preview-content`).innerHTML = '';
+        document.getElementById(`${textareaId}-preview-container`).style.display = 'none';
+        // 重設檔案輸入框的值，這樣才能再次上傳同一個檔案
+        const fileInput = document.getElementById(`${textareaId}-file-input`);
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
+
+
+    // --- 提示詞 (Prompt) 產生器 ---
+    function buildPrompt(query, options) {
+      let categoryText = '一般數學';
+      if(options && options.category) {
+        switch(options.category) {
+            case 'algebra': categoryText = '代數'; break;
+            case 'geometry': categoryText = '幾何'; break;
+            case 'calculus': categoryText = '微積分'; break;
+            case 'statistics': categoryText = '統計學'; break;
+            case 'probability': categoryText = '機率論'; break;
+        }
+      }
+      const basePrompt = `你是一位專業的數學教師，請根據我提供的文字和附加檔案，進行詳細解答。如果沒有文字，請僅根據檔案內容回答。`;
+      const textPrompt = query ? `我的問題是關於「${categoryText}」領域的：「${query}」` : '請幫我解答附加檔案中的數學問題。';
+      return `${basePrompt}\n${textPrompt}\n\n請按照以下格式回答:\n1. 問題解析與相關公式名稱\n2. 公式的數學表達式（使用 LaTeX 格式，用 $ 或 $$ 標記）\n3. 解題步驟與說明\n4. 最終答案\n\n請使用繁體中文回答。`;
+    }
+
+    function buildUnitPrompt(query) {
+      return `你是一位專業的計量學和單位轉換專家，請提供關於以下單位查詢的詳細解答:\n\n查詢: ${query}\n\n請按照以下格式回答:\n1. 單位名稱和定義\n2. 單位的符號和縮寫\n3. 所屬的單位系統\n4. 與其他相關單位的換算關係\n5. 歷史背景和應用場景\n\n請使用繁體中文回答。`;
+    }
+    
+    function buildChemistryPrompt(query, options) {
+        let categoryText = '一般化學';
+        if(options && options.category) {
+            switch(options.category) {
+                case 'organic': categoryText = '有機化學'; break;
+                case 'inorganic': categoryText = '無機化學'; break;
+                case 'biochemistry': categoryText = '生物化學'; break;
+                case 'physical': categoryText = '物理化學'; break;
+            }
+        }
+        const basePrompt = `你是一位專業的化學教師，請根據我提供的文字和附加檔案，進行詳細解答。如果沒有文字，請僅根據檔案內容回答。`;
+        const textPrompt = query ? `我的問題是關於「${categoryText}」領域的：「${query}」` : '請幫我解答附加檔案中的化學問題。';
+        return `${basePrompt}\n${textPrompt}\n\n請按照以下格式回答:\n1. 問題解析與相關概念\n2. 化學式或結構式 (可使用文字或LaTeX)\n3. 反應過程或性質說明\n4. 最終答案或結論\n\n請使用繁體中文回答。`;
+    }
+
+    function buildPhysicsPrompt(query, options) {
+        let categoryText = '一般物理';
+        if(options && options.category) {
+            switch(options.category) {
+                case 'mechanics': categoryText = '力學'; break;
+                case 'thermodynamics': categoryText = '熱力學'; break;
+                case 'electromagnetism': categoryText = '電磁學'; break;
+                case 'optics': categoryText = '光學'; break;
+                case 'modern': categoryText = '現代物理'; break;
+                case 'relativity': categoryText = '相對論'; break;
+                case 'quantum': categoryText = '量子力學'; break;
+                case 'fluid': categoryText = '流體力學'; break;
+            }
+        }
+        const basePrompt = `你是一位專業的物理教師，請根據我提供的文字和附加檔案，進行詳細解答。如果沒有文字，請僅根據檔案內容回答。`;
+        const textPrompt = query ? `我的問題是關於「${categoryText}」領域的：「${query}」` : '請幫我解答附加檔案中的物理問題。';
+        return `${basePrompt}\n${textPrompt}\n\n請按照以下格式回答:\n1. 物理定律或公式名稱\n2. 公式的數學表達式 (LaTeX格式)\n3. 解題步驟與說明\n4. 最終答案\n\n請使用繁體中文回答。`;
+    }
+    
+    function buildIdiomPrompt(query) {
+        return `你是一位專業的中文成語專家，請提供關於成語 "${query}" 的詳細資訊:\n\n請按照以下格式回答:\n1. 成語與讀音\n2. 解釋\n3. 典故來源\n4. 造句 (2個)\n5. 相反成語\n6. 成語故事\n\n請用繁體中文回答。`;
+    }
+
+    function buildPoetryPrompt(query, options) {
+        let typeText = '古詩詞';
+        if(options && options.type) {
+            switch(options.type) {
+                case 'tang-poem': typeText = '唐詩'; break;
+                case 'song-poem': typeText = '宋詞'; break;
+                case 'yuan-poem': typeText = '元曲'; break;
+            }
+        }
+        return `你是一位專業的中國古典文學專家，請提供關於${typeText}查詢 "${query}" 的詳細資訊:\n\n請按照以下格式回答:\n1. 詩詞名稱\n2. 作者\n3. 原文\n4. 白話翻譯\n5. 賞析\n\n請用繁體中文回答。`;
+    }
+
+    function buildClassicalTextPrompt(text, options) {
+        let additionalRequests = '';
+        if (options.includeAnnotations) {
+            additionalRequests += `\n3. 段落注釋與歷史背景`;
+        }
+        if (options.includeWordExplanations) {
+            additionalRequests += `\n4. 重要字詞解釋`;
+        }
+        return `你是一位專業的中國古文翻譯專家，請將以下古文轉換為現代白話文:\n\n古文:\n${text}\n\n請按照以下格式回答:\n1. 白話翻譯 ${additionalRequests}\n\n請用繁體中文回答，僅提供要求的內容，不要包含原文。`;
+    }
+
+    function buildEnglishPrompt(query, options) {
+        let sections = [`1. 單字定義: 提供"${query}"的詳細定義，包括所有常見詞性。`, `2. 例句: 提供至少2個使用"${query}"的例句，並提供中文翻譯。`];
+        if (options.includePronunciation) sections.push(`3. 發音: 提供美式和英式發音的音標。`);
+        if (options.includeSynonyms) sections.push(`4. 同義詞和反義詞。`);
+        if (options.includeGrammar) sections.push(`5. 文法應用。`);
+        sections.push(`6. 相關單字形式。`);
+        return `你是一位專業的英語教師，請提供關於英文單字"${query}"的詳細資訊:\n\n請按照以下格式回答:\n${sections.join('\n')}\n\n請使用繁體中文解釋，但保留英文原文。`;
+    }
+
+    function buildTranslationPrompt(text, options) {
+       if (options.targetLang === 'zh-TW') {
+           return `你是一位專業的翻譯員，請將以下英文文本翻譯成正確、自然的繁體中文：\n\n${text}\n\n只返回翻譯後的文本。`;
+       } else {
+           return `你是一位專業的翻譯員，請將以下繁體中文文本翻譯成正確、自然的英文：\n\n${text}\n\n只返回翻譯後的文本。`;
+       }
+    }
+
+    // --- 回應格式化工具 ---
+    function formatResponse(response, query) {
+        return `<h3>查詢: ${query}</h3>` + response.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+
+    function formatUnitResponse(response, query) {
+        return `<h3>單位查詢: ${query}</h3>` + response.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+
+    function formatChemistryResponse(response, query) {
+        return `<h3>化學查詢: ${query}</h3>` + response.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+    
+    function formatPhysicsResponse(response, query) {
+        let formatted = response.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return `<h3>物理查詢: ${query}</h3>` + formatted;
+    }
+
+    function formatIdiomResponse(response, query) {
+        let formatted = response.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return `<div class="idiom-title">${query}</div>` + formatted;
+    }
+    
+    function formatPoetryResponse(response, query) {
+        let formatted = response.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return formatted;
+    }
+
+    function formatClassicalTextResponse(response, originalText) {
+        return `<div class="parallel-translation">
+          <div class="original-text"><h4>原文</h4><div class="classical-text">${originalText.replace(/\n/g, '<br>')}</div></div>
+          <div class="translated-text"><h4>白話翻譯</h4><div class="modern-text">${response.replace(/\n/g, '<br>')}</div></div>
+        </div>`;
+    }
+
+    function formatEnglishResponse(response, query) {
+        let formatted = response.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return `<div class="word-header"><div class="word-title">${query}</div></div>` + formatted;
+    }
+
+    function formatTranslationResponse(response) {
+        return `<div class="translation-result">${response.replace(/\n/g, '<br>')}</div>`;
+    }
+
+    // --- 事件處理函式 ---
+    function searchFormula() {
+        const options = {
+            category: document.getElementById('category').value,
+            textareaId: 'query'
+        };
+        handleApiRequest('formula', null, options, 'formula-result-box', 'formula-loading', buildPrompt, formatResponse);
+    }
+    
+    function searchUnit() {
+        const query = document.getElementById('unit-query').value.trim();
+        const options = { textareaId: 'unit-query' };
+        handleApiRequest('unit', query, options, 'unit-result-box', 'unit-loading', buildUnitPrompt, formatUnitResponse);
+    }
+
+    function searchChemistry() {
+        const options = {
+            category: document.getElementById('chem-category').value,
+            textareaId: 'chem-query'
+        };
+        handleApiRequest('chemistry', null, options, 'chemistry-result-box', 'chemistry-loading', buildChemistryPrompt, formatChemistryResponse);
+    }
+
+    function searchPhysics() {
+        const options = {
+            category: document.getElementById('physics-category').value,
+            textareaId: 'physics-query'
+        };
+        handleApiRequest('physics', null, options, 'physics-result-box', 'physics-loading', buildPhysicsPrompt, formatPhysicsResponse);
+    }
+    
+    function searchIdiom() {
+        const query = document.getElementById('idiom-query').value.trim();
+        const options = { textareaId: 'idiom-query' };
+        handleApiRequest('idiom', query, options, 'idiom-result-box', 'idiom-loading', buildIdiomPrompt, formatIdiomResponse);
+    }
+
+    function searchPoetry() {
+        const query = document.getElementById('poetry-query').value.trim();
+        const options = {
+            type: document.getElementById('poetry-type').value,
+            textareaId: 'poetry-query'
+        };
+        handleApiRequest('poetry', query, options, 'poetry-result-box', 'poetry-loading', buildPoetryPrompt, formatPoetryResponse);
+    }
+    
+    function translateClassicalText() {
+        const text = document.getElementById('classical-text').value.trim();
+        const options = {
+            includeAnnotations: document.getElementById('include-annotations').checked,
+            includeWordExplanations: document.getElementById('include-word-explanations').checked,
+            textareaId: 'classical-text'
+        };
+        handleApiRequest('classical', text, options, 'classical-result-box', 'classical-loading', buildClassicalTextPrompt, formatClassicalTextResponse);
+    }
+
+    function searchEnglish() {
+        const query = document.getElementById('english-query').value.trim();
+        const options = {
+            includePronunciation: document.getElementById('include-pronunciation').checked,
+            includeSynonyms: document.getElementById('include-synonyms').checked,
+            includeGrammar: document.getElementById('include-grammar').checked,
+            textareaId: 'english-query'
+        };
+        handleApiRequest('english', query, options, 'english-result-box', 'english-loading', buildEnglishPrompt, formatEnglishResponse);
+    }
+
+    async function translateEnToZh() {
+        const text = document.getElementById('en-to-zh-input').value.trim();
+        const options = { targetLang: 'zh-TW', textareaId: 'en-to-zh-input' };
+        await handleApiRequest('translate', text, options, 'en-to-zh-result-box', 'en-to-zh-loading', buildTranslationPrompt, formatTranslationResponse);
+    }
+
+    async function translateZhToEn() {
+        const text = document.getElementById('zh-to-en-input').value.trim();
+        const options = { targetLang: 'en-US', textareaId: 'zh-to-en-input' };
+        await handleApiRequest('translate', text, options, 'zh-to-en-result-box', 'zh-to-en-loading', buildTranslationPrompt, formatTranslationResponse);
+    }
+
+    // --- UI 控制與靜態邏輯 ---
+    document.addEventListener('DOMContentLoaded', function() {
+        updateApiKeyStatus();
+        updateUnitOptions();
+        showUnitReference();
+        document.querySelectorAll('.loading').forEach(el => el.style.display = 'none');
+        
+        const pasteEnabledTextareas = ['query', 'chem-query', 'physics-query'];
+        pasteEnabledTextareas.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('paste', handlePaste);
+            }
+        });
+    });
+
+    function showMainTab(tabName) {
+        document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`.main-tab[onclick="showMainTab('${tabName}')"]`).classList.add('active');
+        document.querySelectorAll('.main-tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`${tabName}-page`).classList.add('active');
+    }
+
+    function showSubTab(tabName) {
+        const mainTabContent = document.querySelector('.main-tab-content.active');
+        if (!mainTabContent) return;
+        
+        mainTabContent.querySelectorAll('.sub-tab').forEach(tab => tab.classList.remove('active'));
+        const activeSubTab = mainTabContent.querySelector(`.sub-tab[onclick="showSubTab('${tabName}')"]`);
+        if(activeSubTab) activeSubTab.classList.add('active');
+
+        mainTabContent.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        const activeContent = document.getElementById(`${tabName}-tab`);
+        if(activeContent) activeContent.classList.add('active');
+    }
+    
+    const unitDefinitions = {
+        length: { meter: { name: "公尺 (m)", factor: 1 }, kilometer: { name: "公里 (km)", factor: 1000 }, centimeter: { name: "公分 (cm)", factor: 0.01 }, millimeter: { name: "毫米 (mm)", factor: 0.001 }, inch: { name: "英吋 (in)", factor: 0.0254 }, foot: { name: "英尺 (ft)", factor: 0.3048 }, yard: { name: "碼 (yd)", factor: 0.9144 }, mile: { name: "英里 (mi)", factor: 1609.344 }, nautical_mile: { name: "海里 (nmi)", factor: 1852 } },
+        mass: { gram: { name: "克 (g)", factor: 1 }, kilogram: { name: "公斤 (kg)", factor: 1000 }, milligram: { name: "毫克 (mg)", factor: 0.001 }, metric_ton: { name: "公噸 (t)", factor: 1000000 }, pound: { name: "磅 (lb)", factor: 453.59237 }, ounce: { name: "盎司 (oz)", factor: 28.349523125 } },
+        volume: { liter: { name: "公升 (L)", factor: 1 }, milliliter: { name: "毫升 (mL)", factor: 0.001 }, cubic_meter: { name: "立方米 (m³)", factor: 1000 }, gallon_us: { name: "美制加侖 (US gal)", factor: 3.785411784 } },
+        area: { square_meter: { name: "平方米 (m²)", factor: 1 }, square_kilometer: { name: "平方公里 (km²)", factor: 1000000 }, hectare: { name: "公頃 (ha)", factor: 10000 }, acre: { name: "英畝 (acre)", factor: 4046.8564224 } },
+        temperature: { celsius: { name: "攝氏度 (°C)", convert: (v, t) => (t === "fahrenheit") ? (v * 9/5) + 32 : (t === "kelvin") ? v + 273.15 : v }, fahrenheit: { name: "華氏度 (°F)", convert: (v, t) => (t === "celsius") ? (v - 32) * 5/9 : (t === "kelvin") ? (v - 32) * 5/9 + 273.15 : v }, kelvin: { name: "開爾文 (K)", convert: (v, t) => (t === "celsius") ? v - 273.15 : (t === "fahrenheit") ? (v - 273.15) * 9/5 + 32 : v } },
+        time: { second: { name: "秒 (s)", factor: 1 }, minute: { name: "分 (min)", factor: 60 }, hour: { name: "小時 (h)", factor: 3600 }, day: { name: "天 (d)", factor: 86400 } },
+        speed: { meter_per_second: { name: "米/秒 (m/s)", factor: 1 }, kilometer_per_hour: { name: "公里/小時 (km/h)", factor: 0.277778 }, mile_per_hour: { name: "英里/小時 (mph)", factor: 0.44704 } },
+        pressure: { pascal: { name: "帕斯卡 (Pa)", factor: 1 }, kilopascal: { name: "千帕 (kPa)", factor: 1000 }, bar: { name: "巴 (bar)", factor: 100000 }, atmosphere: { name: "標準大氣壓 (atm)", factor: 101325 } },
+        energy: { joule: { name: "焦耳 (J)", factor: 1 }, kilojoule: { name: "千焦 (kJ)", factor: 1000 }, calorie: { name: "卡路里 (cal)", factor: 4.184 }, kilowatt_hour: { name: "千瓦時 (kWh)", factor: 3600000 } },
+        data: { bit: { name: "位元 (b)", factor: 1 }, byte: { name: "位元組 (B)", factor: 8 }, kilobyte: { name: "千位元組 (KB)", factor: 8000 }, megabyte: { name: "兆位元組 (MB)", factor: 8000000 }, gigabyte: { name: "吉位元組 (GB)", factor: 8000000000 } }
+    };
+
+    function updateUnitOptions() {
+        const category = document.getElementById('unit-category').value;
+        const fromUnitSelect = document.getElementById('from-unit');
+        const toUnitSelect = document.getElementById('to-unit');
+        fromUnitSelect.innerHTML = '';
+        toUnitSelect.innerHTML = '';
+        const units = unitDefinitions[category];
+        for (const key in units) {
+            const unit = units[key];
+            const fromOption = document.createElement('option');
+            fromOption.value = key;
+            fromOption.textContent = unit.name;
+            fromUnitSelect.appendChild(fromOption);
+            const toOption = document.createElement('option');
+            toOption.value = key;
+            toOption.textContent = unit.name;
+            toUnitSelect.appendChild(toOption);
+        }
+        if (toUnitSelect.options.length > 1) {
+            toUnitSelect.selectedIndex = 1;
+        }
+    }
+
+    function convertUnit() {
+        const category = document.getElementById('unit-category').value;
+        const fromValue = parseFloat(document.getElementById('from-value').value);
+        const fromUnit = document.getElementById('from-unit').value;
+        const toUnit = document.getElementById('to-unit').value;
+        const resultElement = document.getElementById('conversion-result');
+        
+        if (isNaN(fromValue)) {
+            resultElement.innerHTML = '<span class="error">請輸入有效的數值</span>';
+            return;
+        }
+        
+        let result;
+        if (category === 'temperature') {
+            result = unitDefinitions.temperature[fromUnit].convert(fromValue, toUnit);
+        } else {
+            const fromFactor = unitDefinitions[category][fromUnit].factor;
+            const toFactor = unitDefinitions[category][toUnit].factor;
+            result = (fromValue * fromFactor) / toFactor;
+        }
+        
+        const fromName = unitDefinitions[category][fromUnit].name.split(' ')[0];
+        const toName = unitDefinitions[category][toUnit].name.split(' ')[0];
+        
+        resultElement.textContent = `${fromValue} ${fromName} = ${result.toLocaleString('zh-TW', {maximumFractionDigits: 10})} ${toName}`;
+    }
+
+    function showUnitReference() {
+        const category = document.getElementById('reference-category').value;
+        const contentElement = document.getElementById('reference-content');
+        let content = '';
+        if (category === 'si') {
+            content = `<h3>國際單位制基本單位</h3><table><tr><th>物理量</th><th>單位名稱</th><th>單位符號</th></tr><tr><td>長度</td><td>米 (公尺)</td><td>m</td></tr><tr><td>質量</td><td>千克 (公斤)</td><td>kg</td></tr><tr><td>時間</td><td>秒</td><td>s</td></tr><tr><td>電流</td><td>安培</td><td>A</td></tr><tr><td>溫度</td><td>開爾文</td><td>K</td></tr><tr><td>物質的量</td><td>摩爾</td><td>mol</td></tr><tr><td>發光強度</td><td>坎德拉</td><td>cd</td></tr></table>`;
+        } else if (category === 'prefixes') {
+            content = `<h3>SI 前綴</h3><table><tr><th>前綴</th><th>符號</th><th>因子</th></tr><tr><td>太拉 (Tera)</td><td>T</td><td>10¹²</td></tr><tr><td>吉咖 (Giga)</td><td>G</td><td>10⁹</td></tr><tr><td>兆 (Mega)</td><td>M</td><td>10⁶</td></tr><tr><td>千 (kilo)</td><td>k</td><td>10³</td></tr><tr><td>毫 (milli)</td><td>m</td><td>10⁻³</td></tr><tr><td>微 (micro)</td><td>μ</td><td>10⁻⁶</td></tr><tr><td>納 (nano)</td><td>n</td><td>10⁻⁹</td></tr></table>`;
+        } else {
+            const units = unitDefinitions[category];
+            const selectedText = document.getElementById('reference-category').options[document.getElementById('reference-category').selectedIndex].text;
+            content = `<h3>${selectedText}</h3><table><tr><th>單位名稱</th><th>換算關係 (相對於基本單位)</th></tr>`;
+            let baseUnitKey = Object.keys(units).find(key => units[key].factor === 1 || typeof units[key].convert === 'function');
+            let baseUnitName = units[baseUnitKey].name.split(' ')[0];
+
+            for (const key in units) {
+                const unit = units[key];
+                let relation = '基本單位';
+                if (key !== baseUnitKey) {
+                    if (category === 'temperature') {
+                        if (key === 'fahrenheit') relation = '°F = °C × 9/5 + 32';
+                        else if (key === 'kelvin') relation = 'K = °C + 273.15';
+                    } else {
+                       relation = `1 ${unit.name.split(' ')[0]} = ${unit.factor} ${baseUnitName}`;
+                    }
+                }
+                content += `<tr><td>${unit.name}</td><td>${relation}</td></tr>`;
+            }
+            content += '</table>';
+        }
+        contentElement.innerHTML = content;
+    }
+    </script>
+</body>
+</html>
