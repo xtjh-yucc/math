@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能行事曆助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; transition: background-color 0.5s ease; }
+        .title-input { border-bottom: 2px solid #6366f1; background-color: transparent; outline: none; }
+        .btn-primary { @apply shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-in-out; }
+        .btn-secondary { @apply shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 ease-in-out; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-700 tracking-tight drop-shadow-sm">智能行事曆助手</h1>
+            <p class="mt-2 text-lg text-gray-600">上傳行事曆圖片，AI 將為你轉換成 Google 行事曆。</p>
+        </header>
+        <main class="bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+            <div id="upload-section">
+                <h2 class="text-xl font-semibold mb-4 text-slate-600">第一步：上傳行事曆圖片</h2>
+                <div id="image-drop-area" class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-indigo-300 rounded-lg text-center bg-gray-50 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
+                    <input type="file" id="image-upload" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
+                    <label for="image-upload" class="cursor-pointer">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        <p class="mt-2 text-sm text-gray-600"><span class="font-semibold text-indigo-600">點擊此處上傳</span> 或 將檔案拖曳到這裡</p>
+                        <p class="text-xs text-gray-500">支援 PNG, JPG, GIF 等圖片格式</p>
+                    </label>
+                </div>
+                <div id="image-preview-container" class="mt-6 hidden"><h3 class="font-semibold text-gray-700">檔案預覽：</h3><img id="image-preview" src="#" alt="上傳的檔案預覽" class="mt-2 rounded-lg shadow-md max-w-full h-auto mx-auto" style="max-height: 400px;"></div>
+            </div>
+            <div id="api-key-section" class="mt-8">
+                <h2 class="text-xl font-semibold mb-4 text-slate-600">第二步：提供 API 金鑰</h2>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <label for="api-key-input" class="font-medium text-gray-700 flex-shrink-0">您的 Gemini API 金鑰:</label>
+                    <input type="password" id="api-key-input" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="請在此貼上您的 API 金鑰">
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="flex-shrink-0 text-sm text-indigo-600 hover:text-indigo-800 underline whitespace-nowrap">申請金鑰</a>
+                </div>
+            </div>
+            <div id="analysis-section" class="mt-8">
+                <button id="analyze-button" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 btn-primary disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>辨識行程</button>
+                <div id="loading-indicator" class="mt-6 text-center hidden"><div class="flex justify-center items-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><p class="ml-3 text-gray-600">AI 正在努力辨識中，請稍候...</p></div></div>
+                <div id="results-container" class="mt-8 hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-slate-600">第三步：確認行程並加入行事曆</h2>
+                    <p class="mb-2 text-sm text-gray-500">以下是 AI 辨識出的行程。您可以<strong class="text-indigo-600">直接點擊行程文字</strong>來進行修改。確認無誤後再加入行事曆。</p>
+                    <button id="import-all-button" class="w-full mb-2 bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 btn-primary">🚀 下載全行程 (.ics 檔案)</button>
+                    <p class="text-xs text-center text-gray-500 mb-4">下載後，請至您的 Google 日曆 > 設定 > 匯入與匯出，即可一次匯入所有行程。</p>
+                    <div id="events-list" class="space-y-3"></div>
+                </div>
+            </div>
+            <div id="message-box" class="mt-6 p-4 rounded-lg text-center shadow-md font-medium hidden transition-opacity duration-300"></div>
+        </main>
+    </div>
+
+    <script>
+        // DOM 元素參考
+        const imageUpload = document.getElementById('image-upload');
+        const imageDropArea = document.getElementById('image-drop-area');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const analyzeButton = document.getElementById('analyze-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const resultsContainer = document.getElementById('results-container');
+        const eventsList = document.getElementById('events-list');
+        const messageBox = document.getElementById('message-box');
+        const importAllButton = document.getElementById('import-all-button');
+
+        let uploadedImage = null;
+
+        const backgroundClasses = [
+            'bg-gradient-to-br from-blue-50 to-indigo-100', 'bg-gradient-to-br from-green-50 to-teal-100',
+            'bg-gradient-to-br from-purple-50 to-pink-100', 'bg-gradient-to-br from-yellow-50 to-orange-100',
+            'bg-gradient-to-br from-gray-50 to-blue-50', 'bg-gradient-to-br from-red-50 to-pink-50',
+            'bg-gradient-to-br from-cyan-50 to-blue-50', 'bg-gradient-to-br from-lime-50 to-green-50',
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const randomIndex = Math.floor(Math.random() * backgroundClasses.length);
+            document.body.className = `text-gray-800 ${backgroundClasses[randomIndex]}`;
+        });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            imageDropArea.addEventListener(eventName, preventDefaults, false)
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            imageDropArea.addEventListener(eventName, () => {
+                imageDropArea.classList.add('bg-indigo-100', 'border-indigo-500');
+                imageDropArea.classList.remove('bg-gray-50', 'border-indigo-300');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            imageDropArea.addEventListener(eventName, () => {
+                imageDropArea.classList.remove('bg-indigo-100', 'border-indigo-500');
+                imageDropArea.classList.add('bg-gray-50', 'border-indigo-300');
+            }, false);
+        });
+
+        imageDropArea.addEventListener('drop', handleDrop, false);
+        analyzeButton.addEventListener('click', analyzeCalendarImage);
+        importAllButton.addEventListener('click', handleDownloadICS);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            if (files.length > 0) {
+                imageUpload.files = files;
+                handleImageUpload({ target: imageUpload });
+            }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                 showMessage('檔案類型不支援，請上傳圖片檔案 (PNG, JPG)。', 'error');
+                 return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedImage = {
+                    data: e.target.result.split(',')[1],
+                    mimeType: file.type
+                };
+                imagePreviewContainer.classList.remove('hidden');
+                imagePreview.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                analyzeButton.disabled = false;
+                resultsContainer.classList.add('hidden');
+                eventsList.innerHTML = '';
+                hideMessage();
+            }
+            reader.readAsDataURL(file);
+        }
+
+        async function analyzeCalendarImage() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showMessage('請輸入您的 Gemini API 金鑰。', 'error');
+                apiKeyInput.focus();
+                return;
+            }
+            if (!uploadedImage) {
+                showMessage('請先上傳一張圖片。', 'error');
+                return;
+            }
+            loadingIndicator.classList.remove('hidden');
+            analyzeButton.disabled = true;
+            resultsContainer.classList.add('hidden');
+            eventsList.innerHTML = '';
+            hideMessage();
+            try {
+                const currentYear = new Date().getFullYear();
+                const prompt = `你是一個專業的行程辨識助理。請分析這張手寫月曆圖片，找出圖片中的年份、月份。如果找不到年份，請使用今年 (${currentYear})。然後，找出每一天記下的手寫事項。請以 JSON 格式回傳一個物件，該物件包含 "year", "month" 和一個名為 "events" 的陣列。"events" 陣列中應包含多個物件，每個物件代表一個行程，且必須包含 "day" (數字) 和 "title" (字串) 這兩個欄位。範例輸出:\n{\n  "year": 2024,\n  "month": 7,\n  "events": [\n    { "day": 1, "title": "團隊開發會議" },\n    { "day": 15, "title": "繳交報告" },\n    { "day": 28, "title": "上課 15:00" }\n  ]\n}\n請確保只回傳有效的 JSON 內容，不要包含任何 markdown 符號或額外說明文字。`;
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mimeType: uploadedImage.mimeType, data: uploadedImage.data } }
+                        ]
+                    }],
+                };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    console.error('API Error Response:', errorBody);
+                    if (response.status === 400 && errorBody.error?.message.includes('API key not valid')) {
+                        throw new Error('API 金鑰無效，請檢查後再試。');
+                    }
+                    throw new Error(`API 請求失敗，狀態碼：${response.status}`);
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates[0]?.content?.parts?.length > 0) {
+                    const rawText = result.candidates[0].content.parts[0].text;
+                    const jsonText = rawText.replace(/^```json\s*|```\s*$/g, '');
+                    const calendarData = JSON.parse(jsonText);
+                    displayEvents(calendarData);
+                } else {
+                    console.error('Unexpected API response structure:', result);
+                    let details = result.promptFeedback ? `原因: ${result.promptFeedback.blockReason}` : 'AI 回應中沒有有效的行程資料。';
+                    if (result.promptFeedback?.blockReason === 'SAFETY') {
+                        details += ' 圖片可能觸發了安全設定。';
+                    }
+                    throw new Error(details);
+                }
+            } catch (error) {
+                console.error('分析過程中發生錯誤:', error);
+                showMessage(`辨識失敗：${error.message}`, 'error');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                analyzeButton.disabled = false;
+            }
+        }
+        function displayEvents(data) {
+            if (!data || !data.events || data.events.length === 0) {
+                showMessage('AI 未能辨識出任何行程。請嘗試使用更清晰的圖片。', 'info');
+                return;
+            }
+            resultsContainer.classList.remove('hidden');
+            eventsList.innerHTML = '';
+            const { year, month, events } = data;
+            events.forEach(event => {
+                const eventDate = new Date(year, month - 1, event.day);
+                const eventElement = document.createElement('div');
+                eventElement.className = 'flex items-center p-3 bg-white rounded-lg border-l-4 border-indigo-400 gap-4 event-item shadow-sm hover:shadow-md transition-shadow';
+                const dateString = `${year}/${String(month).padStart(2, '0')}/${String(event.day).padStart(2, '0')}`;
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'font-semibold text-indigo-600 w-24 flex-shrink-0 date-span';
+                dateSpan.textContent = dateString;
+                const titleContainer = document.createElement('div');
+                titleContainer.className = 'text-gray-700 flex-grow min-w-0';
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = escapeHtml(event.title);
+                titleSpan.className = 'cursor-pointer hover:bg-yellow-100 p-1 rounded-md inline-block w-full break-words title-span';
+                titleSpan.title = '點擊以編輯';
+                const titleInput = document.createElement('input');
+                titleInput.type = 'text';
+                titleInput.className = 'hidden title-input w-full p-1';
+                titleInput.value = event.title;
+                titleContainer.appendChild(titleSpan);
+                titleContainer.appendChild(titleInput);
+                const addButton = document.createElement('a');
+                addButton.target = '_blank';
+                addButton.rel = 'noopener noreferrer';
+                addButton.className = 'flex-shrink-0 bg-blue-500 text-white text-sm font-bold py-2 px-3 rounded-lg hover:bg-blue-600 btn-secondary';
+                addButton.textContent = '新增';
+                addButton.href = createGoogleCalendarLink(event.title, eventDate);
+                titleSpan.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    titleSpan.classList.add('hidden');
+                    titleInput.classList.remove('hidden');
+                    titleInput.value = titleSpan.textContent;
+                    titleInput.focus();
+                });
+                const saveChanges = () => {
+                    const newTitle = titleInput.value;
+                    titleSpan.textContent = newTitle;
+                    titleSpan.classList.remove('hidden');
+                    titleInput.classList.add('hidden');
+                    addButton.href = createGoogleCalendarLink(newTitle, eventDate);
+                };
+                titleInput.addEventListener('blur', saveChanges);
+                titleInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        saveChanges();
+                    } else if (e.key === 'Escape') {
+                        titleInput.value = titleSpan.textContent;
+                        titleSpan.classList.remove('hidden');
+                        titleInput.classList.add('hidden');
+                    }
+                });
+                eventElement.appendChild(dateSpan);
+                eventElement.appendChild(titleContainer);
+                eventElement.appendChild(addButton);
+                eventsList.appendChild(eventElement);
+            });
+        }
+        function handleDownloadICS() {
+            const eventItems = eventsList.querySelectorAll('.event-item');
+            if (eventItems.length === 0) {
+                showMessage('沒有可以匯出的行程。', 'info');
+                return;
+            }
+            const events = Array.from(eventItems).map(item => {
+                return {
+                    date: item.querySelector('.date-span').textContent,
+                    title: item.querySelector('.title-span').textContent
+                };
+            });
+            const icsContent = generateICSContent(events);
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "智能行事曆助手-Events.ics";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage('ICS 檔案已開始下載！', 'success');
+        }
+        function generateICSContent(events) {
+            let icsString = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Gemini-AI//Calendar-Assistant//EN', 'CALSCALE:GREGORIAN'];
+            const toICSDate = (date) => date.toISOString().split('T')[0].replace(/-/g, '');
+            events.forEach((event, index) => {
+                const dateParts = event.date.split('/');
+                const startDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 1);
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[-:.]/g, '') + 'Z';
+                icsString.push('BEGIN:VEVENT', `DTSTART;VALUE=DATE:${toICSDate(startDate)}`, `DTEND;VALUE=DATE:${toICSDate(endDate)}`, `DTSTAMP:${timestamp}`, `UID:${timestamp}-${index}@gemini.ai`, `SUMMARY:${event.title}`, 'END:VEVENT');
+            });
+            icsString.push('END:VCALENDAR');
+            return icsString.join('\r\n');
+        }
+        function createGoogleCalendarLink(title, date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const formattedStartDate = `${year}${month}${day}`;
+            const nextDayDate = new Date(date);
+            nextDayDate.setDate(date.getDate() + 1);
+            const nextYear = nextDayDate.getFullYear();
+            const nextMonth = String(nextDayDate.getMonth() + 1).padStart(2, '0');
+            const nextDay = String(nextDayDate.getDate()).padStart(2, '0');
+            const formattedNextDate = `${nextYear}${nextMonth}${nextDay}`;
+            const url = new URL('https://www.google.com/calendar/render');
+            url.searchParams.append('action', 'TEMPLATE');
+            url.search_params.append('text', title);
+            url.searchParams.append('dates', `${formattedStartDate}/${formattedNextDate}`);
+            url.searchParams.append('details', `由 智能行事曆助手 建立。`);
+            return url.toString();
+        }
+        function showMessage(text, type = 'info') {
+            messageBox.textContent = text;
+            messageBox.className = 'mt-6 p-4 rounded-lg text-center shadow-md font-medium transition-opacity duration-300'; // Reset classes
+            switch (type) {
+                case 'error': messageBox.classList.add('bg-red-100', 'text-red-800'); break;
+                case 'success': messageBox.classList.add('bg-green-100', 'text-green-800'); break;
+                case 'info': messageBox.classList.add('bg-blue-100', 'text-blue-800'); break;
+                case 'warning': messageBox.classList.add('bg-yellow-100', 'text-yellow-800'); break;
+            }
+        }
+        function hideMessage() {
+            messageBox.classList.add('hidden');
+        }
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
