@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>普普風親師聯絡簿</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 QR Code 生成函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
+    <!-- 引入 jsPDF 用於生成 PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- 引入 html2canvas 用於中文支援 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- 普普藝術風格 CSS --- */
+        body { 
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            /* 動態的普普藝術背景 */
+            background: linear-gradient(-45deg, #ff6b6b, #feca57, #4ecdc4, #54a0ff, #ff9ff3);
+            background-size: 400% 400%;
+            animation: popArtBackground 15s ease infinite;
+        }
+        
+        @keyframes popArtBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 普普藝術標題 */
+        .pop-title {
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 
+                3px 3px 0 #000,
+                -1px -1px 0 #000,  
+                 1px -1px 0 #000,
+                -1px  1px 0 #000,
+                 1px  1px 0 #000;
+            letter-spacing: 2px;
+        }
+        
+        /* 普普藝術按鈕 */
+        .pop-button {
+            background-color: #feca57; /* 亮黃色 */
+            color: #000;
+            border: 3px solid #000;
+            font-weight: 700;
+            border-radius: 12px;
+            box-shadow: 5px 5px 0px #000;
+            transition: all 0.15s ease-out;
+            transform: translate(0, 0);
+        }
+        .pop-button:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 3px 3px 0px #000;
+        }
+        .pop-button:active {
+            transform: translate(5px, 5px);
+            box-shadow: 0px 0px 0px #000;
+        }
+        .pop-button-secondary {
+            background-color: #4ecdc4; /* 青色 */
+        }
+        .pop-button-danger {
+            background-color: #ff6b6b; /* 紅色 */
+        }
+        
+        /* 普普藝術卡片/容器 */
+        .pop-card {
+            background-color: #fff;
+            border: 4px solid #000;
+            border-radius: 16px;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        /* 普普藝術 Modal */
+        .pop-modal-content {
+            background-color: #fff;
+            border: 4px solid #000;
+            border-radius: 0px; /* 尖角 */
+            box-shadow: 10px 10px 0px #ff6b6b;
+            position: relative;
+        }
+
+        /* 半色調網點背景效果 */
+        .halftone-bg {
+            background-color: #f0f9ff;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,107,107,0.5) 2px, transparent 0),
+                radial-gradient(circle at 75% 75%, rgba(78,205,196,0.5) 2px, transparent 0);
+            background-size: 20px 20px;
+        }
+        
+        /* 輸入框樣式 */
+        .pop-input, .pop-select {
+            border: 3px solid #000;
+            border-radius: 8px;
+            padding: 10px;
+            font-weight: 700;
+            background-color: #fff;
+            box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1);
+        }
+        .pop-input:focus, .pop-select:focus {
+            outline: none;
+            box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1), 0 0 0 3px #feca57;
+        }
+        
+        /* 對話列表項目 */
+        .parent-list-item.selected-parent {
+            background-color: #feca57 !important;
+            border: 3px solid #000 !important;
+            box-shadow: 4px 4px 0px #ff6b6b !important;
+            transform: translate(-2px, -2px);
+        }
+        
+        /* 漫畫風格對話泡泡 */
+        .speech-bubble {
+            position: relative;
+            background: #fff;
+            border: 3px solid #000;
+            border-radius: 20px;
+            padding: 10px 15px;
+            filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.7));
+        }
+        .speech-bubble.is-me {
+            background: #4ecdc4; /* 青色 */
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+            border-top-color: #000;
+            border-bottom: 0;
+            margin-bottom: -15px;
+        }
+        .speech-bubble.is-me:after {
+            right: 20px;
+            border-left-color: #000;
+        }
+        .speech-bubble.is-other:after {
+            left: 20px;
+            border-right-color: #000;
+        }
+        
+        /* 捲軸樣式 */
+        .message-container::-webkit-scrollbar { width: 12px; }
+        .message-container::-webkit-scrollbar-track { background: #feca57; border-left: 3px solid #000; }
+        .message-container::-webkit-scrollbar-thumb { background: #ff6b6b; border: 3px solid #000; border-radius: 0;}
+        
+        /* 指南 Modal 樣式 */
+        .instruction-content h3 { 
+            font-size: 1.5rem; 
+            font-weight: 900; 
+            margin-bottom: 0.5rem; 
+            border-bottom: 4px solid #ff6b6b; 
+            padding-bottom: 0.5rem; 
+            color: #000;
+            text-transform: uppercase;
+        }
+        .instruction-content a { color: #ff6b6b; font-weight: bold; border-bottom: 2px solid #ff6b6b; }
+        .instruction-content code { 
+            background: #feca57; 
+            padding: 0.2rem 0.4rem; 
+            border: 2px solid #000; 
+            font-weight: bold;
+        }
+        .instruction-content pre { 
+            background: #4ecdc4; 
+            padding: 0.75rem; 
+            border: 3px solid #000; 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            font-weight: bold;
+        }
+        #qrcode-container img { margin: auto; border: 4px solid #000; box-shadow: 4px 4px 0px #ff6b6b; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- 主應用程式容器 -->
+    <div id="app-container" class="flex-grow overflow-hidden">
+
+        <!-- 1. 初始進入畫面 -->
+        <div id="entry-view" class="h-full">
+            <div class="min-h-full flex flex-col items-center justify-center p-4">
+                <div class="text-center mb-10">
+                    <h1 class="text-5xl md:text-6xl pop-title mb-4">普普風親師聯絡簿</h1>
+                    <p class="text-black text-lg font-bold bg-white/50 px-4 py-1 rounded">讓溝通更簡單、更有趣 ✨</p>
+                </div>
+                <div class="space-y-6 w-full max-w-xs mt-8">
+                    <button id="teacher-entry-btn" class="w-full pop-button text-xl px-6 py-4 text-center">
+                        🍎 教師進入
+                    </button>
+                    <button id="show-parent-link-btn" class="w-full pop-button pop-button-secondary text-xl px-6 py-4 text-center">
+                        👨‍👩‍👧‍👦 產生家長連結
+                    </button>
+                </div>
+                <div class="text-center mt-12">
+                    <button id="show-instructions-btn" class="text-sm font-bold text-black bg-white/70 px-4 py-2 rounded-lg border-2 border-black hover:bg-white">
+                        ⚙️ 如何設定？
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 2. 家長登入畫面 -->
+        <div id="parent-login-view" class="hidden h-full">
+            <div class="min-h-full flex items-center justify-center p-4">
+                <div class="max-w-md w-full space-y-8 pop-card p-8">
+                    <div class="text-center">
+                        <h2 class="mt-6 text-4xl pop-title text-black" style="text-shadow: 2px 2px 0 #ff6b6b;">
+                            家長登入
+                        </h2>
+                        <p class="mt-3 text-black font-bold">請選擇學生並輸入密碼 🔐</p>
+                    </div>
+                    <form id="parent-login-form" class="mt-8 space-y-6">
+                        <div class="space-y-4">
+                            <select id="student-select" required class="w-full pop-select">
+                                <option value="">📚 載入學生列表中...</option>
+                            </select>
+                            <input id="password" type="password" required class="w-full pop-input" placeholder="🔑 請輸入密碼">
+                        </div>
+                        <p id="login-error" class="text-red-500 text-sm text-center font-bold"></p>
+                        <button type="submit" class="w-full pop-button text-lg py-4 px-6">
+                            ✨ 登入
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 教師端主畫面 -->
+        <div id="teacher-view" class="hidden h-full flex flex-col">
+            <!-- 手機版標頭 -->
+            <div class="p-3 bg-black text-white shadow-lg flex-shrink-0 md:hidden">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-xl font-bold">🍎 教師後台</h1>
+                    <button id="teacher-logout-btn-mobile" class="pop-button pop-button-danger text-sm py-1 px-3">登出</button>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button id="manage-parents-btn-mobile" class="flex-1 pop-button pop-button-secondary py-2 px-3 text-sm">
+                        👥 管理
+                    </button>
+                    <button id="broadcast-btn-mobile" class="flex-1 pop-button py-2 px-3 text-sm">
+                        📢 群播
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-grow md:flex md:flex-row overflow-hidden">
+                <div id="mobile-panels-container" class="h-full w-full md:contents relative">
+                    <!-- 對話列表面板 -->
+                    <div id="parent-list-panel-mobile" class="absolute inset-0 md:relative md:w-1/3 bg-white border-r-4 border-black flex flex-col transition-transform duration-300 ease-in-out z-10">
+                        <!-- PC版標頭 -->
+                        <div class="hidden md:block p-4 border-b-4 border-black">
+                            <h1 class="text-3xl pop-title text-black" style="text-shadow: 2px 2px 0 #4ecdc4;">
+                                教師後台
+                            </h1>
+                            <div class="flex gap-3 mt-4">
+                                <button id="manage-parents-btn" class="flex-1 pop-button pop-button-secondary py-3 px-4">
+                                    👥 家長管理
+                                </button>
+                                <button id="broadcast-btn" class="flex-1 pop-button py-3 px-4">
+                                    📢 群播訊息
+                                </button>
+                            </div>
+                        </div>
+                        <!-- 家長列表 -->
+                        <div class="flex-grow overflow-y-auto p-3">
+                            <h3 class="text-lg font-black p-2 uppercase">💬 對話列表</h3>
+                            <div id="parent-list-container" class="space-y-2"></div>
+                        </div>
+                        <div class="hidden md:block p-4 border-t-4 border-black">
+                            <button id="teacher-logout-btn" class="w-full pop-button pop-button-danger py-3 px-4">👋 登出</button>
+                        </div>
+                    </div>
+
+                    <!-- 聊天面板 -->
+                    <div id="chat-panel-mobile" class="absolute inset-0 md:relative md:w-2/3 halftone-bg flex flex-col transition-transform duration-300 ease-in-out transform translate-x-full md:translate-x-0 z-20">
+                        <!-- 聊天標頭 -->
+                        <div class="bg-black shadow-lg flex-shrink-0">
+                            <div class="p-3 flex items-center text-white">
+                                <button id="back-to-list-btn" class="md:hidden mr-3 font-bold text-2xl hover:text-yellow-300">
+                                    ‹
+                                </button>
+                                <h2 id="chat-with-name" class="text-lg font-bold flex-grow">
+                                    <span>選擇家長開始對話</span>
+                                </h2>
+                                <div id="export-chat-controls" class="hidden ml-3">
+                                    <button id="export-chat-btn" class="pop-button pop-button-secondary text-sm py-1 px-3" title="匯出對話記錄">
+                                        匯出
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 手機版訊息輸入區 -->
+                        <div id="message-input-area" class="hidden md:hidden bg-white border-b-4 border-black flex-shrink-0">
+                            <div class="p-2">
+                                <form id="message-form" class="flex items-center bg-white rounded-lg p-1 border-2 border-black">
+                                    <input id="teacher-image-upload" type="file" accept="image/*" class="hidden">
+                                    <button id="teacher-image-btn" type="button" title="📸" class="p-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </button>
+                                    <button id="teacher-url-btn" type="button" title="🔗" class="p-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                                    </button>
+                                    <textarea id="message-input" class="flex-grow border-0 bg-transparent p-2 focus:outline-none resize-none font-bold" placeholder="輸入..." rows="1" style="min-height: 44px; max-height: 120px;"></textarea>
+                                    <button type="submit" class="pop-button px-3 py-2 text-sm">📤</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- 歡迎畫面 -->
+                        <div id="chat-welcome" class="flex items-center justify-center flex-grow p-4">
+                            <div class="text-center p-8 pop-card">
+                                <div class="text-6xl mb-4 animate-bounce">💭</div>
+                                <p class="font-bold text-lg">從左邊列表選擇家長</p>
+                                <p class="text-sm mt-2 uppercase font-bold">Select a parent to start</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 聊天訊息區域 -->
+                        <div id="chat-window" class="hidden flex-1 flex flex-col overflow-hidden min-h-0">
+                            <!-- PC版發送區域 -->
+                            <div id="pc-message-input-container" class="hidden md:block bg-white border-t-4 border-black flex-shrink-0">
+                                <div class="p-3">
+                                    <form id="pc-message-form" class="flex items-center bg-white rounded-lg p-2 border-2 border-black">
+                                        <input id="pc-teacher-image-upload" type="file" accept="image/*" class="hidden">
+                                        <button id="pc-teacher-image-btn" type="button" title="📸 傳送圖片" class="p-2 text-black hover:text-blue-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </button>
+                                        <button id="pc-teacher-url-btn" type="button" title="🔗 傳送網址" class="p-2 text-black hover:text-blue-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                                        </button>
+                                        <textarea id="pc-message-input" class="flex-grow border-0 bg-transparent p-2 focus:outline-none resize-none font-bold" placeholder="輸入訊息..." rows="1" style="min-height: 44px; max-height: 120px;"></textarea>
+                                        <button type="submit" class="pop-button px-5 py-2">發送</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div id="message-container" class="flex-grow p-4 overflow-y-auto message-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 4. 家長端主畫面 -->
+        <div id="parent-view" class="hidden h-full flex flex-col halftone-bg">
+            <div class="p-3 bg-black shadow-lg flex justify-between items-center text-white flex-shrink-0">
+                <h1 id="parent-welcome-msg" class="text-lg font-bold">與教師的對話</h1>
+                <button id="parent-logout-btn" class="pop-button pop-button-danger py-2 px-4">登出</button>
+            </div>
+            <!-- [MODIFIED] Parent message form moved here -->
+            <div class="p-2 bg-white border-b-4 border-black flex-shrink-0">
+                <form id="parent-message-form" class="flex items-center bg-white rounded-lg p-1 border-2 border-black">
+                    <input id="parent-image-upload" type="file" accept="image/*" class="hidden">
+                     <button id="parent-image-btn" type="button" title="📸" class="p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </button>
+                    <button id="parent-url-btn" type="button" title="🔗" class="p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    </button>
+                    <textarea id="parent-message-input" class="flex-grow border-0 bg-transparent p-2 focus:outline-none resize-none font-bold" placeholder="輸入訊息..." rows="1" style="min-height: 44px; max-height: 120px;"></textarea>
+                    <button type="submit" class="pop-button px-4 py-2">發送</button>
+                </form>
+            </div>
+            <div id="parent-message-container" class="flex-grow p-4 overflow-y-auto message-container"></div>
+        </div>
+
+        <!-- Modals -->
+        <div id="parent-management-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm h-full w-full flex items-center justify-center z-40 p-4">
+            <div class="relative mx-auto w-full max-w-2xl max-h-[90vh] flex flex-col pop-modal-content">
+                 <div class="p-4 flex-shrink-0 bg-black text-white flex justify-between items-center">
+                    <h2 class="text-2xl font-black uppercase">家長帳號管理</h2>
+                    <button id="close-parent-management-btn" class="text-white hover:text-yellow-300 text-4xl font-bold">&times;</button>
+                 </div>
+                 <div class="flex-grow overflow-y-auto p-6 halftone-bg">
+                    <form id="add-parent-form" class="space-y-4 p-6 border-4 border-black mb-6 bg-white">
+                        <h3 class="font-black text-lg uppercase">➕ 單筆新增</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input type="text" id="student-name" placeholder="學生姓名" required class="w-full pop-input">
+                            <input type="text" id="parent-name" placeholder="家長姓名" required class="w-full pop-input">
+                            <input type="text" id="parent-password" placeholder="登入密碼(純數字)" required pattern="[0-9]*" class="w-full pop-input">
+                        </div>
+                        <button type="submit" class="w-full md:w-auto pop-button py-3 px-6">✨ 建立單筆帳號</button>
+                    </form>
+                    <div class="p-6 border-4 border-black mb-6 bg-white">
+                        <h3 class="font-black text-lg uppercase mb-3">📋 批次匯入</h3>
+                        <textarea id="bulk-import-data" rows="5" class="w-full mt-2 pop-input" placeholder="📝 貼上多筆資料，每行一筆，格式為：&#10;學生姓名,家長姓名,密碼&#10;學生姓名2,家長姓名2,密碼2"></textarea>
+                        <button id="bulk-import-btn" class="w-full md:w-auto mt-3 pop-button pop-button-secondary py-3 px-6">🚀 匯入多筆帳號</button>
+                        <div id="bulk-import-status" class="mt-3 text-sm font-bold"></div>
+                    </div>
+                    <div class="p-6 border-4 border-black mb-6 bg-white">
+                        <h3 class="font-black text-lg uppercase mb-3">💾 匯出功能</h3>
+                        <div class="flex flex-col md:flex-row gap-3">
+                            <button id="export-pdf-btn" class="flex-1 pop-button pop-button-secondary py-3 px-6">📝 匯出家長密碼 PDF</button>
+                            <button id="fix-old-accounts-btn" class="flex-1 pop-button py-3 px-6">🔧 修復舊帳號密碼</button>
+                        </div>
+                        <div id="export-status" class="mt-3 text-sm font-bold"></div>
+                        <div id="fix-status" class="mt-3 text-sm font-bold"></div>
+                    </div>
+                    <div class="p-6 border-4 border-dashed border-red-500 bg-red-100">
+                        <h3 class="font-black text-lg uppercase text-red-700 mb-3">⚠️ 危險區域</h3>
+                        <p class="text-sm text-red-600 mb-3 font-bold">此操作無法復原，請謹慎使用。</p>
+                        <button id="delete-all-images-btn" class="w-full md:w-auto pop-button pop-button-danger py-3 px-6">🗑️ 刪除所有圖片</button>
+                    </div>
+                 </div>
+            </div>
+        </div>
+        <div id="parent-link-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm h-full w-full flex items-center justify-center z-40 p-4">
+            <div class="relative mx-auto w-full max-w-md pop-modal-content">
+                <div class="p-4 bg-black text-white flex justify-between items-center">
+                    <h3 class="text-2xl font-black uppercase">家長專用連結</h3>
+                    <button id="close-parent-link-btn" class="text-white hover:text-yellow-300 text-4xl font-bold">&times;</button>
+                </div>
+                <div class="p-6 halftone-bg">
+                    <p class="text-sm font-bold mb-4">請家長使用手機掃描QR Code或點擊下方連結：</p>
+                    <div id="qrcode-container" class="p-4 bg-white mb-4"></div>
+                    <input id="parent-url-input" type="text" readonly class="w-full pop-input text-sm" onclick="this.select()">
+                    <div class="mt-4 flex justify-center">
+                        <button id="close-parent-link-btn-main" class="pop-button px-8 py-3">✓ 關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="broadcast-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm h-full w-full flex items-center justify-center z-40 p-4">
+             <div class="relative mx-auto w-full max-w-lg pop-modal-content">
+                <div class="p-4 bg-black text-white flex justify-between items-center">
+                    <h3 class="text-2xl font-black uppercase">發送群播訊息</h3>
+                    <button id="cancel-broadcast-btn-close" class="text-white hover:text-yellow-300 text-4xl font-bold">&times;</button>
+                </div>
+                <div class="p-6 halftone-bg">
+                    <form id="broadcast-form" class="space-y-4">
+                        <textarea id="broadcast-input" rows="4" class="w-full pop-input" placeholder="💬 在此輸入要發送給所有家長的訊息..."></textarea>
+                        <div class="flex items-center gap-4">
+                            <input id="broadcast-image-upload" type="file" accept="image/*" class="hidden">
+                            <button id="broadcast-image-btn" type="button" class="pop-button pop-button-secondary text-sm flex-grow">📸 圖片</button>
+                            <button id="broadcast-url-btn" type="button" class="pop-button pop-button-secondary text-sm flex-grow">🔗 連結</button>
+                        </div>
+                        <div id="broadcast-attachment-preview" class="text-sm font-bold text-black"></div>
+                        <div class="items-center gap-3 flex justify-end">
+                            <button id="cancel-broadcast-btn" type="button" class="pop-button bg-gray-300">❌ 取消</button>
+                            <button type="submit" class="pop-button pop-button-secondary">🚀 確認發送</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="instructions-modal" class="hidden fixed inset-0 bg-black/75 h-full w-full flex items-center justify-center z-50 p-4">
+            <div class="relative mx-auto w-full max-w-3xl shadow-lg bg-white border-4 border-black max-h-[85vh] flex flex-col">
+                <div class="absolute top-2 right-2"><button id="close-instructions-btn" class="text-black hover:text-red-500 font-black text-2xl px-2">X</button></div>
+                <div class="instruction-content overflow-y-auto p-6">
+                    <h2 class="text-3xl font-black mb-4 uppercase">首次設定指南</h2>
+                    <p>歡迎！本指南將引導您完成此應用程式的首次設定。請依照以下步驟操作：</p>
+                    <div class="space-y-6 mt-6">
+                        <div>
+                            <h3>第一步：建立 Firebase 專案</h3>
+                            <ol class="list-decimal list-inside mt-2 space-y-1 font-bold">
+                                <li>前往 <a href="https://firebase.google.com/" target="_blank">Firebase 官方網站</a> 並登入。</li>
+                                <li>點擊「前往主控台」，然後「新增專案」。</li>
+                                <li>為專案命名，然後點擊「繼續」。</li>
+                                <li><b>關閉</b> Google Analytics 功能，然後「建立專案」。</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h3>第二步：啟用 Firebase 服務</h3>
+                            <p class="font-bold">在左側選單「建構」區塊，啟用以下兩項服務：</p>
+                            <ul class="list-disc list-inside mt-2 space-y-2 font-bold">
+                                <li><b>Authentication (認證)</b>: 點擊「開始使用」 -> 選擇「電子郵件/密碼」 -> <b>啟用</b>並儲存。</li>
+                                <li><b>Firestore Database (資料庫)</b>: 點擊「建立資料庫」 -> 選擇<b>「在測試模式下啟動」</b> -> 選擇伺服器位置 -> 「啟用」。</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3>第三步：取得 firebaseConfig</h3>
+                            <ol class="list-decimal list-inside mt-2 space-y-1 font-bold">
+                                <li>回到專案首頁，點擊 ⚙️ 圖示，選「專案設定」。</li>
+                                <li>在「您的應用程式」區塊，點擊網頁圖示 ( <b>&lt;/&gt;</b> )。</li>
+                                <li>取一個暱稱，點擊「註冊應用程式」。</li>
+                                <li>註冊後，<b>完整複製</b>名為 <code>firebaseConfig</code> 的程式碼區塊。</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h3>第四步：貼上金鑰</h3>
+                             <ol class="list-decimal list-inside mt-2 space-y-1 font-bold">
+                                <li>用文字編輯器打開這個 <code>index.html</code> 檔案。</li>
+                                <li>在檔案底部找到 <code>&lt;script type="module"&gt;</code> 標籤。</li>
+                                <li>找到註解 <code>// --- 請將您從 Firebase 專案複製的設定貼到這裡 ---</code> 的地方。</li>
+                                <li>將您複製的 <code>firebaseConfig</code> 程式碼，<b>完整取代</b>掉該處的範例金鑰。</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h3>第五步：更新 Firestore 安全規則 (最重要)</h3>
+                            <ol class="list-decimal list-inside mt-2 space-y-1 font-bold">
+                                <li>回到 Firebase，進入 <b>Firestore Database</b>，選<b>「規則」</b>分頁。</li>
+                                <li>刪除所有預設文字。</li>
+                                <li>複製下方的<b>所有規則文字</b>，並貼到編輯器中：
+                                <pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}</code></pre>
+                                </li>
+                                <li>點擊<b>「發佈」</b>按鈕，並等待約 30 秒讓規則生效。</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h3>第六步：完成！</h3>
+                            <ul class="list-disc list-inside mt-2 space-y-1 font-bold">
+                                <li><b>儲存</b>您修改過的 <code>index.html</code> 檔案。</li>
+                                <li>用瀏覽器重新整理此頁面。</li>
+                                <li>點擊「教師進入」並輸入預設密碼 <code>tpet1234</code> 即可開始使用！</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Custom Alert/Confirm/Prompt Modal -->
+        <div id="custom-modal" class="hidden fixed inset-0 bg-black/50 h-full w-full flex items-center justify-center z-50 p-4">
+            <div class="relative mx-auto w-full max-w-md pop-modal-content">
+                <div class="p-4 bg-black text-white">
+                    <h3 id="custom-modal-title" class="text-lg font-black uppercase">訊息</h3>
+                </div>
+                <div class="p-6">
+                    <p id="custom-modal-text" class="text-sm font-bold"></p>
+                    <input id="custom-modal-input" type="text" class="hidden w-full pop-input mt-2">
+                </div>
+                <div id="custom-modal-buttons" class="p-4 flex justify-end gap-3 bg-gray-100 border-t-4 border-black">
+                    <!-- Buttons will be injected here -->
+                </div>
+            </div>
+        </div>
+        <div id="image-viewer-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 h-full w-full flex items-center justify-center z-50 p-4">
+            <button id="close-image-viewer-btn" class="absolute top-4 right-4 text-white text-5xl font-black">&times;</button>
+            <img id="image-viewer-src" src="" class="max-w-full max-h-full border-8 border-white shadow-2xl">
+        </div>
+        
+        <!-- 匯出對話模態視窗 -->
+        <div id="export-chat-modal" class="hidden fixed inset-0 bg-black/50 h-full w-full flex items-center justify-center z-40 p-4">
+            <div class="relative mx-auto w-full max-w-md pop-modal-content">
+                <div class="p-4 bg-black text-white flex justify-between items-center">
+                    <h3 class="text-2xl font-black uppercase">匯出對話</h3>
+                    <button id="close-export-modal-btn" class="text-white hover:text-yellow-300 text-4xl font-bold">&times;</button>
+                </div>
+                <div class="p-6 halftone-bg space-y-3">
+                    <button id="export-csv-btn" class="w-full pop-button pop-button-secondary py-3 px-4">
+                        📊 匯出 CSV (純文字)
+                    </button>
+                    <button id="export-html-btn" class="w-full pop-button py-3 px-4">
+                        🌐 匯出 HTML (含圖片)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-2 bg-black"><p class="text-xs text-white font-bold">Made by 阿剛老師 (Pop Art Remix)</p></footer>
+
+    <script type="module">
+        // 生產環境下禁用所有console輸出
+        if (window.location.protocol === 'https:' || window.location.hostname !== 'localhost') {
+            // 禁用所有console方法
+            console.log = function() {};
+            console.info = function() {};
+            console.warn = function() {};
+            console.error = function() {};
+            console.debug = function() {};
+            console.trace = function() {};
+            console.table = function() {};
+            console.group = function() {};
+            console.groupEnd = function() {};
+            console.time = function() {};
+            console.timeEnd = function() {};
+            console.clear = function() {};
+        }
+        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, inMemoryPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, getDocs, collection, query, where, writeBatch, onSnapshot, deleteDoc, serverTimestamp, orderBy, addDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            // --- 請將您從 Firebase 專案複製的設定貼到這裡 ---
+            // 範例:
+            apiKey: "AIzaSyAHmNpM9sf3p3E3C3UL_GvSzDM4wYqBVrw",
+  authDomain: "parent-teacher-interacti-9346c.firebaseapp.com",
+  projectId: "parent-teacher-interacti-9346c",
+  storageBucket: "parent-teacher-interacti-9346c.firebasestorage.app",
+  messagingSenderId: "122541005040",
+  appId: "1:122541005040:web:7630eb1f339d8155424a35"
+        };
+        
+        const TEACHER_EMAIL = 'teacher@example.com';
+        const TEACHER_PASS = 'tpet1234';
+
+        let app, auth, db;
+        let isCreatingAccount = false; // 修正：新增一個旗標來避免 auth 狀態衝突
+
+        const state = { currentUser: null, activeChatId: null, unsubscribeChat: null, unsubscribeParentList: null, unsubscribeChats: null, broadcastAttachment: null };
+        const views = { entry: document.getElementById('entry-view'), parentLogin: document.getElementById('parent-login-view'), teacher: document.getElementById('teacher-view'), parent: document.getElementById('parent-view') };
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+
+        // --- Custom Modal Functions ---
+        const customModal = document.getElementById('custom-modal');
+        const modalTitle = document.getElementById('custom-modal-title');
+        const modalText = document.getElementById('custom-modal-text');
+        const modalInput = document.getElementById('custom-modal-input');
+        const modalButtons = document.getElementById('custom-modal-buttons');
+
+        function showModal(config) {
+            if (!customModal) return; 
+            modalTitle.textContent = config.title || '訊息';
+            modalText.textContent = config.text || '';
+            modalInput.classList.add('hidden');
+            modalInput.value = '';
+            modalButtons.innerHTML = '';
+
+            if (config.type === 'prompt') {
+                modalInput.classList.remove('hidden');
+                modalInput.placeholder = config.placeholder || '';
+            }
+
+            config.buttons.forEach(btnConfig => {
+                const button = document.createElement('button');
+                button.textContent = btnConfig.text;
+                button.className = btnConfig.class;
+                button.onclick = () => {
+                    customModal.classList.add('hidden');
+                    btnConfig.onClick();
+                };
+                modalButtons.appendChild(button);
+            });
+            
+            customModal.classList.remove('hidden');
+        }
+
+        function showAlert(text, title = '通知') {
+            return new Promise(resolve => {
+                showModal({
+                    title, text, type: 'alert',
+                    buttons: [{ text: '確定', class: 'pop-button pop-button-secondary px-4 py-2', onClick: resolve }]
+                });
+            });
+        }
+
+        function showConfirm(text, title = '請確認') {
+            return new Promise(resolve => {
+                showModal({
+                    title, text, type: 'confirm',
+                    buttons: [
+                        { text: '取消', class: 'pop-button bg-gray-300 px-4 py-2', onClick: () => resolve(false) },
+                        { text: '確定', class: 'pop-button pop-button-danger px-4 py-2', onClick: () => resolve(true) }
+                    ]
+                });
+            });
+        }
+
+        function showPrompt(text, title = '請輸入', placeholder = '') {
+            return new Promise(resolve => {
+                showModal({
+                    title, text, type: 'prompt', placeholder,
+                    buttons: [
+                        { text: '取消', class: 'pop-button bg-gray-300 px-4 py-2', onClick: () => resolve(null) },
+                        { text: '確定', class: 'pop-button pop-button-secondary px-4 py-2', onClick: () => resolve(modalInput.value) }
+                    ]
+                });
+            });
+        }
+
+        function formatTimestamp(timestamp) {
+            if (!timestamp || !timestamp.toDate) {
+                return ''; // 如果時間戳無效，返回空字串
+            }
+            const date = timestamp.toDate();
+            // 使用 'sv-SE' 格式可以穩定得到 YYYY-MM-DD HH:mm 的格式，並指定台灣時區
+            return date.toLocaleString('sv-SE', {
+                timeZone: 'Asia/Taipei',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        }
+
+        // 計算並格式化圖片到期時間
+        function formatImageExpiry(expireAt) {
+            if (!expireAt) return '';
+            
+            let expireDate;
+            if (expireAt.toDate) {
+                expireDate = expireAt.toDate();
+            } else if (expireAt instanceof Date) {
+                expireDate = expireAt;
+            } else {
+                expireDate = new Date(expireAt);
+            }
+            
+            const now = new Date();
+            const diffTime = expireDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays <= 0) {
+                return '<span class="text-red-500 text-xs font-bold">圖片已過期</span>';
+            } else if (diffDays <= 3) {
+                return `<span class="text-orange-500 text-xs font-bold">圖片將於 ${diffDays} 天後刪除</span>`;
+            } else {
+                return `<span class="text-gray-400 text-xs font-bold">圖片將於 ${diffDays} 天後刪除</span>`;
+            }
+        }
+
+        // 檢查圖片是否已過期
+        function isImageExpired(expireAt) {
+            if (!expireAt) return false;
+            
+            let expireDate;
+            if (expireAt.toDate) {
+                expireDate = expireAt.toDate();
+            } else if (expireAt instanceof Date) {
+                expireDate = expireAt;
+            } else {
+                expireDate = new Date(expireAt);
+            }
+            
+            return new Date() > expireDate;
+        }
+
+        // 清理過期圖片
+        async function cleanupExpiredImages() {
+            try {
+                console.log("開始清理過期圖片...");
+                
+                // 獲取所有聊天記錄
+                const chatsQuery = query(collection(db, "chats"));
+                const chatsSnapshot = await getDocs(chatsQuery);
+                
+                let cleanupCount = 0;
+                
+                for (const chatDoc of chatsSnapshot.docs) {
+                    const chatId = chatDoc.id;
+                    
+                    // 獲取該聊天的所有訊息
+                    const messagesQuery = query(collection(db, "chats", chatId, "messages"));
+                    const messagesSnapshot = await getDocs(messagesQuery);
+                    
+                    for (const messageDoc of messagesSnapshot.docs) {
+                        const messageData = messageDoc.data();
+                        
+                        // 檢查是否為圖片訊息且已過期
+                        if (messageData.type === 'image' && messageData.imageExpireAt && isImageExpired(messageData.imageExpireAt)) {
+                            // 清除base64Image資料但保留訊息記錄
+                            await updateDoc(doc(db, "chats", chatId, "messages", messageDoc.id), {
+                                base64Image: null,
+                                imageCleanedAt: new Date()
+                            });
+                            cleanupCount++;
+                            console.log(`清理過期圖片: ${chatId}/${messageDoc.id}`);
+                        }
+                    }
+                }
+                
+                if (cleanupCount > 0) {
+                    console.log(`✅ 清理完成，共清理 ${cleanupCount} 張過期圖片`);
+                } else {
+                    console.log("✅ 沒有發現過期圖片");
+                }
+                
+            } catch (error) {
+                console.error("清理過期圖片時發生錯誤:", error);
+            }
+        }
+
+        // 定期執行清理任務
+        function scheduleImageCleanup() {
+            // 立即執行一次清理
+            cleanupExpiredImages();
+            
+            // 每24小時執行一次清理
+            setInterval(() => {
+                cleanupExpiredImages();
+            }, 24 * 60 * 60 * 1000); // 24小時
+        }
+
+        // 匯出對話記錄為CSV格式
+        async function exportChatToCSV() {
+            if (!state.activeChatId) {
+                await showAlert("請先選擇一個對話。", "提醒");
+                return;
+            }
+
+            try {
+                // 獲取聊天記錄
+                const messagesRef = collection(db, "chats", state.activeChatId, "messages");
+                const q = query(messagesRef, orderBy("timestamp"));
+                const snapshot = await getDocs(q);
+                
+                // CSV標頭
+                let csvContent = "\uFEFF發送者,訊息內容,發送時間\n"; // \uFEFF是BOM，確保Excel正確顯示中文
+                
+                snapshot.forEach(doc => {
+                    const msg = doc.data();
+                    const sender = msg.senderName || '未知';
+                    let content = '';
+                    
+                    switch(msg.type) {
+                        case 'image':
+                            content = '此為圖片無法匯出';
+                            break;
+                        case 'url':
+                            content = msg.url || '';
+                            break;
+                        default: // text
+                            content = (msg.text || '').replace(/"/g, '""'); // 處理CSV中的引號
+                    }
+                    
+                    const timestamp = formatTimestamp(msg.timestamp);
+                    csvContent += `"${sender}","${content}","${timestamp}"\n`;
+                });
+                
+                // 下載檔案
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const chatTitle = document.getElementById('chat-with-name').querySelector('span:last-child').textContent;
+                const filename = `對話記錄_${chatTitle}_${new Date().toISOString().slice(0,10)}.csv`;
+                
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                await showAlert("CSV檔案已成功匯出！", "完成");
+            } catch (error) {
+                console.error("匯出CSV失敗:", error);
+                await showAlert("匯出失敗，請稍後再試。", "錯誤");
+            }
+        }
+
+        // 匯出對話記錄為HTML格式
+        async function exportChatToHTML() {
+            if (!state.activeChatId) {
+                await showAlert("請先選擇一個對話。", "提醒");
+                return;
+            }
+
+            try {
+                // 獲取聊天記錄
+                const messagesRef = collection(db, "chats", state.activeChatId, "messages");
+                const q = query(messagesRef, orderBy("timestamp"));
+                const snapshot = await getDocs(q);
+                
+                const chatTitle = document.getElementById('chat-with-name').querySelector('span:last-child').textContent;
+                
+                // HTML模板
+                let htmlContent = `
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${chatTitle} - 對話記錄</title>
+    <style>
+        body { font-family: "Microsoft JhengHei", Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: top; }
+        th { background-color: #007bff; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .sender { font-weight: bold; min-width: 100px; }
+        .timestamp { color: #666; font-size: 0.9em; min-width: 150px; }
+        .message-content { word-wrap: break-word; white-space: pre-wrap; }
+        .message-image { max-width: 300px; height: auto; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 5px 0; display: block; }
+        .message-url { color: #007bff; text-decoration: none; }
+        .message-url:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>${chatTitle}</h1>
+        <p style="text-align: center; color: #666;">匯出時間: ${new Date().toLocaleString('zh-TW')}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>發送者</th>
+                    <th>訊息內容</th>
+                    <th>發送時間</th>
+                </tr>
+            </thead>
+            <tbody>`;
+                
+                snapshot.forEach(doc => {
+                    const msg = doc.data();
+                    const sender = msg.senderName || '未知';
+                    let content = '';
+                    
+                    switch(msg.type) {
+                        case 'image':
+                            // 檢查圖片是否過期
+                            const isExpiredForExport = isImageExpired(msg.imageExpireAt);
+                            const imageData = msg.base64Image || msg.imageUrl || '';
+                            
+                            if (isExpiredForExport || !imageData) {
+                                content = `<div style="color:#666; font-style:italic; padding:10px; background:#f9f9f9; border-radius:5px; border:2px dashed #ccc; text-align:center;">
+                                    📷 圖片已過期或遺失<br>
+                                    <small style="color:#999;">此圖片已於保存期限後自動刪除</small>
+                                </div>`;
+                            } else {
+                                const expiryInfoForExport = formatImageExpiry(msg.imageExpireAt);
+                                content = `
+                                    <img src="${imageData}" alt="聊天圖片" class="message-image" onerror="this.alt='圖片載入失敗'; this.style.background='#f0f0f0'; this.style.padding='20px'; this.style.textAlign='center';" />
+                                    ${expiryInfoForExport ? `<div style="font-size:0.8em; color:#666; margin-top:5px;">${expiryInfoForExport.replace(/class="[^"]*"/g, 'style="color:#666;"')}</div>` : ''}
+                                `;
+                            }
+                            break;
+                        case 'url':
+                            content = `<a href="${msg.url}" target="_blank" class="message-url">${msg.url}</a>`;
+                            break;
+                        default: // text
+                            content = `<div class="message-content">${(msg.text || '').replace(/\n/g, '<br>')}</div>`;
+                    }
+                    
+                    const timestamp = formatTimestamp(msg.timestamp);
+                    htmlContent += `
+                <tr>
+                    <td class="sender">${sender}</td>
+                    <td>${content}</td>
+                    <td class="timestamp">${timestamp}</td>
+                </tr>`;
+                });
+                
+                htmlContent += `
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>`;
+                
+                // 下載檔案
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+                const link = document.createElement('a');
+                const filename = `對話記錄_${chatTitle}_${new Date().toISOString().slice(0,10)}.html`;
+                
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                await showAlert("HTML檔案已成功匯出！", "完成");
+            } catch (error) {
+                console.error("匯出HTML失敗:", error);
+                await showAlert("匯出失敗，請稍後再試。", "錯誤");
+            }
+        }
+
+        function showView(viewId) { Object.values(views).forEach(view => view.classList.add('hidden')); if (views[viewId]) views[viewId].classList.remove('hidden'); }
+
+        function startApp() {
+            if (firebaseConfig.apiKey.startsWith("AIzaSyXXXX")) {
+                showView('entry');
+                showAlert("您尚未設定 Firebase 金鑰！請點擊 '如何設定此程式？' 按鈕完成設定。", "設定提醒");
+                return;
+            }
+            
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            setPersistence(auth, browserLocalPersistence);
+
+            if (mode === 'parents') {
+                setupParentAuthentication();
+            } else {
+                // Main entry logic with persistent login check
+                onAuthStateChanged(auth, async (user) => {
+                    if (isCreatingAccount) return; // 修正：當正在建立帳號時，忽略 auth 狀態的變化
+                    if (user && user.email === TEACHER_EMAIL) {
+                        console.log("教師登入成功:", user.uid, user.email);
+                        state.currentUser = user;
+                        
+                        // 確認教師資料已存在於 Firestore
+                        try {
+                            const teacherDoc = await getDoc(doc(db, "users", user.uid));
+                            if (!teacherDoc.exists()) {
+                                console.log("教師用戶資料不存在，重新建立...");
+                                await setDoc(doc(db, "users", user.uid), { 
+                                    uid: user.uid, 
+                                    email: TEACHER_EMAIL,
+                                    role: 'teacher',
+                                    displayName: '教師'
+                                });
+                                console.log("教師用戶資料建立完成");
+                            } else {
+                                const teacherExistingData = teacherDoc.data();
+                                console.log("教師用戶資料已存在:", {
+                                    role: teacherExistingData.role,
+                                    email: teacherExistingData.email,
+                                    displayName: teacherExistingData.displayName
+                                });
+                            }
+                        } catch (error) {
+                            console.error("檢查或建立教師用戶資料失敗:", error);
+                        }
+                        
+                        requestNotificationPermission();
+                        showView('teacher');
+                        setupTeacherDashboard();
+                        
+                        // 啟動圖片清理調度器
+                        scheduleImageCleanup();
+                    } else if (user) { // Parent is logged in but on main page
+                        window.location.href = `?mode=parents`;
+                    }
+                    else {
+                        showView('entry');
+                    }
+                });
+            }
+            document.getElementById('teacher-entry-btn').addEventListener('click', () => handleTeacherLogin());
+            document.getElementById('show-parent-link-btn').addEventListener('click', showParentLink);
+        }
+
+        async function handleTeacherLogin() {
+            const pass = await showPrompt('請輸入教師密碼：', '教師登入');
+            if (pass === TEACHER_PASS) {
+                try {
+                    await signInWithEmailAndPassword(auth, TEACHER_EMAIL, TEACHER_PASS);
+                } catch (error) {
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                        try {
+                            console.log("首次建立教師帳號...");
+                            const userCredential = await createUserWithEmailAndPassword(auth, TEACHER_EMAIL, TEACHER_PASS);
+                            await setDoc(doc(db, "users", userCredential.user.uid), { 
+                                uid: userCredential.user.uid, 
+                                email: TEACHER_EMAIL,
+                                role: 'teacher',
+                                displayName: '教師'
+                            });
+                            console.log("教師帳號建立成功:", userCredential.user.uid);
+                        } catch (creationError) { 
+                            console.error("Teacher account creation failed:", creationError);
+                            await showAlert("首次設定教師帳號失敗，請檢查 Firebase 設定與安全規則。", "錯誤"); 
+                            return; 
+                        }
+                    } else { 
+                        console.error("Teacher login failed:", error);
+                        await showAlert("登入時發生錯誤，請稍後再試。", "錯誤"); 
+                        return; 
+                    }
+                }
+                // onAuthStateChanged will handle the rest
+            } else if (pass !== null) { await showAlert("密碼錯誤！", "錯誤"); }
+        }
+
+        async function setupParentAuthentication() {
+            onAuthStateChanged(auth, async (user) => {
+                if (state.unsubscribeChat) state.unsubscribeChat();
+                if (user && user.email !== TEACHER_EMAIL) {
+                    state.currentUser = user;
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if (userDoc.exists()) {
+                        requestNotificationPermission();
+                        showView('parent');
+                        setupParentDashboard(userDoc.data().parentName);
+                    } else { 
+                        await signOut(auth); // Data mismatch, force logout
+                        showView('parentLogin');
+                        setTimeout(() => {
+                            populateStudentList();
+                        }, 100);
+                    }
+                } else {
+                    showView('parentLogin');
+                    // 延遲一下確保 Firebase 完全初始化
+                    setTimeout(() => {
+                        populateStudentList();
+                    }, 100);
+                }
+            });
+            document.getElementById('parent-login-form').addEventListener('submit', async (e) => { e.preventDefault(); const studentUid = document.getElementById('student-select').value; const password = document.getElementById('password').value; const errorEl = document.getElementById('login-error'); errorEl.textContent = ''; if (!studentUid) { errorEl.textContent = '請選擇學生姓名。'; return; } const userDoc = await getDoc(doc(db, "users", studentUid)); if (!userDoc.exists()) { errorEl.textContent = '找不到該學生資料。'; return; } const fakeEmail = userDoc.data().email; try { await signInWithEmailAndPassword(auth, fakeEmail, password); } catch (error) { errorEl.textContent = '密碼錯誤。'; } });
+        }
+        
+        async function populateStudentList() {
+            const selectEl = document.getElementById('student-select');
+            selectEl.innerHTML = '<option value="">正在載入學生列表...</option>';
+            
+            console.log("開始載入學生列表...");
+            console.log("當前認證狀態:", auth.currentUser ? auth.currentUser.uid : "未認證");
+            
+            try {
+                // 先測試基本連接性 - 嘗試簡單查詢
+                console.log("測試 Firebase 連接...");
+                console.log("數據庫實例:", db);
+                
+                // 嘗試先查詢所有用戶（不使用 where 條件）
+                try {
+                    console.log("測試查詢所有用戶...");
+                    const allUsersQuery = query(collection(db, "users"));
+                    const allUsersSnapshot = await getDocs(allUsersQuery);
+                    console.log("成功查詢所有用戶，總數:", allUsersSnapshot.size);
+                    
+                    let parentCount = 0;
+                    allUsersSnapshot.forEach(doc => {
+                        const userData = doc.data();
+                        console.log("用戶資料:", doc.id, userData);
+                        if (userData.role === 'parent') {
+                            parentCount++;
+                        }
+                    });
+                    console.log("其中家長用戶數量:", parentCount);
+                } catch (allUsersError) {
+                    console.error("查詢所有用戶失敗:", allUsersError);
+                    throw allUsersError;
+                }
+                
+                // 現在嘗試具體的家長查詢
+                console.log("嘗試查詢家長用戶...");
+                const q = query(collection(db, "users"), where("role", "==", "parent"));
+                const querySnapshot = await getDocs(q);
+                
+                console.log("查詢成功，找到", querySnapshot.size, "筆家長資料");
+                selectEl.innerHTML = '<option value="">-- 請選擇學生姓名 --</option>';
+                
+                if (querySnapshot.empty) {
+                    selectEl.innerHTML = '<option value="">目前沒有任何學生資料</option>';
+                    console.log("資料庫中沒有家長資料，可能原因：");
+                    console.log("1. 還沒有建立任何家長帳號");
+                    console.log("2. 家長帳號的 role 欄位不是 'parent'");
+                    console.log("請先使用教師模式建立家長帳號");
+                    return;
+                }
+                
+                let validStudentCount = 0;
+                querySnapshot.forEach((doc) => {
+                    const parent = doc.data();
+                    console.log("處理家長資料:", doc.id, parent);
+                    if (parent.studentName && parent.uid) {
+                        const option = document.createElement('option');
+                        option.value = parent.uid;
+                        option.textContent = parent.studentName;
+                        selectEl.appendChild(option);
+                        validStudentCount++;
+                    } else {
+                        console.warn("家長資料不完整:", doc.id, parent);
+                    }
+                });
+                
+                console.log(`成功載入 ${validStudentCount} 筆有效學生資料`);
+                
+                if (validStudentCount === 0) {
+                    selectEl.innerHTML = '<option value="">資料格式異常，請聯絡管理員</option>';
+                }
+                
+            } catch (error) {
+                console.error("載入學生列表失敗:");
+                console.error("錯誤代碼:", error.code);
+                console.error("錯誤訊息:", error.message);
+                console.error("完整錯誤:", error);
+                
+                if (error.code === 'permission-denied') {
+                    selectEl.innerHTML = '<option value="">權限不足！請更新 Firebase 安全規則</option>';
+                    console.error("═══ Firebase 安全規則錯誤 ═══");
+                    console.error("請按照以下步驟修正：");
+                    console.error("1. 到 Firebase 控制台 > Firestore Database > 規則");
+                    console.error("2. 將所有內容替換為：");
+                    console.error(`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`);
+                    console.error("3. 點擊「發佈」按鈕");
+                    console.error("4. 重新整理此頁面");
+                    console.error("注意：這是開發用規則，正式上線前請使用更安全的規則");
+                    
+                    // 顯示用戶友好的錯誤提示
+                    setTimeout(() => {
+                        alert("Firebase 安全規則設定有誤！\n\n請點擊頁面上的「如何設定此程式？」按鈕，\n按照第五步的說明更新安全規則。");
+                    }, 1000);
+                } else if (error.code === 'unavailable') {
+                    selectEl.innerHTML = '<option value="">網路連線問題，請稍後再試</option>';
+                } else {
+                    selectEl.innerHTML = '<option value="">載入失敗: ' + error.message + '</option>';
+                }
+            }
+        }
+
+        let isTeacherDashboardSetup = false;
+        function setupTeacherDashboard() {
+            if (isTeacherDashboardSetup) return;
+            isTeacherDashboardSetup = true;
+            // 權限檢查：嘗試簡單查詢以確認規則設定正確
+            async function checkFirebasePermissions() {
+                try {
+                    console.log("檢查 Firebase 權限...");
+                    const testQuery = query(collection(db, "users"), where("role", "==", "parent"));
+                    await getDocs(testQuery);
+                    console.log("✅ Firebase 權限檢查通過");
+                } catch (error) {
+                    if (error.code === 'permission-denied') {
+                        console.error("❌ Firebase 權限不足");
+                        await showAlert(
+                            "Firebase 安全規則需要更新！\n\n" +
+                            "請點擊「如何設定此程式？」按鈕，\n" +
+                            "按照第五步的說明更新安全規則。\n\n" +
+                            "請按照說明更新安全規則。",
+                            "權限錯誤"
+                        );
+                    }
+                }
+            }
+            
+            // 延遲執行權限檢查
+            setTimeout(checkFirebasePermissions, 1000);
+            
+            // PC版登出按鈕
+            document.getElementById('teacher-logout-btn').addEventListener('click', () => { 
+                if (state.unsubscribeParentList) state.unsubscribeParentList();
+                if (state.unsubscribeChat) state.unsubscribeChat();
+                if (state.unsubscribeChats) state.unsubscribeChats();
+                
+                // 重置防重複設定旗標
+                isTeacherDashboardSetup = false;
+                isBroadcastListenerSetup = false;
+                
+                signOut(auth); 
+            });
+            
+            // 手機版登出按鈕
+            document.getElementById('teacher-logout-btn-mobile').addEventListener('click', () => { 
+                if (state.unsubscribeParentList) state.unsubscribeParentList();
+                if (state.unsubscribeChat) state.unsubscribeChat();
+                if (state.unsubscribeChats) state.unsubscribeChats();
+                
+                // 重置防重複設定旗標
+                isTeacherDashboardSetup = false;
+                isBroadcastListenerSetup = false;
+                
+                signOut(auth); 
+            });
+            
+            // 手機版管理按鈕
+            document.getElementById('manage-parents-btn-mobile').addEventListener('click', () => {
+                document.getElementById('parent-management-modal').classList.remove('hidden');
+            });
+            
+            // 手機版群播按鈕
+            document.getElementById('broadcast-btn-mobile').addEventListener('click', () => {
+                document.getElementById('broadcast-modal').classList.remove('hidden');
+            });
+            
+            // 返回對話列表按鈕
+            document.getElementById('back-to-list-btn').addEventListener('click', () => {
+                backToParentList();
+            });
+            // 同時設定PC版和手機版的管理按鈕
+            const manageBtns = ['manage-parents-btn'];
+            manageBtns.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        document.getElementById('parent-management-modal').classList.remove('hidden');
+                    });
+                }
+            });
+            
+            const broadcastBtns = ['broadcast-btn'];
+            broadcastBtns.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        document.getElementById('broadcast-modal').classList.remove('hidden');
+                    });
+                }
+            });
+
+            document.getElementById('add-parent-form').addEventListener('submit', (e) => { e.preventDefault(); handleAddSingleParent(); });
+            document.getElementById('bulk-import-btn').addEventListener('click', () => handleBulkImport());
+            document.getElementById('delete-all-images-btn').addEventListener('click', handleDeleteAllImages);
+            document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
+            document.getElementById('fix-old-accounts-btn').addEventListener('click', handleFixOldAccounts);
+            setupBroadcastListener();
+
+            // 教師發送訊息表單
+            document.getElementById('message-form').addEventListener('submit', async (e) => { 
+                e.preventDefault(); 
+                const input = document.getElementById('message-input'); 
+                const text = input.value.trim(); 
+                if (text && state.activeChatId) { 
+                    input.value = ''; 
+                    await sendMessage(state.activeChatId, { 
+                        type: 'text', 
+                        text: text, 
+                        senderId: auth.currentUser.uid, 
+                        senderName: "教師" 
+                    }); 
+                } 
+            });
+
+            // 手機版和PC版的發送功能
+            document.getElementById('teacher-image-btn').addEventListener('click', () => document.getElementById('teacher-image-upload').click());
+            
+            // PC版發送功能（加入錯誤處理）
+            const pcImageBtn = document.getElementById('pc-teacher-image-btn');
+            const pcImageUpload = document.getElementById('pc-teacher-image-upload');
+            const pcUrlBtn = document.getElementById('pc-teacher-url-btn');
+            
+            if (pcImageBtn && pcImageUpload) {
+                pcImageBtn.addEventListener('click', () => pcImageUpload.click());
+                pcImageUpload.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file && state.activeChatId) {
+                        handleImageUpload(file, state.activeChatId, auth.currentUser.uid, "教師");
+                    }
+                });
+            }
+            
+            if (pcUrlBtn) {
+                pcUrlBtn.addEventListener('click', async () => {
+                    if (!state.activeChatId) return;
+                    const url = await showPrompt("請輸入要分享的網址：", "附加連結", "https://");
+                    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                        await sendMessage(state.activeChatId, { type: 'url', url: url, senderId: auth.currentUser.uid, senderName: "教師" });
+                    } else if (url) {
+                        await showAlert("請輸入有效的網址 (開頭為 http:// 或 https://)", "格式錯誤");
+                    }
+                });
+            }
+            
+            // PC版表單事件監聽器（加入錯誤處理）
+            const pcForm = document.getElementById('pc-message-form');
+            if (pcForm) {
+                pcForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const input = document.getElementById('pc-message-input');
+                    if (!input) {
+                        console.error('PC版輸入框元素找不到');
+                        return;
+                    }
+                    const text = input.value.trim();
+                    if (text && state.activeChatId) {
+                        input.value = '';
+                        await sendMessage(state.activeChatId, { type: 'text', text: text, senderId: auth.currentUser.uid, senderName: "教師" });
+                    }
+                });
+            } else {
+                console.error('PC版表單元素找不到');
+            }
+            
+            // 多行文字輸入功能：Shift+Enter換行，Enter發送
+            function setupTextareaKeyHandling(textareaId, formId) {
+                const textarea = document.getElementById(textareaId);
+                const form = document.getElementById(formId);
+                
+                if (textarea && form) {
+                    // 自動調整高度
+                    textarea.addEventListener('input', function() {
+                        this.style.height = 'auto';
+                        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                    });
+                    
+                    // Shift+Enter換行，Enter發送
+                    textarea.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            if (e.shiftKey) {
+                                // Shift+Enter：允許換行（瀏覽器預設行為）
+                                return;
+                            } else {
+                                // Enter：發送訊息
+                                e.preventDefault();
+                                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                                form.dispatchEvent(submitEvent);
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // 設置所有textarea的鍵盤處理
+            setupTextareaKeyHandling('pc-message-input', 'pc-message-form');
+            setupTextareaKeyHandling('message-input', 'message-form');
+            setupTextareaKeyHandling('parent-message-input', 'parent-message-form');
+            
+            // [MODIFIED] 視窗大小變化監聽器，處理PC和手機模式切換
+            window.addEventListener('resize', () => {
+                const chatPanel = document.getElementById('chat-panel-mobile');
+                const parentListPanel = document.getElementById('parent-list-panel-mobile');
+                const messageInputArea = document.getElementById('message-input-area');
+                
+                if (window.innerWidth >= 768) { // PC版
+                    // 重置所有變換
+                    chatPanel.style.transform = '';
+                    parentListPanel.style.transform = '';
+                    // PC版不顯示手機輸入區
+                    if (state.activeChatId) {
+                        messageInputArea.classList.add('hidden');
+                    }
+                } else { // 手機版
+                    if (state.activeChatId) {
+                        // 如果正在聊天，顯示聊天面板
+                        chatPanel.style.transform = 'translateX(0)';
+                        parentListPanel.style.transform = 'translateX(-100%)';
+                        messageInputArea.classList.remove('hidden');
+                    } else {
+                        // 否則顯示列表
+                        chatPanel.style.transform = 'translateX(100%)';
+                        parentListPanel.style.transform = 'translateX(0)';
+                        messageInputArea.classList.add('hidden');
+                    }
+                }
+            });
+            document.getElementById('teacher-image-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && state.activeChatId) {
+                    handleImageUpload(file, state.activeChatId, state.currentUser.uid, "教師");
+                }
+                e.target.value = '';
+            });
+            document.getElementById('teacher-url-btn').addEventListener('click', async () => {
+                if (state.activeChatId) {
+                    await handleUrlSend(state.activeChatId, state.currentUser.uid, "教師");
+                } else {
+                    await showAlert("請先選擇一位家長。", "提醒");
+                }
+            });
+
+            if (state.unsubscribeParentList) state.unsubscribeParentList();
+            if (state.unsubscribeChats) state.unsubscribeChats();
+
+            const parentListContainer = document.getElementById('parent-list-container');
+            let parentDataMap = new Map();
+            let chatDataMap = new Map();
+
+            const renderParentList = () => {
+                parentListContainer.innerHTML = '';
+                if (parentDataMap.size === 0) {
+                    parentListContainer.innerHTML = '<p class="p-2 text-slate-500">目前沒有任何家長帳號。</p>';
+                    return;
+                }
+
+                const displayList = Array.from(parentDataMap.values()).map(parent => {
+                    const chatId = [auth.currentUser.uid, parent.uid].sort().join('_');
+                    const chat = chatDataMap.get(chatId);
+                    const unreadCount = chat?.teacherUnreadCount || 0;
+                    const isUnread = unreadCount > 0;
+                    
+                    let lastMessageTimestamp = 0;
+                    if (chat?.lastMessage?.timestamp) {
+                        try {
+                            lastMessageTimestamp = chat.lastMessage.timestamp.toMillis ? 
+                                chat.lastMessage.timestamp.toMillis() : 
+                                chat.lastMessage.timestamp.seconds * 1000;
+                        } catch (e) {
+                            console.warn("時間戳轉換錯誤:", e);
+                            lastMessageTimestamp = 0;
+                        }
+                    }
+                    
+                    return {
+                        ...parent,
+                        chatId: chatId,
+                        chat: chat, 
+                        lastMessageTimestamp: lastMessageTimestamp,
+                        isUnread: isUnread
+                    };
+                });
+
+                displayList.sort((a, b) => {
+                    // 未讀訊息優先排序
+                    if (a.isUnread && !b.isUnread) return -1;
+                    if (!a.isUnread && b.isUnread) return 1;
+                    // 按最後訊息時間排序（最新的在上面）
+                    return b.lastMessageTimestamp - a.lastMessageTimestamp;
+                });
+                
+                
+                displayList.forEach(parent => {
+                    const el = document.createElement('div');
+                    const isSelected = state.activeChatId === parent.chatId;
+                    
+                    el.id = `parent-item-${parent.uid}`;
+                    el.className = `parent-list-item flex items-center justify-between p-3 rounded-lg border-2 border-black cursor-pointer hover:bg-yellow-100 bg-white`;
+                    if(isSelected) el.classList.add('selected-parent');
+
+                    el.innerHTML = `
+                        <div class="text-sm flex-grow">
+                            <div class="flex items-center">
+                                <p class="font-bold text-black">${parent.studentName}家長</p>
+                                ${parent.isUnread ? '<span class="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">新</span>' : ''}
+                            </div>
+                            <p class="text-gray-600 font-mono">帳號: ${parent.username}</p>
+                        </div>
+                        <button data-uid="${parent.uid}" data-name="${parent.studentName}" class="delete-parent-btn text-red-500 hover:text-red-700 font-bold ml-2">X</button>`;
+                    el.querySelector('.delete-parent-btn').onclick = (e) => { e.stopPropagation(); handleDeleteParent(e.target.dataset.uid, e.target.dataset.name); };
+                    el.onclick = () => selectParentChat(parent.uid, parent.parentName);
+                    parentListContainer.appendChild(el);
+                });
+            };
+
+            const parentQuery = query(collection(db, "users"), where("role", "==", "parent"));
+            state.unsubscribeParentList = onSnapshot(parentQuery, (parentSnapshot) => {
+                parentSnapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" || change.type === "modified") {
+                        parentDataMap.set(change.doc.id, change.doc.data());
+                    } else if (change.type === "removed") {
+                        parentDataMap.delete(change.doc.id);
+                    }
+                });
+                renderParentList();
+            }, (error) => {
+                console.error("家長列表監聽失敗:", error);
+                if (error.code === 'permission-denied') {
+                    parentListContainer.innerHTML = `<div class="p-4 bg-red-100 border-2 border-red-500 rounded-lg m-2"><h4 class="font-bold text-red-800">權限錯誤</h4><p class="text-sm">無法載入家長列表，請更新Firebase安全規則。</p></div>`;
+                }
+            });
+
+            const chatQuery = query(collection(db, "chats"), where("participants", "array-contains", auth.currentUser.uid));
+            state.unsubscribeChats = onSnapshot(chatQuery, (chatSnapshot) => {
+                chatSnapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" || change.type === "modified") {
+                        const chatData = change.doc.data();
+                        chatDataMap.set(change.doc.id, chatData);
+                    } else if (change.type === "removed") {
+                        chatDataMap.delete(change.doc.id);
+                    }
+                });
+                renderParentList();
+            }, (error) => {
+                console.error("聊天監聽失敗:", error);
+            });
+        }
+
+        async function createParentAccount(studentName, parentName, password) {
+            if (!/^\d+$/.test(password)) { throw new Error("密碼必須為純數字。"); }
+            if (password.length < 6) { throw new Error("家長密碼長度至少需要6位數。"); }
+            
+            // 確保帳號唯一性：結合時間戳、隨機數和微秒
+            const now = Date.now();
+            const timestamp = now.toString().slice(-6);
+            const microsecond = (performance.now() * 1000).toString().split('.')[1]?.slice(0, 2) || '00';
+            const randomNum = Math.floor(100 + Math.random() * 900).toString();
+            const username = timestamp + microsecond + randomNum;
+            const fakeEmail = `p${username}@example.com`;
+            
+            if (!auth.currentUser) throw new Error("教師未登入，無法建立帳號。");
+            
+            isCreatingAccount = true;
+            const tempAppName = `creator-${Date.now()}`;
+            const tempApp = initializeApp(firebaseConfig, tempAppName);
+            const tempAuth = getAuth(tempApp);
+            await setPersistence(tempAuth, inMemoryPersistence);
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(tempAuth, fakeEmail, password);
+                const user = userCredential.user;
+                
+                await signOut(tempAuth);
+                
+                const parentData = { 
+                    uid: user.uid, 
+                    username, 
+                    email: fakeEmail, 
+                    studentName, 
+                    parentName, 
+                    password: password,
+                    role: "parent" 
+                };
+                
+                await setDoc(doc(db, "users", user.uid), parentData);
+                
+                return { success: true, username, studentName };
+            } catch (error) {
+                console.error("建立帳號失敗:", error);
+                throw error;
+            } finally {
+                isCreatingAccount = false;
+            }
+        }
+
+        let isSubmittingParent = false;
+        async function handleAddSingleParent() {
+            if (isSubmittingParent) return;
+            isSubmittingParent = true;
+            
+            const submitBtn = document.querySelector('#add-parent-form button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '建立中...';
+            
+            try {
+                const studentName = document.getElementById('student-name').value;
+                const parentName = document.getElementById('parent-name').value;
+                const password = document.getElementById('parent-password').value;
+                
+                if (!studentName || !parentName || !password) { 
+                    await showAlert("所有欄位皆為必填。", "提醒"); 
+                    return; 
+                }
+                
+                const result = await createParentAccount(studentName, parentName, password);
+                await showAlert(`成功建立帳號！\n學生: ${result.studentName}\n登入帳號: ${result.username}\n請將帳號密碼提供給家長。`, "建立成功");
+                document.getElementById('add-parent-form').reset();
+            } catch (error) { 
+                await showAlert(`錯誤: ${error.message}`, "錯誤"); 
+            } finally {
+                isSubmittingParent = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+
+        async function handleBulkImport() {
+            const data = document.getElementById('bulk-import-data').value.trim();
+            const lines = data.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) { return; }
+            const statusEl = document.getElementById('bulk-import-status');
+            statusEl.innerHTML = '匯入中...';
+            const results = { success: [], failure: [] };
+            for (const line of lines) {
+                const parts = line.split(/[,，\t]/).map(p => p.trim());
+                if (parts.length === 3) {
+                    try {
+                        const result = await createParentAccount(parts[0], parts[1], parts[2]);
+                        results.success.push(`${result.studentName} (帳號: ${result.username})`);
+                    } catch (error) { results.failure.push(`${parts[0]} - ${error.message}`); }
+                } else { results.failure.push(`${line} - 格式錯誤`); }
+            }
+            statusEl.innerHTML = `<b>匯入完成</b><br>成功: ${results.success.length}筆<br>${results.success.join('<br>')}<br><br>失敗: ${results.failure.length}筆<br>${results.failure.join('<br>')}`;
+            document.getElementById('bulk-import-data').value = '';
+        }
+
+        async function deleteChatHistory(chatId) {
+            const messagesRef = collection(db, "chats", chatId, "messages");
+            const messagesSnapshot = await getDocs(messagesRef);
+            if (messagesSnapshot.empty) return;
+
+            const batch = writeBatch(db);
+            messagesSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
+
+        async function handleDeleteParent(uid, name) {
+            const confirmed = await showConfirm(`確定要刪除 [${name}] の帳號嗎？\n此操作將永久刪除該家長的帳號及其所有對話紀錄，且無法復原。`);
+            if (confirmed) {
+                try {
+                    const teacherUid = auth.currentUser.uid;
+                    const chatId = [teacherUid, uid].sort().join('_');
+                    
+                    await deleteChatHistory(chatId);
+                    await deleteDoc(doc(db, "chats", chatId));
+                    await deleteDoc(doc(db, "users", uid));
+                    
+                    if(state.activeChatId === chatId) {
+                        backToParentList();
+                    }
+
+                    await showAlert(`已成功刪除 [${name}] の所有資料。`);
+                } catch (error) { 
+                    console.error("刪除家長失敗:", error);
+                    await showAlert('刪除失敗，請檢查您的 Firebase 安全規則權限或網路連線。', "錯誤"); 
+                }
+            }
+        }
+        
+        function showParentLink() {
+            const modal = document.getElementById('parent-link-modal');
+            const url = window.location.origin + window.location.pathname + '?mode=parents';
+            const urlInput = document.getElementById('parent-url-input');
+            const qrContainer = document.getElementById('qrcode-container');
+            
+            urlInput.value = url;
+            qrContainer.innerHTML = '';
+            try {
+                const qr = qrcode(0, 'L');
+                qr.addData(url);
+                qr.make();
+                qrContainer.innerHTML = qr.createImgTag(4);
+            } catch (e) {
+                qrContainer.innerHTML = 'QR Code 生成失敗';
+            }
+            modal.classList.remove('hidden');
+        }
+        document.getElementById('close-parent-link-btn').addEventListener('click', () => document.getElementById('parent-link-modal').classList.add('hidden'));
+        document.getElementById('close-parent-link-btn-main').addEventListener('click', () => document.getElementById('parent-link-modal').classList.add('hidden'));
+
+
+        function backToParentList() {
+            const chatPanel = document.getElementById('chat-panel-mobile');
+            const parentListPanel = document.getElementById('parent-list-panel-mobile');
+            const messageInputArea = document.getElementById('message-input-area');
+            
+            if (window.innerWidth < 768) { // 手機版
+                chatPanel.style.transform = 'translateX(100%)';
+                parentListPanel.style.transform = 'translateX(0)';
+                messageInputArea.classList.add('hidden');
+            }
+            
+            if (state.unsubscribeChat) {
+                state.unsubscribeChat();
+                state.unsubscribeChat = null;
+            }
+            state.activeChatId = null;
+            
+            document.querySelectorAll('.parent-list-item').forEach(item => {
+                item.classList.remove('selected-parent');
+            });
+            
+            document.getElementById('chat-window').classList.add('hidden');
+            document.getElementById('chat-welcome').classList.remove('hidden');
+            document.getElementById('chat-with-name').querySelector('span').textContent = '選擇家長開始對話';
+            
+            document.getElementById('export-chat-controls').classList.add('hidden');
+        }
+
+        async function selectParentChat(parentUid, parentName) { 
+            document.querySelectorAll('.parent-list-item').forEach(item => {
+                item.classList.remove('selected-parent');
+            });
+            
+            const selectedItem = document.getElementById(`parent-item-${parentUid}`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected-parent');
+            }
+            
+            const chatPanel = document.getElementById('chat-panel-mobile');
+            const parentListPanel = document.getElementById('parent-list-panel-mobile');
+            const messageInputArea = document.getElementById('message-input-area');
+            
+            if (window.innerWidth < 768) { // 手機版
+                chatPanel.style.transform = 'translateX(0)';
+                parentListPanel.style.transform = 'translateX(-100%)';
+                messageInputArea.classList.remove('hidden');
+            }
+            
+            document.getElementById('chat-welcome').classList.add('hidden'); 
+            document.getElementById('chat-window').classList.remove('hidden'); 
+            document.getElementById('chat-with-name').querySelector('span').textContent = `與 ${parentName} の對話`;
+            
+            document.getElementById('export-chat-controls').classList.remove('hidden'); 
+            if (state.unsubscribeChat) state.unsubscribeChat(); 
+            
+            const chatId = [auth.currentUser.uid, parentUid].sort().join('_'); 
+            state.activeChatId = chatId; 
+
+            const chatDocRef = doc(db, "chats", chatId);
+            const chatDoc = await getDoc(chatDocRef);
+            if (!chatDoc.exists()) {
+                await setDoc(chatDocRef, {
+                    participants: [auth.currentUser.uid, parentUid],
+                    teacherUnreadCount: 0,
+                    lastMessage: null
+                });
+            } else {
+                const currentUnreadCount = chatDoc.data().teacherUnreadCount || 0;
+                if (currentUnreadCount > 0) {
+                    await updateDoc(chatDocRef, { teacherUnreadCount: 0 });
+                }
+            }
+
+            const messagesRef = collection(db, "chats", chatId, "messages"); 
+            const q = query(messagesRef, orderBy("timestamp")); 
+            state.unsubscribeChat = onSnapshot(q, (snapshot) => { 
+                const container = document.getElementById('message-container'); 
+                container.innerHTML = ''; 
+                snapshot.forEach(doc => { renderMessage(doc.data(), container); }); 
+                container.scrollTop = container.scrollHeight; 
+            }); 
+        }
+        
+        let isParentDashboardSetup = false;
+        async function setupParentDashboard(displayName) { 
+            if (isParentDashboardSetup) return;
+            isParentDashboardSetup = true;
+            
+            document.getElementById('parent-logout-btn').addEventListener('click', () => { 
+                // 重置防重複設定旗標
+                isParentDashboardSetup = false;
+                signOut(auth); 
+            }); 
+            document.getElementById('parent-welcome-msg').textContent = `歡迎, ${displayName}`; 
+            
+            const teacherQuery = query(collection(db, "users"), where("role", "==", "teacher"));
+            const teacherSnapshot = await getDocs(teacherQuery);
+            
+            if (teacherSnapshot.empty) {
+                await showAlert("找不到教師帳號。請確認教師已經登入過系統。", "錯誤");
+                return;
+            }
+            
+            const teacherUid = teacherSnapshot.docs[0].id;
+
+            const parentMessageForm = document.getElementById('parent-message-form');
+            const newParentMessageForm = parentMessageForm.cloneNode(true);
+            parentMessageForm.parentNode.replaceChild(newParentMessageForm, parentMessageForm);
+            
+            newParentMessageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('parent-message-input');
+                const text = input.value.trim();
+                if (text) {
+                    try {
+                        input.value = '';
+                        const chatId = [teacherUid, state.currentUser.uid].sort().join('_');
+                        await sendMessage(chatId, { 
+                            type: 'text', 
+                            text: text, 
+                            senderId: state.currentUser.uid, 
+                            senderName: displayName 
+                        });
+                    } catch (error) {
+                        input.value = text;
+                        await showAlert("發送訊息失敗，請稍後再試。", "錯誤");
+                    }
+                }
+            });
+            
+            const parentTextarea = document.getElementById('parent-message-input');
+            if (parentTextarea) {
+                parentTextarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                });
+                parentTextarea.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        newParentMessageForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                    }
+                });
+            }
+
+            document.getElementById('parent-image-btn').addEventListener('click', () => document.getElementById('parent-image-upload').click());
+            document.getElementById('parent-image-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                const chatId = [teacherUid, state.currentUser.uid].sort().join('_');
+                if (file) {
+                    handleImageUpload(file, chatId, state.currentUser.uid, displayName);
+                }
+                e.target.value = '';
+            });
+            document.getElementById('parent-url-btn').addEventListener('click', () => {
+                const chatId = [teacherUid, state.currentUser.uid].sort().join('_');
+                handleUrlSend(chatId, state.currentUser.uid, displayName);
+            });
+
+            const chatId = [teacherUid, state.currentUser.uid].sort().join('_'); 
+            
+            const chatDocRef = doc(db, "chats", chatId);
+            const chatDoc = await getDoc(chatDocRef);
+            if (!chatDoc.exists()) {
+                await setDoc(chatDocRef, {
+                    participants: [teacherUid, state.currentUser.uid],
+                    teacherUnreadCount: 0,
+                    lastMessage: null
+                });
+            }
+
+            const messagesRef = collection(db, "chats", chatId, "messages"); 
+            const q = query(messagesRef, orderBy("timestamp")); 
+            state.unsubscribeChat = onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('parent-message-container'); 
+                container.innerHTML = ''; 
+                if (snapshot.empty) {
+                    container.innerHTML = '<div class="p-4 text-gray-500 text-center font-bold">目前沒有訊息，開始與教師對話吧！</div>';
+                } else {
+                    snapshot.forEach(doc => { 
+                        renderMessage(doc.data(), container); 
+                    }); 
+                }
+                container.scrollTop = container.scrollHeight; 
+            }, (error) => {
+                console.error("家長端訊息監聽失敗:", error);
+                const container = document.getElementById('parent-message-container');
+                container.innerHTML = '<div class="p-4 text-red-500 text-center">訊息載入失敗，請重新整理頁面<br>錯誤: ' + error.message + '</div>';
+            }); 
+        }
+        
+        async function sendMessage(chatId, messageData) {
+            const chatRef = doc(db, "chats", chatId);
+            
+            // 首先檢查聊天室是否存在，如果不存在則建立
+            const chatDoc = await getDoc(chatRef);
+            if (!chatDoc.exists()) {
+                console.log("聊天室不存在，自動建立:", chatId);
+                const participants = chatId.split('_');
+                await setDoc(chatRef, {
+                    participants: participants,
+                    teacherUnreadCount: 0,
+                    lastMessage: null
+                });
+            }
+            
+            const batch = writeBatch(db);
+            const newMsgRef = doc(collection(db, "chats", chatId, "messages"));
+            batch.set(newMsgRef, { ...messageData, timestamp: serverTimestamp() });
+
+            const lastMessage = {
+                text: messageData.type === 'text' ? messageData.text.substring(0, 20) : (messageData.type === 'image' ? '[圖片]' : '[連結]'),
+                timestamp: serverTimestamp(),
+                senderId: messageData.senderId
+            };
+            
+            const updateData = { lastMessage };
+            const updatedChatDoc = await getDoc(chatRef);
+            
+            const participants = updatedChatDoc.data().participants;
+            if (!participants || participants.length < 2) return;
+            
+            const otherUserId = participants.find(p => p !== messageData.senderId);
+            
+            try {
+                const otherUserDoc = await getDoc(doc(db, "users", otherUserId));
+                if (otherUserDoc.exists()) {
+                    const otherUserData = otherUserDoc.data();
+                    if (otherUserData.role === 'teacher') {
+                        updateData.teacherUnreadCount = increment(1);
+                    }
+                }
+            } catch (error) {
+                console.error("查詢接收者資料失敗:", error);
+            }
+            
+            batch.set(chatRef, updateData, { merge: true });
+            await batch.commit();
+        }
+
+        
+        function handleImageUpload(file, chatId, senderId, senderName) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    const expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 10);
+                    sendMessage(chatId, { 
+                        type: 'image', 
+                        base64Image: dataUrl, 
+                        senderId: senderId, 
+                        senderName: senderName,
+                        imageExpireAt: expireDate
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function handleUrlSend(chatId, senderId, senderName) {
+            const url = await showPrompt("請輸入要分享の網址：", "附加連結", "https://");
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                await sendMessage(chatId, { type: 'url', url: url, senderId: senderId, senderName: senderName });
+            } else if (url) {
+                await showAlert("請輸入有效の網址 (開頭為 http:// 或 https://)", "格式錯誤");
+            }
+        }
+
+        function renderMessage(msg, container) { 
+            const el = document.createElement('div'); 
+            const isMe = msg.senderId === auth.currentUser.uid; 
+            el.className = `flex w-full mb-4 ${isMe ? 'justify-end' : 'justify-start'}`; 
+            const timeString = formatTimestamp(msg.timestamp);
+
+            let contentHtml = '';
+            switch(msg.type) {
+                case 'image':
+                    const isExpired = isImageExpired(msg.imageExpireAt);
+                    const hasImageData = msg.base64Image && msg.base64Image !== null;
+                    
+                    if (isExpired || !hasImageData || msg.imageCleanedAt) {
+                        contentHtml = `<div class="bg-gray-200 border-2 border-dashed border-gray-400 rounded-lg p-4 text-center text-gray-500 font-bold">📷 圖片已過期</div>`;
+                    } else {
+                        contentHtml = `<div><img src="${msg.base64Image}" class="rounded-lg max-w-full h-auto cursor-pointer border-2 border-black" onclick="viewImage('${msg.base64Image}')">${formatImageExpiry(msg.imageExpireAt)}</div>`;
+                    }
+                    break;
+                case 'url':
+                    contentHtml = `<a href="${msg.url}" target="_blank" rel="noopener noreferrer" class="underline font-bold">${msg.url}</a>`;
+                    break;
+                default: // text
+                    contentHtml = `<p class="whitespace-pre-wrap break-words">${msg.text || ''}</p>`;
+            }
+            
+            el.innerHTML = `
+                <div class="max-w-xs lg:max-w-md">
+                    <div class="flex items-baseline gap-2 mb-1 ${isMe ? 'justify-end' : 'justify-start'}">
+                        ${!isMe ? `<p class="text-sm font-bold text-black">${msg.senderName}</p>` : ''}
+                        <p class="text-xs text-gray-600">${timeString}</p>
+                    </div>
+                    <div class="speech-bubble ${isMe ? 'is-me' : 'is-other'}">
+                        ${msg.isBroadcast ? '<span class="text-xs font-bold text-red-600 block">(群播訊息)</span>' : ''}
+                        ${contentHtml}
+                    </div>
+                </div>`; 
+            container.appendChild(el); 
+        }
+        
+        window.viewImage = function(src) {
+            document.getElementById('image-viewer-src').src = src;
+            document.getElementById('image-viewer-modal').classList.remove('hidden');
+        }
+        document.getElementById('close-image-viewer-btn').addEventListener('click', () => {
+            document.getElementById('image-viewer-modal').classList.add('hidden');
+        });
+
+        let isBroadcastListenerSetup = false;
+        function setupBroadcastListener() {
+            if (isBroadcastListenerSetup) return;
+            isBroadcastListenerSetup = true;
+            const broadcastModal = document.getElementById('broadcast-modal');
+            const previewEl = document.getElementById('broadcast-attachment-preview');
+            
+            document.getElementById('broadcast-btn').addEventListener('click', () => {
+                state.broadcastAttachment = null;
+                previewEl.innerHTML = '';
+                broadcastModal.classList.remove('hidden');
+            });
+            document.getElementById('cancel-broadcast-btn').addEventListener('click', () => broadcastModal.classList.add('hidden'));
+            document.getElementById('cancel-broadcast-btn-close').addEventListener('click', () => broadcastModal.classList.add('hidden'));
+
+            document.getElementById('broadcast-image-btn').addEventListener('click', () => document.getElementById('broadcast-image-upload').click());
+            document.getElementById('broadcast-image-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    state.broadcastAttachment = { type: 'image', file: file };
+                    previewEl.innerHTML = `已附加圖片: <span class="font-semibold">${file.name}</span>`;
+                }
+                e.target.value = '';
+            });
+
+            document.getElementById('broadcast-url-btn').addEventListener('click', async () => {
+                const url = await showPrompt("請輸入要分享の網址：", "附加連結", "https://");
+                if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                    state.broadcastAttachment = { type: 'url', url: url };
+                    previewEl.innerHTML = `已附加連結: <span class="font-semibold">${url}</span>`;
+                } else if (url) {
+                    await showAlert("請輸入有效の網址 (開頭為 http:// 或 https://)", "格式錯誤");
+                }
+            });
+
+            document.getElementById('broadcast-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('broadcast-input');
+                const text = input.value.trim();
+
+                if (!text && !state.broadcastAttachment) {
+                    await showAlert("請輸入訊息或附加圖片/連結。", "提醒");
+                    return;
+                }
+                
+                const confirmed = await showConfirm("確定要發送此群播訊息給所有家長嗎？");
+                if (!confirmed) return;
+
+                const q = query(collection(db, "users"), where("role", "==", "parent"));
+                const parentsSnapshot = await getDocs(q);
+                if (parentsSnapshot.empty) { await showAlert("目前沒有任何家長可供發送。", "提醒"); return; }
+
+                let messageData = {
+                    senderId: auth.currentUser.uid,
+                    senderName: "教師",
+                    isBroadcast: true
+                };
+
+                if (state.broadcastAttachment) {
+                    if (state.broadcastAttachment.type === 'url') {
+                        messageData.type = 'url';
+                        messageData.url = state.broadcastAttachment.url;
+                        if (text) messageData.text = text;
+                    } else if (state.broadcastAttachment.type === 'image') {
+                        const file = state.broadcastAttachment.file;
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                            const img = new Image();
+                            img.onload = async () => {
+                                const canvas = document.createElement('canvas');
+                                const MAX_WIDTH = 800;
+                                let width = img.width; let height = img.height;
+                                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                                canvas.width = width; canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                                
+                                // 設定10天後過期
+                                const expireDate = new Date();
+                                expireDate.setDate(expireDate.getDate() + 10);
+                                
+                                messageData.type = 'image';
+                                messageData.base64Image = dataUrl;
+                                messageData.imageExpireAt = expireDate;
+                                if (text) messageData.text = text;
+
+                                const batch = writeBatch(db);
+                                parentsSnapshot.forEach(parentDoc => {
+                                    const parentUid = parentDoc.id;
+                                    const chatId = [auth.currentUser.uid, parentUid].sort().join('_');
+                                    const messageRef = doc(collection(db, "chats", chatId, "messages"));
+                                    batch.set(messageRef, { ...messageData, timestamp: serverTimestamp() });
+                                    batch.set(doc(db, "chats", chatId), { lastMessage: { text: '[圖片]', timestamp: serverTimestamp(), senderId: auth.currentUser.uid } }, { merge: true });
+                                });
+                                await batch.commit();
+                                await showAlert("群播訊息已成功發送！");
+                            };
+                            img.src = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                        input.value = '';
+                        broadcastModal.classList.add('hidden');
+                        return; 
+                    }
+                } else {
+                    messageData.type = 'text';
+                    messageData.text = text;
+                }
+
+                const batch = writeBatch(db);
+                parentsSnapshot.forEach(parentDoc => {
+                    const parentUid = parentDoc.id;
+                    const chatId = [auth.currentUser.uid, parentUid].sort().join('_');
+                    const messageRef = doc(collection(db, "chats", chatId, "messages"));
+                    batch.set(messageRef, { ...messageData, timestamp: serverTimestamp() });
+                     batch.set(doc(db, "chats", chatId), { lastMessage: { text: text.substring(0,20), timestamp: serverTimestamp(), senderId: auth.currentUser.uid } }, { merge: true });
+                });
+                await batch.commit();
+                await showAlert("群播訊息已成功發送！");
+                input.value = '';
+                broadcastModal.classList.add('hidden');
+            });
+        }
+
+        // --- Notification Functions ---
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("This browser does not support desktop notification");
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function showNotification(body, title = "新訊息") {
+            if (Notification.permission === "granted") {
+                new Notification(title, { body });
+            }
+        }
+
+        // --- Image Cleanup Functions ---
+        async function handleDeleteAllImages() {
+            const confirmed = await showConfirm("確定要刪除所有對話中の圖片嗎？\n此操作會永久移除所有圖片資料且無法復原！");
+            if (!confirmed) return;
+
+            await showAlert("正在開始刪除所有圖片，請稍候... 處理完成後會再次通知您。");
+
+            const chatsQuery = query(collection(db, "chats"));
+            const chatsSnapshot = await getDocs(chatsQuery);
+            let imageCount = 0;
+
+            for (const chatDoc of chatsSnapshot.docs) {
+                const messagesQuery = query(collection(db, `chats/${chatDoc.id}/messages`), where("type", "==", "image"));
+                const messagesSnapshot = await getDocs(messagesQuery);
+                if(!messagesSnapshot.empty) {
+                    const batch = writeBatch(db);
+                    messagesSnapshot.forEach(msgDoc => {
+                        imageCount++;
+                        batch.update(msgDoc.ref, {
+                            type: "text",
+                            text: "[圖片已由老師刪除]",
+                            base64Image: null
+                        });
+                    });
+                     await batch.commit();
+                }
+            }
+
+            if (imageCount > 0) {
+                await showAlert(`操作完成！共 ${imageCount} 張圖片已被成功刪除。`);
+            } else {
+                await showAlert("資料庫中沒有任何圖片可供刪除。");
+            }
+        }
+        
+        // 匯出PDF功能
+        async function handleExportPDF() {
+            const statusEl = document.getElementById('export-status');
+            statusEl.innerHTML = '<div class="text-blue-600">🔄 正在生成PDF...</div>';
+            
+            try {
+                // 獲取所有家長資料
+                const parentsQuery = query(collection(db, "users"), where("role", "==", "parent"));
+                const querySnapshot = await getDocs(parentsQuery);
+                
+                if (querySnapshot.empty) {
+                    statusEl.innerHTML = '<div class="text-red-600">⚠️ 沒有找到家長資料</div>';
+                    return;
+                }
+                
+                const parentsData = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    if (data.studentName && data.parentName) {
+                        parentsData.push({
+                            studentName: data.studentName,
+                            parentName: data.parentName,
+                            username: data.username || '未設定',
+                            password: data.password || `●●●●●●`, 
+                            hasPassword: !!data.password,
+                            docId: doc.id
+                        });
+                    }
+                });
+                
+                if (parentsData.length === 0) {
+                    statusEl.innerHTML = '<div class="text-red-600">⚠️ 沒有找到可匯出の家長資料！</div>';
+                    return;
+                }
+                
+                statusEl.innerHTML = '<div class="text-blue-600">🎨 正在繪製卡片...</div>';
+                await generateChinesePDF(parentsData);
+                
+                statusEl.innerHTML = `<div class="text-green-600">✓ PDF已成功生成並下載！共 ${parentsData.length} 筆資料</div>`;
+                
+            } catch (error) {
+                console.error('生成PDF錯誤:', error);
+                statusEl.innerHTML = '<div class="text-red-600">⚠️ 生成PDF失敗，請重試</div>';
+            }
+        }
+        
+        // 修復舊帳號密碼功能
+        async function handleFixOldAccounts() {
+            const statusEl = document.getElementById('fix-status');
+            statusEl.innerHTML = '<div class="text-blue-600">🔍 正在檢查帳號...</div>';
+            
+            try {
+                // 獲取所有家長資料
+                const parentsQuery = query(collection(db, "users"), where("role", "==", "parent"));
+                const querySnapshot = await getDocs(parentsQuery);
+                
+                if (querySnapshot.empty) {
+                    statusEl.innerHTML = '<div class="text-yellow-600">⚠️ 沒有找到家長資料</div>';
+                    return;
+                }
+                
+                const accountsWithoutPassword = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.studentName && data.parentName && !data.password) {
+                        accountsWithoutPassword.push({
+                            id: doc.id,
+                            studentName: data.studentName,
+                            parentName: data.parentName,
+                            username: data.username
+                        });
+                    }
+                });
+                
+                if (accountsWithoutPassword.length === 0) {
+                    statusEl.innerHTML = '<div class="text-green-600">✓ 所有帳號都已有密碼記錄</div>';
+                    return;
+                }
+                
+                for (let account of accountsWithoutPassword) {
+                    const password = await showPrompt(
+                        `請為「${account.studentName}」の家長「${account.parentName}」設定密碼：`,
+                        "設定密碼",
+                        ""
+                    );
+                    
+                    if (!password) {
+                        statusEl.innerHTML = '<div class="text-yellow-600">⚠️ 操作被取消</div>';
+                        return;
+                    }
+                    
+                    if (!/^\d+$/.test(password) || password.length < 6) {
+                        await showAlert("密碼必須為6位以上純數字！", "錯誤");
+                        statusEl.innerHTML = '<div class="text-red-600">⚠️ 密碼格式或長度錯誤</div>';
+                        return;
+                    }
+                    
+                    try {
+                        await updateDoc(doc(db, "users", account.id), {
+                            password: password
+                        });
+                    } catch (error) {
+                        statusEl.innerHTML = `<div class="text-red-600">⚠️ 更新 ${account.studentName} の密碼失敗</div>`;
+                        return;
+                    }
+                }
+                
+                statusEl.innerHTML = `<div class="text-green-600">✓ 已成功為 ${accountsWithoutPassword.length} 個帳號設定密碼！</div>`;
+                
+            } catch (error) {
+                console.error('修復舊帳號錯誤:', error);
+                statusEl.innerHTML = '<div class="text-red-600">⚠️ 修復失敗，請重試</div>';
+            }
+        }
+        
+        // 生成QR Code的函數
+        function generateQRCode(text, size = 80) {
+            const qr = qrcode(0, 'M');
+            qr.addData(text);
+            qr.make();
+            return qr.createDataURL(4); // 4是模組大小，數字越大QR Code越大
+        }
+
+        // 生成中文PDFの函數
+        async function generateChinesePDF(parentsData) {
+            if (!parentsData || parentsData.length === 0) throw new Error('沒有可繪製の資料');
+            if (!window.html2canvas || !window.jspdf) throw new Error('PDF 庫未加載');
+            
+            const container = document.createElement('div');
+            container.style.cssText = 'position:absolute;left:-9999px;width:210mm;background:white;font-family:Noto Sans TC,sans-serif;padding:15mm;box-sizing:border-box';
+            document.body.appendChild(container);
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const cardsPerPage = 4; // 每頁顯示4個家長卡片
+            
+            // 獲取當前網站的基礎URL
+            const baseUrl = window.location.origin + window.location.pathname;
+            const parentUrl = `${baseUrl}?mode=parents`;
+            
+            for (let i = 0; i < parentsData.length; i += cardsPerPage) {
+                const pageData = parentsData.slice(i, i + cardsPerPage);
+                
+                // 為每個家長生成QR Code
+                const cardsWithQR = await Promise.all(pageData.map(async (p) => {
+                    const qrCodeDataUrl = generateQRCode(parentUrl);
+                    return {
+                        ...p,
+                        qrCode: qrCodeDataUrl
+                    };
+                }));
+                
+                container.innerHTML = `<h1 style="text-align:center;font-size:28px;font-weight:900;margin-bottom:10mm;">家長登入資訊</h1><div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12mm 8mm;height:240mm;">${cardsWithQR.map(p => `
+                    <div style="border:3px solid #000;padding:6mm;background:#fefae0;box-shadow:4px 4px 0 #000;display:flex;flex-direction:column;justify-content:space-between;border-radius:3mm;">
+                        <div>
+                            <div style="font-size:18px;font-weight:900;color:#2c3e50;">學生：${p.studentName}</div>
+                            <div style="font-size:16px;margin-top:3mm;color:#34495e;">家長：${p.parentName}</div>
+                            <div style="font-size:13px;margin-top:3mm;font-family:monospace;color:#7f8c8d;">帳號：${p.username || 'N/A'}</div>
+                            <div style="font-size:20px;font-weight:900;color:#d90429;margin-top:4mm;background:#fff;padding:2mm;border:2px solid #000;text-align:center;border-radius:2mm;">密碼：${p.password || '未設定'}</div>
+                        </div>
+                        <div style="margin-top:4mm;border-top:2px solid #bdc3c7;padding-top:3mm;">
+                            <div style="font-size:12px;font-weight:700;margin-bottom:2mm;color:#2c3e50;">家長專用網址：</div>
+                            <div style="font-size:10px;word-break:break-all;margin-bottom:3mm;color:#0066cc;background:#ecf0f1;padding:1mm;border-radius:1mm;">${parentUrl}</div>
+                            <div style="display:flex;align-items:center;justify-content:center;">
+                                <img src="${p.qrCode}" style="width:30mm;height:30mm;border:2px solid #34495e;border-radius:2mm;" alt="QR Code">
+                            </div>
+                        </div>
+                    </div>`).join('')}</div>`;
+                
+                await new Promise(resolve => setTimeout(resolve, 200)); // 增加等待時間讓QR Code渲染
+                
+                const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true });
+                if (i > 0) doc.addPage();
+                doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+            }
+            
+            document.body.removeChild(container);
+            doc.save(`家長登入資訊_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+        
+        // --- App Entry Point ---
+        const instructionsModal = document.getElementById('instructions-modal');
+        const parentManagementModal = document.getElementById('parent-management-modal');
+
+        document.getElementById('show-instructions-btn').addEventListener('click', () => instructionsModal.classList.remove('hidden'));
+        document.getElementById('close-instructions-btn').addEventListener('click', () => instructionsModal.classList.add('hidden'));
+        instructionsModal.addEventListener('click', (e) => { if (e.target === instructionsModal) instructionsModal.classList.add('hidden'); });
+
+        document.getElementById('close-parent-management-btn').addEventListener('click', () => parentManagementModal.classList.add('hidden'));
+        
+        document.getElementById('export-chat-btn').addEventListener('click', () => {
+            document.getElementById('export-chat-modal').classList.remove('hidden');
+        });
+        document.getElementById('close-export-modal-btn').addEventListener('click', () => {
+            document.getElementById('export-chat-modal').classList.add('hidden');
+        });
+        document.getElementById('export-csv-btn').addEventListener('click', () => {
+            exportChatToCSV();
+            document.getElementById('export-chat-modal').classList.add('hidden');
+        });
+        document.getElementById('export-html-btn').addEventListener('click', () => {
+            exportChatToHTML();
+            document.getElementById('export-chat-modal').classList.add('hidden');
+        });
+        
+        startApp();
+    </script>
+</body>
+</html>
