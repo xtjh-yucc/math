@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>獻給新泰國中的祝福</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- 基本樣式 (喜氣風格) --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            /* 使用溫暖、喜慶的漸層背景 */
+            background: linear-gradient(135deg, #fff2f2 0%, #ffe0e0 100%);
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        /* --- 祝福容器 --- */
+        .blessing-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- 頁首標題 (喜氣風格) --- */
+        .header {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            font-weight: 600;
+            color: #a72929; /* 深紅色標題 */
+            text-shadow: 1px 1px 3px rgba(255,255,255,0.5);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            margin-top: 8px;
+            color: #c0392b; /* 稍淺的紅色副標題 */
+        }
+
+        /* --- 祝福文字方塊樣式 (喜氣風格) --- */
+        .blessing-box {
+            position: absolute;
+            background-color: rgba(255, 248, 220, 0.95); /* **更新** 改為溫暖的黃色背景 */
+            backdrop-filter: blur(5px);
+            border-radius: 8px;
+            padding: 20px 25px;
+            box-shadow: 0 8px 25px rgba(230, 180, 50, 0.25); /* **更新** 調整陰影以搭配黃色 */
+            opacity: 0; /* 初始為透明 */
+            max-width: 600px;
+            min-width: 400px;
+            border-top: 1px solid rgba(255,255,255,0.8);
+            border-right: 1px solid rgba(255,255,255,0.8);
+            border-left: 6px solid #e74c3c;
+        }
+
+        /* --- 更新後的祝福語樣式 --- */
+        .blessing-box .message {
+            font-size: 2.6rem;
+            color: #c0392b;
+            margin-bottom: 15px;
+            line-height: 1.7;
+            font-weight: 700;
+        }
+
+        /* --- 更新後的署名樣式 --- */
+        .blessing-box .author {
+            font-size: 2.0rem;
+            color: #2980b9; /* 改為藍色 */
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        /* --- 動畫定義 (改為由左至右) --- */
+
+        /* 由左至右滾動動畫 */
+        @keyframes scrollRight {
+            0% {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(100vw);
+                opacity: 0;
+            }
+        }
+
+        /* 隨機浮現動畫 */
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            15% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            85% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+        }
+
+        /* 將動畫應用到方塊上 */
+        .animate-scroll-right {
+            animation-name: scrollRight;
+            animation-timing-function: linear;
+        }
+
+        .animate-fade-in-out {
+            animation-name: fadeInOut;
+            animation-timing-function: ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>獻給新泰國中的祝福</h1>
+        <p>Grateful Wishes for Principal Li</p>
+    </div>
+
+    <div class="blessing-container" id="blessing-container">
+        <!-- 祝福語將會動態插入此處 -->
+    </div>
+
+    <script>
+        // --- 設定 ---
+        // **重要**：這個網址必須是 Google Sheet "發布到網路" 後的 "CSV" 格式網址，
+        // 而不是 Google Form 的編輯或查看網址。
+        // 取得方式：在 Google Sheet 中，點擊 [檔案] > [共用] > [發布到網路]，
+        // 選擇您要的試算表，並將格式設為 "逗號分隔值 (.csv)"，然後複製產生的連結。
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM1_WEGmYWs6FLYh7cCnn0sOAuAO-SbfyWO-JCV0Ub7QI3Y2T3OCe6SYaN0lKGqMnHcFcixIyuI9XA/pub?output=csv';
+
+        // 每隔多少毫秒顯示一則新的祝福
+        const NEW_BLESSING_INTERVAL = 3000; // 3 秒
+        
+        // 每隔多少毫秒重新從 Google Sheet 抓取一次最新資料
+        const DATA_REFRESH_INTERVAL = 60000; // 60 秒
+
+        // --- 程式碼 ---
+        const container = document.getElementById('blessing-container');
+        let blessings = [];
+        let displayQueue = []; // 用於播放的祝福佇列
+
+        // Fisher-Yates 洗牌演算法，用於打亂陣列順序
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [
+                    array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        // 1. 從 Google Sheet 載入資料
+        async function loadBlessings() {
+            console.log("正在從 Google Sheet 更新資料...");
+            let newBlessings = [];
+            
+            // 檢查是否仍在使用預設的範例URL
+            const isExampleUrl = GOOGLE_SHEET_URL.includes('2PACX-1vRjOD1_P7xMF67G8E2C6lFDHFto6KH9JLBfee4Ht7bMo9B3V9D_rZI5YDioorLE82gR9yhBQCNMYo0_');
+            if (isExampleUrl && blessings.length === 0) {
+                 console.warn("提醒：您正在使用範例資料。若要顯示您自己的祝福語，請務必替換 GOOGLE_SHEET_URL。");
+            }
+
+            try {
+                // 加上時間戳避免瀏覽器快取舊資料
+                const response = await fetch(`${GOOGLE_SHEET_URL}&t=${new Date().getTime()}`);
+                if (!response.ok) {
+                    throw new Error(`網路回應錯誤: ${response.statusText}`);
+                }
+                const csvText = await response.text();
+                // 處理CSV資料，從第二行開始 (slice(1))，因為第一行是標題
+                const rows = csvText.split(/\r?\n/).slice(1);
+                newBlessings = rows.map(row => {
+                    // 簡單地用逗號分割，這假設祝福語內沒有逗號
+                    const columns = row.split(',');
+                    // 確保有足夠的欄位
+                    if (columns.length >= 3 && columns[1]) {
+                        const message = columns[1].trim();
+                        const unit_title = columns[2].trim();
+                        const name = columns[3].trim();
+                        return {
+                            message: message,
+                            author: `${unit_title} - ${name}`
+                        };
+                    }
+                    return null;
+                }).filter(b => b && b.message); // 過濾掉無效的行
+            
+                if (newBlessings.length > 0) {
+                    blessings = newBlessings;
+                    console.log(`資料更新完畢，共 ${blessings.length} 則祝福。`);
+                } else if (blessings.length === 0) {
+                    // 如果抓不到新資料，且原本就沒有資料，則載入範例資料以供展示
+                     console.log("無法從遠端獲取資料，載入內建範例資料。");
+                     blessings = [
+                        { message: '感謝校長多年來的無私奉獻與卓越領導，祝您未來一切順心！', author: '教育部 - 王小明' },
+                        { message: '春風化雨，桃李滿門。您的教誨我們將永遠銘記在心。', author: 'XX大學 校友會 - 陳大華' },
+                        { message: '恭喜校長開啟人生的新篇章，願您退而不休，生活多采多姿！', author: 'OO企業 董事長 - 林美麗' },
+                        { message: '您的智慧與遠見，為學校奠定了堅實的基礎。祝福您！', author: '家長會 會長 - 張先生' },
+                    ];
+                }
+
+            } catch (error) {
+                console.error('無法載入或解析 Google Sheet 資料:', error);
+                 if (blessings.length === 0) {
+                    console.log("遠端獲取資料失敗，載入內建範例資料。");
+                     blessings = [
+                        { message: '感謝校長多年來的無私奉獻與卓越領導，祝您未來一切順心！', author: '教育部 - 王小明' },
+                        { message: '春風化雨，桃李滿門。您的教誨我們將永遠銘記在心。', author: 'XX大學 校友會 - 陳大華' },
+                        { message: '恭喜校長開啟人生的新篇章，願您退而不休，生活多采多姿！', author: 'OO企業 董事長 - 林美麗' },
+                        { message: '您的智慧與遠見，為學校奠定了堅實的基礎。祝福您！', author: '家長會 會長 - 張先生' },
+                    ];
+                }
+            }
+        }
+
+        // 2. 創建並顯示祝福方塊
+        function displayBlessing() {
+            if (blessings.length === 0) return;
+
+            if (displayQueue.length === 0) {
+                console.log("佇列已播完，重新洗牌！");
+                displayQueue = shuffleArray([...blessings]);
+            }
+
+            const blessingData = displayQueue.pop();
+            if (!blessingData) return;
+
+            const box = document.createElement('div');
+            box.className = 'blessing-box';
+            box.innerHTML = `
+                <div class="message">“${blessingData.message}”</div>
+                <div class="author">${blessingData.author}</div>
+            `;
+
+            const animationType = Math.random() > 0.5 ? 'scroll' : 'fade';
+            const duration = Math.random() * 15 + 20; // 20 到 35 秒
+
+            if (animationType === 'scroll') {
+                box.classList.add('animate-scroll-right');
+                box.style.top = `${Math.random() * 65 + 20}%`; 
+                box.style.animationDuration = `${duration}s`;
+            } else {
+                box.classList.add('animate-fade-in-out');
+                box.style.top = `${Math.random() * 55 + 20}%`;
+                box.style.left = `${Math.random() * 60 + 10}%`;
+                box.style.animationDuration = `${duration * 0.6}s`;
+            }
+
+            container.appendChild(box);
+
+            box.addEventListener('animationend', () => {
+                box.remove();
+            });
+        }
+
+        // --- 啟動 ---
+        window.addEventListener('load', async () => {
+            await loadBlessings();
+            if (blessings.length > 0) {
+                displayBlessing();
+                setInterval(displayBlessing, NEW_BLESSING_INTERVAL);
+                setInterval(loadBlessings, DATA_REFRESH_INTERVAL);
+            } else {
+                console.warn("沒有可顯示的祝福資料。");
+            }
+        });
+    </script>
+
+</body>
+</html>
