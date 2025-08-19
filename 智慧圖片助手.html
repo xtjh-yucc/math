@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puti-AI 智慧圖片助手</title>
+    <!-- 引入 Tailwind CSS 框架 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts 的 Inter 字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- 基本樣式和自訂效果 --- */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; /* 設定優先字體 */
+            background-color: #f8fafc; /* 設定頁面背景顏色 */
+        }
+        /* 漸層文字效果 */
+        .gradient-text {
+            background: linear-gradient(to right, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* 拖曳區域的虛線邊框 */
+        #drop-zone {
+            border-style: dashed;
+        }
+        /* 當檔案拖曳到區域上方時的樣式 */
+        #drop-zone.drag-over {
+            border-color: #8b5cf6;
+            background-color: #f5f3ff;
+        }
+        /* 功能按鈕的共用樣式 */
+        .feature-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        /* 功能按鈕的滑鼠懸停效果 */
+        .feature-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        /* 讀取中的動畫效果 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #8b5cf6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* 編輯彈出視窗預設隱藏 */
+        #edit-modal {
+            display: none;
+        }
+        /* 編輯畫布的滑鼠游標樣式 */
+        #edit-canvas {
+            cursor: crosshair;
+        }
+        /* --- AI 對話框樣式 --- */
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            word-wrap: break-word;
+        }
+        /* 使用者發送的訊息樣式 */
+        .chat-bubble.user {
+            background-color: #8b5cf6;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        /* AI 回覆的訊息樣式 */
+        .chat-bubble.ai {
+            background-color: #e5e7eb;
+            color: #1f2937;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+        /* AI 正在輸入中的指示器動畫 */
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- 頁首 -->
+    <header class="bg-white shadow-sm sticky top-0 z-20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
+                <span class="gradient-text">Puti-AI</span>
+                <span class="text-gray-700">智慧圖片助手</span>
+            </h1>
+            <p class="text-gray-500 mt-1">上傳圖片，釋放 AI 的潛力</p>
+        </div>
+    </header>
+
+    <!-- 主要內容 -->
+    <main class="container mx-auto p-4 sm:p-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- 左側欄：圖片上傳與顯示 -->
+            <div class="flex flex-col space-y-6">
+                <label for="file-input" id="drop-zone" class="relative w-full h-80 bg-white border-2 border-gray-300 rounded-2xl flex flex-col justify-center items-center text-center p-6 cursor-pointer hover:border-purple-400 transition-colors">
+                    <input type="file" id="file-input" class="hidden" accept="image/*">
+                    <div id="upload-prompt" class="space-y-2">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <p class="text-gray-600 font-medium">拖曳圖片到這裡，或<span class="text-purple-600">點擊上傳</span></p>
+                        <p class="text-xs text-gray-500">支援 PNG, JPG, WEBP 等格式</p>
+                    </div>
+                    <img id="image-preview" src="#" alt="上傳的圖片" class="hidden max-w-full max-h-full rounded-lg object-contain"/>
+                </label>
+                
+                <div id="image-controls" class="hidden flex justify-center">
+                    <button id="edit-btn" class="feature-btn bg-white text-gray-700 font-semibold py-2 px-5 border border-gray-300 rounded-full shadow-sm hover:bg-gray-50">
+                        🎨 圖片編輯與標註
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右側欄：AI 功能與輸出結果 -->
+            <div class="flex flex-col space-y-6">
+                <div id="features" class="hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700">AI 功能</h2>
+                    <div class="flex flex-wrap gap-3">
+                        <button data-action="ocr" class="feature-btn bg-purple-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">文字辨識</button>
+                        <button data-action="translate" class="feature-btn bg-purple-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">翻譯 (繁中)</button>
+                        <button data-action="summarize" class="feature-btn bg-purple-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">摘要列舉</button>
+                        <button data-action="formula" class="feature-btn bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">公式辨識</button>
+                        <button data-action="table" class="feature-btn bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">表格辨識</button>
+                        <button data-action="describe" class="feature-btn bg-pink-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">影像描述</button>
+                        <button data-action="solve" class="feature-btn bg-pink-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">問題解決</button>
+                        <button data-action="code" class="feature-btn bg-teal-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">程式碼辨識</button>
+                        <button data-action="color" class="feature-btn bg-teal-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">顏色提取</button>
+                        <button data-action="mindmap" class="feature-btn bg-cyan-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md">心智圖</button>
+                        <button data-action="slides" class="feature-btn bg-cyan-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md">生成簡報</button>
+                        <button data-action="studyguide" class="feature-btn bg-emerald-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md">研讀指南</button>
+                        <button data-action="faq" class="feature-btn bg-emerald-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md">常見問題</button>
+                        <button data-action="chat" class="feature-btn bg-amber-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md">AI對話</button>
+                    </div>
+                </div>
+
+                <div id="output-container" class="bg-white rounded-2xl shadow-sm min-h-[400px] p-5 flex flex-col">
+                    <div class="flex-shrink-0 flex justify-between items-center mb-3">
+                        <h3 id="output-title" class="text-lg font-semibold text-gray-700">結果</h3>
+                        <button id="copy-btn" class="hidden bg-gray-200 text-gray-600 text-sm font-medium py-1 px-3 rounded-md hover:bg-gray-300 transition-colors">複製</button>
+                    </div>
+                    <div id="output-content" class="flex-grow text-gray-600 whitespace-pre-wrap break-words font-mono text-sm leading-relaxed">
+                        <p class="font-sans text-base text-gray-400">請先上傳圖片，然後選擇一項 AI 功能。</p>
+                    </div>
+                    <!-- AI 對話介面 -->
+                    <div id="chat-interface" class="hidden flex-grow flex flex-col justify-between">
+                        <div id="chat-messages" class="flex-grow overflow-y-auto mb-4 pr-2 space-y-4 flex flex-col">
+                            <!-- 對話訊息將會顯示在這裡 -->
+                        </div>
+                        <div class="flex-shrink-0 flex space-x-2 border-t pt-4">
+                            <input type="text" id="chat-input" placeholder="針對圖片內容提問..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                            <button id="chat-send-btn" class="bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-purple-600 transition-colors">傳送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 圖片編輯彈出視窗 -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col p-4">
+            <div class="flex-shrink-0 flex items-center justify-between mb-3">
+                <div id="toolbar" class="flex items-center space-x-2 bg-gray-900 p-2 rounded-lg">
+                    <!-- 工具按鈕 -->
+                    <button data-tool="brush" class="tool-btn p-2 rounded-md bg-purple-600 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+                    <button data-tool="arrow" class="tool-btn p-2 rounded-md hover:bg-gray-700 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
+                    <button data-tool="rect" class="tool-btn p-2 rounded-md hover:bg-gray-700 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg></button>
+                    <button data-tool="text" class="tool-btn p-2 rounded-md hover:bg-gray-700 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg></button>
+                    <input type="color" id="color-picker" value="#FF0000" class="w-8 h-8 bg-transparent rounded-md cursor-pointer">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="download-btn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">下載圖片</button>
+                    <button id="close-modal-btn" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700">關閉</button>
+                </div>
+            </div>
+            <div class="flex-grow bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
+                <canvas id="edit-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 獲取頁面上的 HTML 元素 ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const imagePreview = document.getElementById('image-preview');
+        const imageControls = document.getElementById('image-controls');
+        const featuresContainer = document.getElementById('features');
+        const outputContainer = document.getElementById('output-container');
+        const outputTitle = document.getElementById('output-title');
+        const outputContent = document.getElementById('output-content');
+        const copyBtn = document.getElementById('copy-btn');
+        
+        // 對話介面元素
+        const chatInterface = document.getElementById('chat-interface');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+
+        // 圖片編輯彈出視窗元素
+        const editBtn = document.getElementById('edit-btn');
+        const editModal = document.getElementById('edit-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const canvas = document.getElementById('edit-canvas');
+        const ctx = canvas.getContext('2d');
+        const toolbar = document.getElementById('toolbar');
+        const colorPicker = document.getElementById('color-picker');
+
+        // --- 全域變數 ---
+        let imageBase64 = null; // 用於儲存上傳圖片的 Base64 編碼
+        let currentOutputText = ''; // 用於儲存當前 AI 輸出的純文字
+
+        // --- 圖片上傳處理邏輯 ---
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        // 設定拖曳區域的事件監聽
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, preventDefaults, false));
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+        dropZone.addEventListener('dragenter', () => dropZone.classList.add('drag-over'));
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('drag-over'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            dropZone.classList.remove('drag-over');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        // 處理上傳的檔案
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    // 顯示圖片預覽
+                    imagePreview.src = e.target.result;
+                    imageBase64 = e.target.result.split(',')[1]; // 取得 Base64 資料
+                    // 更新 UI 顯示
+                    uploadPrompt.classList.add('hidden');
+                    imagePreview.classList.remove('hidden');
+                    imageControls.classList.remove('hidden');
+                    featuresContainer.classList.remove('hidden');
+                    switchToNormalOutput('<p class="font-sans text-base text-gray-400">圖片已載入，請選擇一項 AI 功能。</p>', '結果');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- AI 功能與 UI 互動邏輯 ---
+        featuresContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' && e.target.dataset.action) {
+                const action = e.target.dataset.action;
+                if (!imageBase64) {
+                    switchToNormalOutput('<p class="font-sans text-base text-red-500">請先上傳圖片！</p>', '錯誤');
+                    return;
+                }
+                
+                // 如果是 AI 對話功能，則設定對話介面
+                if (action === 'chat') {
+                    setupChatInterface();
+                } else {
+                    // 否則，發送 AI 請求
+                    handleAIRequest(action);
+                }
+            }
+        });
+
+        // 處理對 AI 模型的請求
+        async function handleAIRequest(action, options = {}) {
+            if (action !== 'chat') {
+                showLoading(); // 非對話模式下顯示全域讀取動畫
+            }
+            let prompt = '';
+            let title = '';
+            let isJsonOutput = false;
+
+            // 定義不同 AI 功能對應的提示詞和標題
+            const actionMap = {
+                ocr: { title: '文字辨識 (OCR)', prompt: 'Extract all text from this image. Output only the raw text.' },
+                translate: { title: '翻譯 (繁體中文)', prompt: 'Extract all text from this image and translate it into Traditional Chinese. Output only the translated text.' },
+                summarize: { title: '摘要列舉', prompt: 'Extract the key points from the text in this image and list them out clearly using bullet points (e.g., - Point 1) in Traditional Chinese.' },
+                formula: { title: '公式辨識 (LaTeX)', prompt: 'Identify any mathematical formulas in this image and provide their LaTeX representation. Only output the LaTeX code block.' },
+                table: { title: '表格辨識 (Markdown)', prompt: 'Find the table in this image and convert it to Markdown format. Output only the Markdown table.' },
+                describe: { title: '影像描述', prompt: 'Describe this image in detail in one paragraph, in Traditional Chinese.' },
+                solve: { title: '問題解決', prompt: 'Analyze the problem, question, or puzzle in this image and provide a step-by-step solution in Traditional Chinese.' },
+                code: { title: '程式碼辨識', prompt: 'Identify the programming code in this image. Identify the language and explain what the code does in Traditional Chinese.' },
+                color: { title: '顏色提取', isJson: true, prompt: 'Analyze the main colors of this image. Return a JSON object with a single key "colors" which is an array of 6 hex color codes that represent the color palette.' },
+                mindmap: { title: '心智圖 (Markdown)', prompt: 'Based on the content of this image, generate a concise mind map in Markdown format. Use nested lists with indentation for hierarchy. The central topic should be the main subject of the image. The response must be in Traditional Chinese.' },
+                slides: { title: '簡報大綱 (Markdown)', prompt: 'Analyze the content of this image and generate a brief slide presentation outline based on it. Provide a title for each slide and 3-5 bullet points per slide. Format the output in Markdown. The response must be in Traditional Chinese.' },
+                studyguide: { title: '研讀指南', prompt: 'Based on the image, create a study guide. The guide should include key concepts, important definitions, and potential questions for review. Format it clearly using Markdown with headings. The response must be in Traditional Chinese.' },
+                faq: { title: '常見問題 (Q&A)', prompt: 'From the information in this image, generate a list of 3-5 frequently asked questions (FAQs) and their answers. Format it as Q&A pairs using Markdown (e.g., "**Q1:** ..."). The response must be in Traditional Chinese.' },
+            };
+            
+            if (action === 'chat') {
+                title = 'AI 對話';
+                prompt = `Based on the image, answer the following question in Traditional Chinese: "${options.question}"`;
+            } else if (actionMap[action]) {
+                title = actionMap[action].title;
+                prompt = actionMap[action].prompt;
+                isJsonOutput = actionMap[action].isJson || false;
+            } else {
+                displayResult('未知的功能');
+                return;
+            }
+
+            if (action !== 'chat') {
+                outputTitle.textContent = title;
+            }
+
+            try {
+                // 準備 API 請求的 payload
+                const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/png", data: imageBase64 } } ] }] };
+                if (isJsonOutput) { payload.generationConfig = { responseMimeType: "application/json" }; }
+                
+                // 注意：API 金鑰應留空，由執行環境提供
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                
+                // 發送請求
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                
+                if (!response.ok) throw new Error(`API 請求失敗，狀態碼： ${response.status}`);
+                const result = await response.json();
+                
+                // 處理 API 回應
+                if (result.candidates && result.candidates.length > 0) {
+                    const part = result.candidates[0].content.parts[0];
+                    if (action === 'chat') {
+                        removeChatLoading();
+                        appendChatMessage(part.text, 'ai');
+                    } else if (isJsonOutput) {
+                        const jsonData = JSON.parse(part.text);
+                        displayColors(jsonData.colors);
+                        currentOutputText = JSON.stringify(jsonData.colors, null, 2);
+                    } else {
+                        displayResult(part.text);
+                        currentOutputText = part.text;
+                    }
+                } else {
+                    throw new Error('AI 未返回有效結果。');
+                }
+            } catch (error) {
+                console.error('AI 請求錯誤:', error);
+                const errorMessage = `發生錯誤：\n${error.message}`;
+                if (action === 'chat') {
+                    removeChatLoading();
+                    appendChatMessage(errorMessage, 'ai');
+                } else {
+                    displayResult(errorMessage);
+                }
+                currentOutputText = '';
+            }
+        }
+
+        // 切換回標準的結果顯示區
+        function switchToNormalOutput(htmlContent, title) {
+            chatInterface.classList.add('hidden');
+            outputContent.classList.remove('hidden');
+            outputContent.innerHTML = htmlContent;
+            outputTitle.textContent = title;
+            copyBtn.classList.add('hidden');
+        }
+
+        // 顯示讀取中動畫
+        function showLoading() {
+            switchToNormalOutput('<div class="flex justify-center items-center h-full"><div class="loader"></div></div>', '處理中...');
+        }
+
+        // 顯示文字結果
+        function displayResult(text) {
+            outputContent.textContent = text;
+            copyBtn.classList.remove('hidden');
+        }
+
+        // 顯示顏色提取結果
+        function displayColors(colors) {
+            let html = '<div class="flex flex-wrap gap-4">';
+            colors.forEach(color => {
+                html += `<div class="flex flex-col items-center"><div class="w-16 h-16 rounded-full border-2 border-gray-200" style="background-color: ${color};"></div><p class="mt-2 text-sm font-mono">${color}</p></div>`;
+            });
+            html += '</div>';
+            outputContent.innerHTML = html;
+            copyBtn.classList.remove('hidden');
+        }
+
+        // 複製按鈕的事件監聽
+        copyBtn.addEventListener('click', () => {
+            if (!currentOutputText) return;
+
+            const textArea = document.createElement('textarea');
+            textArea.value = currentOutputText;
+            textArea.style.position = 'fixed';
+            textArea.style.top = '-9999px';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                copyBtn.textContent = successful ? '已複製！' : '複製失敗!';
+            } catch (err) {
+                console.error('複製失敗:', err);
+                copyBtn.textContent = '複製失敗!';
+            }
+
+            document.body.removeChild(textArea);
+            
+            setTimeout(() => { copyBtn.textContent = '複製'; }, 2000);
+        });
+
+        // --- AI 對話介面相關函式 ---
+        function setupChatInterface() {
+            outputContent.classList.add('hidden');
+            copyBtn.classList.add('hidden');
+            chatInterface.classList.remove('hidden');
+            outputTitle.textContent = 'AI 對話';
+            if (chatMessages.children.length === 0) {
+                appendChatMessage('你好！請問這張圖片有什麼我可以協助你的地方嗎？', 'ai');
+            }
+        }
+
+        function sendChatMessage() {
+            const question = chatInput.value.trim();
+            if (!question || !imageBase64) return;
+            appendChatMessage(question, 'user');
+            chatInput.value = '';
+            showChatLoading();
+            handleAIRequest('chat', { question });
+        }
+
+        chatSendBtn.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+
+        function appendChatMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-bubble ${sender}`;
+            messageDiv.textContent = message;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showChatLoading() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'chat-loading';
+            loadingDiv.className = 'chat-bubble ai typing-indicator';
+            loadingDiv.innerHTML = '<span></span><span></span><span></span>';
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function removeChatLoading() {
+            const loadingDiv = document.getElementById('chat-loading');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // --- 圖片編輯彈出視窗與 Canvas 邏輯 ---
+        let currentTool = 'brush', isDrawing = false, startX, startY, lastX, lastY, savedImageData;
+        let activeTextInput = null; // 追蹤當前活動的文字輸入框
+        
+        editBtn.addEventListener('click', () => {
+            if (!imagePreview.src || imagePreview.src.endsWith('#')) return;
+            editModal.style.display = 'flex';
+            const img = new Image();
+            img.onload = () => {
+                // 根據容器大小和圖片比例，調整 canvas 尺寸以避免變形
+                const container = canvas.parentElement;
+                const containerRatio = container.clientWidth / container.clientHeight;
+                const imgRatio = img.width / img.height;
+                if (containerRatio > imgRatio) {
+                    canvas.height = container.clientHeight;
+                    canvas.width = imgRatio * canvas.height;
+                } else {
+                    canvas.width = container.clientWidth;
+                    canvas.height = canvas.width / imgRatio;
+                }
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            };
+            img.src = imagePreview.src;
+        });
+
+        closeModalBtn.addEventListener('click', () => { 
+            commitActiveText(); // 在關閉 modal 前，先提交可能正在編輯的文字
+            editModal.style.display = 'none'; 
+        });
+
+        toolbar.addEventListener('click', e => {
+            const button = e.target.closest('.tool-btn');
+            if (button) {
+                commitActiveText(); // 切換工具前，先提交可能正在編輯的文字
+                document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('bg-purple-600'));
+                button.classList.add('bg-purple-600');
+                currentTool = button.dataset.tool;
+            }
+        });
+
+        // --- 文字輸入功能更新 ---
+        // 將正在輸入的文字提交並繪製到畫布上
+        function commitActiveText() {
+            if (!activeTextInput) return;
+            const input = activeTextInput;
+            const text = input.value;
+            const x = parseFloat(input.dataset.x);
+            const y = parseFloat(input.dataset.y);
+
+            if (text) {
+                ctx.fillStyle = colorPicker.value;
+                ctx.font = '20px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(text, x, y);
+                savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+            input.remove();
+            activeTextInput = null;
+        }
+
+        // 在畫布上指定位置創建文字輸入框
+        function createTextInput(x, y) {
+            commitActiveText(); // 先提交上一個可能未完成的輸入
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.style.position = 'absolute';
+            const canvasRect = canvas.getBoundingClientRect();
+            input.style.left = `${canvasRect.left + x}px`;
+            input.style.top = `${canvasRect.top + y}px`;
+            input.style.border = '1px solid #8b5cf6';
+            input.style.padding = '4px';
+            input.style.font = '20px sans-serif';
+            input.style.zIndex = '100';
+            input.style.backgroundColor = '#fff';
+            input.dataset.x = x; // 將座標儲存在 dataset 中
+            input.dataset.y = y;
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    commitActiveText();
+                    e.preventDefault();
+                } else if (e.key === 'Escape') {
+                    activeTextInput.remove();
+                    activeTextInput = null;
+                }
+            });
+
+            // *** FIX: 監聽 mousedown 事件，如果點擊的不是當前輸入框，則提交文字 ***
+            editModal.addEventListener('mousedown', (e) => {
+                if (activeTextInput && e.target !== activeTextInput) {
+                    commitActiveText();
+                }
+            }, { once: true }); // 使用 once 選項，確保此監聽器只觸發一次後就移除
+
+            document.body.appendChild(input);
+            activeTextInput = input;
+            input.focus();
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (currentTool === 'text') {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                createTextInput(x, y);
+                return; // 文字工具模式下，點擊後直接返回
+            }
+            
+            if (activeTextInput) return;
+
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            lastX = startX;
+            lastY = startY;
+            savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            ctx.putImageData(savedImageData, 0, 0); // 恢復到繪製前的狀態
+            ctx.strokeStyle = colorPicker.value;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            switch (currentTool) {
+                case 'brush':
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(currentX, currentY);
+                    ctx.stroke();
+                    lastX = currentX;
+                    lastY = currentY;
+                    savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height); // 更新畫筆軌跡
+                    break;
+                case 'rect':
+                    ctx.beginPath();
+                    ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+                    break;
+                case 'arrow':
+                    drawArrow(startX, startY, currentX, currentY);
+                    break;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => { isDrawing = false; });
+        canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 15;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            commitActiveText(); // 下載前，先提交可能正在編輯的文字
+            const link = document.createElement('a');
+            link.download = 'edited-image.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>
