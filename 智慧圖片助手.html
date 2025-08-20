@@ -52,7 +52,7 @@
             100% { transform: rotate(360deg); }
         }
         /* 編輯彈出視窗預設隱藏 */
-        #edit-modal {
+        #edit-modal, #message-box {
             display: none;
         }
         /* 編輯畫布的滑鼠游標樣式 */
@@ -122,7 +122,7 @@
                         <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        <p class="text-gray-600 font-medium">拖曳圖片到這裡，或<span class="text-purple-600">點擊上傳</span></p>
+                        <p class="text-gray-600 font-medium">拖曳、貼上圖片，或<span class="text-purple-600">點擊上傳</span></p>
                         <p class="text-xs text-gray-500">支援 PNG, JPG, WEBP 等格式</p>
                     </div>
                     <img id="image-preview" src="#" alt="上傳的圖片" class="hidden max-w-full max-h-full rounded-lg object-contain"/>
@@ -137,6 +137,16 @@
 
             <!-- 右側欄：AI 功能與輸出結果 -->
             <div class="flex flex-col space-y-6">
+                <!-- API 金鑰輸入區 -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm">
+                    <label for="api-key-input" class="block text-sm font-medium text-gray-700 mb-2">您的 API 金鑰</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="password" id="api-key-input" placeholder="請在此貼上您的 Gemini API 金鑰" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-sm text-purple-600 hover:text-purple-800 whitespace-nowrap font-medium">申請金鑰</a>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">您的金鑰僅會儲存在您的瀏覽器中，不會被上傳。</p>
+                </div>
+
                 <div id="features" class="hidden">
                     <h2 class="text-xl font-semibold mb-4 text-gray-700">AI 功能</h2>
                     <div class="flex flex-wrap gap-3">
@@ -202,6 +212,14 @@
             </div>
         </div>
     </div>
+    
+    <!-- 自訂訊息提示框 -->
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <p id="message-text" class="text-gray-700 mb-4"></p>
+            <button id="message-close-btn" class="bg-purple-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-purple-600">確定</button>
+        </div>
+    </div>
 
     <script>
         // --- 獲取頁面上的 HTML 元素 ---
@@ -215,6 +233,7 @@
         const outputTitle = document.getElementById('output-title');
         const outputContent = document.getElementById('output-content');
         const copyBtn = document.getElementById('copy-btn');
+        const apiKeyInput = document.getElementById('api-key-input');
         
         // 對話介面元素
         const chatInterface = document.getElementById('chat-interface');
@@ -232,9 +251,23 @@
         const toolbar = document.getElementById('toolbar');
         const colorPicker = document.getElementById('color-picker');
 
+        // 訊息提示框元素
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const messageCloseBtn = document.getElementById('message-close-btn');
+
         // --- 全域變數 ---
         let imageBase64 = null; // 用於儲存上傳圖片的 Base64 編碼
         let currentOutputText = ''; // 用於儲存當前 AI 輸出的純文字
+
+        // --- 訊息提示框邏輯 ---
+        function showMessage(text) {
+            messageText.textContent = text;
+            messageBox.style.display = 'flex';
+        }
+        messageCloseBtn.addEventListener('click', () => {
+            messageBox.style.display = 'none';
+        });
 
         // --- 圖片上傳處理邏輯 ---
         fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
@@ -247,6 +280,24 @@
         dropZone.addEventListener('drop', (e) => {
             dropZone.classList.remove('drag-over');
             handleFile(e.dataTransfer.files[0]);
+        });
+
+        // 修正：貼上圖片的事件監聽
+        window.addEventListener('paste', e => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            let imageFound = false;
+            for (const item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) {
+                        e.preventDefault(); // 只有在找到並處理圖片時才阻止預設行為
+                        handleFile(file);
+                        imageFound = true;
+                    }
+                    break; // 只處理第一張圖片
+                }
+            }
+            // 如果沒有找到圖片，則不執行 e.preventDefault()，允許正常的文字貼上
         });
 
         // 處理上傳的檔案
@@ -289,6 +340,19 @@
 
         // 處理對 AI 模型的請求
         async function handleAIRequest(action, options = {}) {
+            // 驗證 API 金鑰是否存在
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                const errorMessage = '請先在上方輸入框貼上您的 API 金鑰。';
+                if (action === 'chat') {
+                    removeChatLoading();
+                    appendChatMessage(errorMessage, 'ai');
+                } else {
+                    switchToNormalOutput(`<p class="font-sans text-base text-red-500">${errorMessage}</p>`, '錯誤');
+                }
+                return;
+            }
+
             if (action !== 'chat') {
                 showLoading(); // 非對話模式下顯示全域讀取動畫
             }
@@ -304,7 +368,7 @@
                 formula: { title: '公式辨識 (LaTeX)', prompt: 'Identify any mathematical formulas in this image and provide their LaTeX representation. Only output the LaTeX code block.' },
                 table: { title: '表格辨識 (Markdown)', prompt: 'Find the table in this image and convert it to Markdown format. Output only the Markdown table.' },
                 describe: { title: '影像描述', prompt: 'Describe this image in detail in one paragraph, in Traditional Chinese.' },
-                solve: { title: '問題解決', prompt: 'Analyze the problem, question, or puzzle in this image and provide a step-by-step solution in Traditional Chinese.' },
+                solve: { title: '問題解決', prompt: 'Analyze the mathematical problem in this image. Provide a step-by-step solution in Traditional Chinese. Your entire response must be plain text. The explanation should be clear and easy for a junior high school student to understand. IMPORTANT: The final answer and all mathematical expressions in your explanation MUST use plain text with standard notation. Use "×" for multiplication, "÷" for division, and superscript characters like "²" and "³" for powers (e.g., 4x² - 2x + 5). Do NOT use LaTeX or Markdown code blocks for the math expressions. Mimic the visual style of the math in the image.' },
                 code: { title: '程式碼辨識', prompt: 'Identify the programming code in this image. Identify the language and explain what the code does in Traditional Chinese.' },
                 color: { title: '顏色提取', isJson: true, prompt: 'Analyze the main colors of this image. Return a JSON object with a single key "colors" which is an array of 6 hex color codes that represent the color palette.' },
                 mindmap: { title: '心智圖 (Markdown)', prompt: 'Based on the content of this image, generate a concise mind map in Markdown format. Use nested lists with indentation for hierarchy. The central topic should be the main subject of the image. The response must be in Traditional Chinese.' },
@@ -334,8 +398,6 @@
                 const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/png", data: imageBase64 } } ] }] };
                 if (isJsonOutput) { payload.generationConfig = { responseMimeType: "application/json" }; }
                 
-                // 注意：API 金鑰應留空，由執行環境提供
-                const apiKey = ""; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                 
                 // 發送請求
@@ -567,12 +629,11 @@
                 }
             });
 
-            // *** FIX: 監聽 mousedown 事件，如果點擊的不是當前輸入框，則提交文字 ***
             editModal.addEventListener('mousedown', (e) => {
                 if (activeTextInput && e.target !== activeTextInput) {
                     commitActiveText();
                 }
-            }, { once: true }); // 使用 once 選項，確保此監聽器只觸發一次後就移除
+            }, { once: true }); 
 
             document.body.appendChild(input);
             activeTextInput = input;
@@ -585,7 +646,7 @@
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
                 createTextInput(x, y);
-                return; // 文字工具模式下，點擊後直接返回
+                return; 
             }
             
             if (activeTextInput) return;
@@ -604,7 +665,7 @@
             const rect = canvas.getBoundingClientRect();
             const currentX = e.clientX - rect.left;
             const currentY = e.clientY - rect.top;
-            ctx.putImageData(savedImageData, 0, 0); // 恢復到繪製前的狀態
+            ctx.putImageData(savedImageData, 0, 0); 
             ctx.strokeStyle = colorPicker.value;
             ctx.lineWidth = 4;
             ctx.lineCap = 'round';
@@ -617,7 +678,7 @@
                     ctx.stroke();
                     lastX = currentX;
                     lastY = currentY;
-                    savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height); // 更新畫筆軌跡
+                    savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height); 
                     break;
                 case 'rect':
                     ctx.beginPath();
@@ -647,7 +708,7 @@
         }
 
         downloadBtn.addEventListener('click', () => {
-            commitActiveText(); // 下載前，先提交可能正在編輯的文字
+            commitActiveText(); 
             const link = document.createElement('a');
             link.download = 'edited-image.png';
             link.href = canvas.toDataURL('image/png');
