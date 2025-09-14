@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>家長日簽到系統 (iPad 相容版)</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; background: #fff; padding: 20px 30px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; gap: 15px; }
+        h1 { color: #333; margin: 0; font-size: 28px; }
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .action-button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.3s; background-color: #007bff; color: white; text-decoration: none; display: inline-block; }
+        .action-button.secondary { background-color: #6c757d; }
+        .action-button.save { background-color: #28a745; }
+        .action-button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); }
+        .download-link { font-size: 14px; color: #007bff; text-decoration: none; }
+        #excel-file-input { display: none; }
+        #student-list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .student-box { padding: 15px; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease, transform 0.3s; text-align: center; border: 2px solid transparent; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; }
+        .student-info .seat-number { font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.8); }
+        .student-info .student-name { font-size: 22px; font-weight: bold; color: #fff; margin-top: 5px; }
+        .signature-display { margin-top: 15px; min-height: 60px; display: flex; justify-content: center; align-items: center; background: rgba(255, 255, 255, 0.15); border-radius: 6px; }
+        .signature-display img { max-width: 100%; max-height: 58px; display: block; }
+        .signature-display .placeholder { font-size: 16px; color: rgba(255, 255, 255, 0.8); }
+        .student-box.unsigned { background-color: #3498db; }
+        .student-box.unsigned:hover { transform: translateY(-3px); }
+        .student-box.signed { background-color: #2ecc71; cursor: not-allowed; }
+        .modal-overlay, #spinner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        #signature-pad-container { border: 2px dashed #ccc; border-radius: 8px; margin: 15px 0; position: relative; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .modal-buttons { display: flex; justify-content: center; gap: 15px; }
+        .modal-buttons button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; }
+        #confirm-signature, .action-button.save { background-color: #28a745; }
+        #clear-signature { background-color: #ffc107; color: #333; }
+        #cancel-signature { background-color: #6c757d; }
+        #spinner-overlay { background: rgba(255, 255, 255, 0.8); z-index: 2000; flex-direction: column; }
+        .spinner { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #success-modal .modal-content { max-width: 450px; }
+        #success-modal h2 { color: #28a745; }
+        #success-modal p { line-height: 1.6; }
+        #upload-link { background-color: #fd7e14; margin-top: 10px; }
+        .pdf-export-mode { padding: 2cm; }
+        .pdf-export-mode #pdf-header-wrapper { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
+        .pdf-export-mode #pdf-timestamp { font-size: 12pt; color: #555; }
+        .pdf-export-mode #pdf-title { font-size: 28pt; font-weight: bold; color: #000; flex-grow: 1; text-align: center; }
+        .pdf-export-mode #student-list-container { grid-template-columns: repeat(5, 1fr) !important; gap: 15px !important; }
+        .pdf-export-mode .student-box { background-color: #ffffff !important; border: 2px solid #ccc !important; padding: 12px !important; min-height: auto !important; border-radius: 12px !important; }
+        .pdf-export-mode .student-box.signed { border-color: #2ecc71 !important; }
+        .pdf-export-mode .student-info .seat-number, .pdf-export-mode .student-info .student-name, .pdf-export-mode .signature-display .placeholder { color: #000 !important; }
+        .pdf-export-mode .student-info .seat-number { font-size: 10pt; font-weight: normal; text-align: left; }
+        .pdf-export-mode .student-info .student-name { font-size: 18pt; margin-top: 2px; }
+        .pdf-export-mode .signature-display { margin-top: 10px !important; min-height: 50px !important; background-color: #f8f9fa !important; border-radius: 6px !important; }
+        .pdf-export-mode .signature-display .placeholder { color: #888 !important; font-size: 14pt; }
+        .pdf-export-mode .signature-display img { max-height: 48px !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span id="class-name-display"></span>家長日簽到系統</h1>
+            <div class="actions">
+                <button id="set-class-button" class="action-button secondary">設定班級</button>
+                <input type="file" id="excel-file-input" accept=".xlsx, .xls">
+                <button id="import-button" class="action-button">匯入Excel</button>
+                <a href="#" id="download-template" class="download-link">下載範例檔</a>
+                <button id="save-button" class="action-button save">💾 儲存簽到表</button>
+            </div>
+        </header>
+        <main id="capture-area">
+            <div id="pdf-header-wrapper" style="display: none;"><div id="pdf-timestamp"></div><div id="pdf-title"></div></div>
+            <div id="student-list-container"><p>請先「設定班級」，再「匯入Excel」開始使用。</p></div>
+        </main>
+    </div>
+    
+    <div id="signature-modal" class="modal-overlay" style="display: none;"><div class="modal-content"><h2>請家長簽名</h2><p>您正在為 <strong id="student-name-in-modal"></strong> 的家長簽到</p><div id="signature-pad-container"><canvas id="signature-canvas"></canvas></div><div class="modal-buttons"><button id="confirm-signature">確認簽名</button><button id="clear-signature">清除</button><button id="cancel-signature">取消</button></div></div></div>
+    <div id="spinner-overlay" style="display: none;"><div class="spinner"></div><p style="margin-top: 20px; font-size: 18px; color: #333;">正在產生 PDF 檔案，請稍候...</p></div>
+    <div id="success-modal" class="modal-overlay" style="display: none;"><div class="modal-content"><h2>✔️ 處理完成</h2><p id="success-message"></p><div class="modal-buttons"><a id="upload-link" href="https://script.google.com/macros/s/AKfycbzBVx2HqMiYw4VzXakCzvrxX5v6fTzZNPeko_wqYJUKqzIUgln5XujuxeAe_4Qj2SAq/exec" target="_blank" class="action-button" style="display: none;">🚀 上傳至雲端</a><button id="close-success-modal" class="action-button secondary">關閉</button></div></div></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- 變數宣告與元素獲取 ---
+            let students = [], currentStudentId = null, className = '';
+            const saveButton = document.getElementById('save-button');
+            const successModal = document.getElementById('success-modal');
+            const successMessage = document.getElementById('success-message');
+            const uploadLink = document.getElementById('upload-link');
+            const closeSuccessModalBtn = document.getElementById('close-success-modal');
+            // ... 其他元素與前版相同 ...
+            const studentListContainer = document.getElementById('student-list-container');
+            const setClassButton = document.getElementById('set-class-button');
+            const classNameDisplay = document.getElementById('class-name-display');
+            const spinnerOverlay = document.getElementById('spinner-overlay');
+            const captureArea = document.getElementById('capture-area');
+            const pdfHeaderWrapper = document.getElementById('pdf-header-wrapper');
+            const pdfTimestamp = document.getElementById('pdf-timestamp');
+            const pdfTitle = document.getElementById('pdf-title');
+            const importButton = document.getElementById('import-button');
+            const fileInput = document.getElementById('excel-file-input');
+            const downloadLink = document.getElementById('download-template');
+            const modal = document.getElementById('signature-modal');
+            const studentNameInModal = document.getElementById('student-name-in-modal');
+            const confirmBtn = document.getElementById('confirm-signature');
+            const cancelBtn = document.getElementById('cancel-signature');
+            const clearBtn = document.getElementById('clear-signature');
+            const canvas = document.getElementById('signature-canvas');
+            const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+
+            // 【新增】偵測是否為 iOS 裝置 (iPad, iPhone) 的函式
+            function isIOS() {
+                return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            }
+
+            // --- 核心功能函式 (與前版相同) ---
+            function renderStudentList() { /* ... */ studentListContainer.innerHTML = ''; if (students.length === 0) { studentListContainer.innerHTML = '<p>請先「設定班級」，再「匯入Excel」開始使用。</p>'; return; } students.forEach(student => { const box = document.createElement('div'); box.dataset.id = student.id; box.className = `student-box ${student.signed ? 'signed' : 'unsigned'}`; box.innerHTML = `<div class="student-info"><div class="seat-number">座號: ${student.seatNumber}</div><div class="student-name">${student.name}</div></div><div class="signature-display">${student.signed ? `<img src="${student.signature}" alt="家長簽名">` : '<span class="placeholder">待簽名</span>'}</div>`; if (!student.signed) { box.addEventListener('click', () => openSignatureModal(student.id)); } studentListContainer.appendChild(box); }); }
+            function resizeCanvas() { /* ... */ const ratio = Math.max(window.devicePixelRatio || 1, 1); const padContainer = document.getElementById('signature-pad-container'); canvas.width = padContainer.offsetWidth * ratio; canvas.height = 200 * ratio; canvas.getContext("2d").scale(ratio, ratio); signaturePad.clear(); }
+            function openSignatureModal(studentId) { /* ... */ currentStudentId = studentId; const student = students.find(s => s.id === studentId); studentNameInModal.textContent = `${student.seatNumber} ${student.name}`; modal.style.display = 'flex'; setTimeout(() => resizeCanvas(), 0); }
+            function closeSignatureModal() { /* ... */ modal.style.display = 'none'; signaturePad.clear(); currentStudentId = null; }
+            function handleSignatureConfirm() { /* ... */ if (signaturePad.isEmpty()) { alert('家長尚未簽名！'); return; } const signatureImage = signaturePad.toDataURL('image/png'); const student = students.find(s => s.id === currentStudentId); if (student) { student.signed = true; student.signature = signatureImage; } renderStudentList(); closeSignatureModal(); }
+
+            // --- 更新：儲存PDF功能，加入裝置判斷 ---
+            saveButton.addEventListener('click', () => {
+                if (students.length === 0) { alert("沒有學生資料可供儲存！"); return; }
+                if (!className) { alert("請先設定班級名稱！"); return; }
+
+                spinnerOverlay.style.display = 'flex';
+                const { jsPDF } = window.jspdf;
+                const jpegQuality = 0.8, captureScale = 2;
+
+                const now = new Date();
+                const formattedDateTime = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                pdfTimestamp.textContent = formattedDateTime;
+                pdfTitle.textContent = `${className} 家長日簽到表`;
+                pdfHeaderWrapper.style.display = 'flex';
+                captureArea.classList.add('pdf-export-mode');
+
+                html2canvas(captureArea, { scale: captureScale, useCORS: true, backgroundColor: '#ffffff' })
+                    .then(canvas => {
+                        const imgData = canvas.toDataURL('image/jpeg', jpegQuality);
+                        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                        const pdfWidth = pdf.internal.pageSize.getWidth(), pdfHeight = pdf.internal.pageSize.getHeight();
+                        const imgProps = pdf.getImageProperties(imgData);
+                        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, Math.min(pdfHeight, imgHeight), undefined, 'FAST');
+                        
+                        // 【修改核心】根據不同裝置執行不同操作
+                        if (isIOS()) {
+                            // 對於 iPad/iPhone，在新分頁開啟 PDF 預覽
+                            const blob = pdf.output('blob');
+                            window.open(URL.createObjectURL(blob));
+                            
+                            // 顯示提示訊息
+                            successMessage.innerHTML = "PDF已在新分頁開啟。<br>請點擊分享按鈕並「儲存到檔案」。";
+                            uploadLink.style.display = 'none'; // iOS上先不顯示上傳，避免流程混亂
+                            successModal.style.display = 'flex';
+
+                        } else {
+                            // 對於電腦版，直接觸發下載
+                            const fileName = `${className} 家長日簽到表.pdf`;
+                            pdf.save(fileName);
+                            
+                            // 顯示包含上傳連結的提示訊息
+                            successMessage.innerHTML = `檔案 "${fileName}" 已下載。<br>現在您可以將檔案上傳至雲端。`;
+                            uploadLink.style.display = 'inline-block';
+                            successModal.style.display = 'flex';
+                        }
+                    })
+                    .catch(err => {
+                        console.error("產生 PDF 時發生錯誤:", err);
+                        alert("抱歉，產生 PDF 失敗，請稍後再試。");
+                    })
+                    .finally(() => {
+                        pdfHeaderWrapper.style.display = 'none';
+                        captureArea.classList.remove('pdf-export-mode');
+                        spinnerOverlay.style.display = 'none'; // 確保讀取畫面總是會關閉
+                    });
+            });
+
+            // --- 其他事件監聽 ---
+            setClassButton.addEventListener('click', () => { const newClassName = prompt("請輸入班級名稱 (例如：701)", className); if (newClassName !== null && newClassName.trim() !== '') { className = newClassName.trim(); classNameDisplay.textContent = `${className} `; } });
+            closeSuccessModalBtn.addEventListener('click', () => { successModal.style.display = 'none'; });
+            importButton.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const firstSheetName = workbook.SheetNames[0]; const worksheet = workbook.Sheets[firstSheetName]; const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); students = json.slice(1).filter(row => row[0] && row[1]).map((row, index) => ({ id: index + 1, seatNumber: String(row[0]).padStart(2, '0'), name: row[1], signed: false, signature: "" })); renderStudentList(); } catch (error) { alert("檔案格式錯誤或內容不符。"); } }; reader.readAsArrayBuffer(file); fileInput.value = ''; });
+            downloadLink.addEventListener('click', () => { const ws = XLSX.utils.aoa_to_sheet([["座號", "姓名"], [1, "王小明"], [2, "陳美麗"]]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "學生名單"); XLSX.writeFile(wb, "學生名單範本.xlsx"); });
+            confirmBtn.addEventListener('click', handleSignatureConfirm);
+            cancelBtn.addEventListener('click', closeSignatureModal);
+            clearBtn.addEventListener('click', () => signaturePad.clear());
+            window.addEventListener('resize', () => { if(modal.style.display === 'flex') { resizeCanvas(); } });
+            
+            renderStudentList();
+        });
+    </script>
+</body>
+</html>
