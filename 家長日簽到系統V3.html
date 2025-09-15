@@ -261,4 +261,14 @@
         reader.readAsArrayBuffer(file);
         fileInput.value = '';
       });
-      downloadLink.addEvent
+      downloadLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([["座號", "姓名"], ["01", "王小明"], ["02", "李小華"]]);
+        XLSX.utils.book_append_sheet(wb, ws, "範例");
+        XLSX.writeFile(wb, "簽到範例.xlsx");
+      });
+    });
+  </script>
+</body>
+</html>
