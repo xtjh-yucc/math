@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>家長日簽到系統 (列印優化版)</title>
+    <title>家長日簽到系統 (預覽列印版)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
@@ -17,7 +19,6 @@
         .action-button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.3s; background-color: #007bff; color: white; text-decoration: none; display: inline-block; }
         .action-button.secondary { background-color: #6c757d; }
         .action-button.print { background-color: #28a745; }
-        .action-button.upload { background-color: #fd7e14; }
         .action-button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); }
         .download-link { font-size: 14px; color: #007bff; text-decoration: none; }
         #excel-file-input { display: none; }
@@ -31,47 +32,46 @@
         .student-box.unsigned { background-color: #3498db; }
         .student-box.unsigned:hover { transform: translateY(-3px); }
         .student-box.signed { background-color: #2ecc71; cursor: not-allowed; }
-        .modal-overlay, #spinner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s; }
-        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        #signature-pad-container { border: 2px dashed #ccc; border-radius: 8px; margin: 15px 0; position: relative; }
-        canvas { width: 100%; height: 100%; display: block; }
-        .modal-buttons { display: flex; justify-content: center; gap: 15px; }
-        .modal-buttons button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; }
-        #confirm-signature { background-color: #28a745; }
+        
+        /* 更新：簽名 Modal 樣式，參照圖片 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s; }
+        .modal-content { background: white; padding: 30px 40px; border-radius: 16px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .modal-content h2 { font-size: 24px; color: #333; margin-top: 0; margin-bottom: 10px; }
+        .modal-content p { color: #666; margin-top: 0; margin-bottom: 20px; }
+        #signature-pad-container { border: 2px dashed #ccc; border-radius: 12px; margin: 15px 0; }
+        canvas { width: 100%; height: 100%; display: block; border-radius: 12px; }
+        .modal-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
+        .modal-buttons button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        #confirm-signature { background-color: #28a745; color: white; }
         #clear-signature { background-color: #ffc107; color: #333; }
-        #cancel-signature { background-color: #6c757d; }
-        #spinner-overlay { background: rgba(255, 255, 255, 0.8); z-index: 2000; flex-direction: column; }
+        #cancel-signature { background-color: #6c757d; color: white; }
+
+        #spinner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 2000; background: rgba(255, 255, 255, 0.8); flex-direction: column; }
         .spinner { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .print-only { display: none; }
-
-        /* --- 列印專用樣式 --- */
-        @media print {
-            @page { size: A4 portrait; margin: 1.5cm; }
-            body { padding: 0; background-color: #fff; font-size: 10pt; }
-            .no-print { display: none !important; }
-            .container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
-            
-            .print-only { display: block; }
-            #pdf-header-wrapper { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
-            #pdf-timestamp { font-size: 12pt; color: #555; }
-            #pdf-title { font-size: 28pt; font-weight: bold; color: #000; flex-grow: 1; text-align: center; }
-            
-            #student-list-container { grid-template-columns: repeat(5, 1fr) !important; gap: 15px !important; }
-            .student-box { background-color: #ffffff !important; border: 2px solid #ccc !important; padding: 12px !important; min-height: auto !important; border-radius: 12px !important; page-break-inside: avoid; }
-            .student-box.signed { border-color: #2ecc71 !important; }
-            .student-info .seat-number, .student-info .student-name, .signature-display .placeholder { color: #000 !important; }
-            .student-info .seat-number { font-size: 10pt; font-weight: normal; text-align: left; }
-            .student-info .student-name { font-size: 18pt; margin-top: 2px; }
-            .signature-display { margin-top: 10px !important; min-height: 50px !important; background-color: #f8f9fa !important; border-radius: 6px !important; }
-            .signature-display .placeholder { color: #888 !important; font-size: 14pt; }
-            .signature-display img { max-height: 48px !important; filter: contrast(150%); }
-        }
+        #pdf-preview-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #555; z-index: 1500; display: none; }
+        #close-preview-btn { position: absolute; top: 15px; left: 15px; z-index: 1501; }
+        #pdf-iframe { width: 100%; height: 100%; border: none; }
+        
+        /* PDF 輸出/列印專用樣式 */
+        .pdf-export-mode { padding: 2cm; background-color: #fff; }
+        .pdf-export-mode #pdf-header-wrapper { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
+        .pdf-export-mode #pdf-timestamp { font-size: 12pt; color: #555; }
+        .pdf-export-mode #pdf-title { font-size: 28pt; font-weight: bold; color: #000; flex-grow: 1; text-align: center; }
+        .pdf-export-mode #student-list-container { grid-template-columns: repeat(5, 1fr) !important; gap: 15px !important; }
+        .pdf-export-mode .student-box { background-color: #ffffff !important; border: 2px solid #ccc !important; padding: 12px !important; min-height: auto !important; border-radius: 12px !important; }
+        .pdf-export-mode .student-box.signed { border-color: #2ecc71 !important; }
+        .pdf-export-mode .student-info .seat-number, .pdf-export-mode .student-info .student-name, .pdf-export-mode .signature-display .placeholder { color: #000 !important; }
+        .pdf-export-mode .student-info .seat-number { font-size: 10pt; font-weight: normal; text-align: left; }
+        .pdf-export-mode .student-info .student-name { font-size: 18pt; margin-top: 2px; }
+        .pdf-export-mode .signature-display { margin-top: 10px !important; min-height: 50px !important; background-color: #f8f9fa !important; border-radius: 6px !important; }
+        .pdf-export-mode .signature-display .placeholder { color: #888 !important; font-size: 14pt; }
+        .pdf-export-mode .signature-display img { max-height: 48px !important; }
     </style>
 </head>
 <body>
-    <div class="container no-print">
+    <div class="container">
         <header>
             <h1><span id="class-name-display"></span>家長日簽到系統</h1>
             <div class="actions">
@@ -80,35 +80,35 @@
                 <button id="import-button" class="action-button">匯入學生</button>
                 <a href="#" id="download-template" class="download-link">下載範例檔</a>
                 <button id="print-button" class="action-button print">🖨️ 列印簽到表</button>
-                <a href="https://script.google.com/macros/s/AKfycbzBVx2HqMiYw4VzXakCzvrxX5v6fTzZNPeko_wqYJUKqzIUgln5XujuxeAe_4Qj2SAq/exec" target="_blank" class="action-button upload">🚀 上傳至雲端</a>
             </div>
         </header>
 
-        <main>
+        <main id="capture-area">
+            <div id="pdf-header-wrapper" style="display: none;"><div id="pdf-timestamp"></div><div id="pdf-title"></div></div>
             <div id="student-list-container"><p>請先「設定班級」，再「匯入學生」開始使用。</p></div>
         </main>
     </div>
-
-    <div id="print-area" class="print-only">
-        <div id="pdf-header-wrapper">
-            <div id="pdf-timestamp"></div>
-            <div id="pdf-title"></div>
-        </div>
-        <div id="print-student-list"></div>
-    </div>
     
-    <div id="signature-modal" class="modal-overlay no-print"><div class="modal-content"><h2>請家長簽名</h2><p>您正在為 <strong id="student-name-in-modal"></strong> 的家長簽到</p><div id="signature-pad-container"><canvas id="signature-canvas"></canvas></div><div class="modal-buttons"><button id="confirm-signature">確認簽名</button><button id="clear-signature">清除</button><button id="cancel-signature">取消</button></div></div></div>
-    <div id="spinner-overlay" class="no-print" style="display: none;"><div class="spinner"></div><p style="margin-top: 20px; font-size: 18px; color: #333;">處理中...</p></div>
+    <div id="signature-modal" class="modal-overlay" style="display: none;"><div class="modal-content"><h2>請家長簽名</h2><p>您正在為 <strong id="student-name-in-modal"></strong> 的家長簽到</p><div id="signature-pad-container"><canvas id="signature-canvas"></canvas></div><div class="modal-buttons"><button id="confirm-signature">確認簽名</button><button id="clear-signature">清除</button><button id="cancel-signature">取消</button></div></div></div>
+    <div id="spinner-overlay" style="display: none;"><div class="spinner"></div><p style="margin-top: 20px; font-size: 18px; color: #333;">正在準備預覽畫面...</p></div>
+    <div id="pdf-preview-overlay"><button id="close-preview-btn" class="action-button secondary">返回簽到系統</button><iframe id="pdf-iframe" title="PDF 預覽"></iframe></div>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // --- 變數宣告與元素獲取 ---
             let students = [], currentStudentId = null, className = '';
             const printButton = document.getElementById('print-button');
+            const pdfPreviewOverlay = document.getElementById('pdf-preview-overlay');
+            const closePreviewBtn = document.getElementById('close-preview-btn');
+            const pdfIframe = document.getElementById('pdf-iframe');
+            const mainContainer = document.querySelector('.container');
             const studentListContainer = document.getElementById('student-list-container');
-            // ... 其他元素 ...
             const setClassButton = document.getElementById('set-class-button');
             const classNameDisplay = document.getElementById('class-name-display');
+            const spinnerOverlay = document.getElementById('spinner-overlay');
+            const captureArea = document.getElementById('capture-area');
+            const pdfHeaderWrapper = document.getElementById('pdf-header-wrapper');
+            const pdfTimestamp = document.getElementById('pdf-timestamp');
+            const pdfTitle = document.getElementById('pdf-title');
             const importButton = document.getElementById('import-button');
             const fileInput = document.getElementById('excel-file-input');
             const downloadLink = document.getElementById('download-template');
@@ -120,45 +120,54 @@
             const canvas = document.getElementById('signature-canvas');
             const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
 
-            // --- 核心功能函式 ---
-            function renderStudentList() {
-                studentListContainer.innerHTML = '';
-                if (students.length === 0) { studentListContainer.innerHTML = '<p>請先「設定班級」，再「匯入學生」開始使用。</p>'; return; }
-                students.forEach(student => {
-                    const box = document.createElement('div');
-                    box.dataset.id = student.id;
-                    box.className = `student-box ${student.signed ? 'signed' : 'unsigned'}`;
-                    box.innerHTML = `<div class="student-info"><div class="seat-number">座號: ${student.seatNumber}</div><div class="student-name">${student.name}</div></div><div class="signature-display">${student.signed ? `<img src="${student.signature}" alt="家長簽名">` : '<span class="placeholder">待簽名</span>'}</div>`;
-                    if (!student.signed) { box.addEventListener('click', () => openSignatureModal(student.id)); }
-                    studentListContainer.appendChild(box);
-                });
-            }
-            function resizeCanvas() { const ratio = Math.max(window.devicePixelRatio || 1, 1); const padContainer = document.getElementById('signature-pad-container'); canvas.width = padContainer.offsetWidth * ratio; canvas.height = 200 * ratio; canvas.getContext("2d").scale(ratio, ratio); signaturePad.clear(); }
-            function openSignatureModal(studentId) { currentStudentId = studentId; const student = students.find(s => s.id === studentId); studentNameInModal.textContent = `${student.seatNumber} ${student.name}`; modal.style.display = 'flex'; setTimeout(() => resizeCanvas(), 0); }
-            function closeSignatureModal() { modal.style.display = 'none'; signaturePad.clear(); currentStudentId = null; }
-            function handleSignatureConfirm() { if (signaturePad.isEmpty()) { alert('家長尚未簽名！'); return; } const signatureImage = signaturePad.toDataURL('image/png'); const student = students.find(s => s.id === currentStudentId); if (student) { student.signed = true; student.signature = signatureImage; } renderStudentList(); closeSignatureModal(); }
+            function renderStudentList() { /* ... */ studentListContainer.innerHTML = ''; if (students.length === 0) { studentListContainer.innerHTML = '<p>請先「設定班級」，再「匯入學生」開始使用。</p>'; return; } students.forEach(student => { const box = document.createElement('div'); box.dataset.id = student.id; box.className = `student-box ${student.signed ? 'signed' : 'unsigned'}`; box.innerHTML = `<div class="student-info"><div class="seat-number">座號: ${student.seatNumber}</div><div class="student-name">${student.name}</div></div><div class="signature-display">${student.signed ? `<img src="${student.signature}" alt="家長簽名">` : '<span class="placeholder">待簽名</span>'}</div>`; if (!student.signed) { box.addEventListener('click', () => openSignatureModal(student.id)); } studentListContainer.appendChild(box); }); }
+            function resizeCanvas() { /* ... */ const ratio = Math.max(window.devicePixelRatio || 1, 1); const padContainer = document.getElementById('signature-pad-container'); canvas.width = padContainer.offsetWidth * ratio; canvas.height = 200 * ratio; canvas.getContext("2d").scale(ratio, ratio); signaturePad.clear(); }
+            function openSignatureModal(studentId) { /* ... */ currentStudentId = studentId; const student = students.find(s => s.id === studentId); studentNameInModal.textContent = `${student.seatNumber} ${student.name} 的家長簽到`; modal.style.display = 'flex'; setTimeout(() => resizeCanvas(), 0); }
+            function closeSignatureModal() { /* ... */ modal.style.display = 'none'; signaturePad.clear(); currentStudentId = null; }
+            function handleSignatureConfirm() { /* ... */ if (signaturePad.isEmpty()) { alert('家長尚未簽名！'); return; } const signatureImage = signaturePad.toDataURL('image/png'); const student = students.find(s => s.id === currentStudentId); if (student) { student.signed = true; student.signature = signatureImage; } renderList(); closeSignatureModal(); }
 
-            // --- 列印功能 ---
+            // 更新：列印功能改為全螢幕預覽模式
             printButton.addEventListener('click', () => {
                 if (students.length === 0) { alert("沒有學生資料可供列印！"); return; }
                 if (!className) { alert("請先設定班級名稱！"); return; }
-                
-                // 1. 準備列印內容
-                const printStudentList = document.getElementById('print-student-list');
-                const pdfTimestamp = document.getElementById('pdf-timestamp');
-                const pdfTitle = document.getElementById('pdf-title');
-                
-                // 複製當前的學生列表到專為列印準備的隱藏區域
-                printStudentList.innerHTML = studentListContainer.innerHTML;
-                
-                // 填寫列印標題和時間
+                spinnerOverlay.style.display = 'flex';
+                const { jsPDF } = window.jspdf;
                 const now = new Date();
                 const formattedDateTime = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
                 pdfTimestamp.textContent = formattedDateTime;
                 pdfTitle.textContent = `${className} 家長日簽到表`;
+                pdfHeaderWrapper.style.display = 'flex';
+                captureArea.classList.add('pdf-export-mode');
 
-                // 2. 呼叫瀏覽器列印功能
-                window.print();
+                html2canvas(captureArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+                    .then(canvas => {
+                        const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const imgProps = pdf.getImageProperties(imgData);
+                        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
+                        
+                        const pdfDataUri = pdf.output('datauristring');
+                        pdfIframe.src = pdfDataUri;
+                        mainContainer.style.display = 'none';
+                        pdfPreviewOverlay.style.display = 'block';
+                    })
+                    .catch(err => {
+                        console.error("準備預覽時發生錯誤:", err);
+                        alert("抱歉，準備預覽失敗，請稍後再試。");
+                    })
+                    .finally(() => {
+                        pdfHeaderWrapper.style.display = 'none';
+                        captureArea.classList.remove('pdf-export-mode');
+                        spinnerOverlay.style.display = 'none';
+                    });
+            });
+
+            closePreviewBtn.addEventListener('click', () => {
+                pdfPreviewOverlay.style.display = 'none';
+                mainContainer.style.display = 'block';
+                pdfIframe.src = 'about:blank';
             });
 
             // --- 其他事件監聽 ---
@@ -166,12 +175,14 @@
             importButton.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const firstSheetName = workbook.SheetNames[0]; const worksheet = workbook.Sheets[firstSheetName]; const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); students = json.slice(1).filter(row => row[0] && row[1]).map((row, index) => ({ id: index + 1, seatNumber: String(row[0]).padStart(2, '0'), name: row[1], signed: false, signature: "" })); renderStudentList(); } catch (error) { alert("檔案格式錯誤或內容不符。"); } }; reader.readAsArrayBuffer(file); fileInput.value = ''; });
             downloadLink.addEventListener('click', () => { const ws = XLSX.utils.aoa_to_sheet([["座號", "姓名"], [1, "王小明"], [2, "陳美麗"]]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "學生名單"); XLSX.writeFile(wb, "學生名單範本.xlsx"); });
-            confirmBtn.addEventListener('click', handleSignatureConfirm);
+            confirmBtn.addEventListener('click', () => { if (signaturePad.isEmpty()) { alert('家長尚未簽名！'); return; } const signatureImage = signaturePad.toDataURL('image/png'); const student = students.find(s => s.id === currentStudentId); if (student) { student.signed = true; student.signature = signatureImage; } renderStudentList(); closeSignatureModal(); });
             cancelBtn.addEventListener('click', closeSignatureModal);
             clearBtn.addEventListener('click', () => signaturePad.clear());
             window.addEventListener('resize', () => { if(modal.style.display === 'flex') { resizeCanvas(); } });
             
-            renderStudentList();
+            // 修正錯字
+            function renderList() { renderStudentList(); }
+            renderList();
         });
     </script>
 </body>
