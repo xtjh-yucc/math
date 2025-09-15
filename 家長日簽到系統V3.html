@@ -33,7 +33,7 @@
         .student-box.unsigned:hover { transform: translateY(-3px); }
         .student-box.signed { background-color: #2ecc71; cursor: not-allowed; }
         
-        /* 更新：簽名 Modal 樣式，參照圖片 */
+        /* 簽名 Modal 樣式 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s; }
         .modal-content { background: white; padding: 30px 40px; border-radius: 16px; width: 90%; max-width: 500px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
         .modal-content h2 { font-size: 24px; color: #333; margin-top: 0; margin-bottom: 10px; }
@@ -50,11 +50,7 @@
         .spinner { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        #pdf-preview-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #555; z-index: 1500; display: none; }
-        #close-preview-btn { position: absolute; top: 15px; left: 15px; z-index: 1501; }
-        #pdf-iframe { width: 100%; height: 100%; border: none; }
-        
-        /* PDF 輸出/列印專用樣式 */
+        /* PDF 專用樣式 */
         .pdf-export-mode { padding: 2cm; background-color: #fff; }
         .pdf-export-mode #pdf-header-wrapper { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
         .pdf-export-mode #pdf-timestamp { font-size: 12pt; color: #555; }
@@ -90,17 +86,12 @@
     </div>
     
     <div id="signature-modal" class="modal-overlay" style="display: none;"><div class="modal-content"><h2>請家長簽名</h2><p>您正在為 <strong id="student-name-in-modal"></strong> 的家長簽到</p><div id="signature-pad-container"><canvas id="signature-canvas"></canvas></div><div class="modal-buttons"><button id="confirm-signature">確認簽名</button><button id="clear-signature">清除</button><button id="cancel-signature">取消</button></div></div></div>
-    <div id="spinner-overlay" style="display: none;"><div class="spinner"></div><p style="margin-top: 20px; font-size: 18px; color: #333;">正在準備預覽畫面...</p></div>
-    <div id="pdf-preview-overlay"><button id="close-preview-btn" class="action-button secondary">返回簽到系統</button><iframe id="pdf-iframe" title="PDF 預覽"></iframe></div>
+    <div id="spinner-overlay" style="display: none;"><div class="spinner"></div><p style="margin-top: 20px; font-size: 18px; color: #333;">正在準備 PDF ...</p></div>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let students = [], currentStudentId = null, className = '';
             const printButton = document.getElementById('print-button');
-            const pdfPreviewOverlay = document.getElementById('pdf-preview-overlay');
-            const closePreviewBtn = document.getElementById('close-preview-btn');
-            const pdfIframe = document.getElementById('pdf-iframe');
-            const mainContainer = document.querySelector('.container');
             const studentListContainer = document.getElementById('student-list-container');
             const setClassButton = document.getElementById('set-class-button');
             const classNameDisplay = document.getElementById('class-name-display');
@@ -120,17 +111,48 @@
             const canvas = document.getElementById('signature-canvas');
             const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
 
-            function renderStudentList() { /* ... */ studentListContainer.innerHTML = ''; if (students.length === 0) { studentListContainer.innerHTML = '<p>請先「設定班級」，再「匯入學生」開始使用。</p>'; return; } students.forEach(student => { const box = document.createElement('div'); box.dataset.id = student.id; box.className = `student-box ${student.signed ? 'signed' : 'unsigned'}`; box.innerHTML = `<div class="student-info"><div class="seat-number">座號: ${student.seatNumber}</div><div class="student-name">${student.name}</div></div><div class="signature-display">${student.signed ? `<img src="${student.signature}" alt="家長簽名">` : '<span class="placeholder">待簽名</span>'}</div>`; if (!student.signed) { box.addEventListener('click', () => openSignatureModal(student.id)); } studentListContainer.appendChild(box); }); }
-            function resizeCanvas() { /* ... */ const ratio = Math.max(window.devicePixelRatio || 1, 1); const padContainer = document.getElementById('signature-pad-container'); canvas.width = padContainer.offsetWidth * ratio; canvas.height = 200 * ratio; canvas.getContext("2d").scale(ratio, ratio); signaturePad.clear(); }
-            function openSignatureModal(studentId) { /* ... */ currentStudentId = studentId; const student = students.find(s => s.id === studentId); studentNameInModal.textContent = `${student.seatNumber} ${student.name} 的家長簽到`; modal.style.display = 'flex'; setTimeout(() => resizeCanvas(), 0); }
-            function closeSignatureModal() { /* ... */ modal.style.display = 'none'; signaturePad.clear(); currentStudentId = null; }
-            function handleSignatureConfirm() { /* ... */ if (signaturePad.isEmpty()) { alert('家長尚未簽名！'); return; } const signatureImage = signaturePad.toDataURL('image/png'); const student = students.find(s => s.id === currentStudentId); if (student) { student.signed = true; student.signature = signatureImage; } renderList(); closeSignatureModal(); }
+            function renderStudentList() { 
+                studentListContainer.innerHTML = ''; 
+                if (students.length === 0) { 
+                    studentListContainer.innerHTML = '<p>請先「設定班級」，再「匯入學生」開始使用。</p>'; 
+                    return; 
+                } 
+                students.forEach(student => { 
+                    const box = document.createElement('div'); 
+                    box.dataset.id = student.id; 
+                    box.className = `student-box ${student.signed ? 'signed' : 'unsigned'}`; 
+                    box.innerHTML = `<div class="student-info"><div class="seat-number">座號: ${student.seatNumber}</div><div class="student-name">${student.name}</div></div><div class="signature-display">${student.signed ? `<img src="${student.signature}" alt="家長簽名">` : '<span class="placeholder">待簽名</span>'}</div>`; 
+                    if (!student.signed) { box.addEventListener('click', () => openSignatureModal(student.id)); } 
+                    studentListContainer.appendChild(box); 
+                }); 
+            }
+            function resizeCanvas() { 
+                const ratio = Math.max(window.devicePixelRatio || 1, 1); 
+                const padContainer = document.getElementById('signature-pad-container'); 
+                canvas.width = padContainer.offsetWidth * ratio; 
+                canvas.height = 200 * ratio; 
+                canvas.getContext("2d").scale(ratio, ratio); 
+                signaturePad.clear(); 
+            }
+            function openSignatureModal(studentId) { 
+                currentStudentId = studentId; 
+                const student = students.find(s => s.id === studentId); 
+                studentNameInModal.textContent = `${student.seatNumber} ${student.name} 的家長簽到`; 
+                modal.style.display = 'flex'; 
+                setTimeout(() => resizeCanvas(), 0); 
+            }
+            function closeSignatureModal() { 
+                modal.style.display = 'none'; 
+                signaturePad.clear(); 
+                currentStudentId = null; 
+            }
 
-            // 更新：列印功能改為全螢幕預覽模式
+            // 更新：列印功能（支援 iPad）
             printButton.addEventListener('click', () => {
                 if (students.length === 0) { alert("沒有學生資料可供列印！"); return; }
                 if (!className) { alert("請先設定班級名稱！"); return; }
                 spinnerOverlay.style.display = 'flex';
+
                 const { jsPDF } = window.jspdf;
                 const now = new Date();
                 const formattedDateTime = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -148,14 +170,14 @@
                         const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
                         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
                         
-                        const pdfDataUri = pdf.output('datauristring');
-                        pdfIframe.src = pdfDataUri;
-                        mainContainer.style.display = 'none';
-                        pdfPreviewOverlay.style.display = 'block';
+                        // 改成用 Blob 方式，支援 iPad Safari
+                        const pdfBlob = pdf.output('blob');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        window.open(pdfUrl);
                     })
                     .catch(err => {
-                        console.error("準備預覽時發生錯誤:", err);
-                        alert("抱歉，準備預覽失敗，請稍後再試。");
+                        console.error("準備 PDF 時發生錯誤:", err);
+                        alert("抱歉，準備 PDF 失敗，請稍後再試。");
                     })
                     .finally(() => {
                         pdfHeaderWrapper.style.display = 'none';
@@ -164,26 +186,8 @@
                     });
             });
 
-            closePreviewBtn.addEventListener('click', () => {
-                pdfPreviewOverlay.style.display = 'none';
-                mainContainer.style.display = 'block';
-                pdfIframe.src = 'about:blank';
-            });
-
             // --- 其他事件監聽 ---
             setClassButton.addEventListener('click', () => { const newClassName = prompt("請輸入班級名稱 (例如：701)", className); if (newClassName !== null && newClassName.trim() !== '') { className = newClassName.trim(); classNameDisplay.textContent = `${className} `; } });
             importButton.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const firstSheetName = workbook.SheetNames[0]; const worksheet = workbook.Sheets[firstSheetName]; const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); students = json.slice(1).filter(row => row[0] && row[1]).map((row, index) => ({ id: index + 1, seatNumber: String(row[0]).padStart(2, '0'), name: row[1], signed: false, signature: "" })); renderStudentList(); } catch (error) { alert("檔案格式錯誤或內容不符。"); } }; reader.readAsArrayBuffer(file); fileInput.value = ''; });
-            downloadLink.addEventListener('click', () => { const ws = XLSX.utils.aoa_to_sheet([["座號", "姓名"], [1, "王小明"], [2, "陳美麗"]]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "學生名單"); XLSX.writeFile(wb, "學生名單範本.xlsx"); });
-            confirmBtn.addEventListener('click', () => { if (signaturePad.isEmpty()) { alert('家長尚未簽名！'); return; } const signatureImage = signaturePad.toDataURL('image/png'); const student = students.find(s => s.id === currentStudentId); if (student) { student.signed = true; student.signature = signatureImage; } renderStudentList(); closeSignatureModal(); });
-            cancelBtn.addEventListener('click', closeSignatureModal);
-            clearBtn.addEventListener('click', () => signaturePad.clear());
-            window.addEventListener('resize', () => { if(modal.style.display === 'flex') { resizeCanvas(); } });
-            
-            // 修正錯字
-            function renderList() { renderStudentList(); }
-            renderList();
-        });
-    </script>
-</body>
-</html>
+            downloadLink.addEventListener('click', () => { const ws = XLSX.utils.aoa_to_sheet([["座號", "姓名"], [1, "王小明"], [2, "陳美麗"]]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "學生名單"); XLSX.writeFile(w
