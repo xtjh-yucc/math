@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>課堂表現與作業繳交管理系統</title>
+
+    <!-- PWA Manifest and Theme -->
+    <meta name="theme-color" content="#4A90E2" />
+    <link rel="manifest" href="data:application/manifest+json,{
+        &quot;name&quot;: &quot;課堂管理系統&quot;,
+        &quot;short_name&quot;: &quot;課堂管理&quot;,
+        &quot;start_url&quot;: &quot;.&quot;,
+        &quot;display&quot;: &quot;standalone&quot;,
+        &quot;background_color&quot;: &quot;#ffffff&quot;,
+        &quot;theme_color&quot;: &quot;#4A90E2&quot;,
+        &quot;description&quot;: &quot;一個用於管理課堂表現、作業和聯絡簿的系統。&quot;,
+        &quot;icons&quot;: [
+            {
+                &quot;src&quot;: &quot;https://placehold.co/192x192/4A90E2/FFFFFF?text=CMS&quot;,
+                &quot;sizes&quot;: &quot;192x192&quot;,
+                &quot;type&quot;: &quot;image/png&quot;
+            },
+            {
+                &quot;src&quot;: &quot;https://placehold.co/512x512/4A90E2/FFFFFF?text=CMS&quot;,
+                &quot;sizes&quot;: &quot;512x512&quot;,
+                &quot;type&quot;: &quot;image/png&quot;,
+                &quot;purpose&quot;: &quot;any maskable&quot;
+            }
+        ]
+    }">
+
+    <!-- iOS PWA Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/4A90E2/FFFFFF?text=CMS">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fireworks-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .timer-display.warning {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- 載入為瀏覽器設計的 React 和 ReactDOM UMD 函式庫，並讓它們在全域範圍可用 -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- 載入 XLSX 函式庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script type="module">
+        // 其他模組匯入
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, getDocs, deleteDoc, query, where, onSnapshot, updateDoc, writeBatch, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // Firebase 配置
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "AIzaSyAGG_MDlE9eAtYrwSyu-gdXbPx6DJ65R0E",
+                authDomain: "yucc12151215-9b3c2.firebaseapp.com",
+                projectId: "yucc12151215-9b3c2",
+                storageBucket: "yucc12151215-9b3c2.firebasestorage.app",
+                messagingSenderId: "628830906161",
+                appId: "1:628830906161:web:3005a0147e97d4bc5e7210",
+                measurementId: "G-3HRFJCE32F"
+            };
+
+        // App ID
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // 訊息模態視窗元件
+        const MessageModal = ({ message, onClose }) => {
+            if (!message) return null;
+            return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[250] p-4' },
+                React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-xl w-full max-w-xs text-center' },
+                    React.createElement('h3', { className: 'text-xl font-bold mb-4' }, '提示'),
+                    React.createElement('p', { className: 'mb-4 whitespace-pre-wrap' }, message),
+                    React.createElement('button', {
+                        onClick: onClose,
+                        className: 'w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600'
+                    }, '確定')
+                )
+            );
+        };
+        
+        const ProcessingOverlay = ({ message }) => {
+            if (!message) return null;
+            return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-60 flex flex-col justify-center items-center z-[300]' },
+                React.createElement('div', { className: 'animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white mb-4' }),
+                React.createElement('p', { className: 'text-white text-xl' }, message)
+            );
+        };
+
+        // 主應用組件
+        const App = () => {
+            const [user, setUser] = React.useState(null);
+            const [classes, setClasses] = React.useState([]);
+            const [students, setStudents] = React.useState([]);
+            const [assignments, setAssignments] = React.useState([]);
+            const [submissions, setSubmissions] = React.useState([]);
+            const [contactBooks, setContactBooks] = React.useState([]);
+            const [contactBookSubmissions, setContactBookSubmissions] = React.useState([]);
+            const [performanceRecords, setPerformanceRecords] = React.useState([]);
+            const [quizzes, setQuizzes] = React.useState([]);
+            const [quizSubmissions, setQuizSubmissions] = React.useState([]);
+            const [todos, setTodos] = React.useState([]);
+            const [newQuizTitle, setNewQuizTitle] = React.useState('');
+            const [selectedQuiz, setSelectedQuiz] = React.useState(null);
+            const [editingQuiz, setEditingQuiz] = React.useState(null);
+            const [quizToDelete, setQuizToDelete] = React.useState(null);
+            const [quizScores, setQuizScores] = React.useState({});
+            const [view, setView] = React.useState('assignments');
+            const [newClassName, setNewClassName] = React.useState('');
+            const [newStudentName, setNewStudentName] = React.useState('');
+            const [newStudentSeatNumber, setNewStudentSeatNumber] = React.useState('');
+            const [newAssignmentTitle, setNewAssignmentTitle] = React.useState('');
+            const [selectedClass, setSelectedClass] = React.useState(null);
+            const [selectedAssignment, setSelectedAssignment] = React.useState(null);
+            const [selectedContactBook, setSelectedContactBook] = React.useState(null);
+            const [modalStudent, setModalStudent] = React.useState(null);
+            const [performanceModalStudent, setPerformanceModalStudent] = React.useState(null);
+            const [performanceStep, setPerformanceStep] = React.useState(1);
+            const [selectedReason, setSelectedReason] = React.useState({ type: '', text: '' });
+            const [performanceFilter, setPerformanceFilter] = React.useState({ type: 'all', startDate: '', endDate: '' });
+            const [editingAssignment, setEditingAssignment] = React.useState(null);
+            const [assignmentToDelete, setAssignmentToDelete] = React.useState(null);
+            const [contactBookToDelete, setContactBookToDelete] = React.useState(null);
+            const [classToDelete, setClassToDelete] = React.useState(null);
+            const [isContactItemsModalOpen, setIsContactItemsModalOpen] = React.useState(false);
+            const [isBigScreenViewOpen, setIsBigScreenViewOpen] = React.useState(false);
+            const [contactItems, setContactItems] = React.useState([]);
+            const [newContactItem, setNewContactItem] = React.useState('');
+            const [contactItemsDocId, setContactItemsDocId] = React.useState(null);
+            const [isCalendarModalOpen, setIsCalendarModalOpen] = React.useState(false);
+            const [calendarDate, setCalendarDate] = React.useState(new Date());
+            const [drawnStudentLog, setDrawnStudentLog] = React.useState([]);
+            const [lotteryWinner, setLotteryWinner] = React.useState(null);
+            const [isTimerOpen, setIsTimerOpen] = React.useState(false);
+            const [loading, setLoading] = React.useState(true);
+            const [error, setError] = React.useState('');
+            const [message, setMessage] = React.useState('');
+            const [importData, setImportData] = React.useState(null);
+            const [assignmentScore, setAssignmentScore] = React.useState('');
+            const [processingMessage, setProcessingMessage] = React.useState('');
+            const [newTodoText, setNewTodoText] = React.useState('');
+            const [newTodoDetails, setNewTodoDetails] = React.useState('');
+            const [newTodoDate, setNewTodoDate] = React.useState('');
+            const [expandedTodoId, setExpandedTodoId] = React.useState(null);
+            
+            const contactItemImportRef = React.useRef(null);
+            const quizScoreImportRef = React.useRef(null);
+            const quizScoreImageImportRef = React.useRef(null);
+            const todoFileInputRef = React.useRef(null);
+
+            const teacherDataCollection = (teacherId, ...pathSegments) => {
+                return collection(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId, ...pathSegments);
+            };
+
+            const teacherDataDoc = (teacherId, ...pathSegments) => {
+                return doc(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId, ...pathSegments);
+            };
+
+            const getSafeTimestamp = (field) => {
+                if (!field) return 0;
+                if (typeof field.toDate === 'function') { return field.toDate().getTime(); }
+                if (field instanceof Date) { return field.getTime(); }
+                const parsedDate = new Date(field);
+                if (!isNaN(parsedDate)) { return parsedDate.getTime(); }
+                return 0;
+            };
+
+            const getSafeDateString = (field) => {
+                if (!field) return 'N/A';
+                if (typeof field.toDate === 'function') { return field.toDate().toLocaleString(); }
+                if (field instanceof Date) { return field.toLocaleString(); }
+                const parsedDate = new Date(field);
+                if (!isNaN(parsedDate)) { return parsedDate.toLocaleString(); }
+                return 'N/A';
+            };
+
+            React.useEffect(() => {
+                const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+                    if (currentUser) {
+                        setUser(currentUser);
+                    } else {
+                        try {
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (err) {
+                            console.error("Firebase sign-in failed", err);
+                            setError("自動登入失敗，請重新整理頁面。");
+                        }
+                    }
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const fetchClasses = React.useCallback((teacherId) => { if (!teacherId) return; const q = query(teacherDataCollection(teacherId, 'classes')); return onSnapshot(q, (snapshot) => setClasses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), (err) => { console.error(err); setMessage('無法讀取班級資料: ' + err.message); }); }, []);
+            const fetchStudents = React.useCallback((teacherId, classId) => { if (!teacherId || !classId) return; const q = query(teacherDataCollection(teacherId, 'classes', classId, 'students')); return onSnapshot(q, (snapshot) => setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), (err) => { console.error(err); setMessage('無法讀取學生資料: ' + err.message); }); }, []);
+            const fetchAssignments = React.useCallback((teacherId, classId) => { if (!teacherId || !classId) return; const q = query(teacherDataCollection(teacherId, 'classes', classId, 'assignments')); return onSnapshot(q, (snapshot) => setAssignments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), (err) => { console.error(err); setMessage('無法讀取作業資料: ' + err.message); }); }, []);
+            const fetchSubmissions = React.useCallback((teacherId, assignmentId) => { if (!assignmentId || !teacherId) { setSubmissions([]); return; } const q = query(teacherDataCollection(teacherId, 'submissions'), where('assignmentId', '==', assignmentId)); return onSnapshot(q, (snapshot) => setSubmissions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), (err) => { console.error(err); setMessage('無法讀取繳交資料: ' + err.message); }); }, []);
+            const fetchContactBooks = React.useCallback((teacherId, classId) => { if (!teacherId || !classId) return; const q = query(teacherDataCollection(teacherId, 'classes', classId, 'contactBooks')); return onSnapshot(q, (snapshot) => setContactBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), (err) => { console.error(err); setMessage('無法讀取聯絡簿資料: ' + err.message); }); }, []);
+            const fetchContactBookSubmissions = React.useCallback((teacherId, contactBookId) => { if (!contactBookId || !teacherId) { setContactBookSubmissions([]); return; } const q = query(teacherDataCollection(teacherId, 'contactBookSubmissions'), where('contactBookId', '==', contactBookId)); return onSnapshot(q, (snapshot) => setContactBookSubmissions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), (err) => { console.error(err); setMessage('無法讀取聯絡簿繳交資料: ' + err.message); }); }, []);
+            const fetchPerformanceRecords = React.useCallback((teacherId, classId) => { if (!teacherId || !classId) return; const q = query(teacherDataCollection(teacherId, 'performanceRecords'), where('classId', '==', classId)); return onSnapshot(q, (snapshot) => setPerformanceRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), (err) => { console.error(err); setMessage('無法讀取課堂表現紀錄: ' + err.message); }); }, []);
+            const fetchContactItems = React.useCallback((teacherId, classId) => { if (!teacherId || !classId) return; const today = new Date().toISOString().split('T')[0]; setContactItemsDocId(today); const docRef = teacherDataDoc(teacherId, 'classes', classId, 'contactItems', today); return onSnapshot(docRef, (docSnap) => setContactItems(docSnap.exists() ? docSnap.data().items || [] : []), (err) => { console.error(err); setMessage('無法讀取聯絡事項: ' + err.message); }); }, []);
+            const fetchQuizzes = React.useCallback((teacherId, classId) => { if (!teacherId || !classId) return; const q = query(teacherDataCollection(teacherId, 'classes', classId, 'quizzes')); return onSnapshot(q, (snapshot) => setQuizzes(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (err) => { console.error(err); setMessage('無法讀取平常成績項目: ' + err.message); }); }, []);
+            const fetchQuizSubmissions = React.useCallback((teacherId, quizId) => { if (!teacherId || !quizId) { setQuizSubmissions([]); return; } const q = query(teacherDataCollection(teacherId, 'quizSubmissions'), where('quizId', '==', quizId)); return onSnapshot(q, (snapshot) => setQuizSubmissions(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))), (err) => { console.error(err); setMessage('無法讀取平常成績: ' + err.message); }); }, []);
+            const fetchTodos = React.useCallback((teacherId, classId) => { if (!teacherId || !classId) return; const q = query(teacherDataCollection(teacherId, 'classes', classId, 'todos')); return onSnapshot(q, (snapshot) => { setTodos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); }, (err) => { console.error(err); setMessage('無法讀取待辦事項: ' + err.message); }); }, []);
+
+            React.useEffect(() => {
+                let unsubscribes = [];
+                if (user) {
+                    unsubscribes.push(fetchClasses(user.uid));
+                    if (selectedClass) {
+                        unsubscribes.push(fetchStudents(user.uid, selectedClass.id), fetchAssignments(user.uid, selectedClass.id), fetchContactBooks(user.uid, selectedClass.id), fetchPerformanceRecords(user.uid, selectedClass.id), fetchContactItems(user.uid, selectedClass.id), fetchQuizzes(user.uid, selectedClass.id), fetchTodos(user.uid, selectedClass.id));
+                        if (selectedAssignment) unsubscribes.push(fetchSubmissions(user.uid, selectedAssignment.id)); else setSubmissions([]);
+                        if (selectedContactBook) unsubscribes.push(fetchContactBookSubmissions(user.uid, selectedContactBook.id)); else setContactBookSubmissions([]);
+                        if (selectedQuiz) unsubscribes.push(fetchQuizSubmissions(user.uid, selectedQuiz.id)); else setQuizSubmissions([]);
+                    } else {
+                        [setStudents, setAssignments, setContactBooks, setPerformanceRecords, setSubmissions, setContactBookSubmissions, setContactItems, setQuizzes, setQuizSubmissions, setTodos].forEach(s => s([]));
+                        [setSelectedAssignment, setSelectedContactBook, setContactItemsDocId, setSelectedQuiz].forEach(s => s(null));
+                    }
+                }
+                return () => unsubscribes.forEach(unsub => unsub && unsub());
+            }, [user, selectedClass, selectedAssignment, selectedContactBook, selectedQuiz]);
+            
+            React.useEffect(() => { if (selectedQuiz) { const initialScores = {}; quizSubmissions.forEach(sub => { initialScores[sub.studentId] = sub.score; }); setQuizScores(initialScores); } else { setQuizScores({}); } }, [selectedQuiz, quizSubmissions]);
+
+            const studentScores = React.useMemo(() => { const scores = {}; students.forEach(s => scores[s.studentId] = 0); performanceRecords.forEach(r => { if (scores[r.studentId] !== undefined) scores[r.studentId] += r.points; }); return scores; }, [students, performanceRecords]);
+
+            const filteredPerformanceRecords = React.useMemo(() => {
+                if (performanceFilter.type === 'all') return performanceRecords;
+                if (performanceFilter.type === 'dateRange') {
+                    const startDate = performanceFilter.startDate ? new Date(performanceFilter.startDate) : null; const endDate = performanceFilter.endDate ? new Date(performanceFilter.endDate) : null;
+                    if (startDate) startDate.setHours(0, 0, 0, 0); if (endDate) endDate.setHours(23, 59, 59, 999);
+                    return performanceRecords.filter(r => {
+                        const recordDate = r.createdAt?.toDate(); if (!recordDate) return false;
+                        const isAfterStart = startDate ? recordDate >= startDate : true; const isBeforeEnd = endDate ? recordDate <= endDate : true; return isAfterStart && isBeforeEnd;
+                    });
+                }
+                if (performanceFilter.type === 'studentId' && performanceFilter.startDate) return performanceRecords.filter(r => r.studentId === performanceFilter.startDate);
+                return performanceRecords;
+            }, [performanceRecords, performanceFilter]);
+
+            const categorizedTodos = React.useMemo(() => {
+                const urgent = [], completed = [], pending = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+        
+                todos.forEach(todo => {
+                    const dueDate = new Date(todo.dueDate);
+                    // Adjust for timezone offset to compare dates correctly
+                    dueDate.setMinutes(dueDate.getMinutes() + dueDate.getTimezoneOffset());
+                    dueDate.setHours(0, 0, 0, 0);
+
+                    if (dueDate < today) completed.push(todo);
+                    else if (dueDate.getTime() <= tomorrow.getTime()) urgent.push(todo);
+                    else pending.push(todo);
+                });
+        
+                const sortByDate = (a, b) => new Date(a.dueDate) - new Date(b.dueDate);
+                [urgent, completed, pending].forEach(arr => arr.sort(sortByDate));
+        
+                return { urgent, completed, pending };
+            }, [todos]);
+
+            // Handlers
+            const handleLogout = () => { signOut(auth).catch(err => { setError('登出失敗: ' + err.message); console.error(err); }); };
+            const handleAddClass = async (e) => { e.preventDefault(); if (newClassName.trim() && user) { try { await addDoc(teacherDataCollection(user.uid, 'classes'), { name: newClassName, createdAt: new Date() }); setNewClassName(''); } catch (err) { setMessage('新增班級失敗: ' + err.message); console.error(err); } } };
+            const handleDeleteClass = async () => {
+                if (!classToDelete || !user) return;
+                try {
+                    const batch = writeBatch(db);
+                    const { uid: teacherId } = user;
+                    const { id: classId } = classToDelete;
+                    const collectionsToDelete = ['assignments', 'contactBooks', 'students', 'quizzes', 'todos'];
+                    for (const coll of collectionsToDelete) {
+                        const collRef = teacherDataCollection(teacherId, 'classes', classId, coll);
+                        const snapshot = await getDocs(collRef);
+                        for (const docSnapshot of snapshot.docs) {
+                            if (coll === 'assignments') { const q = query(teacherDataCollection(teacherId, 'submissions'), where('assignmentId', '==', docSnapshot.id)); (await getDocs(q)).forEach(subDoc => batch.delete(subDoc.ref)); }
+                            if (coll === 'contactBooks') { const q = query(teacherDataCollection(teacherId, 'contactBookSubmissions'), where('contactBookId', '==', docSnapshot.id)); (await getDocs(q)).forEach(subDoc => batch.delete(subDoc.ref)); }
+                            if (coll === 'quizzes') { const q = query(teacherDataCollection(teacherId, 'quizSubmissions'), where('quizId', '==', docSnapshot.id)); (await getDocs(q)).forEach(subDoc => batch.delete(subDoc.ref)); }
+                            if (coll === 'todos') {
+                                const todoData = docSnapshot.data();
+                                if (todoData.attachmentPath) {
+                                    try {
+                                        const fileRef = ref(storage, todoData.attachmentPath);
+                                        await deleteObject(fileRef);
+                                    } catch (e) {
+                                        if (e.code !== 'storage/object-not-found') console.error("Failed to delete todo attachment:", e);
+                                    }
+                                }
+                            }
+                            batch.delete(docSnapshot.ref);
+                        }
+                    }
+                    const perfQuery = query(teacherDataCollection(teacherId, 'performanceRecords'), where('classId', '==', classId));
+                    (await getDocs(perfQuery)).forEach(pDoc => batch.delete(pDoc.ref));
+                    batch.delete(teacherDataDoc(teacherId, 'classes', classId));
+                    await batch.commit();
+                    if (selectedClass?.id === classId) setSelectedClass(null);
+                    setClassToDelete(null);
+                    setMessage('班級及其所有相關資料已成功刪除。');
+                } catch (err) {
+                    setMessage('刪除班級失敗: ' + err.message);
+                    console.error(err);
+                    setClassToDelete(null);
+                }
+            };
+            const handleSelectClass = (classDoc) => { setSelectedClass(classDoc); setView('assignments'); setDrawnStudentLog([]); setSelectedAssignment(null); setSelectedContactBook(null); setSelectedQuiz(null); };
+            const handleAddStudent = async (e) => { e.preventDefault(); if (newStudentName.trim() && user && selectedClass) { try { await addDoc(teacherDataCollection(user.uid, 'classes', selectedClass.id, 'students'), { name: newStudentName, seatNumber: newStudentSeatNumber ? Number(newStudentSeatNumber) : null, studentId: `S${Date.now()}` }); setNewStudentName(''); setNewStudentSeatNumber(''); } catch (err) { setMessage('新增學生失敗: ' + err.message); console.error(err); } } };
+            const handleDeleteStudent = (studentDocId) => { if (user && selectedClass) { deleteDoc(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'students', studentDocId)).catch(err => { setMessage('刪除學生失敗: ' + err.message); console.error(err); }); } };
+            const handleImportStudents = (event) => { const file = event.target.files[0]; if (!file || !user || !selectedClass) return; const reader = new FileReader(); reader.onload = async (e) => { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const worksheet = workbook.Sheets[workbook.SheetNames[0]]; const jsonStudents = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); const headers = jsonStudents[0]; const seatNumberIndex = headers.findIndex(h => h && String(h).trim() === '座號'); const nameIndex = headers.findIndex(h => h && String(h).trim() === '姓名'); if (seatNumberIndex === -1 || nameIndex === -1) { setMessage('Excel 檔案標題錯誤，請確認第一列標題為「座號」與「姓名」。'); return; } const studentsToImport = jsonStudents.slice(1).filter(row => row[nameIndex] && String(row[nameIndex]).trim() !== ''); if(studentsToImport.length === 0){ setMessage('找不到可匯入的學生資料。'); return; } const studentsCollectionPath = teacherDataCollection(user.uid, 'classes', selectedClass.id, 'students'); const batch = writeBatch(db); for (const row of studentsToImport) { const newStudentRef = doc(studentsCollectionPath); batch.set(newStudentRef, { name: String(row[nameIndex]).trim(), seatNumber: row[seatNumberIndex] ? Number(row[seatNumberIndex]) : null, studentId: `S${Date.now()}${Math.random().toString(36).substring(2, 8)}` }); } await batch.commit(); setMessage(`成功匯入 ${studentsToImport.length} 位學生資料！`); } catch (err) { console.error(err); setMessage('匯入學生資料失敗，請檢查檔案格式。'); } }; reader.readAsArrayBuffer(file); event.target.value = null; };
+            const handleDownloadSampleExcel = () => { const wb = XLSX.utils.book_new(); const wsData = [['座號', '姓名'], [1, '王小明'], [2, '陳小華']]; const ws = XLSX.utils.aoa_to_sheet(wsData); XLSX.utils.book_append_sheet(wb, ws, "學生名單"); const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" }); const blob = new Blob([wbout], { type: "application/octet-stream" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = '學生名單範例.xlsx'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
+            const handleDownloadContactItemSample = () => { const wb = XLSX.utils.book_new(); const wsData = [['聯絡事項'], ['明天數學小考'], ['帶美勞用具 (剪刀、膠水)'], ['繳交午餐費']]; const ws = XLSX.utils.aoa_to_sheet(wsData); XLSX.utils.book_append_sheet(wb, ws, "聯絡事項"); const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" }); const blob = new Blob([wbout], { type: "application/octet-stream" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = '聯絡事項範例.xlsx'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
+            const handleImportContactItems = (event) => { const file = event.target.files[0]; if (!file || !user || !selectedClass) return; const reader = new FileReader(); reader.onload = async (e) => { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const worksheet = workbook.Sheets[workbook.SheetNames[0]]; const jsonItems = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); const header = jsonItems[0] ? String(jsonItems[0][0]).trim() : ''; if (header !== '聯絡事項') { setMessage('Excel 檔案標題錯誤，請確認第一欄標題為「聯絡事項」。'); return; } const newItems = jsonItems.slice(1).map(row => row[0] && String(row[0]).trim()).filter(item => item); if (newItems.length > 0) { const updatedItems = [...contactItems, ...newItems]; await handleUpdateContactItems(updatedItems); setMessage(`成功匯入 ${newItems.length} 項聯絡事項！`); } else { setMessage('Excel 檔案中沒有可匯入的事項。'); } } catch (err) { console.error(err); setMessage('匯入聯絡事項失敗，請檢查檔案格式。'); } }; reader.readAsArrayBuffer(file); event.target.value = null; };
+            const handleAddAssignment = async (e) => { e.preventDefault(); if (newAssignmentTitle.trim() && user && selectedClass) { try { await addDoc(teacherDataCollection(user.uid, 'classes', selectedClass.id, 'assignments'), { title: newAssignmentTitle, createdAt: new Date(), classId: selectedClass.id }); setNewAssignmentTitle(''); } catch (err) { setMessage('新增作業失敗: ' + err.message); console.error(err); } } };
+            const handleDeleteAssignment = async () => { if (!assignmentToDelete || !user || !selectedClass) return; try { const batch = writeBatch(db); batch.delete(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'assignments', assignmentToDelete.id)); const q = query(teacherDataCollection(user.uid, 'submissions'), where('assignmentId', '==', assignmentToDelete.id)); const snapshot = await getDocs(q); snapshot.forEach(doc => batch.delete(doc.ref)); await batch.commit(); if (selectedAssignment?.id === assignmentToDelete.id) setSelectedAssignment(null); setAssignmentToDelete(null); setMessage('作業已成功刪除。'); } catch (err) { setMessage('刪除作業失敗: ' + err.message); console.error(err); } };
+            const handleUpdateAssignmentTitle = async () => { if (editingAssignment?.title.trim() && user && selectedClass) { try { await updateDoc(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'assignments', editingAssignment.id), { title: editingAssignment.title }); setEditingAssignment(null); } catch (err) { setMessage('更新作業名稱失敗: ' + err.message); console.error(err); } } };
+            const handleSelectAssignment = (assignment) => { setSelectedAssignment(assignment); setSelectedContactBook(null); setSelectedQuiz(null); };
+            const handleUpdateStatus = async (studentId, status) => { if (selectedAssignment && user && selectedClass) { try { const path = teacherDataCollection(user.uid, 'submissions'); const q = query(path, where('assignmentId', '==', selectedAssignment.id), where('studentId', '==', studentId)); const snapshot = await getDocs(q); if (!snapshot.empty) { await updateDoc(snapshot.docs[0].ref, { status: status, score: assignmentScore || null, updatedAt: new Date() }); } else { const studentDoc = students.find(s => s.studentId === studentId); await addDoc(path, { assignmentId: selectedAssignment.id, studentId, studentName: studentDoc?.name, status, score: assignmentScore || null, updatedAt: new Date(), teacherId: user.uid, classId: selectedClass.id }); } setModalStudent(null); setAssignmentScore(''); } catch (err) { setMessage('更新繳交狀態失敗: ' + err.message); console.error(err); } } };
+            const handleMarkAllSubmitted = async (type) => { const selectedItem = type === 'assignment' ? selectedAssignment : selectedContactBook; if (!selectedItem || !user || !selectedClass || !students.length) return; try { const batch = writeBatch(db); const isAssignment = type === 'assignment'; const collName = isAssignment ? 'submissions' : 'contactBookSubmissions'; const idField = isAssignment ? 'assignmentId' : 'contactBookId'; const path = teacherDataCollection(user.uid, collName); const q = query(path, where(idField, '==', selectedItem.id)); const snapshot = await getDocs(q); const subMap = new Map(snapshot.docs.map(doc => [doc.data().studentId, doc.id])); students.forEach(student => { const docRef = subMap.has(student.studentId) ? doc(path, subMap.get(student.studentId)) : doc(path); batch.set(docRef, { [idField]: selectedItem.id, studentId: student.studentId, studentName: student.name, status: '已繳交', updatedAt: new Date(), teacherId: user.uid, classId: selectedClass.id }, { merge: true }); }); await batch.commit(); setMessage('所有學生皆已標示為「已繳交」。'); } catch (err) { setMessage(`全部標示為已繳交失敗: ` + err.message); console.error(err); } };
+            const handleAddContactBook = async (date) => { if (date && user && selectedClass) { const title = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`; try { await addDoc(teacherDataCollection(user.uid, 'classes', selectedClass.id, 'contactBooks'), { title, createdAt: new Date(), classId: selectedClass.id }); setIsCalendarModalOpen(false); } catch (err) { setMessage('新增聯絡簿失敗: ' + err.message); console.error(err); } } };
+            const handleDeleteContactBook = async () => { if (!contactBookToDelete || !user) return; try { const batch = writeBatch(db); batch.delete(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'contactBooks', contactBookToDelete.id)); const q = query(teacherDataCollection(user.uid, 'contactBookSubmissions'), where('contactBookId', '==', contactBookToDelete.id)); const snapshot = await getDocs(q); snapshot.forEach(doc => batch.delete(doc.ref)); await batch.commit(); if (selectedContactBook?.id === contactBookToDelete.id) setSelectedContactBook(null); setContactBookToDelete(null); setMessage('聯絡簿已成功刪除。'); } catch (err) { setMessage('刪除聯絡簿失敗: ' + err.message); console.error(err); } };
+            const handleSelectContactBook = (contactBook) => { setSelectedContactBook(contactBook); setSelectedAssignment(null); setSelectedQuiz(null); };
+            const handleUpdateContactBookStatus = async (studentId, status) => { if (selectedContactBook && user && selectedClass) { try { const path = teacherDataCollection(user.uid, 'contactBookSubmissions'); const q = query(path, where('contactBookId', '==', selectedContactBook.id), where('studentId', '==', studentId)); const snapshot = await getDocs(q); if (!snapshot.empty) { await updateDoc(snapshot.docs[0].ref, { status, updatedAt: new Date() }); } else { const studentDoc = students.find(s => s.studentId === studentId); await addDoc(path, { contactBookId: selectedContactBook.id, studentId, studentName: studentDoc?.name, status, updatedAt: new Date(), teacherId: user.uid, classId: selectedClass.id }); } setModalStudent(null); } catch (err) { setMessage('更新聯絡簿狀態失敗: ' + err.message); console.error(err); } } };
+            const handleUpdateContactItems = async (newItems) => { if (user && selectedClass && contactItemsDocId) { try { await setDoc(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'contactItems', contactItemsDocId), { items: newItems }, { merge: true }); } catch (err) { setMessage('更新聯絡事項失敗: ' + err.message); console.error(err); } } };
+            const handleAddPerformanceRecord = async (points) => { if (performanceModalStudent && selectedReason.text && user && selectedClass) { try { await addDoc(teacherDataCollection(user.uid, 'performanceRecords'), { studentId: performanceModalStudent.studentId, studentName: performanceModalStudent.name, classId: selectedClass.id, reason: selectedReason.text, points, type: selectedReason.type, createdAt: new Date() }); setPerformanceModalStudent(null); setPerformanceStep(1); setSelectedReason({ type: '', text: '' }); } catch (err) { setMessage('新增表現紀錄失敗: ' + err.message); console.error(err); } } };
+            const handleAddQuiz = async (e) => { e.preventDefault(); if (newQuizTitle.trim() && user && selectedClass) { try { await addDoc(teacherDataCollection(user.uid, 'classes', selectedClass.id, 'quizzes'), { title: newQuizTitle, createdAt: new Date(), classId: selectedClass.id }); setNewQuizTitle(''); } catch (err) { setMessage('新增平常成績項目失敗: ' + err.message); console.error(err); } } };
+            const handleDeleteQuiz = async () => { if (!quizToDelete || !user || !selectedClass) return; try { const batch = writeBatch(db); batch.delete(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'quizzes', quizToDelete.id)); const q = query(teacherDataCollection(user.uid, 'quizSubmissions'), where('quizId', '==', quizToDelete.id)); const snapshot = await getDocs(q); snapshot.forEach(doc => batch.delete(doc.ref)); await batch.commit(); if (selectedQuiz?.id === quizToDelete.id) setSelectedQuiz(null); setQuizToDelete(null); setMessage('平常成績項目已刪除。'); } catch (err) { setMessage('刪除平常成績項目失敗: ' + err.message); console.error(err); } };
+            const handleUpdateQuizTitle = async () => { if (editingQuiz?.title.trim() && user && selectedClass) { try { await updateDoc(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'quizzes', editingQuiz.id), { title: editingQuiz.title }); setEditingQuiz(null); } catch (err) { setMessage('更新項目名稱失敗: ' + err.message); console.error(err); } } };
+            const handleSelectQuiz = (quiz) => { setSelectedQuiz(quiz); setSelectedAssignment(null); setSelectedContactBook(null); };
+            const handleUpdateQuizScore = async (studentId, score) => { if (selectedQuiz && user && selectedClass) { try { const path = teacherDataCollection(user.uid, 'quizSubmissions'); const q = query(path, where('quizId', '==', selectedQuiz.id), where('studentId', '==', studentId)); const snapshot = await getDocs(q); if (!snapshot.empty) { await updateDoc(snapshot.docs[0].ref, { score: score || null, updatedAt: new Date() }); } else { const studentDoc = students.find(s => s.studentId === studentId); await addDoc(path, { quizId: selectedQuiz.id, studentId, studentName: studentDoc?.name, score: score || null, updatedAt: new Date(), teacherId: user.uid, classId: selectedClass.id }); } } catch (err) { setMessage('更新成績失敗: ' + err.message); console.error(err); } } };
+            const handleQuizScoreKeyDown = (e, index, sortedStudents) => { if (e.key === 'Enter') { e.preventDefault(); if (index < sortedStudents.length - 1) { const nextStudentId = sortedStudents[index + 1].studentId; const nextInput = document.getElementById(`quiz-score-${nextStudentId}`); if (nextInput) { nextInput.focus(); nextInput.select(); } } } };
+            const handleAddTodo = async (e) => {
+                e.preventDefault();
+                if (!newTodoText.trim() || !newTodoDate || !user || !selectedClass) {
+                    setMessage('請輸入主題和日期。');
+                    return;
+                }
+                setProcessingMessage('正在新增...');
+                try {
+                    await addDoc(teacherDataCollection(user.uid, 'classes', selectedClass.id, 'todos'), {
+                        text: newTodoText,
+                        details: newTodoDetails,
+                        dueDate: newTodoDate,
+                        createdAt: new Date(),
+                    });
+                    setNewTodoText('');
+                    setNewTodoDetails('');
+                    setNewTodoDate('');
+                } catch (err) {
+                    setMessage('新增待辦事項失敗: ' + err.message);
+                    console.error(err);
+                } finally {
+                    setProcessingMessage('');
+                }
+            };
+            const handleDeleteTodo = async (todo) => {
+                if (!user || !todo || !selectedClass) return;
+                try {
+                    await deleteDoc(teacherDataDoc(user.uid, 'classes', selectedClass.id, 'todos', todo.id));
+                } catch (err) {
+                    setMessage('刪除待辦事項失敗: ' + err.message);
+                    console.error(err);
+                }
+            };
+            
+            const processAndBatchUpdateMultiScores = async (updates) => {
+                if (!user || !selectedClass || Object.keys(updates).length === 0) {
+                    setMessage('沒有可更新的資料或未選擇班級。');
+                    return;
+                }
+                setProcessingMessage('正在比對資料並準備更新...');
+                try {
+                    // 步驟 1: 辨識新的成績項目
+                    const quizTitleMap = new Map(quizzes.map(q => [q.title, q.id]));
+                    const newQuizTitles = Object.keys(updates).filter(title => !quizTitleMap.has(title));
+                    let updateSummary = '';
+
+                    // 步驟 2: 如果有新項目，則新增它們
+                    if (newQuizTitles.length > 0) {
+                        setProcessingMessage(`正在新增 ${newQuizTitles.length} 個新項目...`);
+                        const newQuizPromises = newQuizTitles.map(title => 
+                            addDoc(teacherDataCollection(user.uid, 'classes', selectedClass.id, 'quizzes'), { 
+                                title, 
+                                createdAt: new Date(), 
+                                classId: selectedClass.id 
+                            })
+                        );
+                        const newQuizDocs = await Promise.all(newQuizPromises);
+                        
+                        // 用新建立的項目更新 map
+                        newQuizDocs.forEach((docRef, index) => {
+                            quizTitleMap.set(newQuizTitles[index], docRef.id);
+                        });
+                        updateSummary += `成功新增 ${newQuizTitles.length} 個項目: ${newQuizTitles.join(', ')}。\n`;
+                    }
+
+                    // 步驟 3: 為所有成績（包括新舊項目）準備批次更新
+                    setProcessingMessage('正在準備更新成績...');
+                    const batch = writeBatch(db);
+                    const seatNumberToStudentMap = new Map(students.map(s => [String(s.seatNumber), s]));
+                    
+                    const submissionsQuery = query(teacherDataCollection(user.uid, 'quizSubmissions'), where('classId', '==', selectedClass.id));
+                    const submissionsSnapshot = await getDocs(submissionsQuery);
+                    const existingSubmissionsMap = new Map();
+                    submissionsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        existingSubmissionsMap.set(`${data.quizId}_${data.studentId}`, doc.id);
+                    });
+
+                    let updatedCount = 0;
+                    let notFoundStudents = new Set();
+
+                    for (const [quizTitle, scoresBySeat] of Object.entries(updates)) {
+                        const quizId = quizTitleMap.get(quizTitle);
+                        if (!quizId) continue; // 應該不會發生，因為我們已經新增了
+
+                        for (const [seat, score] of Object.entries(scoresBySeat)) {
+                            const student = seatNumberToStudentMap.get(String(seat));
+                            if (!student) {
+                                notFoundStudents.add(seat);
+                                continue;
+                            }
+                            const { studentId, name } = student;
+                            const submissionId = existingSubmissionsMap.get(`${quizId}_${studentId}`);
+                            const submissionRef = submissionId ? teacherDataDoc(user.uid, 'quizSubmissions', submissionId) : doc(teacherDataCollection(user.uid, 'quizSubmissions'));
+                            
+                            batch.set(submissionRef, { 
+                                quizId, 
+                                studentId, 
+                                studentName: name, 
+                                score: score ?? null, 
+                                updatedAt: new Date(), 
+                                teacherId: user.uid, 
+                                classId: selectedClass.id 
+                            }, { merge: true });
+                            updatedCount++;
+                        }
+                    }
+                    
+                    // 步驟 4: 提交並回報
+                    if (updatedCount > 0) {
+                        await batch.commit();
+                        updateSummary += `成功更新 ${updatedCount} 筆成績紀錄。`;
+                        if (notFoundStudents.size > 0) {
+                            updateSummary += `\n未找到座號: ${[...notFoundStudents].join(', ')}。`;
+                        }
+                        setMessage(updateSummary);
+                    } else {
+                        let resultMessage = '沒有可更新的成績。';
+                        if (newQuizTitles.length > 0) {
+                            resultMessage = updateSummary; // 即使沒有分數更新，也顯示新增了項目
+                        }
+                        if (notFoundStudents.size > 0) {
+                            resultMessage += `\n找不到座號: ${[...notFoundStudents].join(', ')}。`;
+                        }
+                        setMessage(resultMessage);
+                    }
+
+                } catch (err) {
+                    setMessage('批次更新成績時發生錯誤: ' + err.message);
+                    console.error(err);
+                } finally {
+                    setProcessingMessage('');
+                }
+            };
+
+            const handleMultiQuizScoreImportExcel = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setProcessingMessage('正在處理 Excel 檔案...');
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        const headers = jsonData[0].map(h => String(h || '').trim());
+                        const seatNumberIndex = headers.indexOf('座號');
+                        if (seatNumberIndex === -1) throw new Error('Excel 中找不到「座號」欄位。');
+
+                        const updates = {};
+                        headers.forEach((header, index) => {
+                            if (index !== seatNumberIndex && header) updates[header] = {};
+                        });
+
+                        for (let i = 1; i < jsonData.length; i++) {
+                            const row = jsonData[i];
+                            const seatNumber = row[seatNumberIndex];
+                            if (seatNumber != null && String(seatNumber).trim() !== '') {
+                                headers.forEach((header, index) => {
+                                    if (index !== seatNumberIndex && header) {
+                                        updates[header][String(seatNumber)] = row[index];
+                                    }
+                                });
+                            }
+                        }
+                        await processAndBatchUpdateMultiScores(updates);
+                    } catch (err) {
+                        setMessage(err.message || '匯入 Excel 失敗，請檢查檔案格式。');
+                        console.error(err);
+                    } finally {
+                        setProcessingMessage('');
+                        event.target.value = null;
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            const handleMultiQuizScoreImportImage = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setProcessingMessage('正在辨識圖片中的成績...');
+                try {
+                    const imageToBase64 = file => new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = error => reject(error);
+                    });
+                    const base64ImageData = await imageToBase64(file);
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    const payload = {
+                        contents: [{
+                            parts: [
+                                { text: "這是一張包含多個評量項目的成績單圖片。請辨識出每個評量項目的標題，以及每個座號在該項目下的分數。請以 JSON 物件格式回傳，最外層的鍵是評量標題（字串），值是另一個物件，該物件的鍵是座號（字串），值是分數（數字或字串）。例如：{\"第一課小考\": {\"1\": 95, \"2\": 88}, \"聽寫\": {\"1\": 100, \"2\": 90}}。如果無法辨識，請回傳空物件 {}。" },
+                                { inlineData: { mimeType: file.type, data: base64ImageData } }
+                            ]
+                        }]
+                    };
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`AI 辨識服務出錯: ${response.statusText}`);
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error('AI 未能從圖片中提取任何文字。');
+                    const cleanedJsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const parsedScores = JSON.parse(cleanedJsonString);
+                    if (Object.keys(parsedScores).length === 0) {
+                        setMessage("圖片辨識完成，但未找到任何可更新的成績資料。");
+                    } else {
+                        await processAndBatchUpdateMultiScores(parsedScores);
+                    }
+                } catch (err) {
+                    setMessage('圖片辨識或處理失敗：' + err.message);
+                    console.error(err);
+                } finally {
+                    setProcessingMessage('');
+                    event.target.value = null;
+                }
+            };
+
+            const exportSubmissions = (type) => { const selectedItem = type === 'assignment' ? selectedAssignment : selectedContactBook; const sourceSubmissions = type === 'assignment' ? submissions : contactBookSubmissions; if (!selectedItem) { setMessage('沒有可匯出的資料'); return; } const sortedStudents = [...students].sort((a, b) => (a.seatNumber || 999) - (b.seatNumber || 999)); const dataToExport = sortedStudents.map(student => { const submission = sourceSubmissions.find(s => s.studentId === student.studentId); const exportData = { '座號': student.seatNumber || '', '姓名': student.name, '狀態': submission ? submission.status : '未繳交', }; if (type === 'assignment') { exportData['分數'] = (submission && submission.score != null && submission.score !== '') ? submission.score : ''; } exportData['最後更新時間'] = getSafeDateString(submission?.updatedAt); return exportData; }); const ws = XLSX.utils.json_to_sheet(dataToExport); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "繳交狀況"); XLSX.writeFile(wb, `${selectedItem.title}_繳交狀況.xlsx`); };
+            const printSubmissions = (type) => { const selectedItem = type === 'assignment' ? selectedAssignment : selectedContactBook; if (!selectedItem) return; const printWindow = window.open('', '_blank'); const isAssignment = type === 'assignment'; const headers = isAssignment ? '<th>座號</th><th>學生姓名</th><th>狀態</th><th>分數</th><th>簽名</th>' : '<th>座號</th><th>學生姓名</th><th>狀態</th><th>簽名</th>'; const bodyRows = [...students].sort((a, b) => (a.seatNumber || 999) - (b.seatNumber || 999)).map(student => { const submission = (isAssignment ? submissions : contactBookSubmissions).find(s => s.studentId === student.studentId); const status = submission ? submission.status : '未繳交'; const scoreCell = isAssignment ? `<td>${(submission && submission.score != null && submission.score !== '') ? submission.score : ''}</td>` : ''; return `<tr><td>${student.seatNumber || ''}</td><td>${student.name}</td><td>${status}</td>${scoreCell}<td></td></tr>`; }).join(''); printWindow.document.write(`<html><head><title>列印繳交狀況</title><style>@media print{@page{size:A4;margin:10mm}body{font-size:9pt;font-family:'Arial',sans-serif}h1{text-align:center;color:#333;margin-bottom:10px;font-size:14pt}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid #ccc;padding:2px 4px;text-align:left}th{background-color:#f2f2f2}}</style></head><body><h1>${selectedClass.name} - ${isAssignment ? '作業' : '聯絡簿'}: ${selectedItem.title}</h1><table><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`); printWindow.document.close(); printWindow.print(); };
+            const handleExportPerformance = () => { const recordsToExport = filteredPerformanceRecords; if (recordsToExport.length === 0) { setMessage('沒有符合條件的紀錄可匯出。'); return; } const data = recordsToExport.sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt)).map(r => ({ '日期': getSafeDateString(r.createdAt), '座號': students.find(s => s.studentId === r.studentId)?.seatNumber || '', '姓名': r.studentName, '事由': r.reason, '分數': r.points })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "課堂表現紀錄"); XLSX.writeFile(wb, "課堂表現紀錄.xlsx"); };
+            const handlePrintPerformance = () => { const recordsToPrint = filteredPerformanceRecords; if (recordsToPrint.length === 0) { setMessage('沒有符合條件的紀錄可列印。'); return; } const printWindow = window.open('', '_blank'); const sortedRecords = [...recordsToPrint].sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt)); let filterTitle = '所有紀錄'; if (performanceFilter.type === 'dateRange') { filterTitle = `日期: ${performanceFilter.startDate || '不限'} 至 ${performanceFilter.endDate || '不限'}`; } else if (performanceFilter.type === 'studentId' && performanceFilter.startDate) { const studentName = students.find(s => s.studentId === performanceFilter.startDate)?.name || '未知學生'; filterTitle = `學生: ${studentName}`; } printWindow.document.write(`<html><head><title>列印課堂表現紀錄</title><style> body { font-family: 'Arial', sans-serif; margin: 20px; font-size: 10pt; } h1, h2 { color: #333; } table { width: 100%; border-collapse: collapse; margin-top: 20px; } th, td { border: 1px solid #ddd; padding: 4px; text-align: left; } th { background-color: #f2f2f2; } .points-positive { color: green; } .points-negative { color: red; } </style></head><body>`); printWindow.document.write(`<h1>課堂表現紀錄</h1><h2>${selectedClass.name} - ${filterTitle}</h2>`); printWindow.document.write('<table><thead><tr><th>日期</th><th>座號</th><th>姓名</th><th>事由</th><th>分數</th></tr></thead><tbody>'); sortedRecords.forEach(r => { const seatNumber = students.find(s => s.studentId === r.studentId)?.seatNumber || ''; const pointsClass = r.points > 0 ? 'points-positive' : 'points-negative'; const dateStr = getSafeDateString(r.createdAt); printWindow.document.write(`<tr> <td>${dateStr}</td> <td>${seatNumber}</td> <td>${r.studentName}</td> <td>${r.reason}</td> <td class="${pointsClass}">${r.points > 0 ? '+' : ''}${r.points}</td> </tr>`); }); printWindow.document.write('</tbody></table></body></html>'); printWindow.document.close(); printWindow.print(); };
+            const handleExportAllScores = async (type) => { if (!user || !selectedClass) { setMessage('請先選擇一個班級'); return; } const isAssignment = type === 'assignment'; const items = isAssignment ? assignments : quizzes; const submissionCollectionName = isAssignment ? 'submissions' : 'quizSubmissions'; const idField = isAssignment ? 'assignmentId' : 'quizId'; const excelFileName = isAssignment ? '所有作業成績' : '所有平常成績'; if (items.length === 0) { setMessage(`此班級沒有任何${isAssignment ? '作業' : '平常成績項目'}。`); return; } setProcessingMessage('正在準備匯出資料...'); try { const sortedStudents = [...students].sort((a, b) => (a.seatNumber || 999) - (b.seatNumber || 999)); const sortedItems = [...items].sort((a, b) => getSafeTimestamp(a.createdAt) - getSafeTimestamp(b.createdAt)); const submissionsQuery = query(teacherDataCollection(user.uid, submissionCollectionName), where('classId', '==', selectedClass.id)); const querySnapshot = await getDocs(submissionsQuery); const allSubmissions = querySnapshot.docs.map(doc => doc.data()); const headers = ['座號', '姓名', ...sortedItems.map(a => a.title), '平均']; const dataToExport = [headers]; sortedStudents.forEach(student => { const row = [student.seatNumber || '', student.name]; let totalScore = 0; let scoreCount = 0; sortedItems.forEach(item => { const submission = allSubmissions.find(s => s.studentId === student.studentId && s[idField] === item.id); const score = submission?.score; if (score != null && score !== '' && !isNaN(Number(score))) { const numericScore = Number(score); row.push(numericScore); totalScore += numericScore; scoreCount++; } else { row.push(score || ''); } }); const average = scoreCount > 0 ? (totalScore / scoreCount).toFixed(2) : ''; row.push(average); dataToExport.push(row); }); const ws = XLSX.utils.aoa_to_sheet(dataToExport); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, excelFileName); XLSX.writeFile(wb, `${selectedClass.name}_${excelFileName}.xlsx`); } catch (err) { setMessage(`匯出${excelFileName}失敗: ` + err.message); console.error(err); } finally { setProcessingMessage(''); } };
+            const handleExportData = async () => { if (!user) { setMessage('請先登入'); return; } setProcessingMessage('正在匯出資料...'); try { const backup = { schemaVersion: 1, exportedAt: new Date().toISOString(), data: {} }; const teacherId = user.uid; const topLevelColls = { classes: `artifacts/${appId}/public/data/teachers/${teacherId}/classes`, submissions: `artifacts/${appId}/public/data/teachers/${teacherId}/submissions`, quizSubmissions: `artifacts/${appId}/public/data/teachers/${teacherId}/quizSubmissions`, contactBookSubmissions: `artifacts/${appId}/public/data/teachers/${teacherId}/contactBookSubmissions`, performanceRecords: `artifacts/${appId}/public/data/teachers/${teacherId}/performanceRecords` }; for (const [key, path] of Object.entries(topLevelColls)) { const snapshot = await getDocs(collection(db, path)); backup.data[key] = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); } backup.data.nested = {}; if (backup.data.classes) { for (const classDoc of backup.data.classes) { backup.data.nested[classDoc.id] = {}; const nestedColls = ['students', 'assignments', 'contactBooks', 'contactItems', 'quizzes', 'todos']; for (const collName of nestedColls) { const path = `artifacts/${appId}/public/data/teachers/${teacherId}/classes/${classDoc.id}/${collName}`; const snapshot = await getDocs(collection(db, path)); backup.data.nested[classDoc.id][collName] = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); } } } const jsonString = JSON.stringify(backup, (key, value) => (value && typeof value.toDate === 'function') ? value.toDate().toISOString() : value, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `classroom-manager-backup-${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); setMessage('資料匯出成功！'); } catch (e) { setMessage('匯出資料失敗: ' + e.message); console.error(e); } finally { setProcessingMessage(''); } };
+            const handleImportData = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data.schemaVersion !== 1 || !data.data) throw new Error("Invalid backup file format."); setImportData(data); } catch (err) { setMessage("讀取檔案失敗或檔案格式錯誤: " + err.message); console.error(err); } }; reader.readAsText(file); event.target.value = null; };
+            const confirmImport = async () => {
+                if (!importData || !user) return;
+                setProcessingMessage("正在匯入資料，請稍候...");
+                setImportData(null);
+                const teacherId = user.uid;
+                try {
+                    const docsToDelete = [];
+                    const classSnapshot = await getDocs(teacherDataCollection(teacherId, 'classes'));
+                    for (const classDoc of classSnapshot.docs) {
+                        docsToDelete.push(classDoc.ref);
+                        const nestedColls = ['students', 'assignments', 'contactBooks', 'contactItems', 'quizzes', 'todos'];
+                        for (const collName of nestedColls) {
+                            const snapshot = await getDocs(collection(db, classDoc.ref.path, collName));
+                            for (const doc of snapshot.docs) {
+                                if (collName === 'todos') {
+                                    const todoData = doc.data();
+                                    if (todoData.attachmentPath) {
+                                        try {
+                                            const fileRef = ref(storage, todoData.attachmentPath);
+                                            await deleteObject(fileRef);
+                                        } catch (e) {
+                                            if (e.code !== 'storage/object-not-found') console.error("Failed to delete old todo attachment during import:", e);
+                                        }
+                                    }
+                                }
+                                docsToDelete.push(doc.ref);
+                            }
+                        }
+                    }
+                    const topLevelColls = ['submissions', 'contactBookSubmissions', 'performanceRecords', 'quizSubmissions'];
+                    for (const collName of topLevelColls) {
+                        (await getDocs(teacherDataCollection(teacherId, collName))).forEach(d => docsToDelete.push(d.ref));
+                    }
+                    for (let i = 0; i < docsToDelete.length; i += 500) {
+                        const batch = writeBatch(db);
+                        docsToDelete.slice(i, i + 500).forEach(ref => batch.delete(ref));
+                        await batch.commit();
+                    }
+                    const dataToWrite = [];
+                    const { data } = importData;
+                    const parseTimestamps = (obj) => {
+                        for (const key in obj) {
+                            if (typeof obj[key] === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(obj[key])) {
+                                obj[key] = new Date(obj[key]);
+                            }
+                        }
+                        return obj;
+                    };
+                    Object.entries(data).forEach(([collName, docs]) => {
+                        if (collName !== 'nested' && Array.isArray(docs)) {
+                            docs.forEach(docData => {
+                                const { id, ...rest } = docData;
+                                dataToWrite.push({
+                                    ref: teacherDataDoc(teacherId, collName, id),
+                                    data: parseTimestamps(rest)
+                                });
+                            });
+                        }
+                    });
+                    Object.entries(data.nested || {}).forEach(([classId, nestedData]) => {
+                        Object.entries(nestedData).forEach(([collName, docs]) => {
+                            docs.forEach(docData => {
+                                const { id, ...rest } = docData;
+                                dataToWrite.push({
+                                    ref: teacherDataDoc(teacherId, 'classes', classId, collName, id),
+                                    data: parseTimestamps(rest)
+                                });
+                            });
+                        });
+                    });
+                    for (let i = 0; i < dataToWrite.length; i += 500) {
+                        const batch = writeBatch(db);
+                        dataToWrite.slice(i, i + 500).forEach(item => batch.set(item.ref, item.data));
+                        await batch.commit();
+                    }
+                    setMessage("資料匯入成功！頁面將會重新整理。");
+                    setTimeout(() => window.location.reload(), 2000);
+                } catch (e) {
+                    setMessage('匯入資料失敗，您的舊資料可能已被部分刪除，建議重新整理後再次嘗試。');
+                    console.error(e);
+                } finally {
+                    setProcessingMessage('');
+                }
+            };
+
+            // Render Functions
+            if (loading) return React.createElement('div', { className: 'flex justify-center items-center h-screen bg-gray-100' }, React.createElement('div', { className: 'text-xl' }, '載入中...'));
+            
+            const renderStudentManagement = () => React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '學生管理'), React.createElement('form', { onSubmit: handleAddStudent, className: 'mb-4 flex flex-wrap gap-2' }, React.createElement('input', { type: 'number', value: newStudentSeatNumber, onChange: (e) => setNewStudentSeatNumber(e.target.value), placeholder: '座號', className: 'p-2 border rounded-md w-24' }), React.createElement('input', { type: 'text', value: newStudentName, onChange: (e) => setNewStudentName(e.target.value), placeholder: '輸入學生姓名', className: 'flex-grow p-2 border rounded-md' }), React.createElement('button', { type: 'submit', className: 'bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600' }, '新增學生')), React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pt-4 border-t' }, React.createElement('div', null, React.createElement('label', { className: 'block mb-2 text-sm font-medium text-gray-900', htmlFor: 'student_import' }, '從 Excel 匯入學生'), React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('input', { onChange: handleImportStudents, className: 'block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none', id: 'student_import', type: 'file', accept: '.xlsx, .xls' }), React.createElement('button', { onClick: handleDownloadSampleExcel, className: 'text-sm text-blue-500 hover:underline whitespace-nowrap' }, '範例')))), React.createElement('ul', { className: 'space-y-2' }, [...students].sort((a, b) => (a.seatNumber || 999) - (b.seatNumber || 999)).map(student => React.createElement('li', { key: student.id, className: 'flex justify-between items-center p-2 bg-gray-50 rounded-md' }, React.createElement('span', null, `${student.seatNumber || ''}. ${student.name} (${student.studentId})`), React.createElement('button', { onClick: () => handleDeleteStudent(student.id), className: 'text-red-500 hover:text-red-700' }, '刪除')))));
+            const renderAssignmentManagement = () => React.createElement('div', null, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md mb-6' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '作業管理'), React.createElement('form', { onSubmit: handleAddAssignment, className: 'flex gap-2 mb-4' }, React.createElement('input', { type: 'text', value: newAssignmentTitle, onChange: (e) => setNewAssignmentTitle(e.target.value), placeholder: '新增作業標題', className: 'flex-grow p-2 border rounded-md' }), React.createElement('button', { type: 'submit', className: 'bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600' }, '新增作業')), React.createElement('button', { onClick: () => handleExportAllScores('assignment'), className: 'bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600' }, '匯出所有作業成績')), React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '作業列表'), React.createElement('ul', { className: 'space-y-2' }, [...assignments].sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt)).map(assignment => React.createElement('li', { key: assignment.id, className: `p-3 rounded-md transition ${selectedAssignment?.id === assignment.id ? 'bg-blue-100' : 'bg-gray-50'}` }, editingAssignment?.id === assignment.id ? React.createElement('div', { className: 'flex gap-2 items-center' }, React.createElement('input', { type: 'text', value: editingAssignment.title, onChange: (e) => setEditingAssignment({ ...editingAssignment, title: e.target.value }), className: 'flex-grow p-2 border rounded-md' }), React.createElement('button', { onClick: handleUpdateAssignmentTitle, className: 'bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600' }, '儲存'), React.createElement('button', { onClick: () => setEditingAssignment(null), className: 'bg-gray-300 px-3 py-2 rounded-md hover:bg-gray-400' }, '取消')) : React.createElement('div', { className: 'flex justify-between items-center' }, React.createElement('span', { onClick: () => handleSelectAssignment(assignment), className: 'flex-grow text-left cursor-pointer' }, assignment.title), React.createElement('div', { className: 'flex gap-4' }, React.createElement('button', { onClick: () => setEditingAssignment({ id: assignment.id, title: assignment.title }), className: 'text-blue-600 hover:underline text-sm' }, '編輯'), React.createElement('button', { onClick: () => setAssignmentToDelete(assignment), className: 'text-red-600 hover:underline text-sm' }, '刪除'))))))));
+            const renderContactBookManagement = () => React.createElement('div', null, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md mb-6' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '聯絡簿管理'), React.createElement('div', { className: 'mb-4 grid grid-cols-1 md:grid-cols-2 gap-4' }, React.createElement('button', { onClick: () => setIsContactItemsModalOpen(true), className: 'bg-yellow-500 text-white w-full px-4 py-2 rounded-md hover:bg-yellow-600 font-semibold' }, '編輯/查看 今日聯絡事項'), React.createElement('button', { onClick: () => setIsCalendarModalOpen(true), className: 'bg-cyan-500 text-white w-full px-4 py-2 rounded-md hover:bg-cyan-600 font-semibold' }, '從月曆新增聯絡簿'))), React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '聯絡簿列表'), React.createElement('ul', { className: 'space-y-2' }, [...contactBooks].sort((a, b) => b.title.localeCompare(a.title)).map(cb => React.createElement('li', { key: cb.id, className: `p-3 rounded-md transition ${selectedContactBook?.id === cb.id ? 'bg-blue-100' : 'bg-gray-50'}` }, React.createElement('div', { className: 'flex justify-between items-center' }, React.createElement('span', { onClick: () => handleSelectContactBook(cb), className: 'flex-grow text-left cursor-pointer' }, cb.title), React.createElement('button', { onClick: () => setContactBookToDelete(cb), className: 'text-red-600 hover:underline text-sm' }, '刪除')))))));
+            const renderQuizManagement = () => React.createElement('div', null, 
+                React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md mb-6' }, 
+                    React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '平常成績管理'), 
+                    React.createElement('form', { onSubmit: handleAddQuiz, className: 'flex gap-2 mb-4' }, 
+                        React.createElement('input', { type: 'text', value: newQuizTitle, onChange: (e) => setNewQuizTitle(e.target.value), placeholder: '新增項目標題 (如：第一課小考)', className: 'flex-grow p-2 border rounded-md' }), 
+                        React.createElement('button', { type: 'submit', className: 'bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600' }, '新增項目')
+                    ),
+                    React.createElement('div', { className: 'mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-4' },
+                        React.createElement('button', { onClick: () => handleExportAllScores('quiz'), className: 'bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600' }, '匯出所有平常成績'),
+                        React.createElement('button', { onClick: () => quizScoreImportRef.current.click(), className: 'bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600' }, '匯入多項成績 (Excel)'),
+                        React.createElement('button', { onClick: () => quizScoreImageImportRef.current.click(), className: 'bg-sky-500 text-white px-4 py-2 rounded-md hover:bg-sky-600' }, '從圖片辨識多項成績')
+                    ),
+                    React.createElement('input', { type: 'file', ref: quizScoreImportRef, onChange: handleMultiQuizScoreImportExcel, style: { display: 'none' }, accept: '.xlsx, .xls' }),
+                    React.createElement('input', { type: 'file', ref: quizScoreImageImportRef, onChange: handleMultiQuizScoreImportImage, style: { display: 'none' }, accept: 'image/*' })
+                ), 
+                React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, 
+                    React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '項目列表'), 
+                    React.createElement('ul', { className: 'space-y-2' }, [...quizzes].sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt)).map(quiz => React.createElement('li', { key: quiz.id, className: `p-3 rounded-md transition ${selectedQuiz?.id === quiz.id ? 'bg-blue-100' : 'bg-gray-50'}` }, 
+                        editingQuiz?.id === quiz.id ? React.createElement('div', { className: 'flex gap-2 items-center' }, 
+                            React.createElement('input', { type: 'text', value: editingQuiz.title, onChange: (e) => setEditingQuiz({ ...editingQuiz, title: e.target.value }), className: 'flex-grow p-2 border rounded-md' }), 
+                            React.createElement('button', { onClick: handleUpdateQuizTitle, className: 'bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600' }, '儲存'), 
+                            React.createElement('button', { onClick: () => setEditingQuiz(null), className: 'bg-gray-300 px-3 py-2 rounded-md hover:bg-gray-400' }, '取消')) 
+                        : React.createElement('div', { className: 'flex justify-between items-center' }, 
+                            React.createElement('span', { onClick: () => handleSelectQuiz(quiz), className: 'flex-grow text-left cursor-pointer' }, quiz.title), 
+                            React.createElement('div', { className: 'flex gap-4' }, 
+                                React.createElement('button', { onClick: () => setEditingQuiz({ id: quiz.id, title: quiz.title }), className: 'text-blue-600 hover:underline text-sm' }, '編輯'), 
+                                React.createElement('button', { onClick: () => setQuizToDelete(quiz), className: 'text-red-600 hover:underline text-sm' }, '刪除')
+                            )
+                        )
+                    )))
+                )
+            );
+            const renderTodoManagement = () => {
+                const TodoItem = ({ todo, color }) => {
+                    const isExpanded = expandedTodoId === todo.id;
+                    const toggleExpand = (e) => {
+                        if (e.target.tagName !== 'BUTTON') {
+                            setExpandedTodoId(isExpanded ? null : todo.id);
+                        }
+                    };
+
+                    return React.createElement('div', { 
+                        className: `p-3 rounded-lg shadow-sm bg-${color}-100 cursor-pointer`,
+                        onClick: toggleExpand
+                    },
+                        React.createElement('div', { className: 'flex justify-between items-start' },
+                            React.createElement('div', { className: 'flex-grow' },
+                                React.createElement('p', { className: `font-semibold text-${color}-800` }, `主題：${todo.text}`),
+                                React.createElement('p', { className: `text-sm text-${color}-600` }, `日期：${todo.dueDate}`)
+                            ),
+                            React.createElement('button', { 
+                                onClick: (e) => { e.stopPropagation(); handleDeleteTodo(todo); }, 
+                                className: `text-${color}-500 hover:text-${color}-700 font-bold ml-2 flex-shrink-0`
+                            }, '✕')
+                        ),
+                        isExpanded && todo.details && React.createElement('div', { className: 'mt-2 pt-2 border-t border-gray-300' },
+                            React.createElement('p', { className: `text-sm text-gray-700 whitespace-pre-wrap break-words` }, todo.details)
+                        )
+                    );
+                };
+
+                return React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-6' },
+                    React.createElement('div', { className: 'bg-yellow-50 p-4 rounded-lg' },
+                        React.createElement('h2', { className: 'text-2xl font-bold mb-4 text-yellow-800' }, '✍️ 待辦事項'),
+                        React.createElement('form', { onSubmit: handleAddTodo, className: 'bg-white p-4 rounded-lg shadow-md mb-4 space-y-3' },
+                            React.createElement('input', { type: 'text', value: newTodoText, onChange: (e) => setNewTodoText(e.target.value), placeholder: '輸入主題...', className: 'w-full p-2 border rounded-md' }),
+                            React.createElement('textarea', { value: newTodoDetails, onChange: (e) => setNewTodoDetails(e.target.value), placeholder: '輸入詳細內容 (可選)...', className: 'w-full p-2 border rounded-md h-24', rows: '3' }),
+                            React.createElement('input', { type: 'date', value: newTodoDate, onChange: (e) => setNewTodoDate(e.target.value), className: 'w-full p-2 border rounded-md' }),
+                            React.createElement('button', { type: 'submit', className: 'w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-md hover:bg-yellow-600' }, '新增待辦事項')
+                        ),
+                        React.createElement('div', { className: 'space-y-3' }, categorizedTodos.pending.map(todo => React.createElement(TodoItem, { key: todo.id, todo, color: 'yellow' })))
+                    ),
+                    React.createElement('div', { className: 'bg-red-50 p-4 rounded-lg' },
+                        React.createElement('h2', { className: 'text-2xl font-bold mb-4 text-red-800' }, '🚨 緊急事項'),
+                        React.createElement('div', { className: 'space-y-3' }, categorizedTodos.urgent.map(todo => React.createElement(TodoItem, { key: todo.id, todo, color: 'red' })))
+                    ),
+                    React.createElement('div', { className: 'bg-green-50 p-4 rounded-lg' },
+                        React.createElement('h2', { className: 'text-2xl font-bold mb-4 text-green-800' }, '✅ 已完成/逾期事項'),
+                        React.createElement('div', { className: 'space-y-3' }, categorizedTodos.completed.map(todo => React.createElement(TodoItem, { key: todo.id, todo, color: 'green' })))
+                    )
+                );
+            };
+            const renderScoreGrid = () => { const sortedStudents = [...students].sort((a, b) => (a.seatNumber || 999) - (b.seatNumber || 999)); return React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('button', { onClick: () => setSelectedQuiz(null), className: 'mb-4 text-blue-500 hover:underline' }, '← 返回項目列表'), React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, `登錄成績: ${selectedQuiz.title}`), React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' }, sortedStudents.map((student, index) => React.createElement('div', { key: student.id, className: 'flex items-center gap-3 p-2 bg-gray-50 rounded-md' }, React.createElement('span', { className: 'font-semibold w-28 text-right' }, `${student.seatNumber || ''}. ${student.name}`), React.createElement('input', { type: 'text', id: `quiz-score-${student.studentId}`, value: quizScores[student.studentId] || '', onChange: (e) => setQuizScores(prev => ({ ...prev, [student.studentId]: e.target.value })), onBlur: (e) => handleUpdateQuizScore(student.studentId, e.target.value), onKeyDown: (e) => handleQuizScoreKeyDown(e, index, sortedStudents), placeholder: '分數', className: 'p-2 border rounded-md w-full' }))))); };
+            const renderPerformanceManagement = () => { const sortedStudents = [...students].sort((a, b) => (a.seatNumber || 999) - (b.seatNumber || 999)); const livelyColors = ['bg-yellow-200', 'bg-green-200', 'bg-blue-200', 'bg-pink-200', 'bg-purple-200', 'bg-orange-200']; return React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '課堂表現管理'), React.createElement('div', { className: 'bg-gray-50 p-4 rounded-lg mb-6 flex flex-wrap items-center gap-4' }, React.createElement('label', { className: 'font-semibold' }, '篩選條件:'), React.createElement('select', { value: performanceFilter.type, onChange: (e) => setPerformanceFilter({ type: e.target.value, startDate: '', endDate: '' }), className: 'p-2 border rounded-md bg-white' }, React.createElement('option', { value: 'all' }, '所有紀錄'), React.createElement('option', { value: 'dateRange' }, '依日期區間'), React.createElement('option', { value: 'studentId' }, '依學生')), performanceFilter.type === 'dateRange' && React.createElement('div', { className: 'flex items-center gap-2 flex-wrap' }, React.createElement('input', { type: 'date', value: performanceFilter.startDate, onChange: (e) => setPerformanceFilter({ ...performanceFilter, startDate: e.target.value }), className: 'p-2 border rounded-md' }), React.createElement('span', null, '至'), React.createElement('input', { type: 'date', value: performanceFilter.endDate, onChange: (e) => setPerformanceFilter({ ...performanceFilter, endDate: e.target.value }), className: 'p-2 border rounded-md' })), performanceFilter.type === 'studentId' && React.createElement('select', { value: performanceFilter.startDate, onChange: (e) => setPerformanceFilter({ ...performanceFilter, startDate: e.target.value }), className: 'p-2 border rounded-md bg-white w-full max-w-xs' }, React.createElement('option', { value: '' }, '--- 選擇學生 ---'), sortedStudents.map(s => React.createElement('option', { key: s.id, value: s.studentId }, `${s.seatNumber || ''}. ${s.name}`))), React.createElement('div', { className: 'flex gap-2 ml-auto' }, React.createElement('button', { onClick: handleExportPerformance, className: 'bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600' }, '匯出 EXCEL'), React.createElement('button', { onClick: handlePrintPerformance, className: 'bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600' }, '列印'))), React.createElement('h3', { className: 'text-xl font-semibold mb-4 text-gray-700' }, '學生總分 (點擊以紀錄)'), React.createElement('div', { className: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4' }, sortedStudents.map((student, index) => { const score = studentScores[student.studentId] || 0; let scoreColor = score > 0 ? 'text-green-700' : score < 0 ? 'text-red-700' : 'text-gray-900'; const bgColor = livelyColors[index % livelyColors.length]; return React.createElement('button', { key: student.id, onClick: () => setPerformanceModalStudent(student), className: `p-3 rounded-lg text-center shadow transition-transform transform hover:scale-105 ${bgColor}` }, React.createElement('p', { className: 'font-bold text-lg text-gray-900' }, student.name), React.createElement('p', { className: 'text-sm text-gray-700' }, student.seatNumber ? `座號: ${student.seatNumber}` : ''), React.createElement('p', { className: `mt-2 text-3xl font-bold ${scoreColor}` }, score)); }), !students.length && React.createElement('p', { className: 'text-gray-500 col-span-full' }, '請先到「學生」分頁新增學生。'))); };
+            const renderPerformanceModal = () => { if (!performanceModalStudent) return null; const addReasons = ['課堂表現優良', '勇於發表', '出色小助教', '老師小幫手', '作業優良']; const deductReasons = ['遲到', '上課睡覺', '上課講話', '常規不佳', '缺遲交作業']; const handleReasonClick = (type, text) => { setSelectedReason({ type, text }); setPerformanceStep(2); }; const resetModal = () => { setPerformanceModalStudent(null); setPerformanceStep(1); setSelectedReason({ type: '', text: '' }); }; return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4' }, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-xl w-full max-w-lg text-center' }, React.createElement('h3', { className: 'text-2xl font-bold mb-4' }, `紀錄 ${performanceModalStudent.name} 的表現`), performanceStep === 1 ? React.createElement('div', null, React.createElement('h4', { className: 'text-xl font-semibold mb-2 text-blue-600' }, '加分'), React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-3 gap-2 mb-6' }, addReasons.map(reason => React.createElement('button', { key: reason, onClick: () => handleReasonClick('add', reason), className: 'bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600' }, reason))), React.createElement('h4', { className: 'text-xl font-semibold mb-2 text-red-600' }, '扣分'), React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-3 gap-2 mb-6' }, deductReasons.map(reason => React.createElement('button', { key: reason, onClick: () => handleReasonClick('deduct', reason), className: 'bg-red-500 text-white p-3 rounded-md hover:bg-red-600' }, reason)))) : React.createElement('div', null, React.createElement('h4', { className: 'text-xl font-semibold mb-4' }, `項目: ${selectedReason.text}`), React.createElement('h5', { className: 'text-lg mb-4' }, '請選擇分數'), React.createElement('div', { className: 'flex justify-center gap-4 mb-6' }, (selectedReason.type === 'add' ? [1, 2, 3] : [-1, -2, -3]).map(points => React.createElement('button', { key: points, onClick: () => handleAddPerformanceRecord(points), className: `w-20 h-20 text-2xl font-bold rounded-full text-white ${selectedReason.type === 'add' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-red-500 hover:bg-red-600'}` }, `${points > 0 ? '+' : ''}${points}`))), React.createElement('button', { onClick: () => setPerformanceStep(1), className: 'w-full bg-gray-400 text-white p-2 rounded-md hover:bg-gray-500' }, '返回選擇項目')), React.createElement('button', { onClick: resetModal, className: 'w-full bg-gray-200 text-gray-800 p-2 rounded-md hover:bg-gray-300 mt-4' }, '取消'))); };
+            const renderContactItemsModal = () => {
+                if (!isContactItemsModalOpen) return null;
+                const handleAddItem = async () => { if (newContactItem.trim()) { await handleUpdateContactItems([...contactItems, newContactItem]); setNewContactItem(''); } };
+                const handleDeleteItem = async (indexToDelete) => await handleUpdateContactItems(contactItems.filter((_, index) => index !== indexToDelete));
+                return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4' },
+                    React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl flex flex-col h-full max-h-[90vh]' },
+                        // Header section
+                        React.createElement('div', { className: 'flex-shrink-0' },
+                            React.createElement('h3', { className: 'text-2xl font-bold mb-4' }, `今日聯絡事項 (${contactItemsDocId})`),
+                            React.createElement('div', { className: 'mb-4 flex gap-2' },
+                                React.createElement('input', { type: 'text', value: newContactItem, onChange: e => setNewContactItem(e.target.value), placeholder: '新增事項', className: 'flex-grow p-2 border rounded-md' }),
+                                React.createElement('button', { onClick: handleAddItem, className: 'bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600' }, '新增')
+                            ),
+                            // Controls Row
+                            React.createElement('div', { className: 'mb-4 pt-4 border-t flex justify-between items-center flex-wrap gap-y-2' },
+                                React.createElement('div', { className: 'flex items-center gap-3 flex-wrap' },
+                                    React.createElement('span', { className: 'text-sm font-medium text-gray-900' }, '從 Excel 匯入聯絡事項'),
+                                    React.createElement('button', { onClick: () => contactItemImportRef.current.click(), className: 'bg-teal-500 text-white px-3 py-2 rounded-md text-sm hover:bg-teal-600' }, '選擇檔案'),
+                                    React.createElement('button', { onClick: handleDownloadContactItemSample, className: 'text-sm text-blue-500 hover:underline whitespace-nowrap' }, '範例檔'),
+                                    React.createElement('button', { onClick: () => setIsBigScreenViewOpen(true), className: 'bg-green-500 text-white px-3 py-2 rounded-md text-sm hover:bg-green-600' }, '顯示於大屏')
+                                ),
+                                React.createElement('button', { onClick: () => setIsContactItemsModalOpen(false), className: 'bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400' }, '關閉')
+                            ),
+                        ),
+                        React.createElement('input', { type: 'file', ref: contactItemImportRef, onChange: handleImportContactItems, style: { display: 'none' }, accept: '.xlsx, .xls' }),
+                        // List section (scrolling)
+                        React.createElement('ul', { className: 'flex-grow space-y-2 overflow-y-auto border p-2 rounded-md bg-gray-50' },
+                            contactItems.map((item, index) => React.createElement('li', { key: index, className: 'flex justify-between items-center p-2 bg-white rounded shadow-sm' },
+                                React.createElement('span', { className: 'text-gray-800' }, `${index + 1}. ${item}`),
+                                React.createElement('button', { onClick: () => handleDeleteItem(index), className: 'text-red-500 hover:text-red-700 font-bold' }, 'X')
+                            )),
+                            !contactItems.length && React.createElement('p', { className: 'text-gray-500 text-center p-4' }, '尚無聯絡事項。')
+                        )
+                    )
+                );
+            };
+            const renderBigScreenView = () => {
+                if (!isBigScreenViewOpen) return null;
+
+                const itemCount = contactItems.length;
+                const chunkSize = 5;
+                const itemChunks = [];
+                for (let i = 0; i < itemCount; i += chunkSize) {
+                    itemChunks.push(contactItems.slice(i, i + chunkSize));
+                }
+
+                // Determine font size based on the number of columns to ensure it fits
+                let fontSizeClass = 'text-5xl';
+                let listSpacingClass = 'space-y-6';
+                if (itemChunks.length > 2) { // 3 or more columns
+                    fontSizeClass = 'text-3xl';
+                    listSpacingClass = 'space-y-3';
+                } else if (itemChunks.length > 1) { // 2 columns
+                    fontSizeClass = 'text-4xl';
+                    listSpacingClass = 'space-y-4';
+                }
+
+                return React.createElement('div', { className: 'fixed inset-0 bg-slate-800 text-white z-[100] p-8 flex flex-col items-center justify-center' },
+                    React.createElement('div', { className: 'w-full max-w-7xl' },
+                        React.createElement('h1', { className: 'text-6xl font-bold mb-12 text-center text-yellow-300' }, '聯絡事項'),
+                        
+                        itemCount > 0 ?
+                            React.createElement('div', { className: 'flex justify-center items-start gap-x-16' },
+                                itemChunks.map((chunk, chunkIndex) => {
+                                    const startNumber = chunkIndex * chunkSize + 1;
+                                    return React.createElement('ol', {
+                                            key: chunkIndex,
+                                            className: `list-decimal list-inside ${fontSizeClass} ${listSpacingClass}`,
+                                            start: startNumber
+                                        },
+                                        chunk.map((item, itemIndex) => React.createElement('li', { key: itemIndex }, item))
+                                    );
+                                })
+                            ) :
+                            React.createElement('p', { className: 'text-gray-400 text-center text-4xl mt-10' }, '今日無特別事項')
+                    ),
+                    React.createElement('button', {
+                        onClick: () => setIsBigScreenViewOpen(false),
+                        className: 'absolute top-6 right-6 bg-red-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl font-bold shadow-lg hover:bg-red-600 transition-transform transform hover:scale-110'
+                    }, 'X')
+                );
+            };
+            const renderStatusUpdateModal = () => { if (!modalStudent) return null; const isAssignment = !!selectedAssignment; const title = `更新 ${modalStudent.name} 的狀態`; const buttons = isAssignment ? [{ text: '已繳交', status: '已繳交', color: 'bg-green-500 hover:bg-green-600' }, { text: '補交', status: '補交', color: 'bg-orange-500 hover:bg-orange-600' }, { text: '訂正完成', status: '訂正完成', color: 'bg-blue-500 hover:bg-blue-600' }, { text: '設為未繳交', status: '未繳交', color: 'bg-red-500 hover:bg-red-600' }] : [{ text: '已繳交', status: '已繳交', color: 'bg-green-500 hover:bg-green-600' }, { text: '補交', status: '補交', color: 'bg-orange-500 hover:bg-orange-600' }, { text: '家長未簽名', status: '家長未簽名', color: 'bg-pink-500 hover:bg-pink-600' }, { text: '設為未繳交', status: '未繳交', color: 'bg-red-500 hover:bg-red-600' }]; const handler = isAssignment ? handleUpdateStatus : handleUpdateContactBookStatus; const closeModal = () => { setModalStudent(null); setAssignmentScore(''); }; return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4' }, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-xl w-full max-w-sm text-center' }, React.createElement('h3', { className: 'text-xl font-bold mb-4' }, title), isAssignment && React.createElement('div', { className: 'mb-4 text-left' }, React.createElement('label', { htmlFor: 'assignmentScore', className: 'block text-sm font-medium text-gray-700 mb-1' }, '作業分數'), React.createElement('input', { type: 'text', id: 'assignmentScore', value: assignmentScore, onChange: (e) => setAssignmentScore(e.target.value), placeholder: '成績欄空白則不計分', className: 'w-full p-2 border rounded-md' })), React.createElement('div', { className: `grid grid-cols-2 gap-3 mb-4` }, buttons.map(btn => React.createElement('button', { key: btn.status, onClick: () => handler(modalStudent.studentId, btn.status), className: `text-white p-3 rounded-md ${btn.color}` }, btn.text))), React.createElement('button', { onClick: closeModal, className: 'w-full bg-gray-200 text-gray-800 p-2 rounded-md hover:bg-gray-300' }, '取消'))); };
+            const renderSubmissionGrid = (type) => { const selectedItem = type === 'assignment' ? selectedAssignment : selectedContactBook; const sourceSubmissions = type === 'assignment' ? submissions : contactBookSubmissions; const backHandler = type === 'assignment' ? () => setSelectedAssignment(null) : () => setSelectedContactBook(null); const sortedStudents = [...students].sort((a, b) => (a.seatNumber || 999) - (b.seatNumber || 999)); const openStatusModal = (student) => { if (type === 'assignment') { const submission = submissions.find(s => s.studentId === student.studentId); setAssignmentScore(submission?.score ?? ''); } setModalStudent(student); }; return React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('button', { onClick: backHandler, className: 'mb-4 text-blue-500 hover:underline' }, `← 返回${type === 'assignment' ? '作業' : '聯絡簿'}列表`), React.createElement('h2', { className: 'text-2xl font-bold mb-2' }, selectedItem.title), React.createElement('div', { className: 'flex flex-wrap gap-4 mb-4' }, React.createElement('button', { onClick: () => handleMarkAllSubmitted(type), className: 'bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600' }, '全部繳交'), React.createElement('button', { onClick: () => exportSubmissions(type), className: 'bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600' }, '匯出繳交狀況'), React.createElement('button', { onClick: () => printSubmissions(type), className: 'bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600' }, '列印繳交狀況')), React.createElement('div', { className: 'mt-6' }, React.createElement('h3', { className: 'text-xl font-semibold mb-3' }, '學生繳交狀態 (點擊學生以更新)'), React.createElement('div', { className: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4' }, sortedStudents.map(student => { const submission = sourceSubmissions.find(s => s.studentId === student.studentId); const status = submission ? submission.status : '未繳交'; let statusBgColor = 'bg-red-100', statusTextColor = 'text-red-800'; if (status === '已繳交' || status === '已簽名') { statusBgColor = 'bg-green-100'; statusTextColor = 'text-green-800'; } else if (status === '家長未簽名') { statusBgColor = 'bg-pink-100'; statusTextColor = 'text-pink-800'; } else if (status === '補交') { statusBgColor = 'bg-orange-100'; statusTextColor = 'text-orange-800'; } else if (status === '訂正完成') { statusBgColor = 'bg-blue-100'; statusTextColor = 'text-blue-800'; } return React.createElement('button', { key: student.id, onClick: () => openStatusModal(student), className: `p-3 rounded-lg text-center shadow transition-transform transform hover:scale-105 ${statusBgColor}` }, React.createElement('p', { className: 'font-bold text-[22px]' }, student.name), React.createElement('p', { className: `text-[20px] font-semibold ${statusTextColor}` }, student.seatNumber ? `座號: ${student.seatNumber}` : ''), (type === 'assignment' && submission?.score != null && submission.score !== '') && React.createElement('p', { className: 'text-lg font-semibold text-blue-800 my-1' }, `分數: ${submission.score}`), React.createElement('p', { className: `mt-2 text-[20px] font-bold py-1 px-2 rounded-full ${statusTextColor}` }, status)); }), !students.length && React.createElement('p', { className: 'text-gray-500 col-span-full' }, '請先到「學生」分頁新增學生。'))), renderStatusUpdateModal()); };
+            const renderClassDashboard = () => { const tabs = { assignments: '作業', contactBooks: '聯絡簿', quizzes: '平常成績', todos: '待辦事項', performance: '課堂表現', lottery: '抽籤', students: '學生' }; return React.createElement('div', null, React.createElement('div', { className: 'flex justify-between items-center mb-6 flex-wrap gap-4' }, React.createElement('h2', { className: 'text-3xl font-bold' }, `班級: ${selectedClass.name}`), React.createElement('button', { onClick: () => setSelectedClass(null), className: 'bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300' }, '返回班級列表')), React.createElement('div', { className: 'bg-white rounded-lg shadow-md p-4 mb-6' }, React.createElement('div', { className: 'flex border-b flex-wrap' }, Object.entries(tabs).map(([key, value]) => React.createElement('button', { key: key, onClick: () => { setView(key); setSelectedContactBook(null); setSelectedAssignment(null); setSelectedQuiz(null); }, className: `py-2 px-4 font-semibold ${view === key ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}` }, value)))), selectedAssignment ? renderSubmissionGrid('assignment') : selectedContactBook ? renderSubmissionGrid('contactBook') : selectedQuiz ? renderScoreGrid() : view === 'assignments' ? renderAssignmentManagement() : view === 'contactBooks' ? renderContactBookManagement() : view === 'quizzes' ? renderQuizManagement() : view === 'todos' ? renderTodoManagement() : view === 'performance' ? renderPerformanceManagement() : view === 'lottery' ? React.createElement(Lottery, { students, drawnStudentLog, setDrawnStudentLog, setLotteryWinner }) : renderStudentManagement()); };
+            const renderClassSelection = () => React.createElement('div', { className: 'max-w-4xl mx-auto' }, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md mb-6' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '新增班級'), React.createElement('form', { onSubmit: handleAddClass, className: 'flex gap-2' }, React.createElement('input', { type: 'text', value: newClassName, onChange: (e) => setNewClassName(e.target.value), placeholder: '輸入班級名稱', className: 'flex-grow p-2 border rounded-md' }), React.createElement('button', { type: 'submit', className: 'bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600' }, '新增班級'))), React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md mb-6' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '資料管理'), React.createElement('div', { className: 'flex gap-4 items-center' }, React.createElement('button', { onClick: handleExportData, className: 'bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600' }, '匯出備份'), React.createElement('label', { htmlFor: 'import-file', className: 'bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 cursor-pointer' }, '匯入備份'), React.createElement('input', { id: 'import-file', type: 'file', accept: '.json', className: 'hidden', onChange: handleImportData }))), React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '選擇班級'), React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' }, classes.map(classDoc => React.createElement('div', { key: classDoc.id, className: 'p-4 bg-gray-100 rounded-lg flex justify-between items-center' }, React.createElement('button', { onClick: () => handleSelectClass(classDoc), className: 'text-left font-semibold text-lg hover:text-blue-600 transition flex-grow' }, classDoc.name), React.createElement('button', { onClick: (e) => { e.stopPropagation(); setClassToDelete(classDoc); }, className: 'text-red-500 hover:text-red-700 ml-4 px-2 py-1' }, '刪除'))), !classes.length && React.createElement('p', { className: 'text-gray-500 col-span-full' }, '尚未新增任何班級。'))));
+            const ConfirmationModal = ({ title, message, onConfirm, onCancel }) => { if (!title) return null; return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[250] p-4' }, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-xl w-full max-w-sm text-center' }, React.createElement('h3', { className: 'text-xl font-bold mb-4' }, title), React.createElement('p', { className: 'mb-6 text-gray-600' }, message), React.createElement('div', { className: 'flex justify-center gap-4' }, React.createElement('button', { onClick: onCancel, className: 'w-full bg-gray-300 text-gray-800 p-2 rounded-md hover:bg-gray-400' }, '取消'), React.createElement('button', { onClick: onConfirm, className: 'w-full bg-red-500 text-white p-2 rounded-md hover:bg-red-600' }, '確認刪除')))); };
+            const ImportConfirmationModal = ({ onConfirm, onCancel }) => React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[250] p-4' }, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-xl w-full max-w-sm text-center' }, React.createElement('h3', { className: 'text-xl font-bold mb-4 text-red-600' }, '警告：確認匯入'), React.createElement('p', { className: 'mb-6 text-gray-600' }, '匯入備份將會完全覆蓋您目前帳號的所有資料。此操作無法復原。您確定要繼續嗎？'), React.createElement('div', { className: 'flex justify-center gap-4' }, React.createElement('button', { onClick: onCancel, className: 'w-full bg-gray-300 text-gray-800 p-2 rounded-md hover:bg-gray-400' }, '取消'), React.createElement('button', { onClick: onConfirm, className: 'w-full bg-red-500 text-white p-2 rounded-md hover:bg-red-600' }, '確定匯入並覆蓋'))));
+            const CalendarModal = () => { if (!isCalendarModalOpen) return null; const startOfMonth = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1); const endOfMonth = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0); const startDay = startOfMonth.getDay(); const daysInMonth = endOfMonth.getDate(); const today = new Date(); const days = []; for (let i = 0; i < startDay; i++) { days.push(React.createElement('div', { key: `empty-${i}` })); } for (let i = 1; i <= daysInMonth; i++) { const date = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), i); const isToday = today.toDateString() === date.toDateString(); days.push(React.createElement('button', { key: i, onClick: () => handleAddContactBook(date), className: `p-2 text-center rounded-full hover:bg-blue-500 hover:text-white ${isToday ? 'bg-blue-200' : ''}` }, i)); } const prevMonth = () => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1)); const nextMonth = () => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1)); return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4' }, React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-xl w-full max-w-md' }, React.createElement('div', { className: 'flex justify-between items-center mb-4' }, React.createElement('button', { onClick: prevMonth, className: 'font-bold px-3 py-1 rounded hover:bg-gray-200' }, '<'), React.createElement('h3', { className: 'text-xl font-bold' }, `${calendarDate.getFullYear()} 年 ${calendarDate.getMonth() + 1} 月`), React.createElement('button', { onClick: nextMonth, className: 'font-bold px-3 py-1 rounded hover:bg-gray-200' }, '>')), React.createElement('div', { className: 'grid grid-cols-7 gap-2 text-center' }, ['日', '一', '二', '三', '四', '五', '六'].map(day => React.createElement('div', { key: day, className: 'font-semibold' }, day)), days), React.createElement('button', { onClick: () => setIsCalendarModalOpen(false), className: 'w-full bg-gray-200 text-gray-800 p-2 rounded-md hover:bg-gray-300 mt-6' }, '關閉'))); };
+
+            const renderTeacherView = () => {
+                if (!user) return React.createElement('div', { className: 'min-h-screen bg-gradient-to-br from-red-100 to-yellow-100 flex flex-col justify-center items-center p-4' }, React.createElement('div', { className: 'w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center' }, React.createElement('h1', { className: 'text-3xl font-bold text-red-700 mb-4' }, '驗證失敗'), React.createElement('p', { className: 'text-gray-600 mb-8' }, '無法自動登入使用者。請重新整理頁面。'), error && React.createElement('p', { className: 'text-red-500 mt-4 bg-red-50 p-3 rounded-lg' }, error)));
+                
+                return React.createElement('div', null,
+                    React.createElement('header', { className: 'bg-white shadow-md p-4 flex justify-between items-center flex-wrap gap-y-2' },
+                        React.createElement('h1', { className: 'text-2xl font-bold text-gray-800' }, '課堂管理系統'),
+                        React.createElement('div', { className: 'flex items-center gap-4' },
+                            React.createElement('button', { onClick: () => setIsTimerOpen(true), className: 'bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 font-semibold' }, '倒數計時器'),
+                            React.createElement('span', { className: 'text-gray-600 text-sm' }, user ? `老師 ID: ${user.uid}`: ''),
+                            React.createElement('button', { onClick: handleLogout, className: 'bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600' }, '登出'))),
+                    React.createElement('main', { className: 'p-8' },
+                        selectedClass ? renderClassDashboard() : renderClassSelection(),
+                        React.createElement(MessageModal, { message: message, onClose: () => setMessage('') }),
+                        React.createElement(ProcessingOverlay, { message: processingMessage }),
+                        renderPerformanceModal(),
+                        renderContactItemsModal(),
+                        renderBigScreenView(),
+                        React.createElement(CalendarModal),
+                        React.createElement(LotteryWinnerModal, { winner: lotteryWinner, onClose: () => setLotteryWinner(null) }),
+                        React.createElement(Timer, { isOpen: isTimerOpen, onClose: () => setIsTimerOpen(false) }),
+                        importData && React.createElement(ImportConfirmationModal, { onConfirm: confirmImport, onCancel: () => setImportData(null) }),
+                        React.createElement(ConfirmationModal, { 
+                            title: assignmentToDelete ? '確認刪除作業' : classToDelete ? '確認刪除班級' : contactBookToDelete ? '確認刪除聯絡簿' : quizToDelete ? '確認刪除成績項目' : null,
+                            message: assignmentToDelete ? `您確定要刪除「${assignmentToDelete.title}」嗎？所有相關的繳交紀錄將會一併被刪除，此操作無法復原。` : classToDelete ? `您確定要刪除「${classToDelete.name}」嗎？所有班級內的學生、作業、聯絡簿及所有繳交紀錄將會一併被永久刪除。` : contactBookToDelete ? `您確定要刪除「${contactBookToDelete.title}」嗎？所有相關的繳交紀錄將會一併被刪除。` : quizToDelete ? `您確定要刪除「${quizToDelete.title}」嗎？所有相關的成績紀錄將會一併被刪除。` : '',
+                            onConfirm: assignmentToDelete ? handleDeleteAssignment : classToDelete ? handleDeleteClass : contactBookToDelete ? handleDeleteContactBook : handleDeleteQuiz,
+                            onCancel: () => { setAssignmentToDelete(null); setClassToDelete(null); setContactBookToDelete(null); setQuizToDelete(null); }
+                        })),
+                    React.createElement('div', { className: 'fixed bottom-4 right-4 text-xs text-gray-500' }, 'Made by Xtjh-yucc')
+                );
+            };
+
+            return renderTeacherView();
+        };
+        
+        const Timer = ({ isOpen, onClose }) => { const [minutes, setMinutes] = React.useState(5); const [seconds, setSeconds] = React.useState(0); const [timeLeft, setTimeLeft] = React.useState(0); const [isActive, setIsActive] = React.useState(false); React.useEffect(() => { let interval = null; if (isActive && timeLeft > 0) { interval = setInterval(() => setTimeLeft(time => time - 1), 1000); } else if (timeLeft === 0) { setIsActive(false); } return () => clearInterval(interval); }, [isActive, timeLeft]); const startTimer = () => { if (timeLeft === 0) setTimeLeft(minutes * 60 + seconds); setIsActive(true); }; const pauseTimer = () => setIsActive(false); const resetTimer = () => { setIsActive(false); setTimeLeft(minutes * 60 + seconds); }; const handleClose = () => { setIsActive(false); setTimeLeft(0); onClose(); }; const displayMinutes = Math.floor(timeLeft / 60).toString().padStart(2, '0'); const displaySeconds = (timeLeft % 60).toString().padStart(2, '0'); const isWarning = timeLeft > 0 && timeLeft <= 30; if (!isOpen) return null; return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[100]' }, React.createElement('div', { className: 'bg-gradient-to-br from-gray-700 via-gray-900 to-black p-8 rounded-2xl shadow-2xl w-full max-w-md text-white border-4 border-teal-500' }, React.createElement('h2', { className: 'text-3xl font-bold text-center mb-6 text-teal-300' }, '倒數計時器'), isActive || timeLeft > 0 ? React.createElement('div', { className: `text-8xl font-mono text-center my-8 transition-colors ${isWarning ? 'text-red-500 timer-display warning' : 'text-green-400'}` }, `${displayMinutes}:${displaySeconds}`) : React.createElement('div', { className: 'flex justify-center items-center gap-4 my-8' }, React.createElement('input', { type: 'number', value: minutes, onChange: e => setMinutes(Math.max(0, parseInt(e.target.value) || 0)), className: 'w-24 p-2 text-4xl text-center bg-gray-800 rounded-md' }), React.createElement('span', { className: 'text-4xl' }, ':'), React.createElement('input', { type: 'number', value: seconds, onChange: e => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0))), className: 'w-24 p-2 text-4xl text-center bg-gray-800 rounded-md' })), React.createElement('div', { className: 'grid grid-cols-3 gap-4' }, React.createElement('button', { onClick: startTimer, disabled: isActive, className: 'bg-green-500 hover:bg-green-600 disabled:bg-gray-500 p-3 rounded-lg font-semibold' }, '開始'), React.createElement('button', { onClick: pauseTimer, disabled: !isActive, className: 'bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-500 p-3 rounded-lg font-semibold' }, '暫停'), React.createElement('button', { onClick: resetTimer, className: 'bg-red-500 hover:bg-red-600 p-3 rounded-lg font-semibold' }, '重設')), React.createElement('button', { onClick: handleClose, className: 'w-full bg-gray-600 hover:bg-gray-700 p-3 rounded-lg font-semibold mt-6' }, '關閉'))); };
+        const Lottery = ({ students, drawnStudentLog, setDrawnStudentLog, setLotteryWinner }) => { const canvasRef = React.useRef(null); const [isDrawing, setIsDrawing] = React.useState(false); const ballsRef = React.useRef([]); const animationFrameIdRef = React.useRef(null); const availableStudents = React.useMemo(() => students.filter(s => !drawnStudentLog.some(d => d.id === s.id)), [students, drawnStudentLog]); React.useEffect(() => { const canvas = canvasRef.current; const ctx = canvas.getContext('2d'); const colors = ["#FFC300", "#FF5733", "#C70039", "#900C3F", "#581845", "#DAF7A6", "#33FF57", "#33D4FF"]; const resizeAndInitBalls = () => { if (!canvas) return; canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; const radius = Math.min(canvas.width, canvas.height) / 15; if (radius <= 0) return; ballsRef.current = availableStudents.map((student, i) => ({ x: Math.random() * (canvas.width - radius * 2) + radius, y: Math.random() * (canvas.height - radius * 2) + radius, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, radius: radius, color: colors[i % colors.length], student })); }; const timeoutId = setTimeout(resizeAndInitBalls, 0); const animate = () => { if (!canvas || !ballsRef.current) { animationFrameIdRef.current = requestAnimationFrame(animate); return; } ctx.clearRect(0, 0, canvas.width, canvas.height); ballsRef.current.forEach(ball => { ball.x += ball.vx; ball.y += ball.vy; if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) ball.vx *= -1; if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) ball.vy *= -1; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); ctx.fillStyle = ball.color; ctx.fill(); ctx.closePath(); ctx.fillStyle = 'black'; ctx.font = `bold ${ball.radius * 0.7}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ball.student.seatNumber || '?', ball.x, ball.y); }); animationFrameIdRef.current = requestAnimationFrame(animate); }; animate(); window.addEventListener('resize', resizeAndInitBalls); return () => { clearTimeout(timeoutId); cancelAnimationFrame(animationFrameIdRef.current); window.removeEventListener('resize', resizeAndInitBalls); }; }, [availableStudents]); const startDraw = () => { if (isDrawing || availableStudents.length === 0) return; setIsDrawing(true); const interval = setInterval(() => ballsRef.current.forEach(ball => { ball.vx = (Math.random() - 0.5) * 15; ball.vy = (Math.random() - 0.5) * 15; }), 100); setTimeout(() => { clearInterval(interval); const winner = availableStudents[Math.floor(Math.random() * availableStudents.length)]; setLotteryWinner(winner); setDrawnStudentLog(prev => [...prev, winner]); setIsDrawing(false); }, 3000); }; const resetLog = () => setDrawnStudentLog([]); return React.createElement('div', { className: 'bg-white p-6 rounded-lg shadow-md' }, React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, '抽籤系統'), React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-6' }, React.createElement('div', { className: 'md:col-span-2' }, React.createElement('div', { className: 'relative w-full h-96 bg-gray-800 rounded-lg border-4 border-yellow-400 overflow-hidden' }, React.createElement('canvas', { ref: canvasRef, className: 'w-full h-full' })), React.createElement('div', { className: 'flex justify-center gap-4 mt-4' }, React.createElement('button', { onClick: startDraw, disabled: isDrawing || availableStudents.length === 0, className: 'bg-green-500 text-white px-8 py-3 rounded-lg text-xl font-bold disabled:bg-gray-400' }, isDrawing ? '抽獎中...' : '開始抽籤'), React.createElement('button', { onClick: resetLog, className: 'bg-red-500 text-white px-6 py-3 rounded-lg font-bold' }, '清除中獎紀錄'))), React.createElement('div', null, React.createElement('h3', { className: 'text-xl font-semibold mb-2' }, `中獎紀錄 (${drawnStudentLog.length}/${students.length})`), React.createElement('ul', { className: 'bg-gray-100 p-3 rounded-lg h-96 overflow-y-auto space-y-2' }, drawnStudentLog.map(s => React.createElement('li', { key: s.id, className: 'p-2 bg-white rounded shadow' }, `${s.seatNumber}. ${s.name}`)), drawnStudentLog.length === 0 && React.createElement('p', {className: 'text-gray-500'}, '尚無中獎紀錄。'))))); };
+        const LotteryWinnerModal = ({ winner, onClose }) => { const canvasRef = React.useRef(null); React.useEffect(() => { if (!winner || !canvasRef.current) return; const canvas = canvasRef.current; const ctx = canvas.getContext('2d'); let fireworks = []; let animationFrameId; const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }; const createFirework = () => { const x = Math.random() * canvas.width; const y = Math.random() * canvas.height * 0.5; const hue = Math.random() * 360; for (let i = 0; i < 30; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 5 + 2; fireworks.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, alpha: 1, color: `hsl(${hue}, 100%, 50%)` }); } }; const animate = () => { ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'lighter'; fireworks.forEach((fw, index) => { fw.x += fw.vx; fw.y += fw.vy; fw.vy += 0.05; fw.alpha -= 0.02; if (fw.alpha <= 0) { fireworks.splice(index, 1); } else { ctx.beginPath(); ctx.arc(fw.x, fw.y, 2, 0, Math.PI * 2); ctx.fillStyle = `hsla(${parseInt(fw.color.split(',')[0].substring(4))}, 100%, 50%, ${fw.alpha})`; ctx.fill(); } }); if (Math.random() < 0.1) createFirework(); animationFrameId = requestAnimationFrame(animate); }; resizeCanvas(); window.addEventListener('resize', resizeCanvas); animate(); return () => { window.removeEventListener('resize', resizeCanvas); cancelAnimationFrame(animationFrameId); }; }, [winner]); if (!winner) return null; return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-[200] p-4', onClick: onClose }, React.createElement('canvas', { ref: canvasRef, className: 'fireworks-canvas' }), React.createElement('div', { className: 'text-center text-white transform scale-150' }, React.createElement('h2', { className: 'text-5xl font-bold text-yellow-300' }, '恭喜中獎!'), React.createElement('p', { className: 'text-8xl font-bold my-8 text-cyan-300' }, `${winner.seatNumber || '?'} 號`), React.createElement('p', { className: 'text-7xl font-bold text-pink-300' }, winner.name))); };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            const swContent = `
+                const SW_VERSION = 'v1';
+                const CACHE_NAME = \`classroom-manager-cache-\${SW_VERSION}\`;
+                const urlsToCache = [
+                    '.', // Caches the root URL (index.html)
+                    'https://unpkg.com/react@18/umd/react.development.js',
+                    'https://unpkg.com/react-dom@18/umd/react-dom.development.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+                    'https://cdn.tailwindcss.com',
+                    'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js',
+                    'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js',
+                    'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js',
+                    'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js',
+                    'https://placehold.co/180x180/4A90E2/FFFFFF?text=CMS', // Cache the icon
+                    'https://placehold.co/192x192/4A90E2/FFFFFF?text=CMS',
+                    'https://placehold.co/512x512/4A90E2/FFFFFF?text=CMS'
+                ];
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                        .then(cache => {
+                            console.log('Opened cache');
+                            return cache.addAll(urlsToCache);
+                        })
+                        .then(() => self.skipWaiting())
+                    );
+                });
+
+                self.addEventListener('activate', event => {
+                    event.waitUntil(
+                        caches.keys().then(cacheNames => {
+                            return Promise.all(
+                                cacheNames.map(cacheName => {
+                                    if (cacheName !== CACHE_NAME) {
+                                        console.log('Deleting old cache:', cacheName);
+                                        return caches.delete(cacheName);
+                                    }
+                                })
+                            );
+                        }).then(() => self.clients.claim())
+                    );
+                });
+
+                self.addEventListener('fetch', event => {
+                    // For Firebase and other API calls, always use the network.
+                    if (event.request.url.includes('googleapis.com')) {
+                        return; // Let browser handle it
+                    }
+
+                    event.respondWith(
+                        caches.match(event.request).then(cachedResponse => {
+                            // Return cached response if found, otherwise fetch from network
+                            return cachedResponse || fetch(event.request);
+                        })
+                    );
+                });
+            `;
+            const swBlob = new Blob([swContent], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swUrl)
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
+
