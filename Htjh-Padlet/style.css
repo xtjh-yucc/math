@@ -281,3 +281,8 @@ input[type="text"], input[type="number"], select {
 .modal-content input[type="file"] {
     margin-bottom: 1rem;
 }
+/* --- Modal 內部版面微調 --- */
+.modal-content label {
+    display: block; /* 讓 label 標籤強制換行 */
+    margin-top: 1rem; /* 和上方的元素增加一些間距 */
+}
