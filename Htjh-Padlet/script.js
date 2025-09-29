@@ -5,24 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // ** 重要！請在此貼上您自己的 Firebase 設定 **
     // ***************************************************
    
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCtM_-FIQ2AwaRRN7J7DjusTpiBv5DAkKk",
-  authDomain: "htjh-padlet.firebaseapp.com",
-  databaseURL: "https://htjh-padlet-default-rtdb.firebaseio.com",
-  projectId: "htjh-padlet",
-  storageBucket: "htjh-padlet.firebasestorage.app",
-  messagingSenderId: "67721407497",
-  appId: "1:67721407497:web:e3d33129c4c7a133615cd8",
-  measurementId: "G-T6YZXTFSC8"
-};
+ const firebaseConfig = {
+      apiKey: "AIzaSyCtM_-FIQ2AwaRRN7J7DjusTpiBv5DAkKk",
+      authDomain: "htjh-padlet.firebaseapp.com",
+      databaseURL: "https://htjh-padlet-default-rtdb.firebaseio.com",
+      projectId: "htjh-padlet",
+      storageBucket: "htjh-padlet.firebasestorage.app",
+      messagingSenderId: "67721407497",
+      appId: "1:67721407497:web:e3d33129c4c7a133615cd8",
+measurementId: "G-T6YZXTFSC8"
+    };
 
 
 
