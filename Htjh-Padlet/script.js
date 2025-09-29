@@ -6,17 +6,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ***************************************************
    
 
- const firebaseConfig = {
-      apiKey: "AIzaSyCtM_-FIQ2AwaRRN7J7DjusTpiBv5DAkKk",
-      authDomain: "htjh-padlet.firebaseapp.com",
-      databaseURL: "https://htjh-padlet-default-rtdb.firebaseio.com",
-      projectId: "htjh-padlet",
-      storageBucket: "htjh-padlet.firebasestorage.app",
-      messagingSenderId: "67721407497",
-      appId: "1:67721407497:web:e3d33129c4c7a133615cd8",
-measurementId: "G-T6YZXTFSC8"
-    };
+ // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCtM_-FIQ2AwaRRN7J7DjusTpiBv5DAkKk",
+  authDomain: "htjh-padlet.firebaseapp.com",
+  databaseURL: "https://htjh-padlet-default-rtdb.firebaseio.com",
+  projectId: "htjh-padlet",
+  storageBucket: "htjh-padlet.firebasestorage.app",
+  messagingSenderId: "67721407497",
+  appId: "1:67721407497:web:e3d33129c4c7a133615cd8",
+  measurementId: "G-T6YZXTFSC8"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 
 
@@ -128,20 +139,28 @@ measurementId: "G-T6YZXTFSC8"
         });
     });
 
-    async function loadAndShowFirstPostForStudent(classId) {
-        const postsQuery = db.ref('posts').orderByChild('classId').equalTo(classId);
-        const snapshot = await postsQuery.get();
-        if (snapshot.exists()) {
-            const posts = snapshot.val();
-            currentPostId = Object.keys(posts)[0];
-            const postTitle = posts[currentPostId].title;
-            document.getElementById('padlet-title').textContent = postTitle;
-            loadMessages(currentPostId);
-            showView('padlet-view');
-        } else {
-            alert("這個班級還沒有建立任何主題牆！");
-        }
+  async function loadAndShowFirstPostForStudent(classId) {
+    // --- 修正重點：不論如何，都先切換到 Padlet 畫面 ---
+    showView('padlet-view');
+
+    const postsQuery = db.ref('posts').orderByChild('classId').equalTo(classId);
+    const snapshot = await postsQuery.get();
+
+    if (snapshot.exists()) {
+        // 如果有主題牆，照常載入第一篇
+        const posts = snapshot.val();
+        currentPostId = Object.keys(posts)[0];
+        const postTitle = posts[currentPostId].title;
+        document.getElementById('padlet-title').textContent = postTitle;
+        loadMessages(currentPostId);
+    } else {
+        // --- 修正重點：如果沒有主題牆，在畫面上顯示提示文字 ---
+        document.getElementById('padlet-title').textContent = "尚無主題牆";
+        padletBoard.innerHTML = '<p style="text-align: center; width: 100%; padding-top: 2rem;">這個班級還沒有建立任何主題牆！</p>';
+        // 讓學生無法新增便利貼，因為沒有主題牆可以貼
+        document.getElementById('add-message-btn').style.display = 'none'; 
     }
+}
 
     // 載入班級列表 (供學生登入用)
     function loadClassesForStudentLogin() {
