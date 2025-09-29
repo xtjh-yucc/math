@@ -1,0 +1,288 @@
+:root {
+    --primary-color: #4a90e2;
+    --secondary-color: #f5a623;
+    --background-color: #f4f7f6;
+    --card-background: #ffffff;
+    --text-color: #333;
+    --border-color: #ddd;
+    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+#app-container {
+    width: 100%;
+    max-width: 1200px;
+    height: 95vh;
+    background-color: white;
+    box-shadow: var(--shadow);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 畫面切換 */
+.view {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+.view.active {
+    display: flex;
+}
+
+/* Header 樣式 */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+/* 按鈕 */
+button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s, transform 0.1s;
+}
+button:hover {
+    background-color: #357abd;
+}
+button:active {
+    transform: scale(0.98);
+}
+button#logout-btn, button.back-to-dashboard, button#back-to-login-btn {
+    background-color: var(--secondary-color);
+}
+button#logout-btn:hover, button.back-to-dashboard:hover, button#back-to-login-btn:hover {
+     background-color: #d9930d;
+}
+
+/* 輸入框 & 下拉選單 */
+input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+/* 登入畫面 */
+#login-view {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.login-box {
+    display: flex;
+    gap: 3rem;
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: var(--shadow);
+}
+#student-login, #teacher-login {
+    width: 250px;
+}
+#teacher-login-btn {
+    background-color: #db4437;
+}
+#teacher-login-btn:hover {
+    background-color: #c23321;
+}
+
+/* 教師儀表板 & 班級管理 */
+#teacher-dashboard-view main, #class-management-view main {
+    padding: 2rem;
+    overflow-y: auto;
+}
+.dashboard-section, .management-column {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+.class-management-main {
+    display: flex;
+    gap: 2rem;
+    flex-grow: 1;
+}
+.management-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+#student-list, #post-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: #f9f9f9;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.list-item:last-child {
+    border-bottom: none;
+}
+.list-item.clickable {
+    cursor: pointer;
+}
+.list-item.clickable:hover {
+    background-color: #e9ecef;
+}
+.add-student-form, .add-post-form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Padlet 主題牆 */
+#padlet-view {
+    background-color: #e8f0fe; /* 淡藍色背景 */
+}
+#padlet-board {
+    padding: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 1rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.message-card {
+    background-color: var(--card-background);
+    border-radius: 8px;
+    padding: 1rem;
+    width: 280px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    word-wrap: break-word;
+    border-top: 5px solid var(--secondary-color);
+}
+.card-header {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+.card-content p {
+    margin-top: 0;
+}
+.card-content img {
+    max-width: 100%;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+.card-content a {
+    display: block;
+    margin-top: 0.5rem;
+    background-color: #f1f1f1;
+    padding: 0.5rem;
+    border-radius: 4px;
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+.card-content a:hover {
+    background-color: #e0e0e0;
+}
+.card-footer {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    text-align: right;
+}
+
+/* 懸浮新增按鈕 (FAB) */
+.fab {
+    position: fixed;
+    right: 3rem;
+    bottom: 3rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 2rem;
+    line-height: 60px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+/* Modal 彈出視窗 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 2rem;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.modal-content textarea {
+    width: 100%;
+    height: 100px;
+    resize: vertical;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+}
+.modal-content input[type="file"] {
+    margin-bottom: 1rem;
+}
+/* --- Modal 內部版面微調 --- */
+.modal-content label {
+    display: block; /* 讓 label 標籤強制換行 */
+    margin-top: 1rem; /* 和上方的元素增加一些間距 */
+}
