@@ -1,0 +1,3748 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, doc, onSnapshot, getDoc, setDoc, addDoc, deleteDoc, updateDoc, query, getDocs, writeBatch, where } from 'firebase/firestore';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
+// --- Firebase 設定 ---
+// 執行環境會自動注入 __firebase_config 變數，這裡我們使用它來初始化
+let firebaseConfig;
+try {
+    firebaseConfig = typeof __firebase_config !== 'undefined' 
+        ? JSON.parse(__firebase_config) 
+        : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_MESSAGING_SENDER_ID", appId: "YOUR_APP_ID" };
+} catch (e) {
+    console.error("Firebase config parsing error:", e);
+    // 提供一個備用的設定以避免應用程式崩潰
+    firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_MESSAGING_SENDER_ID", appId: "YOUR_APP_ID" };
+}
+
+// 初始化 Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-quiz-app';
+
+
+// --- 主應用程式組件 (App Component) ---
+export default function App() {
+  const [view, setView] = useState('home'); 
+  const [user, setUser] = useState(null);
+  const [quizState, setQuizState] = useState({ questions: [], theme: '' });
+  const [quizResults, setQuizResults] = useState(null);
+  const [questionBanks, setQuestionBanks] = useState({});
+  const [grades, setGrades] = useState([]);
+  const [alert, setAlert] = useState({ show: false, message: ''});
+  const [teacherPassword, setTeacherPassword] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [studentRoster, setStudentRoster] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [stickyNoteThemes, setStickyNoteThemes] = useState({});
+  const [stickyNotes, setStickyNotes] = useState([]);
+  const [polls, setPolls] = useState({});
+  const [allVotes, setAllVotes] = useState([]);
+
+
+  useEffect(() => {
+    const loadScript = (id, src, async = true, onload = null) => {
+        const existingScript = document.getElementById(id);
+        if (existingScript) {
+            if (onload && window[id.split('-')[0]]) { // Check if library object exists
+                 onload();
+            } else if (existingScript.onload) { // If still loading, chain the onload
+                const oldOnload = existingScript.onload;
+                existingScript.onload = () => { oldOnload(); onload(); };
+            } else if (!async) { // For sync scripts that might be loaded
+                 if (onload) onload();
+            }
+            return;
+        }
+        const script = document.createElement('script');
+        script.id = id;
+        script.src = src;
+        script.async = async;
+        if (onload) {
+            script.onload = onload;
+        }
+        document.head.appendChild(script);
+    };
+
+    loadScript('xlsx-script', "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+    
+    // Load d3, and once it's loaded, load d3-cloud
+    loadScript('d3-script', "https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js", false, () => {
+        loadScript('d3-cloud-script', "https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js", false);
+    });
+
+  }, []);
+
+  // Firebase Auth and Data Loading Effect
+  useEffect(() => {
+    const attemptSignIn = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Firebase sign-in failed:", error);
+        showAlert("無法連接到資料庫，請稍後再試。");
+        setIsLoading(false);
+      }
+    };
+
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthReady(true);
+      } else {
+        attemptSignIn();
+      }
+    });
+
+    return () => authUnsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthReady) return; // Wait for authentication to be ready
+
+    const unsubscribes = [];
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    const qbUnsubscribe = onSnapshot(collection(db, ...dataPrefix, 'questionBanks'), (snapshot) => {
+        const banks = {};
+        snapshot.forEach((doc) => {
+            banks[doc.id] = doc.data(); 
+        });
+        setQuestionBanks(banks);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching question banks:", error);
+        showAlert("讀取題庫時發生錯誤。");
+        setIsLoading(false);
+    });
+    unsubscribes.push(qbUnsubscribe);
+
+    const gradesUnsubscribe = onSnapshot(collection(db, ...dataPrefix, 'grades'), (snapshot) => {
+        const gradesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setGrades(gradesData);
+    }, (error) => console.error("Error fetching grades:", error));
+    unsubscribes.push(gradesUnsubscribe);
+
+    const rosterUnsubscribe = onSnapshot(collection(db, ...dataPrefix, 'studentRosters'), (snapshot) => {
+        const rosters = {};
+        snapshot.forEach((doc) => {
+            rosters[doc.id] = doc.data().students || [];
+        });
+        setStudentRoster(rosters);
+    }, (error) => console.error("Error fetching student rosters:", error));
+    unsubscribes.push(rosterUnsubscribe);
+    
+    // 監聽便利貼主題
+    const themesUnsubscribe = onSnapshot(collection(db, ...dataPrefix, 'stickyNoteThemes'), (snapshot) => {
+        const themesData = {};
+        snapshot.docs.sort((a, b) => a.data().timestamp > b.data().timestamp ? 1 : -1).forEach((doc) => {
+            themesData[doc.id] = { id: doc.id, ...doc.data()};
+        });
+        setStickyNoteThemes(themesData);
+    }, (error) => console.error("Error fetching sticky note themes:", error));
+    unsubscribes.push(themesUnsubscribe);
+
+    // 監聽便利貼內容
+    const notesUnsubscribe = onSnapshot(query(collection(db, ...dataPrefix, 'stickyNotes')), (snapshot) => {
+        const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        notesData.sort((a,b) => (b.timestamp?.toDate() ?? 0) - (a.timestamp?.toDate() ?? 0));
+        setStickyNotes(notesData);
+    }, (error) => console.error("Error fetching sticky notes:", error));
+    unsubscribes.push(notesUnsubscribe);
+
+    // 監聽投票主題
+    const pollsUnsubscribe = onSnapshot(collection(db, ...dataPrefix, 'polls'), (snapshot) => {
+        const pollsData = {};
+        snapshot.docs.sort((a, b) => (b.data().timestamp?.toDate() ?? 0) - (a.data().timestamp?.toDate() ?? 0))
+        .forEach((doc) => {
+            pollsData[doc.id] = { id: doc.id, ...doc.data() };
+        });
+        setPolls(pollsData);
+    }, (error) => console.error("Error fetching polls:", error));
+    unsubscribes.push(pollsUnsubscribe);
+
+    // 監聽投票紀錄
+    const votesUnsubscribe = onSnapshot(collection(db, ...dataPrefix, 'votes'), (snapshot) => {
+        const votesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAllVotes(votesData);
+    }, (error) => console.error("Error fetching votes:", error));
+    unsubscribes.push(votesUnsubscribe);
+
+
+    const getPassword = async () => {
+        const configDocRef = doc(db, ...dataPrefix, 'config', 'teacher');
+        const docSnap = await getDoc(configDocRef);
+        if (docSnap.exists()) {
+            setTeacherPassword(docSnap.data().password);
+        } else {
+            await setDoc(configDocRef, { password: 'htjh' });
+            setTeacherPassword('htjh');
+        }
+    };
+    getPassword();
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [isAuthReady]);
+
+  const showAlert = (message) => {
+    setAlert({ show: true, message });
+  };
+
+  const handleStartQuiz = (student, theme) => {
+    setUser({ type: 'student', ...student });
+    const originalQuestions = questionBanks[theme]?.questions || [];
+    const shuffledQuestions = [...originalQuestions].sort(() => Math.random() - 0.5);
+    const randomizedQuiz = shuffledQuestions.map(q => {
+        const correctAnswerText = q.options[q.answer];
+        const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+        const newAnswerIndex = shuffledOptions.findIndex(opt => opt === correctAnswerText);
+        return { ...q, options: shuffledOptions, answer: newAnswerIndex };
+    });
+    setQuizState({ questions: randomizedQuiz, theme });
+    setView('studentQuiz');
+  };
+  
+  const handleEnterStickyNotes = (student) => {
+      setUser({ type: 'student', ...student });
+      setView('stickyNoteWall');
+  };
+
+  const handleEnterVoting = (student) => {
+      setUser({ type: 'student', ...student });
+      setView('studentVote');
+  };
+
+  const handleSubmitQuiz = async (answers) => {
+    let score = 0;
+    if (quizState.questions.length > 0) {
+        quizState.questions.forEach((q, index) => {
+            if (answers[index] === q.answer) {
+                score += 100 / quizState.questions.length;
+            }
+        });
+    }
+    const finalScore = Math.round(score);
+    
+    const newGrade = {
+        class: user.class,
+        seat: user.seat,
+        name: user.name,
+        score: finalScore,
+        theme: quizState.theme,
+        timestamp: new Date(),
+        questions: quizState.questions, 
+        userAnswers: answers,          
+    };
+
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+    
+    try {
+        await addDoc(collection(db, ...dataPrefix, 'grades'), newGrade);
+    } catch (error) {
+        console.error("Error saving grade:", error);
+        showAlert("儲存成績時發生錯誤。");
+    }
+
+    setQuizResults({ score: finalScore, answers });
+    setView('studentResults');
+  };
+  
+  const handleTeacherLogin = () => {
+      setUser({ type: 'teacher', name: '教師' });
+      setView('teacherDashboard');
+      return true;
+  };
+
+  const handlePasswordCheck = (enteredPassword) => {
+    if (enteredPassword === teacherPassword) {
+      setShowPasswordModal(false);
+      handleTeacherLogin();
+    } else {
+      showAlert('密碼錯誤！');
+    }
+  };
+
+  const handleChangePassword = async (oldPassword, newPassword) => {
+    if (oldPassword !== teacherPassword) {
+      showAlert('舊密碼不正確！');
+      return false;
+    }
+    try {
+        const configDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'teacher');
+        await updateDoc(configDocRef, { password: newPassword });
+        setTeacherPassword(newPassword); 
+        setShowChangePasswordModal(false);
+        showAlert('密碼更新成功！');
+        return true;
+    } catch (error) {
+        console.error("Error changing password:", error);
+        showAlert("更改密碼時發生錯誤。");
+        return false;
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setQuizResults(null);
+    setQuizState({ questions: [], theme: '' });
+    setView('home');
+  };
+  
+  if (isLoading) {
+    return (
+        <div className="bg-slate-100 min-h-screen flex items-center justify-center">
+            <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-blue-600"></div>
+                <p className="mt-6 text-xl font-semibold text-blue-600">正在從資料庫載入資料...</p>
+            </div>
+        </div>
+    )
+  }
+
+  const renderContent = () => {
+    switch (view) {
+      case 'studentQuiz':
+        return <QuizView questions={quizState.questions} onSubmit={handleSubmitQuiz} />;
+      case 'studentResults':
+        return <ResultsView questions={quizState.questions} results={quizResults} onBackHome={handleLogout} />;
+      case 'teacherDashboard':
+        return <TeacherDashboard 
+                    grades={grades} 
+                    questionBanks={questionBanks}
+                    studentRoster={studentRoster}
+                    stickyNoteThemes={stickyNoteThemes}
+                    stickyNotes={stickyNotes}
+                    polls={polls}
+                    allVotes={allVotes}
+                    onLogout={handleLogout} 
+                    showAlert={showAlert}
+                    onChangePasswordClick={() => setShowChangePasswordModal(true)}
+                />;
+      case 'stickyNoteWall':
+          return <StickyNoteWall 
+              user={user}
+              themes={stickyNoteThemes}
+              notes={stickyNotes}
+              showAlert={showAlert}
+          />;
+      case 'studentVote':
+          return <VotingView
+              user={user}
+              polls={polls}
+              allVotes={allVotes}
+              showAlert={showAlert}
+          />;
+      case 'home':
+      default:
+        return <HomePage 
+                    onStartQuiz={handleStartQuiz} 
+                    onEnterStickyNotes={handleEnterStickyNotes}
+                    onEnterVoting={handleEnterVoting}
+                    questionBanks={questionBanks} 
+                    studentRoster={studentRoster}
+                    grades={grades}
+                />;
+    }
+  };
+
+  return (
+    <div className="bg-slate-100 min-h-screen font-sans text-slate-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl relative">
+        {alert.show && <AlertModal message={alert.message} onClose={() => setAlert({show: false, message:''})} />}
+        {showPasswordModal && <TeacherPasswordModal onLogin={handlePasswordCheck} onCancel={() => setShowPasswordModal(false)} />}
+        {showChangePasswordModal && <ChangePasswordModal onSave={handleChangePassword} onCancel={() => setShowChangePasswordModal(false)} />}
+        <Header user={user} view={view} onLogout={handleLogout} onTeacherLogin={() => setShowPasswordModal(true)} />
+        <main className="p-6 md:p-10">
+          {renderContent()}
+        </main>
+        <footer className="text-right p-4 text-xs text-slate-400 bg-white">
+            Made by xtjh-yucc
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+// --- 通用 Modal 組件 ---
+function AlertModal({ message, onClose }) {
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
+                <p className="text-lg mb-6 whitespace-pre-wrap">{message}</p>
+                <button
+                    onClick={onClose}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg"
+                >
+                    確定
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// --- 頁首組件 (Header) ---
+function Header({ user, view, onLogout, onTeacherLogin }) {
+    const getTitle = () => {
+        return '線上測驗與便利貼系統';
+    };
+
+    return (
+        <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 flex justify-between items-center">
+            <h1 className="text-2xl md:text-3xl font-bold">{getTitle()}</h1>
+            <div>
+                 {view === 'home' && (
+                    <button onClick={onTeacherLogin} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                        教師登入
+                    </button>
+                )}
+                {(view !== 'home') && (
+                    <button onClick={onLogout} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                        返回首頁
+                    </button>
+                )}
+            </div>
+        </header>
+    );
+}
+
+
+// --- 首頁組件 (HomePage) ---
+function HomePage({ onStartQuiz, onEnterStickyNotes, onEnterVoting, questionBanks, studentRoster, grades }) {
+    return (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+            <QuizLogin onStartQuiz={onStartQuiz} questionBanks={questionBanks} studentRoster={studentRoster} grades={grades} />
+            <StickyNoteLogin onEnter={onEnterStickyNotes} studentRoster={studentRoster} />
+            <VotingLogin onEnter={onEnterVoting} studentRoster={studentRoster} />
+        </div>
+    );
+}
+
+// --- 測驗登入組件 ---
+function QuizLogin({ onStartQuiz, questionBanks, studentRoster, grades }) {
+  const [studentClass, setStudentClass] = useState('');
+  const [studentSeat, setStudentSeat] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [selectedTheme, setSelectedTheme] = useState('');
+  const [error, setError] = useState('');
+  
+  const availableThemes = useMemo(() => {
+    const studentClassTrimmed = studentClass.trim();
+    if (!studentClassTrimmed) {
+        // If no class is entered, show themes available to everyone
+        return Object.keys(questionBanks).filter(theme => {
+            const allowed = questionBanks[theme]?.allowedClasses;
+            return !allowed || allowed.length === 0;
+        });
+    }
+    // If a class is entered, show themes for everyone OR for that specific class
+    return Object.keys(questionBanks).filter(theme => {
+        const allowed = questionBanks[theme]?.allowedClasses;
+        return !allowed || allowed.length === 0 || allowed.includes(studentClassTrimmed);
+    });
+  }, [studentClass, questionBanks]);
+
+  // Update selectedTheme if it's no longer available
+  useEffect(() => {
+    if (availableThemes.length > 0 && !availableThemes.includes(selectedTheme)) {
+        setSelectedTheme(availableThemes[0]);
+    } else if (availableThemes.length === 0) {
+        setSelectedTheme('');
+    } else if (availableThemes.length > 0 && selectedTheme === '') {
+        setSelectedTheme(availableThemes[0]);
+    }
+  }, [availableThemes, selectedTheme]);
+  
+  useEffect(() => {
+      if (studentClass && studentSeat && typeof studentRoster === 'object' && studentRoster[studentClass.trim()]) {
+          const classList = studentRoster[studentClass.trim()];
+          const foundStudent = classList.find(s => String(s.seat) === String(studentSeat.trim()));
+          setStudentName(foundStudent ? foundStudent.name : '');
+      } else {
+          setStudentName('');
+      }
+  }, [studentClass, studentSeat, studentRoster]);
+
+  const handleStudentSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    if (!studentClass || !studentSeat || !selectedTheme) {
+      setError('請輸入班級、座號並選擇測驗主題'); return;
+    }
+    if (!studentName) {
+        setError('查無此學生，請確認班級座號是否已建檔'); return;
+    }
+    const themeSettings = questionBanks[selectedTheme];
+    const allowRetakes = themeSettings?.allowRetakes || false;
+    if (!allowRetakes) {
+        const hasTakenQuiz = grades.some(grade => 
+            grade.class === studentClass.trim() && String(grade.seat) === String(studentSeat.trim()) && grade.theme === selectedTheme
+        );
+        if (hasTakenQuiz) {
+            setError(`此主題「${selectedTheme}」只能測驗一次，你已經完成作答。`); return;
+        }
+    }
+    onStartQuiz({ class: studentClass.trim(), seat: studentSeat.trim(), name: studentName }, selectedTheme);
+  };
+  
+  return (
+    <div className="w-full max-w-md p-6 bg-slate-50 rounded-xl border border-slate-200">
+        <h2 className="text-2xl font-bold mb-4 text-center text-blue-600">學生測驗區</h2>
+        <form onSubmit={handleStudentSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">測驗主題</label>
+              <select value={selectedTheme} onChange={e => setSelectedTheme(e.target.value)} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                  {availableThemes.length > 0 ? availableThemes.map(theme => <option key={theme} value={theme}>{theme}</option>) : <option disabled>尚無符合班級的測驗</option>}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">班級</label>
+              <input type="text" value={studentClass} onChange={(e) => setStudentClass(e.target.value)} placeholder="例如: 701" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">座號</label>
+              <input type="text" value={studentSeat} onChange={(e) => setStudentSeat(e.target.value)} placeholder="例如: 15" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+            </div>
+            <div className="h-6 text-center">
+              {studentName && <p className="font-semibold text-lg text-green-700">歡迎, {studentName} 同學</p>}
+              {!studentName && studentClass && studentSeat && <p className="text-red-600">查無此學生</p>}
+            </div>
+            {error && <p className="text-red-500 text-center text-sm">{error}</p>}
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-transform transform hover:scale-105 disabled:bg-slate-400" disabled={!studentName}>
+              開始測驗
+            </button>
+        </form>
+    </div>
+  );
+}
+
+// --- 便利貼登入組件 ---
+function StickyNoteLogin({ onEnter, studentRoster }) {
+    const [studentClass, setStudentClass] = useState('');
+    const [studentSeat, setStudentSeat] = useState('');
+    const [studentName, setStudentName] = useState('');
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+      if (studentClass && studentSeat && typeof studentRoster === 'object' && studentRoster[studentClass.trim()]) {
+          const classList = studentRoster[studentClass.trim()];
+          const foundStudent = classList.find(s => String(s.seat) === String(studentSeat.trim()));
+          setStudentName(foundStudent ? foundStudent.name : '');
+      } else {
+          setStudentName('');
+      }
+    }, [studentClass, studentSeat, studentRoster]);
+
+    const handleStudentSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+        if (!studentClass || !studentSeat) {
+            setError('請輸入班級與座號'); return;
+        }
+        if (!studentName) {
+            setError('查無此學生，請確認班級座號是否已建檔'); return;
+        }
+        onEnter({ class: studentClass.trim(), seat: studentSeat.trim(), name: studentName });
+    };
+
+    return (
+        <div className="w-full max-w-md p-6 bg-amber-50 rounded-xl border border-amber-200">
+            <h2 className="text-2xl font-bold mb-4 text-center text-amber-700">學生便利貼區</h2>
+            <form onSubmit={handleStudentSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">班級</label>
+                    <input type="text" value={studentClass} onChange={(e) => setStudentClass(e.target.value)} placeholder="例如: 701" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">座號</label>
+                    <input type="text" value={studentSeat} onChange={(e) => setStudentSeat(e.target.value)} placeholder="例如: 15" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition" />
+                </div>
+                <div className="h-6 text-center">
+                    {studentName && <p className="font-semibold text-lg text-green-700">歡迎, {studentName} 同學</p>}
+                    {!studentName && studentClass && studentSeat && <p className="text-red-600">查無此學生</p>}
+                </div>
+                {error && <p className="text-red-500 text-center text-sm">{error}</p>}
+                <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-transform transform hover:scale-105 disabled:bg-slate-400" disabled={!studentName}>
+                    進入便利貼牆
+                </button>
+            </form>
+        </div>
+    );
+}
+
+// --- 投票登入組件 ---
+function VotingLogin({ onEnter, studentRoster }) {
+    const [studentClass, setStudentClass] = useState('');
+    const [studentSeat, setStudentSeat] = useState('');
+    const [studentName, setStudentName] = useState('');
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+      if (studentClass && studentSeat && typeof studentRoster === 'object' && studentRoster[studentClass.trim()]) {
+          const classList = studentRoster[studentClass.trim()];
+          const foundStudent = classList.find(s => String(s.seat) === String(studentSeat.trim()));
+          setStudentName(foundStudent ? foundStudent.name : '');
+      } else {
+          setStudentName('');
+      }
+    }, [studentClass, studentSeat, studentRoster]);
+
+    const handleStudentSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+        if (!studentClass || !studentSeat) {
+            setError('請輸入班級與座號'); return;
+        }
+        if (!studentName) {
+            setError('查無此學生，請確認班級座號是否已建檔'); return;
+        }
+        onEnter({ class: studentClass.trim(), seat: studentSeat.trim(), name: studentName });
+    };
+
+    return (
+        <div className="w-full max-w-md p-6 bg-green-50 rounded-xl border border-green-200">
+            <h2 className="text-2xl font-bold mb-4 text-center text-green-700">學生投票區</h2>
+            <form onSubmit={handleStudentSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">班級</label>
+                    <input type="text" value={studentClass} onChange={(e) => setStudentClass(e.target.value)} placeholder="例如: 701" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">座號</label>
+                    <input type="text" value={studentSeat} onChange={(e) => setStudentSeat(e.target.value)} placeholder="例如: 15" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition" />
+                </div>
+                <div className="h-6 text-center">
+                    {studentName && <p className="font-semibold text-lg text-green-700">歡迎, {studentName} 同學</p>}
+                    {!studentName && studentClass && studentSeat && <p className="text-red-600">查無此學生</p>}
+                </div>
+                {error && <p className="text-red-500 text-center text-sm">{error}</p>}
+                <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-transform transform hover:scale-105 disabled:bg-slate-400" disabled={!studentName}>
+                    進入投票區
+                </button>
+            </form>
+        </div>
+    );
+}
+
+
+// --- 測驗畫面組件 (QuizView) ---
+function QuizView({ questions, onSubmit }) {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState(Array(questions.length).fill(null));
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  if (!questions || questions.length === 0) {
+    return <div className="text-center p-8">此測驗主題沒有題目。</div>;
+  }
+  
+  const handleSelectOption = (optionIndex) => {
+    const newAnswers = [...answers];
+    newAnswers[currentQuestionIndex] = optionIndex;
+    setAnswers(newAnswers);
+  };
+  
+  const handleNext = () => {
+      if (currentQuestionIndex < questions.length - 1) {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+      }
+  }
+
+  const handlePrev = () => {
+      if (currentQuestionIndex > 0) {
+          setCurrentQuestionIndex(currentQuestionIndex - 1);
+      }
+  }
+  
+  const handleSubmitClick = () => {
+      const unanswered = answers.filter(a => a === null).length;
+      if (unanswered > 0) {
+          setShowConfirmModal(true);
+      } else {
+          onSubmit(answers);
+      }
+  }
+
+  const handleConfirmSubmit = () => {
+      onSubmit(answers);
+      setShowConfirmModal(false);
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+
+  return (
+    <div>
+        {showConfirmModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                    <h3 className="text-lg font-bold mb-4">確定要交卷嗎？</h3>
+                    <p>還有 {answers.filter(a => a === null).length} 題未作答，確定要交卷嗎？</p>
+                    <div className="flex justify-end gap-4 mt-6">
+                        <button onClick={() => setShowConfirmModal(false)} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                        <button onClick={handleConfirmSubmit} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">確定交卷</button>
+                    </div>
+                </div>
+            </div>
+        )}
+        <div className="mb-6">
+            <div className="bg-slate-200 rounded-full h-4">
+                <div className="bg-green-500 h-4 rounded-full" style={{ width: `${progress}%` }}></div>
+            </div>
+            <p className="text-center text-sm text-slate-600 mt-2">進度: {currentQuestionIndex + 1} / {questions.length}</p>
+        </div>
+        <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+            <h3 className="text-xl font-semibold mb-4">
+                {`第 ${currentQuestionIndex + 1} 題: ${currentQuestion.text}`}
+            </h3>
+            <div className="space-y-3">
+            {currentQuestion.options.map((option, index) => (
+                <label key={index} className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition ${answers[currentQuestionIndex] === index ? 'bg-blue-100 border-blue-500' : 'bg-white border-slate-300 hover:border-blue-400'}`}>
+                <input
+                    type="radio"
+                    name={`question-${currentQuestionIndex}`}
+                    checked={answers[currentQuestionIndex] === index}
+                    onChange={() => handleSelectOption(index)}
+                    className="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-4 text-lg">{option}</span>
+                </label>
+            ))}
+            </div>
+        </div>
+        <div className="mt-8 flex justify-between items-center">
+            <button onClick={handlePrev} disabled={currentQuestionIndex === 0} className="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg disabled:bg-slate-300 disabled:cursor-not-allowed transition">
+                上一題
+            </button>
+            {currentQuestionIndex === questions.length - 1 ? (
+                <button onClick={handleSubmitClick} className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 animate-pulse">
+                    完成並交卷
+                </button>
+            ) : (
+                <button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                    下一題
+                </button>
+            )}
+        </div>
+    </div>
+  );
+}
+
+// --- 結果畫面組件 (ResultsView) ---
+function ResultsView({ questions, results, onBackHome }) {
+  const { score, answers } = results;
+
+  const getScoreColor = (s) => {
+    if (s >= 80) return 'text-green-600';
+    if (s >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <div className="text-center">
+      <h2 className="text-3xl font-bold mb-2">測驗完成！</h2>
+      <p className="text-5xl font-bold mb-6">
+        你的分數: <span className={getScoreColor(score)}>{score}</span>
+      </p>
+      
+      <div className="mt-8 text-left space-y-6 max-h-[50vh] overflow-y-auto pr-4">
+        {questions.map((q, index) => {
+          const userAnswer = answers[index];
+          const isCorrect = userAnswer === q.answer;
+          return (
+            <div key={q.id || index} className={`p-4 rounded-lg border-2 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'}`}>
+              <p className="font-bold text-lg">{`${index + 1}. ${q.text}`}</p>
+              <p className="mt-2">你的答案: <span className={`font-semibold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                {userAnswer !== null ? q.options[userAnswer] : '未作答'}
+                {isCorrect ? ' (正確)' : ' (錯誤)'}
+              </span></p>
+              {!isCorrect && <p className="mt-1">正確答案: <span className="font-semibold text-blue-700">{q.options[q.answer]}</span></p>}
+              <p className="mt-2 text-sm text-slate-600 bg-slate-100 p-2 rounded">
+                <span className="font-bold">解析:</span> {q.explanation}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <button onClick={onBackHome} className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105">
+        完成
+      </button>
+    </div>
+  );
+}
+
+// --- 投票區 (學生視角) ---
+function VotingView({ user, polls, allVotes, showAlert }) {
+    const publishedPolls = useMemo(() => {
+        return Object.values(polls).filter(p => {
+            if (!p.isPublished) return false;
+            const allowed = p.allowedClasses;
+            return !allowed || allowed.length === 0 || allowed.includes(user.class);
+        });
+    }, [polls, user.class]);
+    const userIdentifier = `${user.class}-${user.seat}`;
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    const userVotes = allVotes.filter(v => v.userIdentifier === userIdentifier);
+    
+    const [selectedPoll, setSelectedPoll] = useState(null);
+    const [selectedOptions, setSelectedOptions] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSelectPoll = (poll) => {
+        setSelectedPoll(poll);
+        setSelectedOptions([]);
+    };
+    
+    const handleOptionToggle = (optionIndex) => {
+        if (selectedPoll.allowMultipleVotes) {
+            setSelectedOptions(prev => 
+                prev.includes(optionIndex)
+                    ? prev.filter(item => item !== optionIndex)
+                    : [...prev, optionIndex]
+            );
+        } else {
+            setSelectedOptions([optionIndex]);
+        }
+    };
+
+    const handleSubmitVote = async () => {
+        if (selectedOptions.length === 0) {
+            showAlert("請至少選擇一個選項！");
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const newVote = {
+                pollId: selectedPoll.id,
+                userIdentifier,
+                class: user.class,
+                seat: user.seat,
+                name: user.name,
+                selectedOptions: selectedOptions,
+                timestamp: new Date(),
+                deviceInfo: navigator.userAgent
+            };
+            await addDoc(collection(db, ...dataPrefix, 'votes'), newVote);
+            showAlert("投票成功！");
+            setSelectedPoll(null); // Close the voting modal/view
+        } catch (error) {
+            console.error("Error submitting vote: ", error);
+            showAlert("投票時發生錯誤。");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const hasVoted = (pollId) => userVotes.some(v => v.pollId === pollId);
+    
+    const getPollResults = (pollId) => {
+        const poll = polls[pollId];
+        if (!poll) return { results: [], totalVotes: 0 };
+        
+        const relevantVotes = allVotes.filter(v => v.pollId === pollId);
+        const results = poll.options.map(() => 0);
+        let totalVotes = 0;
+
+        relevantVotes.forEach(vote => {
+            vote.selectedOptions.forEach(optionIndex => {
+                if (results[optionIndex] !== undefined) {
+                    results[optionIndex]++;
+                }
+            });
+        });
+        
+        // For multiple choice, total votes might be sum of all selections
+        if (poll.allowMultipleVotes) {
+             totalVotes = results.reduce((sum, count) => sum + count, 0);
+        } else {
+            totalVotes = relevantVotes.length;
+        }
+
+
+        return { results, totalVotes };
+    };
+
+    if (selectedPoll) {
+        const { results, totalVotes } = getPollResults(selectedPoll.id);
+        return (
+            <div className="p-4">
+                <button onClick={() => setSelectedPoll(null)} className="mb-4 bg-slate-200 hover:bg-slate-300 py-1 px-3 rounded">&larr; 返回列表</button>
+                <h2 className="text-2xl font-bold mb-4">{selectedPoll.title}</h2>
+                <p className="text-slate-600 mb-6">{selectedPoll.allowMultipleVotes ? "可複選" : "單選"}</p>
+
+                <div className="space-y-3 mb-8">
+                    {selectedPoll.options.map((option, index) => (
+                         <label key={index} className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition ${selectedOptions.includes(index) ? 'bg-blue-100 border-blue-500' : 'bg-white border-slate-300 hover:border-blue-400'}`}>
+                            <input
+                                type={selectedPoll.allowMultipleVotes ? "checkbox" : "radio"}
+                                name="poll-option"
+                                checked={selectedOptions.includes(index)}
+                                onChange={() => handleOptionToggle(index)}
+                                className="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="ml-4 text-lg flex-grow">{option}</span>
+                        </label>
+                    ))}
+                </div>
+                
+                <div className="text-center">
+                    <button onClick={handleSubmitVote} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-lg disabled:bg-slate-400">
+                        {isSubmitting ? '投票中...' : '確定投票'}
+                    </button>
+                </div>
+
+                <div className="mt-10 border-t pt-6">
+                    <h3 className="text-xl font-bold mb-4">即時結果</h3>
+                    {totalVotes === 0 ? <p>尚無人投票。</p> : (
+                        <div className="space-y-4">
+                            {selectedPoll.options.map((option, index) => {
+                                const voteCount = results[index] || 0;
+                                const percentage = totalVotes > 0 ? ((voteCount / totalVotes) * 100).toFixed(1) : 0;
+                                return (
+                                    <div key={index}>
+                                        <div className="flex justify-between mb-1">
+                                            <span>{option}</span>
+                                            <span className="font-semibold">{voteCount} 票 ({percentage}%)</span>
+                                        </div>
+                                        <div className="w-full bg-slate-200 rounded-full h-4">
+                                            <div className="bg-blue-500 h-4 rounded-full" style={{ width: `${percentage}%` }}></div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <h2 className="text-3xl font-bold text-center mb-8">進行中的投票</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+                {publishedPolls.length > 0 ? publishedPolls.map(poll => {
+                    const voted = hasVoted(poll.id);
+                    return (
+                        <div key={poll.id} className={`p-6 rounded-lg border ${voted ? 'bg-slate-100' : 'bg-white'}`}>
+                            <h3 className="text-xl font-semibold mb-2">{poll.title}</h3>
+                            <p className="text-slate-500 mb-4 text-sm">{poll.options.length} 個選項 | {poll.allowMultipleVotes ? "可複選" : "單選"}</p>
+                            {voted ? (
+                                <button onClick={() => handleSelectPoll(poll)} className="w-full bg-slate-400 text-white font-bold py-2 px-4 rounded-lg cursor-pointer">
+                                    已投票，查看結果
+                                </button>
+                            ) : (
+                                <button onClick={() => handleSelectPoll(poll)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                                    前往投票
+                                </button>
+                            )}
+                        </div>
+                    );
+                }) : (
+                    <p className="text-center text-slate-500 md:col-span-2 py-8">目前沒有開放的投票活動。</p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// --- 老師儀表板組件 (TeacherDashboard) ---
+function TeacherDashboard({ grades, questionBanks, studentRoster, stickyNoteThemes, stickyNotes, polls, allVotes, showAlert, onLogout, onChangePasswordClick }) {
+    const [tab, setTab] = useState('questions'); // grades, questions, roster, sticky, voting
+    const [currentTheme, setCurrentTheme] = useState(Object.keys(questionBanks)[0] || null);
+    const [showAddThemeModal, setShowAddThemeModal] = useState(false);
+    const [deletingTheme, setDeletingTheme] = useState(null);
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    useEffect(() => {
+        if (!currentTheme && Object.keys(questionBanks).length > 0 && tab === 'questions') {
+            setCurrentTheme(Object.keys(questionBanks)[0]);
+        }
+    }, [questionBanks, currentTheme, tab]);
+
+    const handleAddTheme = async (newThemeName) => {
+        if (newThemeName && !questionBanks[newThemeName]) {
+            try {
+                // 新增主題時，預設不允許重複測驗
+                await setDoc(doc(db, ...dataPrefix, 'questionBanks', newThemeName), { 
+                    questions: [],
+                    allowRetakes: false,
+                    allowedClasses: [] 
+                });
+                setCurrentTheme(newThemeName);
+                setShowAddThemeModal(false);
+                showAlert(`主題 "${newThemeName}" 新增成功！`);
+            } catch (error) {
+                console.error("Error adding theme:", error);
+                showAlert("新增主題時發生錯誤。");
+            }
+        } else if (newThemeName) {
+            showAlert('主題名稱已存在或無效！');
+        }
+    };
+
+    const handleDeleteTheme = async () => {
+        if (!deletingTheme) return;
+
+        try {
+            await deleteDoc(doc(db, ...dataPrefix, 'questionBanks', deletingTheme));
+            
+            const remainingKeys = Object.keys(questionBanks).filter(k => k !== deletingTheme);
+            if (currentTheme === deletingTheme) {
+                setCurrentTheme(remainingKeys.length > 0 ? remainingKeys[0] : null);
+            }
+            
+            showAlert(`主題 "${deletingTheme}" 已成功刪除。`);
+            setDeletingTheme(null);
+        } catch (error) {
+            console.error("Error deleting theme:", error);
+            showAlert("刪除主題時發生錯誤。");
+        }
+    };
+
+    const handleSetQuestions = async (updater) => {
+        if (!currentTheme) return;
+        try {
+            const currentBank = questionBanks[currentTheme] || { questions: [], allowRetakes: false };
+            const newQuestions = typeof updater === 'function' ? updater(currentBank.questions) : updater;
+            const themeDocRef = doc(db, ...dataPrefix, 'questionBanks', currentTheme);
+            await updateDoc(themeDocRef, { questions: newQuestions });
+        } catch (error) {
+            console.error("Error updating questions:", error);
+            showAlert("更新題庫時發生錯誤。");
+        }
+    };
+    
+    const handleUpdateThemeSettings = async (newSettings) => {
+        if (!currentTheme) return;
+        try {
+            const themeDocRef = doc(db, ...dataPrefix, 'questionBanks', currentTheme);
+            await updateDoc(themeDocRef, newSettings);
+            showAlert("主題設定更新成功！");
+        } catch (error) {
+            console.error("Error updating theme settings:", error);
+            showAlert("更新主題設定時發生錯誤。");
+        }
+    };
+
+    const RetakeIcon = () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1 text-green-500" title="允許重複測驗">
+            <polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+    );
+
+    return (
+        <div className="flex flex-col md:flex-row gap-8">
+             {showAddThemeModal && <AddThemeModal onSave={handleAddTheme} onCancel={() => setShowAddThemeModal(false)} />}
+             {deletingTheme && <DeleteThemeModal themeName={deletingTheme} onConfirm={handleDeleteTheme} onCancel={() => setDeletingTheme(null)} />}
+            <aside className="w-full md:w-1/4 border-b md:border-b-0 md:border-r pb-6 md:pb-0 md:pr-6">
+                <h2 className="text-lg font-bold mb-4">管理選單</h2>
+                <div className="space-y-2">
+                    {Object.keys(questionBanks).map(theme => (
+                        <div key={theme} className="group flex items-center justify-between bg-slate-100 rounded-lg hover:bg-slate-200">
+                             <button onClick={() => { setCurrentTheme(theme); setTab('questions'); }}
+                                className={`flex-grow text-left p-3 rounded-lg transition ${currentTheme === theme && tab === 'questions' ? 'bg-blue-600 text-white' : 'bg-transparent'}`}>
+                                {questionBanks[theme]?.allowRetakes && <RetakeIcon />}
+                                {theme} ({questionBanks[theme]?.questions?.length || 0})
+                            </button>
+                            <button 
+                                onClick={() => setDeletingTheme(theme)} 
+                                className="p-2 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title={`刪除 ${theme} 主題`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </div>
+                    ))}
+                </div>
+                <button onClick={() => setShowAddThemeModal(true)} className="w-full mt-4 p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold">
+                    ＋ 新增測驗主題
+                </button>
+                <button onClick={onChangePasswordClick} className="w-full mt-2 p-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg font-semibold">
+                    修改密碼
+                </button>
+            </aside>
+            <main className="w-full md:w-3/4">
+                <div className="flex border-b border-slate-200 mb-6 flex-wrap">
+                    <button onClick={() => setTab('questions')} className={`px-6 py-3 font-semibold text-lg ${tab === 'questions' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-slate-500'}`}>
+                        題庫管理
+                    </button>
+                    <button onClick={() => setTab('grades')} className={`px-6 py-3 font-semibold text-lg ${tab === 'grades' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-slate-500'}`}>
+                        成績總覽
+                    </button>
+                     <button onClick={() => setTab('roster')} className={`px-6 py-3 font-semibold text-lg ${tab === 'roster' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-slate-500'}`}>
+                        學生名單
+                    </button>
+                     <button onClick={() => setTab('sticky')} className={`px-6 py-3 font-semibold text-lg ${tab === 'sticky' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-slate-500'}`}>
+                        便利貼牆
+                    </button>
+                    <button onClick={() => setTab('voting')} className={`px-6 py-3 font-semibold text-lg ${tab === 'voting' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-slate-500'}`}>
+                        投票管理
+                    </button>
+                    <button onClick={() => setTab('data')} className={`px-6 py-3 font-semibold text-lg ${tab === 'data' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-slate-500'}`}>
+                        資料管理
+                    </button>
+                </div>
+                <div>
+                    {tab === 'grades' && <GradebookView grades={grades} themes={Object.keys(questionBanks)} showAlert={showAlert} />}
+                    {tab === 'questions' && (currentTheme ? 
+                        <QuestionBankView 
+                            key={currentTheme}
+                            questions={questionBanks[currentTheme]?.questions || []}
+                            grades={grades}
+                            themeSettings={questionBanks[currentTheme]}
+                            setQuestions={handleSetQuestions}
+                            onUpdateThemeSettings={handleUpdateThemeSettings}
+                            showAlert={showAlert}
+                            themeName={currentTheme}
+                            studentRoster={studentRoster}
+                        /> : <p>請從左側選單選擇一個測驗主題來管理題目。</p>)
+                    }
+                    {tab === 'roster' && <StudentRosterView studentRoster={studentRoster} grades={grades} showAlert={showAlert} />}
+                    {tab === 'sticky' && <StickyNoteAdminView themes={stickyNoteThemes} notes={stickyNotes} showAlert={showAlert} studentRoster={studentRoster} />}
+                    {tab === 'voting' && <VotingAdminView polls={polls} allVotes={allVotes} studentRoster={studentRoster} showAlert={showAlert} />}
+                    {tab === 'data' && <DataManagementView showAlert={showAlert} />}
+                </div>
+            </main>
+        </div>
+    );
+}
+
+// +++ 學生名單管理組件 +++
+function StudentRosterView({ studentRoster, grades, showAlert }) {
+    const [isAddClassModalOpen, setIsAddClassModalOpen] = useState(false);
+    const [classToDelete, setClassToDelete] = useState(null);
+    const [studentToEdit, setStudentToEdit] = useState(null); 
+    const [studentToDelete, setStudentToDelete] = useState(null);
+    const [classForNewStudent, setClassForNewStudent] = useState(null);
+    const fileInputRef = useRef(null);
+    const [classToImportInto, setClassToImportInto] = useState(null);
+    const [expandedClasses, setExpandedClasses] = useState({});
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    const toggleExpand = (classKey) => {
+        setExpandedClasses(prev => ({ ...prev, [classKey]: !prev[classKey] }));
+    };
+
+    const handleAddClass = async (className) => {
+        if (!className) {
+            showAlert("班級名稱不能為空！");
+            return;
+        }
+        if (studentRoster[className]) {
+            showAlert(`班級 "${className}" 已存在！`);
+            return;
+        }
+        try {
+            await setDoc(doc(db, ...dataPrefix, "studentRosters", className), { students: [] });
+            showAlert(`班級 "${className}" 新增成功！`);
+            setIsAddClassModalOpen(false);
+        } catch (error) {
+            console.error("Error adding class:", error);
+            showAlert("新增班級時發生錯誤。");
+        }
+    };
+
+    const handleDeleteClass = async () => {
+        if (!classToDelete) return;
+        try {
+            const batch = writeBatch(db);
+            // 1. 刪除班級名單
+            batch.delete(doc(db, ...dataPrefix, "studentRosters", classToDelete));
+            // 2. 刪除該班所有學生的成績
+            const gradesToDelete = grades.filter(grade => grade.class === classToDelete);
+            gradesToDelete.forEach(grade => {
+                batch.delete(doc(db, ...dataPrefix, "grades", grade.id));
+            });
+            await batch.commit();
+            showAlert(`班級 "${classToDelete}" 及其所有學生和成績資料已刪除。`);
+            setClassToDelete(null);
+        } catch (error) {
+            console.error("Error deleting class:", error);
+            showAlert("刪除班級時發生錯誤。");
+        }
+    };
+
+    const handleSaveStudent = async (classKey, studentData, originalSeat) => {
+        const classList = studentRoster[classKey] || [];
+        const isEditing = originalSeat !== undefined;
+        const seatExists = classList.some(s => s.seat === studentData.seat && (!isEditing || s.seat !== originalSeat));
+        if (seatExists) {
+            showAlert(`座號 "${studentData.seat}" 在此班級已存在！`);
+            return;
+        }
+        
+        try {
+            const classDocRef = doc(db, ...dataPrefix, "studentRosters", classKey);
+            const newClassList = isEditing 
+                ? classList.map(s => (s.seat === originalSeat ? studentData : s)) 
+                : [...classList, studentData];
+            newClassList.sort((a, b) => parseInt(a.seat) - parseInt(b.seat));
+
+            await updateDoc(classDocRef, { students: newClassList });
+            showAlert(isEditing ? '學生資料更新成功！' : '新增學生成功！');
+            setStudentToEdit(null);
+            setClassForNewStudent(null);
+        } catch (error) {
+            console.error("Error saving student:", error);
+            showAlert("儲存學生資料時發生錯誤。");
+        }
+    };
+    
+    const handleDeleteStudent = async () => {
+        if (!studentToDelete) return;
+        const { classKey, student } = studentToDelete;
+        try {
+            const batch = writeBatch(db);
+            // 1. 從名單刪除學生
+            const newClassList = studentRoster[classKey].filter(s => s.seat !== student.seat);
+            batch.update(doc(db, ...dataPrefix, "studentRosters", classKey), { students: newClassList });
+            // 2. 刪除該學生的所有成績
+            const gradesToDelete = grades.filter(g => g.class === classKey && g.seat === student.seat);
+            gradesToDelete.forEach(grade => {
+                batch.delete(doc(db, ...dataPrefix, "grades", grade.id));
+            });
+            await batch.commit();
+            showAlert(`已從 ${classKey} 班刪除學生 ${student.name} 及其成績資料。`);
+            setStudentToDelete(null);
+        } catch (error) {
+            console.error("Error deleting student:", error);
+            showAlert("刪除學生時發生錯誤。");
+        }
+    };
+
+    const handleDownloadExample = () => {
+        if (typeof XLSX === 'undefined') {
+            showAlert('錯誤：匯出功能所需的函式庫 (xlsx) 未載入。'); return;
+        }
+        const headers = ["座號", "姓名"];
+        const exampleData = [ ["1", "王小明"], ["2", "陳大華"] ];
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...exampleData]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "學生名單範例");
+        XLSX.writeFile(wb, "student_import_template.xlsx");
+    };
+
+    const triggerFileUpload = (classKey) => {
+        setClassToImportInto(classKey);
+        fileInputRef.current.click();
+    };
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file || !classToImportInto) return;
+
+        if (typeof XLSX === 'undefined') {
+            showAlert('錯誤：所需函式庫 (xlsx) 未載入，無法解析檔案。');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                if (json.length === 0) { showAlert('檔案為空或格式不符。'); return; }
+
+                const existingStudents = studentRoster[classToImportInto] || [];
+                const existingSeats = new Set(existingStudents.map(s => String(s.seat)));
+                const studentsToAdd = [];
+                const skippedStudents = [];
+
+                json.forEach(row => {
+                    const seat = (row.座號 || row.seat) ? String(row.座號 || row.seat).trim() : '';
+                    const name = (row.姓名 || row.name) ? String(row.姓名 || row.name).trim() : '';
+                    if (!seat || !name) return;
+                    if (existingSeats.has(seat)) {
+                        skippedStudents.push({ seat, name });
+                    } else {
+                        studentsToAdd.push({ seat, name });
+                        existingSeats.add(seat);
+                    }
+                });
+                
+                if (studentsToAdd.length > 0) {
+                    const updatedClassList = [...existingStudents, ...studentsToAdd].sort((a, b) => parseInt(a.seat) - parseInt(b.seat));
+                    await updateDoc(doc(db, ...dataPrefix, "studentRosters", classToImportInto), { students: updatedClassList });
+                }
+
+                let alertMessage = '';
+                if (studentsToAdd.length > 0) alertMessage += `成功匯入 ${studentsToAdd.length} 位新學生至 ${classToImportInto} 班。`;
+                if (skippedStudents.length > 0) alertMessage += `\n${skippedStudents.length} 位學生因座號重複被略過。`;
+                if (!alertMessage) alertMessage = '檔案中無有效的新學生資料可匯入。';
+                showAlert(alertMessage.trim());
+
+            } catch (error) {
+                showAlert(`檔案處理失敗：${error.message}`);
+            } finally {
+                e.target.value = '';
+                setClassToImportInto(null);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    return (
+        <div>
+            {isAddClassModalOpen && <AddClassModal onSave={handleAddClass} onCancel={() => setIsAddClassModalOpen(false)} />}
+            {classToDelete && <ConfirmDeleteModal title="確認刪除班級" message={`您確定要刪除「${classToDelete}」班嗎？此班級內所有學生資料及其相關的測驗成績將會被一併移除。`} onConfirm={handleDeleteClass} onCancel={() => setClassToDelete(null)} />}
+            {(studentToEdit || classForNewStudent) && <AddEditStudentModal 
+                classKey={studentToEdit?.classKey || classForNewStudent}
+                student={studentToEdit?.student}
+                onSave={handleSaveStudent}
+                onCancel={() => { setStudentToEdit(null); setClassForNewStudent(null); }}
+            />}
+            {studentToDelete && <ConfirmDeleteModal title="確認刪除學生" message={`您確定要從 ${studentToDelete.classKey} 班刪除 ${studentToDelete.student.name} (座號: ${studentToDelete.student.seat}) 嗎？`} onConfirm={handleDeleteStudent} onCancel={() => setStudentToDelete(null)} />}
+            
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".xlsx" style={{ display: 'none' }} />
+
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
+                 <h3 className="text-xl font-bold">管理學生名單</h3>
+                 <div className="flex gap-2">
+                    <button onClick={handleDownloadExample} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">下載範例檔</button>
+                    <button onClick={() => setIsAddClassModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">＋ 新增班級</button>
+                 </div>
+            </div>
+
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+                {Object.keys(studentRoster).length > 0 ? Object.keys(studentRoster).sort().map(classKey => (
+                    <div key={classKey} className="p-4 bg-slate-50 rounded-lg border">
+                        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                            <h4 className="text-lg font-bold">{classKey} 班</h4>
+                             <div className="flex gap-2 items-center">
+                                <button onClick={() => toggleExpand(classKey)} className="bg-slate-400 hover:bg-slate-500 text-white text-sm font-bold py-1 px-3 rounded-md">
+                                    {expandedClasses[classKey] ? '隱藏學生' : '查看學生'}
+                                </button>
+                                <button onClick={() => triggerFileUpload(classKey)} className="bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold py-1 px-3 rounded-md">匯入 Excel</button>
+                                <button onClick={() => setClassForNewStudent(classKey)} className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded-md">新增學生</button>
+                                <button onClick={() => setClassToDelete(classKey)} className="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-1 px-3 rounded-md">刪除班級</button>
+                            </div>
+                        </div>
+                        {expandedClasses[classKey] && (
+                            studentRoster[classKey].length > 0 ? (
+                                <table className="w-full text-left bg-white">
+                                    <thead>
+                                        <tr className="bg-slate-200">
+                                            <th className="p-2 w-1/4">座號</th>
+                                            <th className="p-2 w-1/2">姓名</th>
+                                            <th className="p-2 w-1/4 text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {studentRoster[classKey].map(student => (
+                                            <tr key={student.seat} className="border-b">
+                                                <td className="p-2">{student.seat}</td>
+                                                <td className="p-2">{student.name}</td>
+                                                <td className="p-2 text-right">
+                                                    <button onClick={() => setStudentToEdit({ classKey, student })} className="text-sm text-blue-600 hover:underline mr-4">編輯</button>
+                                                    <button onClick={() => setStudentToDelete({ classKey, student })} className="text-sm text-red-600 hover:underline">刪除</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p className="text-center text-slate-500 py-4">此班級尚無學生資料</p>
+                            )
+                        )}
+                    </div>
+                )) : (
+                     <p className="text-center text-slate-500 py-8">尚未建立任何班級，請點擊「新增班級」開始。</p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// --- 成績總覽組件 (GradebookView) ---
+function GradebookView({ grades, themes, showAlert }) {
+    const [selectedTheme, setSelectedTheme] = useState('all');
+    const [selectedClass, setSelectedClass] = useState('all');
+    const [selectedGrade, setSelectedGrade] = useState(null);
+
+    const uniqueClasses = ['all', ...[...new Set(grades.map(g => g.class))].sort()];
+    
+    const filteredAndSortedGrades = grades
+        .filter(g => 
+            (selectedClass === 'all' || g.class === selectedClass) &&
+            (selectedTheme === 'all' || g.theme === selectedTheme)
+        )
+        .sort((a, b) => {
+            const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
+            const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
+            return dateB - dateA;
+        });
+
+    const handleExportXLSX = () => {
+        if (typeof XLSX === 'undefined') {
+            showAlert('錯誤：匯出功能所需的函式庫 (xlsx) 未載入。'); return;
+        }
+        if (filteredAndSortedGrades.length === 0) {
+            showAlert('沒有符合篩選條件的成績可匯出。'); return;
+        }
+        const headers = ["主題", "班級", "座號", "姓名", "分數", "測驗時間"];
+        const dataToExport = filteredAndSortedGrades.map(grade => [
+            grade.theme, 
+            grade.class, 
+            grade.seat, 
+            grade.name, 
+            grade.score,
+            grade.timestamp?.toDate ? grade.timestamp.toDate().toLocaleString('zh-TW') : 'N/A'
+        ]);
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...dataToExport]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "學生乘績");
+        const fileName = `成績_${selectedClass === 'all' ? '全部班級' : `${selectedClass}班`}_${selectedTheme === 'all' ? '全部主題' : selectedTheme}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    };
+
+    return (
+        <div>
+            {selectedGrade && <GradeDetailsModal grade={selectedGrade} onClose={() => setSelectedGrade(null)} />}
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
+                    <div>
+                        <label className="mr-2 font-semibold">選擇班級:</label>
+                        <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="p-2 border border-slate-300 rounded-lg">
+                            {uniqueClasses.map(c => <option key={c} value={c}>{c === 'all' ? '全部班級' : `${c}班`}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="mr-2 font-semibold">選擇主題:</label>
+                        <select value={selectedTheme} onChange={(e) => setSelectedTheme(e.target.value)} className="p-2 border border-slate-300 rounded-lg">
+                            <option value="all">所有主題</option>
+                            {themes.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
+                </div>
+                <button 
+                    onClick={handleExportXLSX}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    匯出為 .xlsx
+                </button>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-max text-left border-collapse">
+                    <thead>
+                        <tr className="bg-slate-100">
+                            <th className="p-3 border-b-2 border-slate-200 font-bold">主題</th>
+                            <th className="p-3 border-b-2 border-slate-200 font-bold">班級</th>
+                            <th className="p-3 border-b-2 border-slate-200 font-bold">座號</th>
+                            <th className="p-3 border-b-2 border-slate-200 font-bold">姓名</th>
+                            <th className="p-3 border-b-2 border-slate-200 font-bold">分數</th>
+                            <th className="p-3 border-b-2 border-slate-200 font-bold">測驗時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredAndSortedGrades.map((grade, index) => (
+                            <tr key={grade.id || index} className="hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedGrade(grade)}>
+                                <td className="p-3 border-b border-slate-200">{grade.theme}</td>
+                                <td className="p-3 border-b border-slate-200">{grade.class}</td>
+                                <td className="p-3 border-b border-slate-200">{grade.seat}</td>
+                                <td className="p-3 border-b border-slate-200">{grade.name}</td>
+                                <td className={`p-3 border-b border-slate-200 font-bold ${grade.score >= 60 ? 'text-green-600' : 'text-red-500'}`}>{grade.score}</td>
+                                <td className="p-3 border-b border-slate-200 text-sm text-slate-600">{grade.timestamp?.toDate ? grade.timestamp.toDate().toLocaleString('zh-TW') : 'N/A'}</td>
+                            </tr>
+                        ))}
+                         {filteredAndSortedGrades.length === 0 && (
+                            <tr>
+                                <td colSpan="6" className="text-center p-8 text-slate-500">沒有符合條件的成績紀錄</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+// +++ 成績詳情 Modal 組件 +++
+function GradeDetailsModal({ grade, onClose }) {
+    if (!grade) return null;
+
+    const { score, userAnswers, questions } = grade;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+                <header className="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg">
+                    <h3 className="text-xl font-bold">
+                        {`${grade.class}班 ${grade.seat}號 ${grade.name} - ${grade.theme}`}
+                    </h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-800 p-1 rounded-full hover:bg-slate-200">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </header>
+                <main className="p-6 max-h-[70vh] overflow-y-auto">
+                    <h4 className="text-2xl font-bold text-center mb-6">測驗分數: {score}</h4>
+                    <div className="space-y-4">
+                        {!questions || !userAnswers ? (
+                            <p className="text-center text-slate-500 py-8">此筆成績無詳細作答紀錄。</p>
+                        ) : (
+                            questions.map((q, index) => {
+                                const userAnswer = userAnswers[index];
+                                const isCorrect = userAnswer === q.answer;
+                                return (
+                                    <div key={index} className={`p-3 rounded-lg border-2 ${isCorrect ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+                                        <p className="font-bold">{`${index + 1}. ${q.text}`}</p>
+                                        <p className="mt-1">學生答案: <span className={`font-semibold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                                            {userAnswer !== null ? q.options[userAnswer] : '未作答'}
+                                        </span></p>
+                                        {!isCorrect && <p className="mt-1">正確答案: <span className="font-semibold text-blue-700">{q.options[q.answer]}</span></p>}
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </main>
+            </div>
+        </div>
+    );
+}
+
+
+// --- 資料管理組件 (DataManagementView) ---
+function DataManagementView({ showAlert }) {
+    const [isLoading, setIsLoading] = useState(false);
+    const [showImportConfirm, setShowImportConfirm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [fileToImport, setFileToImport] = useState(null);
+    const importFileRef = useRef(null);
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    const handleExportData = async () => {
+        setIsLoading(true);
+        showAlert("正在準備匯出資料...");
+        try {
+            const collectionsToExport = {
+                questionBanks: {},
+                grades: [],
+                studentRosters: {},
+                stickyNoteThemes: {},
+                stickyNotes: [],
+                polls: {},
+                votes: [],
+            };
+
+            const qbSnapshot = await getDocs(collection(db, ...dataPrefix, 'questionBanks'));
+            qbSnapshot.forEach(doc => { collectionsToExport.questionBanks[doc.id] = doc.data(); });
+
+            const gradesSnapshot = await getDocs(collection(db, ...dataPrefix, 'grades'));
+            gradesSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.timestamp && data.timestamp.toDate) { data.timestamp = data.timestamp.toDate().toISOString(); }
+                collectionsToExport.grades.push(data);
+            });
+
+            const rosterSnapshot = await getDocs(collection(db, ...dataPrefix, 'studentRosters'));
+            rosterSnapshot.forEach(doc => { collectionsToExport.studentRosters[doc.id] = doc.data(); });
+            
+            const stickyThemesSnapshot = await getDocs(collection(db, ...dataPrefix, 'stickyNoteThemes'));
+            stickyThemesSnapshot.forEach(doc => { 
+                const data = doc.data();
+                if (data.timestamp && data.timestamp.toDate) { data.timestamp = data.timestamp.toDate().toISOString(); }
+                collectionsToExport.stickyNoteThemes[doc.id] = data;
+             });
+
+            const stickyNotesSnapshot = await getDocs(collection(db, ...dataPrefix, 'stickyNotes'));
+            stickyNotesSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.timestamp && data.timestamp.toDate) { data.timestamp = data.timestamp.toDate().toISOString(); }
+                collectionsToExport.stickyNotes.push(data);
+            });
+
+            const pollsSnapshot = await getDocs(collection(db, ...dataPrefix, 'polls'));
+            pollsSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.timestamp && data.timestamp.toDate) { data.timestamp = data.timestamp.toDate().toISOString(); }
+                collectionsToExport.polls[doc.id] = data;
+            });
+
+            const votesSnapshot = await getDocs(collection(db, ...dataPrefix, 'votes'));
+            votesSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.timestamp && data.timestamp.toDate) { data.timestamp = data.timestamp.toDate().toISOString(); }
+                collectionsToExport.votes.push(data);
+            });
+
+
+            const jsonString = JSON.stringify(collectionsToExport, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quiz-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showAlert("資料已成功匯出！");
+
+        } catch (error) {
+            console.error("Export error:", error);
+            showAlert(`資料匯出失敗: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleImportFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type === "application/json") {
+            setFileToImport(file);
+            setShowImportConfirm(true);
+        } else if (file) {
+            showAlert("檔案格式錯誤，請選擇 .json 格式的備份檔。");
+        }
+        e.target.value = null;
+    };
+
+    const handleConfirmImport = () => {
+        if (!fileToImport) return;
+        setShowImportConfirm(false);
+        setIsLoading(true);
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (!data.questionBanks || !data.grades || !data.studentRosters) {
+                    throw new Error("備份檔內容格式不符，缺少必要集合。");
+                }
+                
+                const collectionsToDelete = ['questionBanks', 'grades', 'studentRosters', 'stickyNoteThemes', 'stickyNotes', 'polls', 'votes'];
+                let deleteBatch = writeBatch(db);
+                for (const collName of collectionsToDelete) {
+                    const snapshot = await getDocs(collection(db, ...dataPrefix, collName));
+                    snapshot.docs.forEach(doc => deleteBatch.delete(doc.ref));
+                }
+                await deleteBatch.commit();
+                
+                let importBatch = writeBatch(db);
+                Object.entries(data.questionBanks).forEach(([id, qbData]) => {
+                    importBatch.set(doc(db, ...dataPrefix, 'questionBanks', id), qbData);
+                });
+                Object.entries(data.studentRosters).forEach(([id, rosterData]) => {
+                    importBatch.set(doc(db, ...dataPrefix, 'studentRosters', id), rosterData);
+                });
+                data.grades.forEach(gradeData => {
+                    if (gradeData.timestamp && typeof gradeData.timestamp === 'string') {
+                        gradeData.timestamp = new Date(gradeData.timestamp);
+                    }
+                    const newDocRef = doc(collection(db, ...dataPrefix, 'grades'));
+                    importBatch.set(newDocRef, gradeData);
+                });
+                
+                if(data.stickyNoteThemes){
+                    Object.entries(data.stickyNoteThemes).forEach(([id, themeData]) => {
+                        if (themeData.timestamp && typeof themeData.timestamp === 'string') { themeData.timestamp = new Date(themeData.timestamp); }
+                        importBatch.set(doc(db, ...dataPrefix, 'stickyNoteThemes', id), themeData);
+                    });
+                }
+                if(data.stickyNotes){
+                    data.stickyNotes.forEach(noteData => {
+                        if (noteData.timestamp && typeof noteData.timestamp === 'string') { noteData.timestamp = new Date(noteData.timestamp); }
+                        const newDocRef = doc(collection(db, ...dataPrefix, 'stickyNotes'));
+                        importBatch.set(newDocRef, noteData);
+                    });
+                }
+
+                if(data.polls){
+                    Object.entries(data.polls).forEach(([id, pollData]) => {
+                        if (pollData.timestamp && typeof pollData.timestamp === 'string') { pollData.timestamp = new Date(pollData.timestamp); }
+                        importBatch.set(doc(db, ...dataPrefix, 'polls', id), pollData);
+                    });
+                }
+                if(data.votes){
+                    data.votes.forEach(voteData => {
+                        if (voteData.timestamp && typeof voteData.timestamp === 'string') { voteData.timestamp = new Date(voteData.timestamp); }
+                        const newDocRef = doc(collection(db, ...dataPrefix, 'votes'));
+                        importBatch.set(newDocRef, voteData);
+                    });
+                }
+
+
+                await importBatch.commit();
+
+                showAlert("資料匯入成功！頁面將在3秒後重新整理以載入新資料。");
+                setTimeout(() => window.location.reload(), 3000);
+
+            } catch (error) {
+                console.error("Import error:", error);
+                showAlert(`資料匯入失敗: ${error.message}`);
+                setIsLoading(false);
+            }
+        };
+        reader.readAsText(fileToImport);
+    };
+
+    const handleConfirmDeleteAll = async () => {
+        setShowDeleteConfirm(false);
+        setIsLoading(true);
+        try {
+             const collectionsToDelete = ['questionBanks', 'grades', 'studentRosters', 'stickyNoteThemes', 'stickyNotes', 'polls', 'votes'];
+             let batch = writeBatch(db);
+             for (const collName of collectionsToDelete) {
+                 const snapshot = await getDocs(collection(db, ...dataPrefix, collName));
+                 snapshot.docs.forEach(doc => batch.delete(doc.ref));
+             }
+             // Also delete images in storage - more complex, omitted for now but recommended in production
+             await batch.commit();
+             showAlert("所有資料已成功刪除！頁面將在3秒後重新整理。");
+             setTimeout(() => window.location.reload(), 3000);
+        } catch (error) {
+            console.error("Delete error:", error);
+            showAlert(`刪除資料時發生錯誤: ${error.message}`);
+            setIsLoading(false);
+        }
+    };
+
+
+    return (
+        <div className="relative space-y-8">
+            {isLoading && <LoadingSpinner />}
+            {showImportConfirm && <ConfirmDeleteModal 
+                title="確認匯入資料"
+                message="匯入資料將會先刪除所有現有資料（題庫、學生、成績、便利貼），然後再載入備份檔。此操作無法復原，您確定要繼續嗎？"
+                onConfirm={handleConfirmImport}
+                onCancel={() => setShowImportConfirm(false)}
+            />}
+            {showDeleteConfirm && <ConfirmDeleteModal 
+                title="確認刪除所有資料"
+                message="您確定要刪除所有題庫、學生名單、成績及便利貼資料嗎？此操作將無法復原，強烈建議您先匯出備份。"
+                onConfirm={handleConfirmDeleteAll}
+                onCancel={() => setShowDeleteConfirm(false)}
+            />}
+            <input type="file" ref={importFileRef} onChange={handleImportFileSelect} accept=".json" className="hidden" />
+
+            <div className="p-6 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 className="text-xl font-bold mb-2">匯出所有資料</h3>
+                <p className="text-slate-600 mb-4">將所有題庫、學生名單、成績及便利貼紀錄匯出成一個 .json 備份檔。</p>
+                <button onClick={handleExportData} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+                    開始匯出
+                </button>
+            </div>
+            
+            <div className="p-6 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 className="text-xl font-bold mb-2">從備份檔匯入資料</h3>
+                <p className="text-slate-600 mb-4">
+                    <span className="font-bold text-red-600">警告：</span>
+                    此操作將會<span className="font-bold">清除所有現有資料</span>，再從您選擇的 .json 備份檔中匯入。
+                </p>
+                <button onClick={() => importFileRef.current.click()} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
+                    選擇檔案並匯入
+                </button>
+            </div>
+
+            <div className="p-6 bg-red-50 rounded-lg border border-red-300">
+                 <h3 className="text-xl font-bold text-red-800 mb-2">刪除所有資料</h3>
+                <p className="text-red-700 mb-4">
+                     <span className="font-bold">極度危險操作：</span>
+                     此操作將永久刪除系統中<span className="font-bold">所有的題庫、學生名單、成績與便利貼紀錄</span>。此動作無法復原！
+                </p>
+                <button onClick={() => setShowDeleteConfirm(true)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">
+                    刪除全部資料
+                </button>
+            </div>
+
+        </div>
+    );
+}
+
+// +++ 主題設定管理員 (for測驗) +++
+function ThemeSettingsManager({ themeSettings, onUpdateThemeSettings, studentRoster, showAlert }) {
+    const [selectedClasses, setSelectedClasses] = useState(themeSettings?.allowedClasses || []);
+    const [isSaving, setIsSaving] = useState(false);
+    const allClassNames = Object.keys(studentRoster).sort();
+
+    useEffect(() => {
+        setSelectedClasses(themeSettings?.allowedClasses || []);
+    }, [themeSettings]);
+
+    const handleClassToggle = (className) => {
+        setSelectedClasses(prev =>
+            prev.includes(className)
+                ? prev.filter(c => c !== className)
+                : [...prev, className]
+        );
+    };
+
+    const handleSelectAll = () => setSelectedClasses(allClassNames);
+    const handleClearAll = () => setSelectedClasses([]);
+
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        try {
+            await onUpdateThemeSettings({ ...themeSettings, allowedClasses: selectedClasses });
+            // The success alert is already in the parent component's handler
+        } catch (error) {
+            showAlert("儲存設定失敗。");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+    
+    const handleRetakeToggle = () => {
+        const newSetting = !themeSettings.allowRetakes;
+        onUpdateThemeSettings({ ...themeSettings, allowRetakes: newSetting });
+    };
+
+    return (
+        <div className="p-4 bg-slate-100 rounded-lg border">
+            <h4 className="font-bold text-lg mb-4">主題設定</h4>
+            <div className="flex items-center gap-4 mb-4">
+                <span className="font-semibold text-slate-600">允許重複測驗:</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={themeSettings?.allowRetakes || false} onChange={handleRetakeToggle} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+            <div>
+                <h5 className="font-semibold text-slate-600 mb-2">指定可測驗班級 (留空表示所有班級皆可)</h5>
+                {allClassNames.length > 0 ? (
+                    <>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-3">
+                            {allClassNames.map(className => (
+                                <label key={className} className="flex items-center gap-2 p-2 bg-white rounded-md border cursor-pointer hover:bg-blue-50">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedClasses.includes(className)}
+                                        onChange={() => handleClassToggle(className)}
+                                        className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>{className}</span>
+                                </label>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                             <button onClick={handleSelectAll} className="text-sm bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded-md">全選</button>
+                             <button onClick={handleClearAll} className="text-sm bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded-md">全部清除</button>
+                             <button onClick={handleSaveChanges} disabled={isSaving} className="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded-lg disabled:bg-slate-400">
+                                 {isSaving ? '儲存中...' : '儲存班級設定'}
+                             </button>
+                        </div>
+                    </>
+                ) : (
+                    <p className="text-slate-500">尚未建立任何班級名單。</p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// --- 題庫管理組件 (QuestionBankView) ---
+function QuestionBankView({ questions, grades, setQuestions, showAlert, themeName, themeSettings, onUpdateThemeSettings, studentRoster }) {
+    const [importMethod, setImportMethod] = useState('manual');
+    const [aiTopic, setAiTopic] = useState('');
+    const [numAiQuestions, setNumAiQuestions] = useState(5);
+    const [isSimulatingAi, setIsSimulatingAi] = useState(false);
+    const fileInputRef = useRef(null);
+    const [editingQuestion, setEditingQuestion] = useState(null);
+    const [deletingQuestionId, setDeletingQuestionId] = useState(null);
+
+    const questionStats = useMemo(() => {
+        const stats = {};
+        questions.forEach(q => {
+            stats[q.text] = { attempts: 0, correct: 0 };
+        });
+        grades.forEach(grade => {
+            if (grade.theme === themeName && Array.isArray(grade.questions) && Array.isArray(grade.userAnswers)) {
+                grade.questions.forEach((q, index) => {
+                    if (stats[q.text] !== undefined) {
+                        stats[q.text].attempts++;
+                        if (grade.userAnswers[index] === q.answer) {
+                            stats[q.text].correct++;
+                        }
+                    }
+                });
+            }
+        });
+        return stats;
+    }, [questions, grades, themeName]);
+
+    const handleRetakeToggle = () => {
+        const newSetting = !themeSettings.allowRetakes;
+        onUpdateThemeSettings({ allowRetakes: newSetting });
+    };
+
+    const handleAiGenerateByTopic = async () => {
+        if (!aiTopic.trim()) {
+            showAlert('請輸入一個主題！');
+            return;
+        }
+        setIsSimulatingAi(true);
+
+        try {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const prompt = `請根據以下主題生成 ${numAiQuestions} 個繁體中文的選擇測驗題目：「${aiTopic}」。
+            請將結果格式化為一個 JSON 陣列。
+            每個 JSON 物件代表一題，且必須包含以下四個鍵：
+            1. "text": (字串) 題目文字。
+            2. "options": (陣列) 一個包含四個選項的字串陣列。
+            3. "answer": (數字) 正確答案的 0-based 索引 (0, 1, 2, 或 3)。
+            4. "explanation": (字串) 題目的詳細解析。
+
+            請嚴格遵守這個 JSON 格式，不要包含任何 markdown 語法或額外的文字。
+            範例:
+            [
+              {
+                "text": "臺灣最高的山是哪一座？",
+                "options": ["雪山", "大霸尖山", "玉山", "南湖大山"],
+                "answer": 2,
+                "explanation": "玉山主峰海拔3,952公尺，是臺灣及東北亞的第一高峰。"
+              }
+            ]`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                text: { type: "STRING", description: "題目文字" },
+                                options: {
+                                    type: "ARRAY",
+                                    description: "包含四個選項的字串陣列",
+                                    items: { type: "STRING" }
+                                },
+                                answer: { type: "INTEGER", description: "正確答案的 0-based 索引" },
+                                explanation: { type: "STRING", description: "題目解析" }
+                            },
+                            required: ["text", "options", "answer", "explanation"]
+                        }
+                    }
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API 請求失敗，狀態碼：${response.status}. ${errorBody}`);
+            }
+
+            const result = await response.json();
+            const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!generatedText) {
+                throw new Error('AI 未能生成有效的題目內容。');
+            }
+            
+            const parsedQuestions = JSON.parse(generatedText);
+
+            const validQuestions = parsedQuestions.map((q, index) => {
+                if (!q.text || !q.options || q.options.length !== 4 || typeof q.answer !== 'number' || q.answer < 0 || q.answer > 3 || !q.explanation) {
+                    console.warn('AI 回傳了一筆格式不符的題目:', q);
+                    return null;
+                }
+                return { ...q, id: Date.now() + index };
+            }).filter(Boolean);
+            
+            if (validQuestions.length === 0) {
+                throw new Error('AI 已處理完成，但未偵測到任何有效的題目。');
+            }
+
+            setQuestions(prev => [...prev, ...validQuestions]);
+            showAlert(`AI 成功生成了 ${validQuestions.length} 題新題目！`);
+
+        } catch (error) {
+            console.error("AI 生成題目失敗:", error);
+            showAlert(`AI 生成題目失敗：${error.message}`);
+        } finally {
+            setIsSimulatingAi(false);
+        }
+    };
+
+    const handleAiOcrUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsSimulatingAi(true);
+
+        try {
+            const base64Data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const prompt = `分析這份文件圖片。它包含了測驗題目。請抽取出這些題目，並將它們格式化為一個 JSON 陣列。每個物件應包含 'text' (題目文字), 'options' (一個包含四個選項字串的陣列), 'answer' (正確答案的 0-based 索引，一個數字), 以及 'explanation' (解析文字)。請確保選項陣列正好有四個選項。
+            範例:
+            [
+              { 
+                "text": "臺灣最高的山是哪一座？", 
+                "options": ["雪山", "大霸尖山", "玉山", "南湖大山"], 
+                "answer": 2, 
+                "explanation": "玉山主峰海拔3,952公尺，是臺灣及東北亞的第一高峰。" 
+              }
+            ]`;
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: file.type, data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                text: { type: "STRING", description: "題目文字" },
+                                options: {
+                                    type: "ARRAY",
+                                    description: "包含四個選項的字串陣列",
+                                    items: { type: "STRING" }
+                                },
+                                answer: { type: "INTEGER", description: "正確答案的 0-based 索引" },
+                                explanation: { type: "STRING", description: "題目解析" }
+                            },
+                            required: ["text", "options", "answer", "explanation"]
+                        }
+                    }
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API 請求失敗，狀態碼：${response.status}. ${errorBody}`);
+            }
+
+            const result = await response.json();
+            const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!generatedText) {
+                throw new Error('AI 未能生成有效的題目內容。');
+            }
+
+            const parsedQuestions = JSON.parse(generatedText);
+
+            const validQuestions = parsedQuestions.map((q, index) => {
+                if (!q.text || !q.options || q.options.length !== 4 || typeof q.answer !== 'number' || q.answer < 0 || q.answer > 3 || !q.explanation) {
+                    console.warn('AI 回傳了一筆格式不符的題目:', q);
+                    return null;
+                }
+                return { ...q, id: Date.now() + index };
+            }).filter(Boolean);
+
+            if (validQuestions.length === 0) {
+                throw new Error('AI 已處理完成，但未偵測到任何有效的題目。');
+            }
+
+            setQuestions(prev => [...prev, ...validQuestions]);
+            showAlert(`AI 辨識成功！已加入 ${validQuestions.length} 題新題目。`);
+
+        } catch (error) {
+            console.error("AI 辨識失敗:", error);
+            showAlert(`AI 辨識失敗：${error.message}`);
+        } finally {
+            setIsSimulatingAi(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
+    };
+
+
+    const handleDownloadExampleXLSX = () => {
+        if (typeof XLSX === 'undefined') {
+            showAlert('錯誤：所需函式庫 (xlsx) 未載入。'); return;
+        }
+        const headers = ["text", "option1", "option2", "option3", "option4", "answer", "explanation"];
+        const exampleRow1 = ["臺灣最高的山是哪一座？", "雪山", "大霸尖山", "玉山", "南湖大山", "C", "玉山主峰海拔3,952公尺，是臺灣及東北亞的第一高峰。"];
+        const exampleRow2 = ["聲音在哪種介質中傳播最快？", "空氣", "水", "真空", "鋼鐵", "D", "聲音是機械波，需要在越緻密的介質中傳播越快。"];
+        const data = [headers, exampleRow1, exampleRow2];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Questions");
+        XLSX.writeFile(wb, "quiz_template.xlsx");
+        showAlert("已開始下載 .xlsx 範例檔。");
+    };
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (typeof XLSX === 'undefined') {
+            showAlert('錯誤：所需函式庫 (xlsx) 未載入，無法解析檔案。');
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                if (json.length === 0) { showAlert('檔案為空或格式不符。'); return; }
+
+                const newQuestions = json.map((row, index) => {
+                    if (!row.text || String(row.text).trim() === '') return null;
+                    const answerLetter = String(row.answer || '').toUpperCase().trim();
+                    const answerIndex = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 }[answerLetter];
+                    if (!row.option1 || !row.option2 || !row.option3 || !row.option4 || answerIndex === undefined || !row.explanation) {
+                        throw new Error(`Excel中的第 ${index + 2} 行資料格式錯誤或不完整。`);
+                    }
+                    return {
+                        id: Date.now() + index,
+                        text: String(row.text),
+                        options: [String(row.option1), String(row.option2), String(row.option3), String(row.option4)],
+                        answer: answerIndex,
+                        explanation: String(row.explanation),
+                    };
+                }).filter(Boolean);
+
+                if (newQuestions.length === 0) { showAlert('檔案中沒有找到有效的題目資料。'); return; }
+
+                setQuestions(prev => [...prev, ...newQuestions]);
+                showAlert(`成功匯入 ${newQuestions.length} 題！`);
+
+            } catch (error) {
+                console.error("檔案解析錯誤:", error);
+                showAlert(`檔案處理失敗：${error.message}`);
+            } finally {
+                e.target.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleDeleteConfirm = () => {
+        setQuestions(prev => prev.filter(q => q.id !== deletingQuestionId));
+        setDeletingQuestionId(null);
+    };
+
+    const handleUpdateQuestion = (updatedQuestion) => {
+        setQuestions(prev => prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q));
+        setEditingQuestion(null);
+        showAlert('題目更新成功！');
+    };
+    
+    return (
+        <div className="relative">
+            {isSimulatingAi && <LoadingSpinner />}
+            {editingQuestion && <EditQuestionModal question={editingQuestion} onSave={handleUpdateQuestion} onCancel={() => setEditingQuestion(null)} />}
+            {deletingQuestionId && (
+                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                        <h3 className="text-lg font-bold mb-4">確定要刪除嗎？</h3>
+                        <p>刪除後將無法復原，確定要刪除這道題目嗎？</p>
+                        <div className="flex justify-end gap-4 mt-6">
+                            <button onClick={() => setDeletingQuestionId(null)} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                            <button onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">確定刪除</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <div>
+                <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
+                    <button onClick={() => setImportMethod('manual')} className={`px-4 py-2 rounded-lg ${importMethod === 'manual' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>手動輸入</button>
+                    <button onClick={() => setImportMethod('excel')} className={`px-4 py-2 rounded-lg ${importMethod === 'excel' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>Excel匯入</button>
+                    <button onClick={() => setImportMethod('ai-ocr')} className={`px-4 py-2 rounded-lg ${importMethod === 'ai-ocr' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>AI圖片/PDF辨識</button>
+                    <button onClick={() => setImportMethod('ai-gen')} className={`px-4 py-2 rounded-lg ${importMethod === 'ai-gen' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>AI主題出題</button>
+                </div>
+                
+                <div>
+                    {importMethod === 'manual' && <ManualQuestionEntry setQuestions={setQuestions} showAlert={showAlert} />}
+                    {importMethod === 'excel' && (
+                        <div className="p-4 bg-slate-50 rounded-lg">
+                            <h4 className="font-bold text-lg mb-2">從 Excel 檔案整批匯入</h4>
+                            <p className="mb-4 text-slate-600">請上傳 .xlsx 格式的檔案。欄位需符合範例檔格式。</p>
+                            <button onClick={handleDownloadExampleXLSX} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg mr-4">下載 XLSX 範例檔</button>
+                            <input type="file" accept=".xlsx" onChange={handleFileUpload} className="text-sm" />
+                        </div>
+                    )}
+                    {importMethod === 'ai-ocr' && (
+                        <div className="p-4 bg-slate-50 rounded-lg">
+                            <h4 className="font-bold text-lg mb-2">AI 智慧辨識 (圖片/PDF)</h4>
+                            <p className="mb-4 text-slate-600">上傳包含題目的圖片或PDF檔案，AI將自動辨識並轉換為測驗題目。</p>
+                            <input type="file" ref={fileInputRef} accept="image/*,.pdf" onChange={handleAiOcrUpload} className="text-sm" />
+                        </div>
+                    )}
+                    {importMethod === 'ai-gen' && (
+                        <div className="p-4 bg-slate-50 rounded-lg">
+                            <h4 className="font-bold text-lg mb-2">AI 智慧出題</h4>
+                            <p className="mb-4 text-slate-600">輸入一個主題或一段教材內容，AI 將為您生成相關的測驗題目。</p>
+                            <textarea value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} placeholder="例如：臺灣近代史、光合作用、牛頓第二運動定律..." className="w-full p-2 border rounded-lg mb-2 h-24"></textarea>
+                            <div className="flex items-center gap-4">
+                                <div>
+                                    <label htmlFor="numAiQuestions" className="font-semibold mr-2">題目數量:</label>
+                                    <input 
+                                        id="numAiQuestions"
+                                        type="number" 
+                                        value={numAiQuestions} 
+                                        onChange={e => setNumAiQuestions(Math.max(1, parseInt(e.target.value) || 1))} 
+                                        className="w-20 p-2 border rounded-lg"
+                                        min="1"
+                                    />
+                                </div>
+                                <button onClick={handleAiGenerateByTopic} disabled={!aiTopic} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-slate-300">開始生成</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex justify-between items-center mt-8 mb-4 border-t pt-6">
+                    <h3 className="text-xl font-bold">主題「{themeName}」題庫 ({questions.length} 題)</h3>
+                </div>
+
+                <ThemeSettingsManager
+                    themeSettings={themeSettings}
+                    onUpdateThemeSettings={onUpdateThemeSettings}
+                    studentRoster={studentRoster}
+                    showAlert={showAlert}
+                />
+
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 mt-6">
+                    {questions.map((q, index) => {
+                        const stats = questionStats[q.text];
+                        const hasStats = stats && stats.attempts > 0;
+                        const correctRate = hasStats ? Math.round((stats.correct / stats.attempts) * 100) : 0;
+                        return (
+                        <div key={q.id} className="p-3 bg-white rounded-lg border flex justify-between items-start gap-4">
+                            <div className="flex-grow">
+                                <p className="font-semibold break-words">{`${index + 1}. ${q.text}`}</p>
+                                {hasStats ? (
+                                    <div className="text-sm mt-2 text-slate-600">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <span className="font-medium">答對率: <span className="font-bold text-lg text-blue-600">{correctRate}%</span> ({stats.correct} / {stats.attempts} 次)</span>
+                                            <div className="w-full max-w-[200px] h-2.5 bg-red-200 rounded-full overflow-hidden">
+                                                <div className="h-full bg-green-500" style={{ width: `${correctRate}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm mt-2 text-slate-400 italic">尚無作答紀錄</p>
+                                )}
+                                <p className="text-sm text-slate-500 mt-2">答案: {q.options[q.answer]}</p>
+                            </div>
+                            <div className="flex-shrink-0 flex flex-col gap-2">
+                                <button onClick={() => setEditingQuestion(q)} className="text-sm bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded-md">編輯</button>
+                                <button onClick={() => setDeletingQuestionId(q.id)} className="text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md">刪除</button>
+                            </div>
+                        </div>
+                        );
+                    })}
+                     {questions.length === 0 && <p className="text-slate-500 text-center py-4">這個主題還沒有題目，快來新增吧！</p>}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// --- 手動新增題目組件 ---
+function ManualQuestionEntry({ setQuestions, showAlert }) {
+    const [text, setText] = useState('');
+    const [options, setOptions] = useState(['', '', '', '']);
+    const [answer, setAnswer] = useState(0);
+    const [explanation, setExplanation] = useState('');
+    
+    const handleOptionChange = (index, value) => {
+        const newOptions = [...options];
+        newOptions[index] = value;
+        setOptions(newOptions);
+    };
+    
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (text && options.every(o => o) && explanation) {
+            const newQuestion = { id: Date.now(), text, options, answer, explanation };
+            setQuestions(prev => [newQuestion, ...prev]);
+            setText(''); setOptions(['', '', '', '']); setAnswer(0); setExplanation('');
+            showAlert('題目新增成功！');
+        } else {
+            showAlert('請填寫所有欄位！');
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="p-4 bg-slate-50 rounded-lg space-y-4">
+            <div>
+                <label className="font-bold">題目內容</label>
+                <input type="text" value={text} onChange={e => setText(e.target.value)} className="w-full p-2 border rounded mt-1" />
+            </div>
+            <div>
+                <label className="font-bold">選項 (請點選正確答案)</label>
+                {options.map((opt, index) => (
+                    <div key={index} className="flex items-center mt-1">
+                        <input type="radio" name="correct-answer" checked={answer === index} onChange={() => setAnswer(index)} className="mr-2 h-5 w-5 text-blue-600 focus:ring-blue-500" />
+                        <input type="text" value={opt} onChange={e => handleOptionChange(index, e.target.value)} placeholder={`選項 ${index + 1}`} className="w-full p-2 border rounded" />
+                    </div>
+                ))}
+            </div>
+             <div>
+                <label className="font-bold">解析</label>
+                <textarea value={explanation} onChange={e => setExplanation(e.target.value)} className="w-full p-2 border rounded mt-1 h-20"></textarea>
+            </div>
+            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">新增題目</button>
+        </form>
+    );
+}
+
+// --- 編輯題目 Modal 組件 ---
+function EditQuestionModal({ question, onSave, onCancel }) {
+    const [editedQuestion, setEditedQuestion] = useState(question);
+
+    const handleOptionChange = (index, value) => {
+        const newOptions = [...editedQuestion.options];
+        newOptions[index] = value;
+        setEditedQuestion({ ...editedQuestion, options: newOptions });
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(editedQuestion);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={onCancel}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-2xl font-bold mb-4">編輯題目</h3>
+                <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <div>
+                        <label className="font-bold">題目內容</label>
+                        <input type="text" value={editedQuestion.text} onChange={(e) => setEditedQuestion({...editedQuestion, text: e.target.value})} className="w-full p-2 border rounded mt-1" />
+                    </div>
+                    <div>
+                        <label className="font-bold">選項與正確答案</label>
+                        {editedQuestion.options.map((opt, index) => (
+                            <div key={index} className="flex items-center mt-1">
+                                <input type="radio" name="correct-answer-edit" checked={editedQuestion.answer === index} onChange={() => setEditedQuestion({...editedQuestion, answer: index})} className="mr-2 h-5 w-5 text-blue-600" />
+                                <input type="text" value={opt} onChange={e => handleOptionChange(index, e.target.value)} placeholder={`選項 ${index + 1}`} className="w-full p-2 border rounded" />
+                            </div>
+                        ))}
+                    </div>
+                    <div>
+                        <label className="font-bold">解析</label>
+                        <textarea value={editedQuestion.explanation} onChange={(e) => setEditedQuestion({...editedQuestion, explanation: e.target.value})} className="w-full p-2 border rounded mt-1 h-20"></textarea>
+                    </div>
+                    <div className="flex justify-end gap-4 pt-4 border-t">
+                        <button type="button" onClick={onCancel} className="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg">取消</button>
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">儲存變更</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// +++ 新增主題 Modal 組件 +++
+function AddThemeModal({ onSave, onCancel }) {
+    const [themeName, setThemeName] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(themeName.trim());
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">新增測驗主題</h3>
+                <form onSubmit={handleSubmit}>
+                    <input
+                        type="text"
+                        value={themeName}
+                        onChange={(e) => setThemeName(e.target.value)}
+                        placeholder="請輸入新主題的名稱"
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                    />
+                    <div className="flex justify-end gap-4 mt-6">
+                        <button type="button" onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">確定新增</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// +++ 刪除主題 Modal 組件 +++
+function DeleteThemeModal({ themeName, onConfirm, onCancel }) {
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">確認刪除主題</h3>
+                <p>您確定要刪除「<span className="font-bold text-red-600">{themeName}</span>」主題嗎？</p>
+                <p className="text-sm text-slate-600 mt-2">此主題下的所有題目將會被一併刪除，此操作無法復原。</p>
+                <div className="flex justify-end gap-4 mt-6">
+                    <button onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                    <button onClick={onConfirm} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">確定刪除</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+// --- 讀取中 Spinner 組件 ---
+function LoadingSpinner({ message = "AI 處理中，請稍候..." }) {
+    return (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-20">
+            <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+                <p className="mt-4 text-lg font-semibold text-blue-600">{message}</p>
+            </div>
+        </div>
+    );
+}
+
+// --- 老師密碼登入 Modal ---
+function TeacherPasswordModal({ onLogin, onCancel }) {
+    const [password, setPassword] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onLogin(password);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">教師登入</h3>
+                <form onSubmit={handleSubmit}>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">請輸入密碼</label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                    />
+                    <div className="flex justify-end gap-4 mt-6">
+                        <button type="button" onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">登入</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// --- 修改密碼 Modal ---
+function ChangePasswordModal({ onSave, onCancel }) {
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+        if (!newPassword || !oldPassword) {
+            setError('所有欄位皆為必填！');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setError('新密碼與確認密碼不相符！');
+            return;
+        }
+        onSave(oldPassword, newPassword);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">修改密碼</h3>
+                <form onSubmit={handleSubmit} className="space-y-3">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">舊密碼</label>
+                        <input
+                            type="password"
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded-lg"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">新密碼</label>
+                        <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded-lg"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">確認新密碼</label>
+                         <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded-lg"
+                            required
+                        />
+                    </div>
+
+                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
+                    <div className="flex justify-end gap-4 pt-4">
+                        <button type="button" onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">儲存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// +++ 新增班級 Modal 組件 +++
+function AddClassModal({ onSave, onCancel }) {
+    const [className, setClassName] = useState('');
+    const handleSubmit = (e) => { e.preventDefault(); onSave(className.trim()); };
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">新增班級</h3>
+                <input
+                    type="text"
+                    value={className}
+                    onChange={(e) => setClassName(e.target.value)}
+                    placeholder="請輸入班級名稱 (例如: 703)"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                />
+                <div className="flex justify-end gap-4 mt-6">
+                    <button type="button" onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">確定新增</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+// +++ 新增/編輯學生 Modal 組件 +++
+function AddEditStudentModal({ classKey, student, onSave, onCancel }) {
+    const isEditing = !!student;
+    const [seat, setSeat] = useState(isEditing ? student.seat : '');
+    const [name, setName] = useState(isEditing ? student.name : '');
+    
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!seat || !name) return;
+        onSave(classKey, { seat: seat.trim(), name: name.trim() }, isEditing ? student.seat : undefined);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">{isEditing ? `編輯學生 (${classKey} 班)` : `新增學生至 ${classKey} 班`}</h3>
+                <div className="space-y-4">
+                     <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">座號</label>
+                        <input type="text" value={seat} onChange={(e) => setSeat(e.target.value)} className="w-full p-2 border rounded" required autoFocus/>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">姓名</label>
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-2 border rounded" required />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-4 mt-6">
+                    <button type="button" onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">儲存</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+// +++ 通用確認刪除 Modal 組件 +++
+function ConfirmDeleteModal({ title, message, onConfirm, onCancel }) {
+     return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4">{title}</h3>
+                <p>{message}</p>
+                <div className="flex justify-end gap-4 mt-6">
+                    <button onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                    <button onClick={onConfirm} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">確定刪除</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+// --- 文字雲相關組件 ---
+
+// 文字雲渲染組件
+function WordCloudView({ notes }) {
+    const svgRef = useRef(null);
+    const containerRef = useRef(null);
+    const [status, setStatus] = useState('loading'); // loading, ready, no-data, error
+    const [libsReady, setLibsReady] = useState(false);
+    const wordCloudLayout = useRef(null); // Keep a ref to the layout instance to stop it on cleanup
+
+    // Effect to check for library readiness with timeout
+    useEffect(() => {
+        const checkLibs = (startTime) => {
+            if (window.d3?.layout?.cloud) {
+                setLibsReady(true);
+                return;
+            }
+
+            if (Date.now() - startTime > 7000) { // 7 second timeout
+                console.error("d3-cloud.js script failed to load or initialize.");
+                setStatus('error');
+                return;
+            }
+
+            setTimeout(() => checkLibs(startTime), 200);
+        };
+        checkLibs(Date.now());
+    }, []);
+
+    // Main effect for rendering the cloud, now responsive
+    useEffect(() => {
+        // Abort if libraries aren't ready or the container isn't rendered yet
+        if (!libsReady || !containerRef.current) {
+            setStatus(libsReady ? 'loading' : 'no-data');
+            return;
+        }
+
+        const generateCloud = () => {
+            if (!containerRef.current) return;
+            
+            // Stop any previously running layout
+            if (wordCloudLayout.current) {
+                wordCloudLayout.current.stop();
+            }
+
+            const width = containerRef.current.offsetWidth;
+            const height = containerRef.current.offsetHeight;
+
+            // Don't render if container has no size
+            if (width === 0 || height === 0) return;
+
+            if (notes.length === 0) {
+                if (svgRef.current) window.d3.select(svgRef.current).selectAll("*").remove();
+                setStatus('no-data');
+                return;
+            }
+
+            setStatus('loading');
+
+            // --- Improved Word Processing ---
+            const text = notes.map(note => note.content).join(" ");
+            const stopWords = new Set(["的", "了", "是", "我", "你", "他", "她", "我們", "你們", "他們", "一個", "這個", "那個", "在", "有", "也", "不", "嗎", "吧", "啊", "呢", "喔", "和", "與", "或", "但", "所以", "因為", "很", "都", "就", "才", "會", "能", "可以", "覺得", "什麼", "怎麼", "the", "a", "an", "is", "are", "in", "it", "of", "to", "for", "and", "that", "with", "was", "this"]);
+            const freqMap = {};
+            const content = text.replace(/[。,、？！\n\s「」()（）.!?,"']/g, ' ');
+            const words = content.match(/[\u4e00-\u9fa5]{2,}|[a-zA-Z]{3,}/g) || [];
+
+            words.forEach(word => {
+                if (!stopWords.has(word.toLowerCase())) {
+                    freqMap[word] = (freqMap[word] || 0) + 1;
+                }
+            });
+
+            const wordEntries = Object.entries(freqMap)
+                .map(([text, size]) => ({ text, size: 10 + Math.sqrt(size) * 10 })) // Use sqrt for better scaling
+                .sort((a, b) => b.size - a.size)
+                .slice(0, 150);
+
+            if (wordEntries.length === 0) {
+                if (svgRef.current) window.d3.select(svgRef.current).selectAll("*").remove();
+                setStatus('no-data');
+                return;
+            }
+            // --- End of Word Processing ---
+
+            function draw(words) {
+                if (!svgRef.current) return;
+                const svg = window.d3.select(svgRef.current);
+                svg.selectAll("*").remove();
+                const fill = window.d3.scale.category20();
+
+                svg.attr("width", width).attr("height", height)
+                    .append("g")
+                    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
+                    .selectAll("text")
+                    .data(words)
+                    .enter().append("text")
+                    .style("font-size", d => d.size + "px")
+                    .style("font-family", "sans-serif")
+                    .style("fill", (d, i) => fill(i))
+                    .attr("text-anchor", "middle")
+                    .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
+                    .text(d => d.text);
+
+                setStatus('ready');
+            }
+            
+            let layoutTimeout = setTimeout(() => {
+                if (wordCloudLayout.current) wordCloudLayout.current.stop();
+                setStatus('error');
+                console.error("Word cloud layout timed out.");
+            }, 10000); // 10 second timeout
+
+
+            wordCloudLayout.current = window.d3.layout.cloud()
+                .size([width, height])
+                .words(wordEntries)
+                .padding(5)
+                .rotate(() => (~~(Math.random() * 2) * 90))
+                .font("sans-serif")
+                .fontSize(d => d.size)
+                .on("end", (words) => {
+                    clearTimeout(layoutTimeout);
+                    draw(words);
+                });
+
+            wordCloudLayout.current.start();
+        };
+
+        // Use ResizeObserver for efficient resize handling
+        const resizeObserver = new ResizeObserver(() => generateCloud());
+        resizeObserver.observe(containerRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+            if (wordCloudLayout.current) {
+                wordCloudLayout.current.stop();
+            }
+        };
+    }, [notes, libsReady]);
+
+    return (
+        <div ref={containerRef} className="relative w-full h-[600px] border rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden">
+            {status === 'loading' && <LoadingSpinner message="正在生成文字雲..." />}
+            {status === 'no-data' && <p className="text-slate-500">沒有足夠的資料來生成文字雲。</p>}
+            {status === 'error' && <p className="text-red-500">生成文字雲時發生錯誤，請稍後再試。</p>}
+            <svg ref={svgRef} className={status !== 'ready' ? 'hidden' : ''}></svg>
+        </div>
+    );
+}
+
+// 文字雲管理分頁
+function WordCloudAdminTab({ themes, notes }) {
+    const [selectedThemeId, setSelectedThemeId] = useState('');
+
+    const filteredNotes = useMemo(() => {
+        if (!selectedThemeId) return [];
+        return notes.filter(n => n.themeId === selectedThemeId);
+    }, [notes, selectedThemeId]);
+
+    return (
+        <div>
+            <div className="mb-4">
+                <label className="font-semibold mr-2">選擇要分析的主題:</label>
+                <select 
+                    value={selectedThemeId} 
+                    onChange={e => setSelectedThemeId(e.target.value)}
+                    className="p-2 border rounded-lg"
+                >
+                    <option value="">-- 請選擇主題 --</option>
+                    {Object.values(themes).map(theme => (
+                        <option key={theme.id} value={theme.id}>{theme.name}</option>
+                    ))}
+                </select>
+            </div>
+            {selectedThemeId ? <WordCloudView notes={filteredNotes} /> : <p className="text-center p-8 text-slate-500">請先選擇一個主題來查看文字雲分析。</p>}
+        </div>
+    );
+}
+
+
+// --- 便利貼相關組件 ---
+
+// 可拖曳、縮放的便利貼項目 (學生視角)
+function StickyNoteItem({ note, onUpdate, onBringToFront }) {
+    const [isDragging, setIsDragging] = useState(false);
+    const [isResizing, setIsResizing] = useState(false);
+    const noteRef = useRef(null);
+    const dragStartPos = useRef({ x: 0, y: 0 }); // 滑鼠起始位置
+    const elementStartPos = useRef({ x: 0, y: 0 }); // 元件起始位置/大小
+
+    const handleMouseDownDrag = (e) => {
+        // 確保點擊的不是右下角的縮放控點
+        if (e.target.classList.contains('resize-handle')) return;
+        e.preventDefault();
+        onBringToFront(note.id);
+        setIsDragging(true);
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+        elementStartPos.current = { x: note.position.x, y: note.position.y };
+    };
+
+    const handleMouseDownResize = (e) => {
+        e.preventDefault();
+        e.stopPropagation(); // 防止觸發拖曳
+        onBringToFront(note.id);
+        setIsResizing(true);
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+        elementStartPos.current = { x: note.size.width, y: note.size.height };
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging && !isResizing) return;
+            const dx = e.clientX - dragStartPos.current.x;
+            const dy = e.clientY - dragStartPos.current.y;
+
+            if (isDragging) {
+                const newPos = {
+                    x: elementStartPos.current.x + dx,
+                    y: elementStartPos.current.y + dy,
+                };
+                // 直接操作 DOM 以獲得流暢的拖曳體驗
+                if (noteRef.current) {
+                    noteRef.current.style.transform = `translate(${newPos.x}px, ${newPos.y}px)`;
+                }
+            }
+
+            if (isResizing) {
+                const newWidth = Math.max(150, elementStartPos.current.x + dx);
+                const newHeight = Math.max(150, elementStartPos.current.y + dy);
+                if (noteRef.current) {
+                    noteRef.current.style.width = `${newWidth}px`;
+                    noteRef.current.style.height = `${newHeight}px`;
+                }
+            }
+        };
+
+        const handleMouseUp = (e) => {
+            if (isDragging) {
+                const dx = e.clientX - dragStartPos.current.x;
+                const dy = e.clientY - dragStartPos.current.y;
+                const finalPos = {
+                    x: elementStartPos.current.x + dx,
+                    y: elementStartPos.current.y + dy,
+                };
+                onUpdate(note.id, { position: finalPos });
+            }
+            if (isResizing) {
+                 const dx = e.clientX - dragStartPos.current.x;
+                 const dy = e.clientY - dragStartPos.current.y;
+                 const finalSize = {
+                     width: Math.max(150, elementStartPos.current.x + dx),
+                     height: Math.max(150, elementStartPos.current.y + dy)
+                 };
+                 onUpdate(note.id, { size: finalSize });
+            }
+            setIsDragging(false);
+            setIsResizing(false);
+        };
+
+        // 在 window 上掛載事件監聽器，以確保滑鼠移出元件外也能正常運作
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, isResizing, note.id, onUpdate]);
+
+    const style = {
+        position: 'absolute',
+        transform: `translate(${note.position?.x || 0}px, ${note.position?.y || 0}px)`,
+        width: `${note.size?.width || 256}px`,
+        height: `${note.size?.height || 256}px`,
+        backgroundColor: note.color || '#fff099',
+        zIndex: note.zIndex || 1,
+    };
+
+    return (
+        <div 
+            ref={noteRef}
+            className="p-4 rounded-lg shadow-lg flex flex-col justify-between cursor-move"
+            style={style}
+            onMouseDown={handleMouseDownDrag}
+        >
+            <div className="overflow-y-auto flex-grow h-full">
+                <p className="text-slate-800 whitespace-pre-wrap break-words">{note.content}</p>
+            </div>
+            <p className="text-xs text-right text-slate-600 mt-2 font-medium self-end flex-shrink-0">{note.class}班 {note.seat}號 {note.name}</p>
+            <div 
+                className="resize-handle absolute bottom-0 right-0 w-4 h-4 bg-slate-500/50 cursor-se-resize rounded-br-lg"
+                onMouseDown={handleMouseDownResize}
+                title="縮放"
+            />
+        </div>
+    );
+}
+
+// --- 張貼便利貼表單 (學生視角) ---
+function PostStickyNoteForm({ user, themeId, showAlert, notesCount }) {
+    const [content, setContent] = useState('');
+    const [color, setColor] = useState('#fff099');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    const colorOptions = [
+        '#fff099', // Yellow
+        '#d4f5a3', // Green
+        '#a3d4f5', // Blue
+        '#f5a3d4', // Pink
+        '#f5cda3', // Orange
+        '#d9c2f7', // Purple
+    ];
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!themeId) {
+            showAlert("請先選擇一個主題牆才能張貼。");
+            return;
+        }
+        if (!content.trim()) {
+            showAlert("便利貼內容不能為空！");
+            return;
+        }
+        setIsSubmitting(true);
+
+        const board = document.getElementById('sticky-note-board');
+        const boardRect = board ? board.getBoundingClientRect() : { width: 800, height: 600 };
+        
+        // Try to place new notes without overlapping too much
+        const PADDING = 20;
+        const NOTE_WIDTH = 256;
+        const NOTE_HEIGHT = 256;
+
+        let x = (notesCount % 3) * (NOTE_WIDTH + PADDING) + PADDING;
+        let y = Math.floor(notesCount / 3) * (NOTE_HEIGHT + PADDING) + PADDING;
+        
+        // Add some randomness
+        x += Math.floor(Math.random() * 50) - 25;
+        y += Math.floor(Math.random() * 50) - 25;
+
+        x = Math.max(PADDING, Math.min(x, boardRect.width - NOTE_WIDTH - PADDING));
+        y = Math.max(PADDING, Math.min(y, boardRect.height - NOTE_HEIGHT - PADDING));
+
+        const newNote = {
+            themeId,
+            content: content.trim(),
+            color,
+            class: user.class,
+            seat: user.seat,
+            name: user.name,
+            position: { x, y },
+            size: { width: NOTE_WIDTH, height: NOTE_HEIGHT },
+            zIndex: notesCount + 1,
+            timestamp: new Date(),
+        };
+
+        try {
+            await addDoc(collection(db, ...dataPrefix, 'stickyNotes'), newNote);
+            setContent('');
+        } catch (error) {
+            console.error("Error posting note:", error);
+            showAlert("張貼便利貼時發生錯誤。");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="p-4 bg-slate-100 rounded-lg border">
+            <h3 className="text-xl font-bold mb-4">寫張新便利貼...</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="在這裡寫下你的想法..."
+                    className="w-full h-24 p-2 border rounded-lg"
+                    disabled={!themeId}
+                />
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <label className="font-semibold mr-3">選擇顏色:</label>
+                        <div className="flex gap-2">
+                            {colorOptions.map(c => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setColor(c)}
+                                    className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-blue-600 ring-2 ring-blue-500' : 'border-slate-300'}`}
+                                    style={{ backgroundColor: c }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting || !themeId}
+                        className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg disabled:bg-slate-400"
+                    >
+                        {isSubmitting ? '張貼中...' : '貼上牆'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+
+// 便利貼牆 (學生視角)
+function StickyNoteWall({ user, themes, notes, showAlert }) {
+    const themeArray = useMemo(() => {
+        return Object.values(themes).filter(theme => {
+            const allowed = theme.allowedClasses;
+            return !allowed || allowed.length === 0 || allowed.includes(user.class);
+        });
+    }, [themes, user.class]);
+
+    const [selectedThemeId, setSelectedThemeId] = useState(themeArray.length > 0 ? themeArray[0].id : null);
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    useEffect(() => {
+        if (!selectedThemeId && themeArray.length > 0) {
+            setSelectedThemeId(themeArray[0].id);
+        }
+    }, [themes, selectedThemeId, themeArray]);
+
+    const filteredNotes = notes.filter(note => note.themeId === selectedThemeId);
+
+    const handleUpdateNote = async (noteId, updatedData) => {
+        const noteRef = doc(db, ...dataPrefix, 'stickyNotes', noteId);
+        try {
+            await updateDoc(noteRef, updatedData);
+        } catch (error) {
+            console.error("Failed to update note:", error);
+            showAlert("更新便利貼失敗。");
+        }
+    };
+
+    const handleBringToFront = (noteId) => {
+        const maxZ = Math.max(...notes.map(n => n.zIndex || 0), 0);
+        handleUpdateNote(noteId, { zIndex: maxZ + 1 });
+    };
+
+
+    return (
+        <div>
+            <div className="mb-6">
+                <label className="text-lg font-semibold mr-4">選擇主題牆:</label>
+                <select 
+                    value={selectedThemeId || ''} 
+                    onChange={e => setSelectedThemeId(e.target.value)}
+                    className="p-2 border rounded-lg text-lg"
+                >
+                    {themeArray.map(theme => (
+                        <option key={theme.id} value={theme.id}>{theme.name}</option>
+                    ))}
+                    {themeArray.length === 0 && <option disabled>尚無主題</option>}
+                </select>
+            </div>
+            
+            <PostStickyNoteForm user={user} themeId={selectedThemeId} showAlert={showAlert} notesCount={filteredNotes.length}/>
+
+            <div className="mt-8 pt-6 border-t">
+                <h3 className="text-2xl font-bold mb-4">{themes[selectedThemeId]?.name || '便利貼'}</h3>
+                <div 
+                    id="sticky-note-board" 
+                    className="relative w-full h-[160vh] bg-slate-200 rounded-lg border"
+                    style={{ 
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, #9ca3af 1px, transparent 0)', 
+                        backgroundSize: '25px 25px',
+                        backgroundPosition: '-12px -12px'
+                    }}
+                >
+                     {filteredNotes.map(note => (
+                        <StickyNoteItem 
+                            key={note.id} 
+                            note={note}
+                            onUpdate={handleUpdateNote}
+                            onBringToFront={handleBringToFront}
+                        />
+                    ))}
+                    {filteredNotes.length === 0 && selectedThemeId && 
+                        <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-500">
+                            這個主題牆還沒有便利貼喔，快來貼上第一張吧！
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// +++ 新增/編輯便利貼主題 Modal +++
+function AddEditStickyThemeModal({ onSave, onCancel, studentRoster, existingTheme }) {
+    const isEditing = !!existingTheme;
+    const [name, setName] = useState(isEditing ? existingTheme.name : '');
+    const [allowedClasses, setAllowedClasses] = useState(isEditing ? existingTheme.allowedClasses || [] : []);
+    const allClassNames = Object.keys(studentRoster).sort();
+
+    const handleClassToggle = (className) => {
+        setAllowedClasses(prev =>
+            prev.includes(className)
+                ? prev.filter(c => c !== className)
+                : [...prev, className]
+        );
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave({ name, allowedClasses });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold mb-4">{isEditing ? '編輯主題' : '建立新主題'}</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label className="font-semibold">主題名稱</label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            placeholder="例如：校外教學心得"
+                            className="w-full p-2 border rounded mt-1"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="font-semibold block mb-2">指定可張貼班級 (留空表示所有班級皆可)</label>
+                         {allClassNames.length > 0 ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                                {allClassNames.map(className => (
+                                    <label key={className} className="flex items-center gap-2 p-2 bg-slate-50 rounded-md border cursor-pointer hover:bg-blue-50">
+                                        <input
+                                            type="checkbox"
+                                            checked={allowedClasses.includes(className)}
+                                            onChange={() => handleClassToggle(className)}
+                                            className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span>{className}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        ) : <p className="text-slate-500 text-sm">尚無班級名單可指定。</p>}
+                    </div>
+                </div>
+                 <div className="flex justify-end gap-4 mt-6 pt-4 border-t">
+                    <button type="button" onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">{isEditing ? '儲存變更' : '建立'}</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+// 便利貼牆管理 (老師視角)
+function StickyNoteAdminView({ themes, notes, showAlert, studentRoster }) {
+    const [showAddThemeModal, setShowAddThemeModal] = useState(false);
+    const [themeToDelete, setThemeToDelete] = useState(null);
+    const [noteToDelete, setNoteToDelete] = useState(null);
+    const [themeToEdit, setThemeToEdit] = useState(null);
+    const [adminView, setAdminView] = useState('notes'); // 'notes' or 'wordcloud'
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    const handleSaveTheme = async (themeData) => {
+        if (!themeData.name.trim()) {
+            showAlert("主題名稱不能為空。");
+            return;
+        }
+        try {
+            if (themeToEdit) { // Editing
+                const themeRef = doc(db, ...dataPrefix, 'stickyNoteThemes', themeToEdit.id);
+                await updateDoc(themeRef, themeData);
+                showAlert("主題更新成功！");
+            } else { // Adding
+                await addDoc(collection(db, ...dataPrefix, 'stickyNoteThemes'), { 
+                    ...themeData,
+                    timestamp: new Date()
+                });
+                showAlert("新主題已建立！");
+            }
+            setShowAddThemeModal(false);
+            setThemeToEdit(null);
+        } catch (error) {
+            showAlert(`儲存主題失敗: ${error.message}`);
+        }
+    };
+
+    const confirmDeleteTheme = async () => {
+        if (!themeToDelete) return;
+        try {
+            const batch = writeBatch(db);
+            const themeId = themeToDelete.id;
+            const notesQuery = query(collection(db, ...dataPrefix, 'stickyNotes'), where("themeId", "==", themeId));
+            const notesSnapshot = await getDocs(notesQuery);
+            notesSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+            batch.delete(doc(db, ...dataPrefix, 'stickyNoteThemes', themeId));
+            await batch.commit();
+            showAlert(`主題 "${themeToDelete.name}" 及其所有內容已刪除。`);
+        } catch (error) {
+            showAlert(`刪除主題失敗: ${error.message}`);
+        } finally {
+            setThemeToDelete(null);
+        }
+    };
+
+    const confirmDeleteNote = async () => {
+        if (!noteToDelete) return;
+        try {
+            await deleteDoc(doc(db, ...dataPrefix, 'stickyNotes', noteToDelete.id));
+            showAlert("便利貼已刪除。");
+        } catch (error) {
+            showAlert(`刪除便利貼失敗: ${error.message}`);
+        } finally {
+            setNoteToDelete(null);
+        }
+    };
+
+    return (
+        <div>
+            {(showAddThemeModal || themeToEdit) && <AddEditStickyThemeModal
+                onSave={handleSaveTheme}
+                onCancel={() => { setShowAddThemeModal(false); setThemeToEdit(null); }}
+                studentRoster={studentRoster}
+                existingTheme={themeToEdit}
+            />}
+            {themeToDelete && <ConfirmDeleteModal title="確認刪除主題" message={`您確定要刪除「${themeToDelete.name}」嗎？所有在此主題下的便利貼將被永久刪除。`} onConfirm={confirmDeleteTheme} onCancel={() => setThemeToDelete(null)} />}
+            {noteToDelete && <ConfirmDeleteModal title="確認刪除便利貼" message="您確定要刪除這張便利貼嗎？" onConfirm={confirmDeleteNote} onCancel={() => setNoteToDelete(null)} />}
+            
+             <div className="flex border-b mb-4">
+                <button onClick={() => setAdminView('notes')} className={`px-4 py-2 font-semibold ${adminView === 'notes' ? 'border-b-2 border-amber-500 text-amber-600' : 'text-slate-500'}`}>便利貼管理</button>
+                <button onClick={() => setAdminView('wordcloud')} className={`px-4 py-2 font-semibold ${adminView === 'wordcloud' ? 'border-b-2 border-amber-500 text-amber-600' : 'text-slate-500'}`}>文字雲分析</button>
+            </div>
+
+            {adminView === 'notes' && (
+                <>
+                    <div className="p-4 bg-slate-50 rounded-lg border mb-8">
+                        <h3 className="text-xl font-bold mb-2">建立新的便利貼主題</h3>
+                        <button onClick={() => setShowAddThemeModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">＋ 建立新主題</button>
+                    </div>
+
+                    <div className="space-y-6">
+                        {Object.values(themes).length > 0 ? Object.values(themes).map(theme => (
+                            <div key={theme.id}>
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="text-lg font-bold">{theme.name}</h4>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setThemeToEdit(theme)} className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-bold py-1 px-3 rounded-md">編輯</button>
+                                        <button onClick={() => setThemeToDelete(theme)} className="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-1 px-3 rounded-md">刪除主題</button>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-4 p-4 bg-slate-100 rounded-lg min-h-[12rem]">
+                                    {notes.filter(n => n.themeId === theme.id).map(note => (
+                                        <div 
+                                            key={note.id} 
+                                            className="relative w-48 h-48 p-2 rounded-md shadow-sm"
+                                            style={{ backgroundColor: note.color || '#fff099' }}
+                                        >
+                                            <button onClick={() => setNoteToDelete(note)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-50 hover:opacity-100">X</button>
+                                            <div className="w-full h-full flex flex-col justify-between">
+                                                <div className="overflow-auto text-sm h-full pr-4">
+                                                    <p className="whitespace-pre-wrap break-words">{note.content}</p>
+                                                </div>
+                                                <p className="text-xs text-right text-slate-600 self-end flex-shrink-0">{note.class}-{note.seat} {note.name}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {notes.filter(n => n.themeId === theme.id).length === 0 && <p className="text-slate-500 self-center mx-auto">此主題尚無便利貼</p>}
+                                </div>
+                            </div>
+                        )) : (
+                           <p className="text-center text-slate-500 py-8">尚未建立任何便利貼主題。</p>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {adminView === 'wordcloud' && (
+                <WordCloudAdminTab themes={themes} notes={notes} />
+            )}
+        </div>
+    );
+}
+
+// --- 投票管理 (老師視角) ---
+function VotingAdminView({ polls, allVotes, studentRoster, showAlert }) {
+    const [showAddPollModal, setShowAddPollModal] = useState(false);
+    const [pollToEdit, setPollToEdit] = useState(null);
+    const [pollToDelete, setPollToDelete] = useState(null);
+    const [resultsPoll, setResultsPoll] = useState(null);
+    const dataPrefix = ['artifacts', appId, 'public', 'data'];
+
+    const handleSavePoll = async (pollData) => {
+        try {
+            if (pollToEdit) { // Editing existing poll
+                const pollRef = doc(db, ...dataPrefix, 'polls', pollToEdit.id);
+                await updateDoc(pollRef, pollData);
+                showAlert("投票主題更新成功！");
+            } else { // Adding new poll
+                await addDoc(collection(db, ...dataPrefix, 'polls'), {
+                    ...pollData,
+                    isPublished: false,
+                    timestamp: new Date()
+                });
+                showAlert("投票主題建立成功！");
+            }
+            setShowAddPollModal(false);
+            setPollToEdit(null);
+        } catch (error) {
+            showAlert(`儲存失敗: ${error.message}`);
+        }
+    };
+
+    const handleTogglePublish = async (poll) => {
+        try {
+            const pollRef = doc(db, ...dataPrefix, 'polls', poll.id);
+            await updateDoc(pollRef, { isPublished: !poll.isPublished });
+            showAlert(`投票主題已${!poll.isPublished ? '發布' : '關閉'}。`);
+        } catch (error) {
+            showAlert(`更新狀態失敗: ${error.message}`);
+        }
+    };
+
+    const handleDeletePoll = async () => {
+        if (!pollToDelete) return;
+        try {
+            const batch = writeBatch(db);
+            // 1. Delete the poll document
+            batch.delete(doc(db, ...dataPrefix, 'polls', pollToDelete.id));
+            // 2. Delete all votes associated with this poll
+            const votesQuery = query(collection(db, ...dataPrefix, 'votes'), where("pollId", "==", pollToDelete.id));
+            const votesSnapshot = await getDocs(votesQuery);
+            votesSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+            
+            await batch.commit();
+            showAlert(`投票主題 "${pollToDelete.title}" 及其所有投票紀錄已刪除。`);
+            setPollToDelete(null);
+        } catch (error) {
+            showAlert(`刪除失敗: ${error.message}`);
+        }
+    };
+    
+    const getPollResults = (pollId) => {
+        const poll = polls[pollId];
+        if (!poll) return { results: [], totalVotes: 0, voteDetails: [] };
+        
+        const relevantVotes = allVotes.filter(v => v.pollId === pollId);
+        const results = poll.options.map(() => 0);
+        const voteDetails = [];
+        const seenIdentifiers = new Set();
+
+        // Sort by timestamp descending to get the latest vote per user
+        relevantVotes.sort((a,b) => (b.timestamp?.toDate() ?? 0) - (a.timestamp?.toDate() ?? 0));
+
+        relevantVotes.forEach(vote => {
+            // This ensures we only count the most recent vote if re-voting is ever implemented.
+            if (seenIdentifiers.has(vote.userIdentifier)) return;
+
+            vote.selectedOptions.forEach(optionIndex => {
+                if (results[optionIndex] !== undefined) {
+                    results[optionIndex]++;
+                }
+            });
+
+            voteDetails.push({
+                class: vote.class,
+                seat: vote.seat,
+                name: vote.name,
+                userIdentifier: vote.userIdentifier,
+                selectedOptions: vote.selectedOptions,
+                deviceInfo: vote.deviceInfo || 'N/A',
+                timestamp: vote.timestamp,
+            });
+            seenIdentifiers.add(vote.userIdentifier);
+        });
+
+        let totalVotes;
+        if (poll.allowMultipleVotes) {
+            totalVotes = results.reduce((sum, count) => sum + count, 0);
+        } else {
+            // Total votes should be the number of unique voters
+            totalVotes = voteDetails.length;
+        }
+
+        return { results, totalVotes, voteDetails };
+    };
+
+
+    return (
+        <div>
+            {(showAddPollModal || pollToEdit) && <AddPollModal 
+                onSave={handleSavePoll} 
+                onCancel={() => { setShowAddPollModal(false); setPollToEdit(null); }} 
+                studentRoster={studentRoster} 
+                existingPoll={pollToEdit}
+            />}
+            {pollToDelete && <ConfirmDeleteModal title="確認刪除投票" message={`確定要刪除「${pollToDelete.title}」嗎？所有相關的投票紀錄也會一併被刪除。`} onConfirm={handleDeletePoll} onCancel={() => setPollToDelete(null)} />}
+            {resultsPoll && <PollResultsModal poll={resultsPoll} getResults={() => getPollResults(resultsPoll.id)} studentRoster={studentRoster} onClose={() => setResultsPoll(null)} showAlert={showAlert} />}
+
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">管理投票活動</h3>
+                <button onClick={() => setShowAddPollModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">＋ 新增投票</button>
+            </div>
+
+            <div className="space-y-4">
+                {Object.values(polls).length > 0 ? Object.values(polls).map(poll => (
+                    <div key={poll.id} className="p-4 bg-slate-50 rounded-lg border">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h4 className="text-lg font-bold">{poll.title}</h4>
+                                <p className="text-sm text-slate-500">{poll.options.length} 個選項 | {poll.allowMultipleVotes ? "可複選" : "單選"}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm">發布:</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked={poll.isPublished} onChange={() => handleTogglePublish(poll)} className="sr-only peer" />
+                                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                                </label>
+                            </div>
+                        </div>
+                        <div className="mt-4 border-t pt-3 flex gap-2">
+                            <button onClick={() => setResultsPoll(poll)} className="text-sm bg-teal-500 hover:bg-teal-600 text-white font-bold py-1 px-3 rounded-md">查看結果</button>
+                            <button onClick={() => setPollToEdit(poll)} className="text-sm bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded-md">編輯</button>
+                            <button onClick={() => setPollToDelete(poll)} className="text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md">刪除</button>
+                        </div>
+                    </div>
+                )) : (
+                    <p className="text-center text-slate-500 py-8">尚未建立任何投票活動。</p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// +++ 新增投票 Modal 組件 +++
+function AddPollModal({ onSave, onCancel, studentRoster, existingPoll }) {
+    const isEditing = !!existingPoll;
+    const [title, setTitle] = useState(isEditing ? existingPoll.title : '');
+    const [options, setOptions] = useState(isEditing ? existingPoll.options : ['', '']);
+    const [allowMultipleVotes, setAllowMultipleVotes] = useState(isEditing ? existingPoll.allowMultipleVotes : false);
+    const [allowedClasses, setAllowedClasses] = useState(isEditing ? existingPoll.allowedClasses || [] : []);
+    const allClassNames = Object.keys(studentRoster).sort();
+
+    const handleOptionChange = (index, value) => {
+        const newOptions = [...options];
+        newOptions[index] = value;
+        setOptions(newOptions);
+    };
+
+    const addOption = () => setOptions([...options, '']);
+    const removeOption = (index) => {
+        if (options.length > 2) {
+            setOptions(options.filter((_, i) => i !== index));
+        }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const validOptions = options.map(o => o.trim()).filter(o => o !== '');
+        if (!title.trim() || validOptions.length < 2) {
+            alert('請填寫標題和至少兩個有效的選項！'); // In real app, use showAlert prop
+            return;
+        }
+        onSave({ title: title.trim(), options: validOptions, allowMultipleVotes, allowedClasses });
+    };
+    
+    const handleClassToggle = (className) => {
+        setAllowedClasses(prev =>
+            prev.includes(className)
+                ? prev.filter(c => c !== className)
+                : [...prev, className]
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold mb-4">{isEditing ? '編輯投票' : '建立新投票'}</h3>
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <div>
+                        <label className="font-semibold">投票主旨</label>
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full p-2 border rounded mt-1" required />
+                    </div>
+                    <div>
+                        <label className="font-semibold">選項</label>
+                        {options.map((opt, index) => (
+                            <div key={index} className="flex items-center mt-1 gap-2">
+                                <input type="text" value={opt} onChange={e => handleOptionChange(index, e.target.value)} className="w-full p-2 border rounded" required/>
+                                {options.length > 2 && <button type="button" onClick={() => removeOption(index)} className="text-red-500 p-1">✕</button>}
+                            </div>
+                        ))}
+                        <button type="button" onClick={addOption} className="mt-2 text-sm text-blue-600">+ 新增選項</button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                         <input type="checkbox" id="allow-multiple" checked={allowMultipleVotes} onChange={e => setAllowMultipleVotes(e.target.checked)} />
+                         <label htmlFor="allow-multiple">允許複選</label>
+                    </div>
+                    <div>
+                        <label className="font-semibold block mb-2">指定可投票班級 (留空表示所有班級皆可)</label>
+                        {allClassNames.length > 0 ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                {allClassNames.map(className => (
+                                    <label key={className} className="flex items-center gap-2 p-2 bg-slate-50 rounded-md border cursor-pointer hover:bg-blue-50">
+                                        <input
+                                            type="checkbox"
+                                            checked={allowedClasses.includes(className)}
+                                            onChange={() => handleClassToggle(className)}
+                                            className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span>{className}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        ) : <p className="text-slate-500 text-sm">尚無班級名單可指定。</p>}
+                    </div>
+                </div>
+                 <div className="flex justify-end gap-4 mt-6 pt-4 border-t">
+                    <button type="button" onClick={onCancel} className="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg">取消</button>
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">{isEditing ? '儲存變更' : '建立'}</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+// +++ 投票結果 Modal 組件 +++
+function PollResultsModal({ poll, getResults, studentRoster, onClose, showAlert }) {
+    const { results, totalVotes, voteDetails } = getResults();
+    const [tab, setTab] = useState('summary'); // summary, byOption, byStudent
+    
+    const eligibleStudents = useMemo(() => {
+        const allStudents = Object.entries(studentRoster).flatMap(([className, students]) =>
+            students.map(student => ({ ...student, class: className }))
+        );
+        if (!poll.allowedClasses || poll.allowedClasses.length === 0) {
+            return allStudents;
+        }
+        return allStudents.filter(student => poll.allowedClasses.includes(student.class));
+    }, [poll.allowedClasses, studentRoster]);
+
+    const nonVoters = useMemo(() => {
+        const votedIdentifiers = new Set(voteDetails.map(v => v.userIdentifier));
+        return eligibleStudents.filter(
+            student => !votedIdentifiers.has(`${student.class}-${String(student.seat)}`)
+        );
+    }, [eligibleStudents, voteDetails]);
+
+
+    const handleExportResults = () => {
+        if (typeof XLSX === 'undefined') {
+            showAlert('錯誤：匯出功能所需的函式庫 (xlsx) 未載入。');
+            return;
+        }
+
+        try {
+            const wb = XLSX.utils.book_new();
+
+            // 1. Summary Sheet
+            const summaryData = [["選項", "票數", "百分比"]];
+            poll.options.forEach((option, index) => {
+                const voteCount = results[index] || 0;
+                const percentage = totalVotes > 0 ? `${((voteCount / totalVotes) * 100).toFixed(1)}%` : '0%';
+                summaryData.push([option, voteCount, percentage]);
+            });
+            summaryData.push([]); // Add a blank row
+            summaryData.push(["總投票人數", voteDetails.length]);
+            summaryData.push(["總應投票人數", eligibleStudents.length]);
+            summaryData.push(["投票率", `${eligibleStudents.length > 0 ? ((voteDetails.length / eligibleStudents.length) * 100).toFixed(1) : 0}%`]);
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, "統計總覽");
+            
+            // 2. Voters List Sheet
+            const votersData = [["班級", "座號", "姓名", "投票選項"]];
+            voteDetails
+                .sort((a,b) => {
+                    if (a.class !== b.class) return a.class.localeCompare(b.class);
+                    return parseInt(a.seat, 10) - parseInt(b.seat, 10);
+                })
+                .forEach(voter => {
+                    const votedOptions = voter.selectedOptions.map(optIndex => poll.options[optIndex]).join(', ');
+                    votersData.push([voter.class, voter.seat, voter.name, votedOptions]);
+            });
+            const wsVoters = XLSX.utils.aoa_to_sheet(votersData);
+            XLSX.utils.book_append_sheet(wb, wsVoters, "已投票名單");
+
+            // 3. Non-Voters List Sheet
+            const nonVotersData = [["班級", "座號", "姓名"]];
+            nonVoters
+                .sort((a,b) => {
+                    if (a.class !== b.class) return a.class.localeCompare(b.class);
+                    return parseInt(a.seat, 10) - parseInt(b.seat, 10);
+                })
+                .forEach(student => {
+                    nonVotersData.push([student.class, student.seat, student.name]);
+            });
+            const wsNonVoters = XLSX.utils.aoa_to_sheet(nonVotersData);
+            XLSX.utils.book_append_sheet(wb, wsNonVoters, "未投票名單");
+
+            // Write file
+            const fileName = `投票結果_${poll.title.replace(/ /g, "_")}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            showAlert("結果已成功匯出為 Excel 檔！");
+
+        } catch (error) {
+            console.error("Excel export error:", error);
+            showAlert(`匯出失敗: ${error.message}`);
+        }
+    };
+
+    const DeviceInfoIcon = ({ deviceInfo }) => (
+        <span title={deviceInfo} className="cursor-help ml-2 text-slate-400 hover:text-slate-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        </span>
+    );
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl" onClick={e => e.stopPropagation()}>
+                 <header className="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg">
+                    <h3 className="text-xl font-bold">{poll.title} - 結果</h3>
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={handleExportResults}
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-sm"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            匯出 Excel
+                        </button>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-800 p-1 rounded-full hover:bg-slate-200">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                </header>
+                <main className="p-6 max-h-[80vh] flex flex-col">
+                    <div className="flex border-b mb-4 flex-shrink-0">
+                         <button onClick={() => setTab('summary')} className={`px-4 py-2 font-semibold ${tab === 'summary' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500'}`}>統計總覽</button>
+                         <button onClick={() => setTab('byOption')} className={`px-4 py-2 font-semibold ${tab === 'byOption' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500'}`}>依選項檢視</button>
+                         <button onClick={() => setTab('byStudent')} className={`px-4 py-2 font-semibold ${tab === 'byStudent' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500'}`}>投票名單</button>
+                    </div>
+
+                    <div className="overflow-y-auto flex-grow">
+                        {tab === 'summary' && (
+                            <div className="space-y-4">
+                                <h4 className="font-bold text-lg">總投票人數: {voteDetails.length} / {eligibleStudents.length}</h4>
+                                {poll.options.map((option, index) => {
+                                    const voteCount = results[index] || 0;
+                                    const percentage = totalVotes > 0 ? ((voteCount / totalVotes) * 100).toFixed(1) : 0;
+                                    return (
+                                        <div key={index}>
+                                            <div className="flex justify-between mb-1">
+                                                <span>{option}</span>
+                                                <span className="font-semibold">{voteCount} 票 ({percentage}%)</span>
+                                            </div>
+                                            <div className="w-full bg-slate-200 rounded-full h-4">
+                                                <div className="bg-blue-500 h-4 rounded-full" style={{ width: `${percentage}%` }}></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {totalVotes === 0 && <p className="text-center text-slate-500 py-4">尚無投票紀錄。</p>}
+                            </div>
+                        )}
+                        {tab === 'byOption' && (
+                            <div className="space-y-6">
+                                {poll.options.map((option, index) => (
+                                    <div key={index}>
+                                        <h4 className="font-bold text-lg p-2 bg-slate-100 rounded-t-md">{option} - ({results[index] || 0} 票)</h4>
+                                        <ul className="text-sm list-disc pl-8 py-2 border rounded-b-md max-h-48 overflow-y-auto">
+                                            {voteDetails.filter(v => v.selectedOptions.includes(index))
+                                                .sort((a,b) => {
+                                                    if (a.class !== b.class) return a.class.localeCompare(b.class);
+                                                    return parseInt(a.seat, 10) - parseInt(b.seat, 10);
+                                                })
+                                                .map(voter => (
+                                                    <li key={voter.userIdentifier} className="flex items-center py-1">
+                                                        {voter.class}-{voter.seat} {voter.name}
+                                                        <DeviceInfoIcon deviceInfo={voter.deviceInfo} />
+                                                    </li>
+                                                ))
+                                            }
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {tab === 'byStudent' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 className="font-bold text-lg mb-2">已投票 ({voteDetails.length})</h4>
+                                    <div className="overflow-auto border rounded-md max-h-96">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-slate-100 sticky top-0 z-10"><tr>
+                                                <th className="p-2 text-left font-semibold">學生</th>
+                                                <th className="p-2 text-left font-semibold">選項</th>
+                                            </tr></thead>
+                                            <tbody>
+                                            {voteDetails.sort((a,b) => {
+                                                if (a.class !== b.class) return a.class.localeCompare(b.class);
+                                                return parseInt(a.seat, 10) - parseInt(b.seat, 10);
+                                            })
+                                                .map(v => (
+                                                    <tr key={v.userIdentifier} className="border-t">
+                                                        <td className="p-2 whitespace-nowrap flex items-center">{v.class}-{v.seat} {v.name} <DeviceInfoIcon deviceInfo={v.deviceInfo} /></td>
+                                                        <td className="p-2">{v.selectedOptions.map(optIndex => poll.options[optIndex]).join(', ')}</td>
+                                                    </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-lg mb-2">未投票 ({nonVoters.length})</h4>
+                                    <ul className="text-sm list-disc pl-8 border rounded-md p-2 max-h-96 overflow-y-auto">
+                                        {nonVoters.sort((a,b) => {
+                                            if (a.class !== b.class) return a.class.localeCompare(b.class);
+                                            return parseInt(a.seat, 10) - parseInt(b.seat, 10);
+                                        })
+                                            .map(s => <li className="py-1" key={`${s.class}-${s.seat}`}>{s.class}-{s.seat} {s.name}</li>)
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </main>
+            </div>
+        </div>
+    );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
