@@ -1,1 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線上測驗與便利貼系統</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 xlsx.js 用於 Excel 處理 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- 引入 d3.js 和 d3-cloud.js 用於文字雲 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+    
+    <style>
+        /* 自定義樣式 */
         body {
+            font-family: 'Inter', 'sans-serif';
+        }
+        /* 解決 d3-cloud 渲染時的文字閃爍問題 */
+        .word-cloud-text {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <!-- 應用程式的主要容器 -->
+    <div id="app-container" class="min-h-screen flex items-center justify-center p-4">
+        <!-- 內容將由 JavaScript 動態生成 -->
+    </div>
+
+    <!-- 主要的 JavaScript 邏輯 -->
+    <script type="module">
+        // 引入 Firebase 模組
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, onSnapshot, getDoc, setDoc, addDoc, deleteDoc, updateDoc, query, getDocs, writeBatch, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- Firebase 設定 ---
+        let firebaseConfig;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' 
+                ? JSON.parse(__firebase_config) 
+                : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+        } catch (e) {
+            console.error("Firebase config parsing error:", e);
+            firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+        }
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-quiz-app';
+        const dataPrefix = ['artifacts', appId, 'public', 'data'];
+        
+        // --- 應用程式狀態管理 ---
+        let state = {
+            view: 'home',
+            user: null,
+            quizState: { questions: [], theme: '', currentQuestionIndex: 0, answers: {} },
+            quizResults: null,
+            questionBanks: {},
+            grades: [],
+            alert: { show: false, message: '' },
+            teacherPassword: '',
+            showPasswordModal: false,
+            showChangePasswordModal: false,
+            studentRoster: {},
+            isLoading: true,
+            isAuthReady: false,
+            stickyNoteThemes: {},
+            stickyNotes: [],
+            polls: {},
+            allVotes: [],
+        };
+        
+        const appContainer = document.getElementById('app-container');
+
+        // --- UI 組件渲染函式 ---
+
+        function renderAlertModal(message) {
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
+                        <p class="text-lg font-medium mb-4">${message}</p>
+                        <button onclick="window.closeAlert()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">
+                            關閉
+                        </button>
+                    </div>
+                </div>`;
+        }
+        
+        function renderTeacherPasswordModal() {
+             return `<div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">教師登入</h2>
+                    <form id="teacher-login-form">
+                        <div class="mb-4">
+                            <label for="password" class="block text-gray-700 text-sm font-bold mb-2">密碼</label>
+                            <input type="password" id="password" name="password" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105">
+                                登入
+                            </button>
+                            <button type="button" onclick="window.closePasswordModal()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105">
+                                取消
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>`;
+        }
+
+        function renderChangePasswordModal() {
+            return `<div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">更改教師密碼</h2>
+                    <form id="change-password-form">
+                        <div class="mb-4">
+                            <label for="new-password" class="block text-gray-700 text-sm font-bold mb-2">新密碼</label>
+                            <input type="password" id="new-password" name="newPassword" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105">
+                                確認更改
+                            </button>
+                            <button type="button" onclick="window.closeChangePasswordModal()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105">
+                                取消
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>`;
+        }
+
+        function renderQuizLogin() {
+            const themes = Object.keys(state.questionBanks);
+            return `<div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">學生測驗</h2>
+                <form id="student-quiz-login-form">
+                    <div class="mb-4">
+                        <label for="studentClass" class="block text-gray-700 text-sm font-bold mb-2">班級</label>
+                        <input type="text" name="studentClass" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="seatNumber" class="block text-gray-700 text-sm font-bold mb-2">座號</label>
+                        <input type="text" name="seatNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="studentName" class="block text-gray-700 text-sm font-bold mb-2">姓名</label>
+                        <input type="text" name="studentName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                    </div>
+                     <div class="mb-6">
+                        <label for="quizTheme" class="block text-gray-700 text-sm font-bold mb-2">選擇題庫</label>
+                        <select name="quizTheme" class="shadow border rounded w-full py-2 px-3 text-gray-700" required>
+                            <option value="">請選擇...</option>
+                            ${themes.map(theme => `<option value="${theme}">${theme}</option>`).join('')}
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                        開始測驗
+                    </button>
+                </form>
+            </div>`;
+        }
+
+        function renderStickyNoteLogin() {
+            return `<div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">便利貼牆</h2>
+                 <form id="sticky-note-login-form">
+                    <div class="mb-4">
+                        <label for="sticky-note-theme" class="block text-gray-700 text-sm font-bold mb-2">主題</label>
+                        <input type="text" name="theme" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" placeholder="輸入一個主題以加入..." required>
+                    </div>
+                     <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg">
+                        進入便利貼牆
+                    </button>
+                </form>
+            </div>`;
+        }
+
+        function renderVotingLogin() {
+            return `<div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">參與投票</h2>
+                 <form id="vote-login-form">
+                    <div class="mb-4">
+                        <label for="pollId" class="block text-gray-700 text-sm font-bold mb-2">投票代碼</label>
+                        <input type="text" name="pollId" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" placeholder="輸入教師提供的代碼..." required>
+                    </div>
+                     <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
+                        進入投票
+                    </button>
+                </form>
+            </div>`;
+        }
+
+        function renderQuizView() {
+            return `<div class="p-8">測驗進行中...</div>`; // 佔位符
+        }
+        
+        function renderResultsView() {
+            return `<div class="p-8">測驗結果</div>`; // 佔位符
+        }
+
+        function renderHeader() {
+            const getTitle = () => '線上測驗與便利貼系統';
+            return `
+                <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 flex justify-between items-center rounded-t-2xl">
+                    <h1 class="text-2xl md:text-3xl font-bold">${getTitle()}</h1>
+                    <div>
+                        ${state.view === 'home' ? 
+                            `<button onclick="window.handleTeacherLoginClick()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                                教師登入
+                            </button>` :
+                            `<button onclick="window.handleLogout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                                返回首頁
+                            </button>`
+                        }
+                    </div>
+                </header>`;
+        }
+
+        function renderContent() {
+            switch (state.view) {
+                case 'studentQuiz':
+                    return renderQuizView();
+                case 'studentResults':
+                    return renderResultsView();
+                case 'teacherDashboard':
+                    return `<div id="teacher-dashboard-content">教師儀表板載入中...</div>`;
+                case 'stickyNoteWall':
+                    return `<div id="sticky-note-wall-content">便利貼牆載入中...</div>`;
+                case 'studentVote':
+                    return `<div id="student-vote-content">投票頁面載入中...</div>`;
+                case 'home':
+                default:
+                    return renderHomePage();
+            }
+        }
+
+        function renderHomePage() {
+             return `<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center p-8">
+                ${renderQuizLogin()}
+                ${renderStickyNoteLogin()}
+                ${renderVotingLogin()}
+            </div>`;
+        }
+        
+        // --- 核心渲染函式 ---
+        function render() {
+            if (state.isLoading && state.view === 'home') {
+                appContainer.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-blue-600"></div>
+                        <p class="mt-6 text-xl font-semibold text-blue-600">正在從資料庫載入資料...</p>
+                    </div>`;
+                return;
+            }
+
+            appContainer.innerHTML = `
+                <div class="w-full max-w-7xl mx-auto bg-gray-50 rounded-2xl shadow-2xl relative">
+                    ${state.alert.show ? renderAlertModal(state.alert.message) : ''}
+                    ${state.showPasswordModal ? renderTeacherPasswordModal() : ''}
+                    ${state.showChangePasswordModal ? renderChangePasswordModal() : ''}
+                    ${renderHeader()}
+                    <main class="p-6 md:p-10">
+                        ${renderContent()}
+                    </main>
+                    <footer class="text-right p-4 text-xs text-slate-400 bg-gray-50 rounded-b-2xl">
+                        Made by xtjh-yucc
+                    </footer>
+                </div>
+            `;
+        }
+
+        // --- 事件處理函式 ---
+
+        window.showAlert = (message) => {
+            state.alert = { show: true, message };
+            render();
+        };
+        
+        window.closeAlert = () => {
+            state.alert = { show: false, message: '' };
+            render();
+        }
+
+        window.handleLogout = () => {
+            state.user = null;
+            state.quizResults = null;
+            state.quizState = { questions: [], theme: '', currentQuestionIndex: 0, answers: {} };
+            state.view = 'home';
+            render();
+        };
+        
+        window.handleTeacherLoginClick = () => {
+            state.showPasswordModal = true;
+            render();
+        }
+
+        window.closePasswordModal = () => {
+            state.showPasswordModal = false;
+            render();
+        }
+
+        window.closeChangePasswordModal = () => {
+            state.showChangePasswordModal = false;
+            render();
+        }
+        
+        // 將事件處理委派給 appContainer
+        appContainer.addEventListener('submit', (event) => {
+            event.preventDefault(); // 防止表單預設提交行為
+
+            switch(event.target.id) {
+                case 'teacher-login-form':
+                    handleTeacherLoginSubmit(event);
+                    break;
+                case 'change-password-form':
+                    handleChangePasswordSubmit(event);
+                    break;
+                case 'student-quiz-login-form':
+                    handleStudentQuizSubmit(event);
+                    break;
+                case 'sticky-note-login-form':
+                    handleStickyNoteLoginSubmit(event);
+                    break;
+                case 'vote-login-form':
+                    handleVoteLoginSubmit(event);
+                    break;
+            }
+        });
+
+        function handleTeacherLoginSubmit(event) {
+            const password = event.target.password.value;
+            if (password === state.teacherPassword) {
+                state.view = 'teacherDashboard';
+                state.showPasswordModal = false;
+            } else {
+                window.showAlert('密碼錯誤！');
+            }
+            render();
+        }
+
+        function handleChangePasswordSubmit(event) {
+            // 密碼更改邏輯 (待實現)
+            window.showAlert("功能開發中！");
+        }
+
+        function handleStudentQuizSubmit(event) {
+            const formData = new FormData(event.target);
+            const user = {
+                class: formData.get('studentClass'),
+                seatNumber: formData.get('seatNumber'),
+                name: formData.get('studentName'),
+            };
+            const theme = formData.get('quizTheme');
+            
+            if (!theme || !state.questionBanks[theme]) {
+                window.showAlert("找不到該題庫，請重新選擇！");
+                return;
+            }
+
+            state.user = user;
+            state.quizState = { ...state.quizState, questions: state.questionBanks[theme].questions, theme: theme };
+            state.view = 'studentQuiz';
+            render();
+        }
+
+        function handleStickyNoteLoginSubmit(event) {
+             window.showAlert("功能開發中！");
+        }
+
+        function handleVoteLoginSubmit(event) {
+             window.showAlert("功能開發中！");
+        }
+
+        // --- Firebase 資料監聽與初始化 ---
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if (!state.isAuthReady) {
+                    state.isAuthReady = true;
+                    initializeDataListeners();
+                    getPassword();
+                }
+            } else {
+                (async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Firebase sign-in failed:", error);
+                        state.isLoading = false;
+                        window.showAlert("無法連接到資料庫，請稍後再試。");
+                    }
+                })();
+            }
+        });
+        
+        function initializeDataListeners() {
+            const listeners = [
+                { name: 'questionBanks', stateKey: 'questionBanks', isMap: true },
+                { name: 'grades', stateKey: 'grades' },
+                { name: 'studentRoster', stateKey: 'studentRoster', isMap: true },
+                { name: 'stickyNoteThemes', stateKey: 'stickyNoteThemes', isMap: true },
+                { name: 'stickyNotes', stateKey: 'stickyNotes' },
+                { name: 'polls', stateKey: 'polls', isMap: true },
+                { name: 'allVotes', stateKey: 'allVotes' },
+            ];
+
+            let loadedCount = 0;
+            const totalListeners = listeners.length;
+
+            listeners.forEach(listener => {
+                onSnapshot(collection(db, ...dataPrefix, listener.name), (snapshot) => {
+                    if (listener.isMap) {
+                        const dataMap = {};
+                        snapshot.forEach((doc) => { dataMap[doc.id] = doc.data(); });
+                        state[listener.stateKey] = dataMap;
+                    } else {
+                        state[listener.stateKey] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    }
+                    
+                    loadedCount++;
+                    if (loadedCount === totalListeners) {
+                        state.isLoading = false;
+                    }
+                    render();
+                }, (error) => {
+                    console.error(`Error fetching ${listener.name}:`, error);
+                    loadedCount++;
+                    if (loadedCount === totalListeners) {
+                        state.isLoading = false;
+                        window.showAlert("讀取部分資料時發生錯誤。");
+                    }
+                    render();
+                });
+            });
+        }
+        
+        async function getPassword() {
+            const configDocRef = doc(db, ...dataPrefix, 'config', 'teacher');
+            try {
+                const docSnap = await getDoc(configDocRef);
+                if (docSnap.exists()) {
+                    state.teacherPassword = docSnap.data().password;
+                } else {
+                    await setDoc(configDocRef, { password: 'htjh' });
+                    state.teacherPassword = 'htjh';
+                }
+            } catch (error) {
+                console.error("Error getting/setting password:", error);
+            }
+        }
+        
+        // 初始渲染
+        render();
+
+    </script>
+</body>
+</html>
+
