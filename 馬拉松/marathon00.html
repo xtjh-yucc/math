@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校園馬拉松登錄系統 - 正式版</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: "Microsoft JhengHei", sans-serif; }
+        .login-card { max-width: 400px; margin: 80px auto; border: none; }
+        .header-bar { background-color: #2c3e50; color: white; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .lap-input { width: 80px; text-align: center; font-weight: bold; color: #0d6efd; }
+        
+        /* 儀表板與排名樣式 */
+        .stat-card { border-radius: 12px; border: none; transition: all 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+        .rank-badge { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: white; font-weight: bold; font-size: 0.9rem; margin-right: 10px;}
+        .rank-1 { background: linear-gradient(45deg, #FFD700, #FDB931); box-shadow: 0 2px 5px rgba(255, 215, 0, 0.4); }
+        .rank-2 { background: linear-gradient(45deg, #E0E0E0, #BDBDBD); box-shadow: 0 2px 5px rgba(192, 192, 192, 0.4); }
+        .rank-3 { background: linear-gradient(45deg, #CD7F32, #A0522D); box-shadow: 0 2px 5px rgba(205, 127, 50, 0.4); }
+        .rank-other { background-color: #6c757d; }
+        
+        .cursor-pointer { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div class="header-bar d-flex justify-content-between align-items-center" v-if="currentPage !== 'login'">
+        <div class="d-flex align-items-center">
+            <h4 class="m-0 fw-bold me-3">🏃 校園馬拉松</h4>
+            <span class="badge bg-warning text-dark" v-if="userRole === 'admin'">超級管理員</span>
+            <span class="badge bg-success" v-else>{{ currentClass }} 班級面板</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end d-none d-md-block">
+                <div class="fw-bold">{{ todayDate }}</div>
+                <small class="opacity-75">系統時間</small>
+            </div>
+            <button class="btn btn-outline-light btn-sm" @click="logout">登出</button>
+        </div>
+    </div>
+
+    <div class="container pb-5">
+        
+        <div class="card login-card shadow-lg" v-if="currentPage === 'login'">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h5 class="m-0 fw-bold">系統登入</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label class="form-label">請輸入密碼</label>
+                    <input type="password" class="form-control form-control-lg" v-model="loginInput" @keyup.enter="handleLogin" placeholder="班級密碼 / 超級密碼">
+                    <div class="form-text text-muted mt-2">提示：預設 1234，超級密碼 xtjh</div>
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-primary btn-lg" @click="handleLogin">登入系統</button>
+                </div>
+                <div class="alert alert-danger mt-3" v-if="loginError">{{ loginError }}</div>
+            </div>
+        </div>
+
+        <div v-if="currentPage === 'leader'">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card stat-card shadow-sm h-100 bg-white">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted text-uppercase fw-bold mb-3">{{ currentClass }} 今日戰績</h6>
+                            <h2 class="text-primary fw-bold">{{ myClassTodayLaps }} <small class="fs-6 text-muted">圈</small></h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card shadow-sm h-100 bg-white">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted text-uppercase fw-bold mb-3">班級總累積</h6>
+                            <h2 class="text-success fw-bold">{{ myClassTotalLaps }} <small class="fs-6 text-muted">圈</small></h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card shadow-sm h-100 bg-warning bg-opacity-10">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted text-uppercase fw-bold mb-3">目前全校第一</h6>
+                            <h3 class="fw-bold text-dark">
+                                👑 {{ fullRankings[0]?.class }} 班 
+                                <span class="fs-6">({{ fullRankings[0]?.total }}圈)</span>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">📝 {{ currentClass }} 跑步登錄</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">座號</th>
+                                    <th>姓名</th>
+                                    <th>今日圈數</th>
+                                    <th class="text-end pe-4">累積</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="student in classStudents" :key="student.id">
+                                    <td class="ps-4 fw-bold text-muted">{{ student.seat }}</td>
+                                    <td class="fw-bold">{{ student.name }}</td>
+                                    <td>
+                                        <input type="number" class="form-control lap-input" 
+                                               v-model.number="student.todayLaps" min="0" onfocus="this.select()">
+                                    </td>
+                                    <td class="text-end pe-4">{{ student.totalLaps + (student.todayLaps || 0) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white p-3 text-end">
+                    <button class="btn btn-success btn-lg px-4 shadow" @click="saveData">💾 儲存今日紀錄</button>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="currentPage === 'admin'">
+            
+            <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm">
+                <li class="nav-item"><a class="nav-link" :class="{active: adminTab === 'dashboard'}" href="#" @click="adminTab = 'dashboard'">📊 戰情儀表板</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{active: adminTab === 'data'}" href="#" @click="adminTab = 'data'">📝 資料管理</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{active: adminTab === 'pass'}" href="#" @click="adminTab = 'pass'">🔑 密碼管理</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{active: adminTab === 'system'}" href="#" @click="adminTab = 'system'">⚙️ 系統維護</a></li>
+            </ul>
+
+            <div v-if="adminTab === 'dashboard'">
+                <div class="row g-3">
+                    <div class="col-md-12 mb-3">
+                        <div class="card text-white bg-primary shadow-sm">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div><h5 class="card-title opacity-75">全校總累積圈數</h5><h1 class="display-4 fw-bold">{{ totalSchoolLaps }}</h1></div>
+                                <div class="opacity-50"><span style="font-size:3rem">🏆</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white py-3"><h5 class="m-0 fw-bold">🏆 全校班級排行榜</h5></div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr><th class="ps-4">排名</th><th>班級</th><th>累積圈數</th><th class="text-end pe-4">操作</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(rank, index) in fullRankings" :key="rank.class" :class="{'table-warning': index < 3}">
+                                                <td class="ps-4"><span class="rank-badge" :class="index < 3 ? 'rank-' + (index+1) : 'rank-other'">{{ index + 1 }}</span></td>
+                                                <td class="fw-bold fs-5">{{ rank.class }}</td>
+                                                <td class="fw-bold text-primary">{{ rank.total }}</td>
+                                                <td class="text-end pe-4"><button class="btn btn-sm btn-outline-primary" @click="viewClassDetails(rank.class)">查看明細</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="adminTab === 'data'">
+                <div class="card border-danger mb-4 shadow-sm">
+                    <div class="card-header bg-danger text-white fw-bold">⚠️ 危險操作區：學期重置</div>
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div class="text-danger">
+                            <strong>正式啟用前請執行此步驟！</strong><br>
+                            此動作將把全校學生的「累積圈數」全部設為 0，且無法復原。
+                        </div>
+                        <button class="btn btn-danger btn-lg shadow" @click="resetAllLaps">
+                            ⚠️ 一鍵全校歸零
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="m-0 fw-bold">班級資料編輯</h5>
+                            <select class="form-select w-auto" v-model="selectedAdminClass">
+                                <option value="" disabled>請選擇班級</option>
+                                <option v-for="cls in classList" :value="cls">{{ cls }} 班</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body" v-if="selectedAdminClass">
+                        <table class="table table-bordered table-striped">
+                            <thead><tr><th>座號</th><th>姓名</th><th>目前總圈數</th><th>操作</th></tr></thead>
+                            <tbody>
+                                <tr v-for="stu in getStudentsByClass(selectedAdminClass)" :key="stu.id">
+                                    <td><input v-model="stu.seat" class="form-control form-control-sm"></td>
+                                    <td><input v-model="stu.name" class="form-control form-control-sm"></td>
+                                    <td><input type="number" v-model="stu.totalLaps" class="form-control form-control-sm"></td>
+                                    <td><button class="btn btn-sm btn-danger" @click="removeStudent(stu.id)">刪除</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button class="btn btn-primary" @click="saveData">儲存修改</button>
+                    </div>
+                    <div class="card-body text-center text-muted py-5" v-else>請選擇班級以編輯學生資料</div>
+                </div>
+            </div>
+
+            <div v-if="adminTab === 'pass'">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                        <span>🔑 班級登入密碼管理</span>
+                        <div>
+                            <button class="btn btn-sm btn-warning me-2" @click="randomizePasswords">🎲 隨機重設所有密碼</button>
+                            <button class="btn btn-sm btn-success" @click="exportPasswordsExcel">📥 匯出密碼 Excel</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info py-2 small">
+                            💡 提示：點擊「隨機重設」後，請記得點擊「匯出密碼」下載 Excel 檔分發給各班體育組長。
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle table-striped">
+                                <thead><tr><th>班級</th><th>目前密碼</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="(pwd, cls) in classPasswords" :key="cls">
+                                        <td class="fw-bold">{{ cls }}</td>
+                                        <td><input type="text" class="form-control font-monospace" v-model="classPasswords[cls]"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-dark float-end mt-3" @click="saveData">更新密碼設定</button>
+                    </div>
+                </div>
+            </div>
+
+             <div v-if="adminTab === 'system'">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-success text-white fw-bold">📂 Excel 學生資料匯入</div>
+                            <div class="card-body">
+                                <p class="card-text text-muted">匯入新學期的學生名單。</p>
+                                <button class="btn btn-outline-success btn-sm mb-3" @click="downloadSampleExcel">⬇️ 下載範例格式</button>
+                                <input type="file" class="form-control mb-3" @change="handleFileUpload" accept=".xlsx, .xls">
+                                <button class="btn btn-success w-100" :disabled="!uploadedFile" @click="processImport">確認匯入資料</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-secondary text-white fw-bold">💾 資料備份與還原</div>
+                            <div class="card-body">
+                                <button class="btn btn-dark w-100 mb-3" @click="backupData">⬇️ 下載系統備份檔</button>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" ref="backupInput" accept=".json">
+                                    <button class="btn btn-outline-secondary" @click="restoreData">還原</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="showDetailModal" class="modal d-block" style="background: rgba(0,0,0,0.5)">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">{{ detailClass }} 班明細</h5>
+                            <button type="button" class="btn-close" @click="showDetailModal = false"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-sm table-striped">
+                                <thead><tr><th>座號</th><th>姓名</th><th>累積圈數</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="s in getStudentsByClass(detailClass)" :key="s.id"><td>{{ s.seat }}</td><td>{{ s.name }}</td><td class="fw-bold">{{ s.totalLaps }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            currentPage: 'login',
+            userRole: '',
+            loginInput: '',
+            loginError: '',
+            currentClass: '',
+            adminTab: 'dashboard',
+            selectedAdminClass: '',
+            showDetailModal: false,
+            detailClass: '',
+            uploadedFile: null,
+            classPasswords: { '701': '1234', '702': '1234', '703': '1234', '704': '1234', '705': '1234' },
+            students: [],
+            classList: ['701', '702', '703', '704', '705']
+        }
+    },
+    computed: {
+        todayDate() {
+            const d = new Date();
+            const days = ['日','一','二','三','四','五','六'];
+            return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} (週${days[d.getDay()]})`;
+        },
+        classStudents() {
+            return this.students.filter(s => s.class === this.currentClass).sort((a, b) => a.seat - b.seat);
+        },
+        myClassTodayLaps() {
+            return this.classStudents.reduce((sum, s) => sum + (s.todayLaps || 0), 0);
+        },
+        myClassTotalLaps() {
+            return this.classStudents.reduce((sum, s) => sum + s.totalLaps + (s.todayLaps || 0), 0);
+        },
+        fullRankings() {
+            const ranks = this.classList.map(cls => {
+                const clsStudents = this.students.filter(s => s.class === cls);
+                const total = clsStudents.reduce((sum, s) => {
+                    const pending = (s.class === this.currentClass) ? (s.todayLaps || 0) : 0;
+                    return sum + s.totalLaps + pending;
+                }, 0);
+                return { class: cls, total: total };
+            });
+            return ranks.sort((a, b) => b.total - a.total);
+        },
+        totalSchoolLaps() {
+            return this.fullRankings.reduce((sum, r) => sum + r.total, 0);
+        }
+    },
+    created() {
+        this.generateMockData();
+    },
+    methods: {
+        generateMockData() {
+            const namesPool = [
+                ['王小明', '張阿美', '李大華'], ['陳志豪', '林雅婷', '黃國強'], 
+                ['劉家豪', '楊怡君', '吳冠宇'], ['蔡宗翰', '許淑芬', '鄭婷婷'], ['謝凱文', '洪佩珊', '曾欣怡']
+            ];
+            const baseLaps = [120, 300, 180, 90, 220]; 
+            this.students = [];
+            this.classList.forEach((cls, index) => {
+                namesPool[index].forEach((name, i) => {
+                    this.students.push({
+                        id: cls + '_' + (i+1),
+                        class: cls,
+                        seat: i + 1,
+                        name: name,
+                        totalLaps: Math.floor(baseLaps[index] / 3) + Math.floor(Math.random() * 20),
+                        todayLaps: 0
+                    });
+                });
+            });
+        },
+        handleLogin() {
+            this.loginError = '';
+            if (this.loginInput === 'xtjh') {
+                this.userRole = 'admin'; this.currentPage = 'admin'; this.adminTab = 'dashboard'; return;
+            }
+            const foundClass = Object.entries(this.classPasswords).find(([cls, pwd]) => pwd === this.loginInput);
+            if (foundClass) {
+                this.userRole = 'leader'; this.currentClass = foundClass[0]; this.currentPage = 'leader';
+            } else {
+                this.loginError = '密碼錯誤。';
+            }
+        },
+        logout() {
+            this.currentPage = 'login'; this.loginInput = ''; this.userRole = ''; this.currentClass = '';
+        },
+        getStudentsByClass(cls) {
+            return this.students.filter(s => s.class === cls).sort((a, b) => a.seat - b.seat);
+        },
+        viewClassDetails(cls) {
+            this.detailClass = cls; this.showDetailModal = true;
+        },
+        removeStudent(id) {
+            if(confirm('確定要刪除這位學生嗎？')) this.students = this.students.filter(s => s.id !== id);
+        },
+        saveData() {
+            if (this.userRole === 'leader') {
+                this.classStudents.forEach(s => {
+                    if(s.todayLaps > 0) { s.totalLaps += s.todayLaps; s.todayLaps = 0; }
+                });
+            }
+            alert('資料已儲存！');
+        },
+
+        // --- 新增的功能區塊 ---
+
+        // 1. 一鍵歸零
+        resetAllLaps() {
+            if (confirm("⚠️ 危險警告 ⚠️\n\n這將把「全校所有學生」的跑步圈數全部歸零！\n\n通常用於新學期開始或正式啟用前。\n\n確定要執行嗎？")) {
+                if (confirm("🚨 再次確認 🚨\n\n此動作無法復原！\n\n您真的要清除所有資料嗎？")) {
+                    this.students.forEach(s => {
+                        s.totalLaps = 0;
+                        s.todayLaps = 0;
+                    });
+                    alert("全校資料已成功歸零。");
+                }
+            }
+        },
+
+        // 2. 隨機產生密碼 (4位數字+英文混合，避免太容易被猜到，也不會太難打)
+        randomizePasswords() {
+            if (confirm("確定要將所有班級的密碼重設為隨機亂碼嗎？\n\n重設後，舊密碼將失效。")) {
+                for (const cls in this.classPasswords) {
+                    // 產生 4 位數亂碼 (擷取 Base36 字串)
+                    const randomPwd = Math.random().toString(36).substring(2, 6); 
+                    this.classPasswords[cls] = randomPwd;
+                }
+                alert("所有班級密碼已更新！\n請務必點擊「匯出密碼 Excel」以下載新密碼表。");
+            }
+        },
+
+        // 3. 匯出密碼 Excel
+        exportPasswordsExcel() {
+            // 轉換資料格式
+            const data = Object.entries(this.classPasswords).map(([cls, pwd]) => ({
+                '班級': cls,
+                '登入密碼': pwd
+            }));
+            
+            // 建立工作表
+            const ws = XLSX.utils.json_to_sheet(data);
+            // 設定欄寬 (美觀用)
+            ws['!cols'] = [{ wch: 10 }, { wch: 20 }];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "各班密碼表");
+            
+            // 下載檔案
+            XLSX.writeFile(wb, `班級密碼表_${new Date().toISOString().slice(0,10)}.xlsx`);
+        },
+
+        // --- 原有功能 ---
+        backupData() {
+            const backup = { version: "1.1", timestamp: new Date().toISOString(), passwords: this.classPasswords, classList: this.classList, students: this.students };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], {type : 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+        },
+        restoreData() {
+            const file = this.$refs.backupInput.files[0];
+            if (!file) return alert('請先選擇備份檔');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.students) {
+                        if(confirm(`確定還原？`)) { this.classPasswords = data.passwords; this.classList = data.classList; this.students = data.students; alert('還原成功！'); }
+                    }
+                } catch(err){ alert('讀取失敗'); }
+            };
+            reader.readAsText(file);
+        },
+        downloadSampleExcel() {
+            const ws = XLSX.utils.json_to_sheet([{ class: "701", seat: 1, name: "範例學生" }]);
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "學生資料");
+            XLSX.writeFile(wb, "sample.xlsx");
+        },
+        handleFileUpload(event) { this.uploadedFile = event.target.files[0]; },
+        processImport() {
+            if (!this.uploadedFile) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+                const jsonData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                if(confirm(`讀取到 ${jsonData.length} 筆，確定匯入？`)) {
+                    this.students = []; const newClasses = new Set();
+                    jsonData.forEach((row, idx) => {
+                        const cls = String(row.class||row['班級']), name = row.name||row['姓名'], seat = row.seat||row['座號']||(idx+1);
+                        newClasses.add(cls);
+                        this.students.push({ id: `${cls}_${seat}`, class: cls, seat: Number(seat), name: name, totalLaps: 0, todayLaps: 0 });
+                    });
+                    this.classList = Array.from(newClasses).sort();
+                    this.classList.forEach(c => { if(!this.classPasswords[c]) this.classPasswords[c] = '1234'; });
+                    alert('匯入成功！'); this.uploadedFile = null;
+                }
+            };
+            reader.readAsArrayBuffer(this.uploadedFile);
+        }
+    }
+}).mount('#app');
+</script>
+
+</body>
+</html>
