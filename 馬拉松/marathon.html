@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校園馬拉松系統 (Firebase連線版)</title>
+    <title>校園馬拉松系統 (完整備份版)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
@@ -11,7 +11,8 @@
         .login-card { max-width: 400px; margin: 80px auto; }
         .header-bar { background-color: #2c3e50; color: white; padding: 15px; margin-bottom: 20px; }
         .lap-input { width: 80px; text-align: center; font-weight: bold; color: #0d6efd; }
-        .rank-badge { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: white; margin-right: 10px;}
+        /* 排行榜樣式 */
+        .rank-badge { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: white; font-size: 0.8rem; margin-right: 8px;}
         .rank-1 { background: #FFD700; } .rank-2 { background: #C0C0C0; } .rank-3 { background: #CD7F32; } .rank-other { background: #6c757d; }
         .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:9999; display:flex; justify-content:center; align-items:center; }
     </style>
@@ -20,7 +21,10 @@
 
 <div id="app">
     <div class="loading-overlay" v-if="isLoading">
-        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-2" role="status"></div>
+            <div>處理中...</div>
+        </div>
     </div>
 
     <div class="header-bar d-flex justify-content-between align-items-center" v-if="currentPage !== 'login'">
@@ -44,10 +48,40 @@
 
         <div v-if="currentPage === 'leader'">
             <div class="row g-3 mb-4">
-                <div class="col-md-4"><div class="card p-3 text-center"><h6>今日戰績</h6><h2 class="text-primary">{{ myClassTodayLaps }}</h2></div></div>
-                <div class="col-md-4"><div class="card p-3 text-center"><h6>總累積</h6><h2 class="text-success">{{ myClassTotalLaps }}</h2></div></div>
-                <div class="col-md-4"><div class="card p-3 text-center bg-warning bg-opacity-10"><h6>全校第一</h6><h3>👑 {{ fullRankings[0]?.class || '-' }}</h3></div></div>
+                <div class="col-md-4">
+                    <div class="card p-3 text-center h-100 shadow-sm">
+                        <h6 class="text-muted">本班今日戰績</h6>
+                        <h2 class="text-primary fw-bold">{{ myClassTodayLaps }} <small class="fs-6">圈</small></h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 text-center h-100 shadow-sm">
+                        <h6 class="text-muted">本班總累積</h6>
+                        <h2 class="text-success fw-bold">{{ myClassTotalLaps }} <small class="fs-6">圈</small></h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-warning">
+                        <div class="card-header bg-warning bg-opacity-10 py-2">
+                            <h6 class="m-0 fw-bold text-center">🏆 全校前三名</h6>
+                        </div>
+                        <ul class="list-group list-group-flush small">
+                            <li class="list-group-item d-flex justify-content-between align-items-center" 
+                                v-for="(rank, index) in fullRankings.slice(0,3)" :key="rank.class">
+                                <span>
+                                    <span class="rank-badge" :class="'rank-'+(index+1)">{{index+1}}</span>
+                                    {{ rank.class }} 班
+                                </span>
+                                <span class="fw-bold">{{ rank.total }} 圈</span>
+                            </li>
+                            <li class="list-group-item text-center text-muted" v-if="fullRankings.length === 0">
+                                暫無資料
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
+
             <div class="card shadow-sm">
                 <div class="card-header bg-white py-3"><h5>📝 {{ currentClass }} 登錄</h5></div>
                 <table class="table table-hover align-middle mb-0">
@@ -67,7 +101,7 @@
         <div v-if="currentPage === 'admin'">
             <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm">
                 <li class="nav-item"><a class="nav-link" :class="{active: adminTab==='dash'}" href="#" @click="adminTab='dash'">📊 儀表板</a></li>
-                <li class="nav-item"><a class="nav-link" :class="{active: adminTab==='sys'}" href="#" @click="adminTab='sys'">⚙️ 系統維護 (匯入/密碼)</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{active: adminTab==='sys'}" href="#" @click="adminTab='sys'">⚙️ 系統維護 (備份/匯入)</a></li>
             </ul>
 
             <div v-if="adminTab === 'dash'">
@@ -88,24 +122,41 @@
             <div v-if="adminTab === 'sys'">
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card h-100">
-                            <div class="card-header bg-success text-white">📂 學生匯入 (初始化)</div>
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header bg-success text-white">📂 學生資料匯入 (Excel)</div>
                             <div class="card-body">
-                                <button class="btn btn-outline-success btn-sm mb-3" @click="downloadSample">⬇️ 下載範例檔</button>
+                                <p class="small text-muted">用於學期初建立資料。注意：會覆蓋現有學生資料。</p>
+                                <button class="btn btn-outline-success btn-sm mb-3" @click="downloadSample">⬇️ 下載範例格式</button>
                                 <input type="file" class="form-control mb-3" @change="handleFileUpload">
-                                <button class="btn btn-success w-100" :disabled="!uploadedFile" @click="importData">確認匯入至資料庫</button>
-                                <small class="text-muted d-block mt-2">* 這會覆蓋現有學生資料</small>
+                                <button class="btn btn-success w-100" :disabled="!uploadedFile" @click="importData">確認匯入 Excel</button>
                             </div>
                         </div>
                     </div>
+
                     <div class="col-md-6">
-                        <div class="card h-100">
-                            <div class="card-header bg-dark text-white">🔑 密碼管理</div>
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header bg-dark text-white">💾 資料備份與還原 (JSON)</div>
                             <div class="card-body">
-                                <button class="btn btn-warning w-100 mb-2" @click="resetPasswords">🎲 隨機重設所有密碼</button>
-                                <button class="btn btn-outline-dark w-100" @click="exportPasswords">📥 匯出密碼 Excel</button>
+                                <label class="form-label fw-bold">1. 備份資料</label>
+                                <button class="btn btn-dark w-100 mb-3" @click="backupDataJSON">⬇️ 下載完整備份檔 (.json)</button>
                                 <hr>
-                                <button class="btn btn-danger w-100" @click="resetAllLaps">⚠️ 全校圈數歸零</button>
+                                <label class="form-label fw-bold">2. 還原資料</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" ref="jsonInput" accept=".json">
+                                    <button class="btn btn-outline-danger" @click="restoreDataJSON">還原</button>
+                                </div>
+                                <small class="text-danger d-block mt-1">* 還原將覆蓋目前所有資料庫內容</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <div class="card shadow-sm border-danger">
+                            <div class="card-header bg-light text-danger fw-bold">⚠️ 進階管理區</div>
+                            <div class="card-body d-flex gap-2">
+                                <button class="btn btn-warning flex-grow-1" @click="resetPasswords">🎲 隨機重設密碼</button>
+                                <button class="btn btn-outline-dark flex-grow-1" @click="exportPasswords">📥 匯出密碼表</button>
+                                <button class="btn btn-danger flex-grow-1" @click="resetAllLaps">歸零全校圈數</button>
                             </div>
                         </div>
                     </div>
@@ -121,7 +172,7 @@
     import { getFirestore, collection, getDocs, doc, writeBatch, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // ==========================================
-    // ⚠️ 請在此處貼上你的 Firebase Config ⚠️
+    // ⚠️ 記得替換成你的 Firebase Config ⚠️
     // ==========================================
     const firebaseConfig = {
   apiKey: "AIzaSyC8kOlTTE3EqszGY4Etf6M0J1zj7QavYTM",
@@ -150,8 +201,8 @@
                 uploadedFile: null,
                 
                 // 資料容器
-                students: [], // 從 Firestore 讀取
-                passwords: {}, // 從 Firestore 讀取
+                students: [], 
+                passwords: {}, 
                 classList: []
             }
         },
@@ -169,42 +220,31 @@
             }
         },
         methods: {
-            // --- 核心：從資料庫讀取 ---
             async fetchData() {
                 this.isLoading = true;
                 try {
-                    // 1. 讀取密碼表
                     const pwdSnap = await getDoc(doc(db, "settings", "passwords"));
                     if (pwdSnap.exists()) {
                         this.passwords = pwdSnap.data();
                         this.classList = Object.keys(this.passwords).sort();
                     }
-
-                    // 2. 讀取學生資料
                     const stuSnap = await getDocs(collection(db, "students"));
                     this.students = [];
                     stuSnap.forEach(doc => {
-                        this.students.push({ ...doc.data(), todayLaps: 0 }); // todayLaps 本地暫存
+                        this.students.push({ ...doc.data(), todayLaps: 0 }); 
                     });
-
-                    // 如果資料庫是空的 (第一次使用)
-                    if (this.classList.length === 0) {
-                        alert("目前資料庫為空，請使用超級密碼登入並匯入 Excel。");
-                    }
                 } catch (e) {
                     console.error(e);
-                    alert("讀取資料失敗，請檢查網路或 Firebase 設定");
+                    alert("讀取資料失敗: " + e.message);
                 }
                 this.isLoading = false;
             },
 
             async handleLogin() {
-                await this.fetchData(); // 登入時才拉取最新資料
-                
+                await this.fetchData(); 
                 if (this.loginInput === 'xtjh') {
                     this.userRole = 'admin'; this.currentPage = 'admin'; return;
                 }
-                // 比對密碼
                 const foundClass = Object.entries(this.passwords).find(([cls, pwd]) => pwd === this.loginInput);
                 if (foundClass) {
                     this.userRole = 'leader'; this.currentClass = foundClass[0]; this.currentPage = 'leader';
@@ -212,116 +252,143 @@
                     this.loginError = '密碼錯誤';
                 }
             },
-            logout() { location.reload(); }, // 登出直接重整最乾淨
+            logout() { location.reload(); }, 
 
-            // --- 核心：儲存資料 ---
             async saveDailyLaps() {
                 this.isLoading = true;
                 const batch = writeBatch(db);
                 let count = 0;
-                
                 this.classStudents.forEach(s => {
                     if (s.todayLaps > 0) {
                         const sRef = doc(db, "students", s.id);
-                        // 更新資料庫總圈數
                         batch.update(sRef, { totalLaps: s.totalLaps + s.todayLaps });
-                        // 更新本地顯示
                         s.totalLaps += s.todayLaps;
                         s.todayLaps = 0;
                         count++;
                     }
                 });
-
-                if (count > 0) {
-                    await batch.commit();
-                    alert("儲存成功！");
-                } else {
-                    alert("沒有輸入任何圈數喔");
-                }
+                if (count > 0) { await batch.commit(); alert("儲存成功！"); } else { alert("未輸入數值"); }
                 this.isLoading = false;
             },
 
-            // --- 匯入與管理 ---
+            // --- Excel 匯入 ---
             downloadSample() {
                 const ws = XLSX.utils.json_to_sheet([{ class: "701", seat: 1, name: "王小明" }]);
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
                 XLSX.writeFile(wb, "sample.xlsx");
             },
             handleFileUpload(e) { this.uploadedFile = e.target.files[0]; },
-            
             async importData() {
-                if(!confirm("確定匯入？這會清空資料庫現有學生資料！")) return;
+                if(!confirm("確定匯入？現有資料將被覆蓋！")) return;
                 this.isLoading = true;
-                
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
                     const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                    
-                    // 1. 整理資料
                     const batch = writeBatch(db);
                     const newPasswords = {};
-                    
-                    // 先清空舊資料 (這步在大量資料時需優化，這裡簡化處理)
-                    // 實務上建議直接覆蓋或分批刪除
-                    
                     json.forEach(row => {
-                        const cls = String(row.class||row['班級']);
-                        const name = row.name||row['姓名'];
-                        const seat = row.seat||row['座號'];
+                        const cls = String(row.class||row['班級']), name = row.name||row['姓名'], seat = row.seat||row['座號'];
                         const id = `${cls}_${seat}`;
-                        
-                        // 設定學生文件
-                        const sRef = doc(db, "students", id);
-                        batch.set(sRef, { id, class: cls, seat, name, totalLaps: 0 });
-                        
-                        // 建立密碼表
+                        batch.set(doc(db, "students", id), { id, class: cls, seat, name, totalLaps: 0 });
                         if (!newPasswords[cls]) newPasswords[cls] = "1234"; 
                     });
-
-                    // 2. 寫入密碼表
                     batch.set(doc(db, "settings", "passwords"), newPasswords);
-
                     await batch.commit();
-                    alert("匯入成功！請重新登入");
-                    location.reload();
+                    alert("Excel 匯入成功！"); location.reload();
                 };
                 reader.readAsArrayBuffer(this.uploadedFile);
             },
 
+            // --- 備份與還原 (JSON) ---
+            backupDataJSON() {
+                if (this.students.length === 0) return alert("目前沒有資料可備份");
+                const backupData = {
+                    version: "2.0",
+                    timestamp: new Date().toISOString(),
+                    passwords: this.passwords,
+                    students: this.students.map(s => ({...s, todayLaps: 0})) // 去除暫存欄位
+                };
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], {type : 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url;
+                a.download = `marathon_full_backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+            },
+
+            async restoreDataJSON() {
+                const file = this.$refs.jsonInput.files[0];
+                if (!file) return alert('請選擇備份檔 (.json)');
+                if(!confirm("⚠️ 警告：還原將覆寫目前所有資料庫內容，確定執行？")) return;
+
+                this.isLoading = true;
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data.students || !data.passwords) throw new Error("格式錯誤");
+
+                        // 由於 Firebase Batch 限制 500 筆，這裡簡單用分批或個別寫入處理
+                        // 為求穩定，這裡使用 writeBatch 分批 (每批 400 筆)
+                        const chunkSize = 400;
+                        const allStudents = data.students;
+                        
+                        for (let i = 0; i < allStudents.length; i += chunkSize) {
+                            const batch = writeBatch(db);
+                            const chunk = allStudents.slice(i, i + chunkSize);
+                            chunk.forEach(s => {
+                                batch.set(doc(db, "students", s.id), s);
+                            });
+                            // 第一批順便寫入密碼
+                            if (i === 0) {
+                                batch.set(doc(db, "settings", "passwords"), data.passwords);
+                            }
+                            await batch.commit();
+                        }
+                        
+                        alert("資料還原成功！");
+                        location.reload();
+                    } catch (err) {
+                        alert('還原失敗：' + err.message);
+                        this.isLoading = false;
+                    }
+                };
+                reader.readAsText(file);
+            },
+
+            // --- 其他管理功能 ---
             async resetPasswords() {
                 if(!confirm("確定重設所有密碼？")) return;
                 this.isLoading = true;
                 const newPwds = {};
                 this.classList.forEach(c => newPwds[c] = Math.random().toString(36).substring(2,6));
-                
                 await setDoc(doc(db, "settings", "passwords"), newPwds);
-                this.passwords = newPwds;
-                alert("密碼已重設，請匯出 Excel");
-                this.isLoading = false;
+                alert("密碼已重設，請匯出 Excel"); location.reload();
             },
-            
             exportPasswords() {
                 const data = Object.entries(this.passwords).map(([c,p])=>({'班級':c, '密碼':p}));
                 const ws = XLSX.utils.json_to_sheet(data);
-                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Passwords");
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "PW");
                 XLSX.writeFile(wb, "passwords.xlsx");
             },
-
             async resetAllLaps() {
                 if(!confirm("⚠️ 確定將全校圈數歸零？")) return;
                 this.isLoading = true;
-                const batch = writeBatch(db);
-                this.students.forEach(s => {
-                    batch.update(doc(db, "students", s.id), { totalLaps: 0 });
-                });
-                await batch.commit();
-                alert("已歸零");
-                location.reload();
+                // 分批處理歸零
+                const chunkSize = 400;
+                for (let i = 0; i < this.students.length; i += chunkSize) {
+                    const batch = writeBatch(db);
+                    const chunk = this.students.slice(i, i + chunkSize);
+                    chunk.forEach(s => {
+                        batch.update(doc(db, "students", s.id), { totalLaps: 0 });
+                    });
+                    await batch.commit();
+                }
+                alert("已歸零"); location.reload();
             }
         },
         mounted() {
-            // 不再自動產生假資料，等待使用者登入觸發 fetchData
+            // 自動偵測：若有 API Key 但沒資料，自動提示
         }
     }).mount('#app');
 </script>
