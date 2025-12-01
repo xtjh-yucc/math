@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因式分解解一元二次方程式 學習夥伴</title>
+    <!-- 載入 Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 使用 Inter 字體 -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* 確保 pre 區塊的排版，模仿國中印刷體 */
+        pre {
+            white-space: pre-wrap;
+            font-size: 1rem;
+            line-height: 1.6;
+            font-family: sans-serif; /* 使用標準字體以確保 x² 等符號顯示正常 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <div id="app" class="flex justify-center items-start min-h-screen">
+        <!-- 應用程式內容將由 JavaScript 渲染到這裡 -->
+        <div class="w-full max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-6">
+            <div class="flex justify-center items-center h-40">
+                <p class="text-xl font-semibold text-gray-500 animate-pulse">
+                    正在載入學習夥伴...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心資料與設定 ---
+        const learningTopics = [
+            { 
+                id: 1, 
+                title: "1. 判別一元二次方程式與解", 
+                focus: "概念",
+                examplePrompt: "題目必須是判斷某個數是否為一元二次方程式的解，例如：判斷 5 是否為方程式 2x²－10＝8x 的解？"
+            },
+            { 
+                id: 2, 
+                title: "2. 若A×B＝0，則A＝0或B＝0", 
+                focus: "零積性質",
+                examplePrompt: "題目必須是應用零積性質求解，例如：求解方程式 (x－6)(x－2)＝0。請確保方程式已經是因式分解形式並等於零。"
+            },
+            { 
+                id: 3, 
+                title: "3. 利用提出公因式解方程式", 
+                focus: "公因式法",
+                examplePrompt: "題目必須是利用提出公因式的方法求解，例如：求解 3x²＋9x＝0，或 (2x－1)(x＋3)－4(x＋3)＝0 等可以提出公因式的方程式。"
+            },
+            { 
+                id: 4, 
+                title: "4. 利用十字交乘法解方程式", 
+                focus: "十字交乘法",
+                examplePrompt: "題目必須是利用十字交乘法求解。請確保題目優先生成平方項係數為 1 的形式 (例如：x²＋x－2＝0 或 x²－５x＋６＝0)，然後逐步納入係數不為 1 或未整理成等於零的形式 (例如：4x²－2x＝30、－10x²－15x＝－25)。**極度重要：請確保每道題目在數字、係數和方程式類型上具備高多樣性，切勿連續出相似的題目。**"
+            },
+            { 
+                id: 5, 
+                title: "5. 利用乘法公式解方程式", 
+                focus: "乘法公式",
+                examplePrompt: "題目必須是利用乘法公式求解。請確保題目涵蓋以下三種基本題型：(a+b)²=0, (a-b)²=0, 以及 (a+b)(a-b)=0（平方差）。**請務必在連續的題目中輪流生成這三種題型，以確保前五題覆蓋所有類型。** 如果解為重根，請在選項或解析中明確標示為「x = k (重根)」或「x = k 或 x = k」。"
+            },
+            { 
+                id: 6, 
+                title: "6. 綜合應用 (進階)", 
+                focus: "綜合應用",
+                examplePrompt: "題目必須是綜合應用題型，例如：求解 (x－4)(x＋5)＝10 (先展開再分解)，或已知一根為－2求另一根，或已知兩根求係數 a, b 的值等複雜應用題型。"
+            },
+        ];
+
+        const CORRECT_TO_PASS = 5;
+        const API_KEY = ""; // Canvas 將在運行時自動提供
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+
+
+        // --- 狀態管理 (使用 vanilla JS 物件) ---
+        let state = {
+            selectedTopicId: 4, // 預設選中主題 4
+            currentTopic: learningTopics.find(t => t.id === 4),
+            quizState: {
+                correctCount: 0,
+                totalQuestions: 0,
+                hasPassed: false,
+                questionHistory: [] // 用於追蹤第 4 關的題目歷史
+            },
+            currentQuestionData: null,
+            userAnswerIndex: null,
+            isAnswerSubmitted: false,
+            userNotes: "",
+            aiResponse: "",
+            isLoading: false
+        };
+
+        // 狀態更新函數 (模擬 React 的 useState)
+        function setState(newState) {
+            state = { ...state, ...newState };
+            renderApp(); // 每次狀態改變時重新渲染
+        }
+        
+        function setQuizState(newQuizState) {
+            state.quizState = { ...state.quizState, ...newQuizState };
+            renderApp();
+        }
+
+
+        // --- 輔助函數：API 呼叫與重試邏輯 ---
+        async function fetchWithRetry(payload) {
+            let response;
+            let retries = 0;
+            const maxRetries = 5;
+            let delay = 1000;
+
+            while (retries < maxRetries) {
+                try {
+                    response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        return response;
+                    }
+
+                    if (response.status === 429 || response.status >= 500) {
+                        retries++;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+                    }
+                } catch (error) {
+                    if (retries >= maxRetries - 1) {
+                         throw error;
+                    }
+                    retries++;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+
+            throw new Error(`API 請求失敗，已達最大重試次數`);
+        }
+
+        // --- 核心邏輯函數 ---
+
+        // 1. AI 產生測驗題目 (使用 JSON 結構化輸出)
+        async function generateQuizQuestion(topicId = state.selectedTopicId) {
+            setState({ isLoading: true, isAnswerSubmitted: false, userAnswerIndex: null, currentQuestionData: null });
+            
+            const topic = learningTopics.find(t => t.id === topicId);
+            if (!topic) {
+                setState({ aiResponse: "找不到該主題的資料。", isLoading: false });
+                return;
+            }
+
+            const systemPrompt = "你是一位友善且專業的國中數學老師，專門設計「因式分解解一元二次方程式」的選擇題。請確保題目內容和解析**嚴格遵守**國中印刷格式，**不使用** 任何 Markdown 語法（例如：`*`、`###`）或任何 LaTeX 符號（例如：`$x^2$`）。題目必須是選擇題，並有四個選項，其中包含一個正確答案。";
+            
+            const currentQCount = state.quizState.totalQuestions;
+            const isTopic5 = topicId === 5;
+            
+            let repetitionGuard = "";
+            if (topicId === 4) {
+                // 第 4 關：避免重複
+                const history = state.quizState.questionHistory.slice(-3).join(", ");
+                repetitionGuard = `**請務必確保此題與您之前生成的題目（例如：${history}）在數值和結構上顯著不同。**`;
+            }
+            
+            // 第 5 關：強制分配三種題型
+            let topic5DistributionHint = "";
+            if (isTopic5 && currentQCount < 5) {
+                topic5DistributionHint = `這是第 ${currentQCount + 1} 題。請確保題目類型在 (a+b)²=0、(a-b)²=0 和 (a+b)(a-b)=0 三種形式中輪流生成，以達到均衡練習的目的。`;
+            }
+
+            const userQuery = `請為主題「${topic.title}」設計一題選擇題。題目必須包含一元二次方程式的解法，並測試學生對該主題的理解。請嚴格參考以下題型範例來設計題目：${topic.examplePrompt}。${repetitionGuard}${topic5DistributionHint}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "question": { "type": "STRING", "description": "數學選擇題的題目內容，使用印刷格式 x²" },
+                            "options": {
+                                "type": "ARRAY",
+                                "items": { "type": "STRING" },
+                                "description": "四個隨機排列的選項，包含一個正確答案"
+                            },
+                            "correctAnswerIndex": { "type": "NUMBER", "description": "正確答案在 options 陣列中的索引（從 0 開始）" },
+                            "explanation": { "type": "STRING", "description": "詳細的解題步驟和解析，必須嚴格遵守國中印刷格式，不使用 Markdown 或 LaTeX" }
+                        },
+                        propertyOrdering: ["question", "options", "correctAnswerIndex", "explanation"]
+                    }
+                }
+            };
+
+            try {
+                const response = await fetchWithRetry(payload);
+                const result = await response.json();
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (jsonText) {
+                    const parsedData = JSON.parse(jsonText);
+                    
+                    // 更新歷史記錄和計數
+                    setQuizState({ 
+                        totalQuestions: state.quizState.totalQuestions + 1,
+                        questionHistory: [...state.quizState.questionHistory, parsedData.question] // 記錄題目內容
+                    });
+                    
+                    setState({ currentQuestionData: parsedData, aiResponse: "" });
+
+                } else {
+                    setState({ aiResponse: "抱歉，AI 暫時無法生成題目，請稍後再試。", currentQuestionData: null });
+                }
+            } catch (error) {
+                console.error("AI 題目生成失敗:", error);
+                setState({ aiResponse: `發生錯誤：${error.message}`, currentQuestionData: null });
+            } finally {
+                setState({ isLoading: false });
+            }
+        }
+
+        // 2. 切換主題（開始新的測驗）
+        function handleTopicSelect(topicId) {
+            if (state.isLoading) return;
+            const newTopic = learningTopics.find(t => t.id === topicId);
+
+            setState({
+                selectedTopicId: topicId,
+                currentTopic: newTopic,
+                userNotes: "",
+                aiResponse: "",
+                currentQuestionData: null,
+                userAnswerIndex: null,
+                isAnswerSubmitted: false,
+            });
+
+            setQuizState({ correctCount: 0, totalQuestions: 0, hasPassed: false, questionHistory: [] });
+            
+            // 立即生成第一道題
+            generateQuizQuestion(topicId);
+        }
+
+        // 3. 處理學生選擇答案
+        function handleAnswer(index) {
+            if (state.isAnswerSubmitted || state.isLoading) return;
+            setState({ userAnswerIndex: index });
+        }
+        
+        // 4. 提交答案並顯示回饋
+        function handleSubmitAnswer() {
+            if (state.userAnswerIndex === null || state.isAnswerSubmitted) return;
+            
+            setState({ isAnswerSubmitted: true });
+            
+            const isCorrect = state.userAnswerIndex === state.currentQuestionData.correctAnswerIndex;
+            
+            if (isCorrect) {
+                const newCorrectCount = state.quizState.correctCount + 1;
+                const hasPassed = newCorrectCount >= CORRECT_TO_PASS;
+                
+                setQuizState({ 
+                    correctCount: newCorrectCount,
+                    hasPassed: hasPassed
+                });
+            }
+        }
+
+        // 5. 下一題（繼續生成新題目）
+        function handleNextQuestion() {
+            if (state.quizState.hasPassed) {
+                setQuizState({ hasPassed: false });
+            }
+            generateQuizQuestion(state.selectedTopicId);
+        }
+        
+        // 6. AI 產生觀念解析 (備用功能)
+        async function handleAIGenerateConcept() {
+            setState({ isLoading: true, aiResponse: "" });
+            
+            const topic = learningTopics.find(t => t.id === state.selectedTopicId);
+            const systemPrompt = "你是一位友善且專業的國中數學老師，專門使用繁體中文。你的任務是清晰地解釋「因式分解解一元二次方程式」的特定主題。\n\n**格式要求 (非常重要)：**\n1.  **請勿使用** 任何 Markdown 語法，例如 `###` (標題), `*` (粗體/清單), `-` (清單)。\n2.  **請勿使用** 任何 LaTeX 數學符號，例如 `$x^2$` 或 `$$...$$`。\n3.  **請勿使用** `^` 符號來表示平方，例如 `x^2`。\n4.  **請務必使用** 國中生習慣的印刷排版格式，例如 `x²` (平方), `+` (加號), `-` (減號)，並使用適當的換行和空格來分隔步驟。\n5.  請直接使用純文字和適當的換行來排版，模擬在課本或講義上看到的樣子。\n\n**任務內容：**\n請根據使用者選定的主題，詳細解釋該觀念並提供一個簡單的範例的完整解題過程。";
+            
+            const userQuery = `請針對主題 ${topic.title} 詳細解釋觀念並提供範例解說。`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            try {
+                const response = await fetchWithRetry(payload);
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                setState({ aiResponse: text || "AI 概念解析失敗。" });
+            } catch (error) {
+                setState({ aiResponse: `發生錯誤：${error.message}` });
+            } finally {
+                setState({ isLoading: false });
+            }
+        }
+
+
+        // --- 渲染函數 ---
+        function renderApp() {
+            const app = document.getElementById('app');
+            if (!app) return;
+
+            const { 
+                currentTopic, 
+                selectedTopicId, 
+                quizState, 
+                currentQuestionData, 
+                userAnswerIndex, 
+                isAnswerSubmitted, 
+                userNotes, 
+                aiResponse, 
+                isLoading 
+            } = state;
+
+            // 輔助函式：取得選項按鈕的樣式
+            const getOptionClasses = (index) => {
+                const isCorrect = isAnswerSubmitted && index === currentQuestionData.correctAnswerIndex;
+                const isUserSelected = index === userAnswerIndex;
+                const isWrong = isAnswerSubmitted && isUserSelected && !isCorrect;
+
+                if (!isAnswerSubmitted) {
+                    return isUserSelected 
+                        ? 'bg-blue-200 ring-4 ring-blue-500 shadow-lg' 
+                        : 'bg-white hover:bg-gray-50';
+                }
+                
+                if (isCorrect) {
+                    return 'bg-green-100 border-4 border-green-500 text-green-700 font-bold shadow-xl';
+                } else if (isWrong) {
+                    return 'bg-red-100 border-4 border-red-500 text-red-700 font-bold shadow-xl';
+                } else {
+                    return 'bg-gray-200 text-gray-500 cursor-not-allowed';
+                }
+            };
+
+            // 渲染 HTML 結構
+            app.innerHTML = `
+                <div class="w-full max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-6">
+                    
+                    <!-- 標題 -->
+                    <div class="text-center">
+                        <h1 class="text-2xl md:text-3xl font-bold text-red-700">
+                            因式分解解一元二次方程式 學習夥伴
+                        </h1>
+                        <p class="text-md text-gray-500 mt-1">互動式闖關測驗，答對 ${CORRECT_TO_PASS} 題過關！</p>
+                    </div>
+                    
+                    <!-- 學習主題切換區 -->
+                    <div class="space-y-3 p-4 border border-gray-300 rounded-lg bg-gray-50">
+                        <h2 class="text-xl font-bold text-gray-800 border-b pb-2 mb-3">
+                            請選擇學習主題 (${currentTopic ? currentTopic.title : '請選擇'})
+                        </h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2" id="topic-buttons">
+                            ${learningTopics.map(topic => `
+                                <button
+                                    onclick="handleTopicSelect(${topic.id})"
+                                    ${isLoading && topic.id !== selectedTopicId ? 'disabled' : ''}
+                                    class="px-3 py-2 text-sm md:text-base rounded-lg transition duration-150 text-left w-full 
+                                        ${topic.id === selectedTopicId 
+                                            ? 'bg-purple-700 text-white font-semibold shadow-lg ring-4 ring-purple-300' 
+                                            : 'bg-gray-200 text-gray-800 hover:bg-purple-200 disabled:opacity-50'
+                                        }"
+                                >
+                                    ${topic.title}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- 測驗區塊 -->
+                    <div class="space-y-6">
+                        
+                        <!-- 題目與進度 -->
+                        <div class="p-5 border-2 border-dashed border-gray-400 rounded-xl bg-yellow-50 shadow-inner">
+                            <div class="flex justify-between items-center mb-4">
+                                <p class="text-xl font-bold text-gray-800">
+                                    目前關卡：${currentTopic ? currentTopic.title : '未選擇'}
+                                </p>
+                                <div class="text-lg font-semibold px-3 py-1 rounded-full ${quizState.correctCount >= CORRECT_TO_PASS ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}">
+                                    答對 ${quizState.correctCount} / ${CORRECT_TO_PASS} 題
+                                </div>
+                            </div>
+                            
+                            <!-- 題目內容 -->
+                            <h3 class="text-2xl font-bold text-gray-900 leading-relaxed min-h-[100px] flex items-center justify-center text-center">
+                                ${isLoading && !currentQuestionData ? (
+                                    '<span class="text-blue-500 animate-pulse">正在為您生成題目...</span>'
+                                ) : (
+                                    currentQuestionData ? currentQuestionData.question : '請先點選上方的「請選擇學習主題」按鈕開始測驗！'
+                                )}
+                            </h3>
+                        </div>
+                        
+                        <!-- 選項區塊 -->
+                        ${currentQuestionData ? `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${currentQuestionData.options.map((option, index) => `
+                                    <button
+                                        onclick="handleAnswer(${index})"
+                                        ${isAnswerSubmitted || isLoading ? 'disabled' : ''}
+                                        class="p-4 border-2 rounded-xl text-lg text-left transition-all duration-200 shadow-md ${getOptionClasses(index)}"
+                                    >
+                                        <span class="font-semibold mr-3 text-purple-700">(${String.fromCharCode(65 + index)})</span>
+                                        ${option}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+
+                        <!-- 控制按鈕區 -->
+                        <div class="flex justify-center space-x-4 pt-4">
+                            ${currentQuestionData && !isAnswerSubmitted ? `
+                                <button
+                                    onclick="handleSubmitAnswer()"
+                                    ${userAnswerIndex === null || isLoading ? 'disabled' : ''}
+                                    class="px-6 py-3 bg-red-600 text-white rounded-lg shadow-xl hover:bg-red-700 transition duration-150 disabled:bg-gray-400 font-bold text-lg transform hover:scale-105"
+                                >
+                                    提交答案
+                                </button>
+                            ` : ''}
+                            
+                            ${currentQuestionData && isAnswerSubmitted ? `
+                                <button
+                                    onclick="handleNextQuestion()"
+                                    ${isLoading ? 'disabled' : ''}
+                                    class="px-6 py-3 bg-green-600 text-white rounded-lg shadow-xl hover:bg-green-700 transition duration-150 disabled:bg-gray-400 font-bold text-lg transform hover:scale-105"
+                                >
+                                    ${quizState.hasPassed ? '🎉 挑戰下一個主題' : '下一題'}
+                                </button>
+                            ` : ''}
+                        </div>
+
+                        <!-- 回饋與解析區塊 -->
+                        ${isAnswerSubmitted && currentQuestionData ? `
+                            <div class="mt-6 p-5 rounded-xl border-4 ${userAnswerIndex === currentQuestionData.correctAnswerIndex ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}">
+                                <h4 class="text-xl font-bold mb-3">
+                                    ${userAnswerIndex === currentQuestionData.correctAnswerIndex ? '✅ 恭喜你，答對了！' : '❌ 答錯了，沒關係！'}
+                                </h4>
+                                ${quizState.hasPassed ? `
+                                    <p class="text-2xl font-black text-purple-700 mb-3 animate-bounce">
+                                        🎉 恭喜完成本關挑戰！你可以繼續練習或挑戰下一個主題！
+                                    </p>
+                                ` : ''}
+                                
+                                <h5 class="text-lg font-semibold text-gray-800 mt-4 mb-2">
+                                    🎓 老師的詳細解析 (符合印刷格式)：
+                                </h5>
+                                <pre class="whitespace-pre-wrap font-sans text-gray-800 text-sm md:text-base leading-relaxed p-3 bg-white border border-gray-300 rounded-lg">
+                                    ${currentQuestionData.explanation}
+                                </pre>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- 補充想法 (學習筆記) -->
+                    <div class="space-y-2 pt-6 border-t border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            補充你的想法 (學習筆記)
+                        </h3>
+                        <textarea
+                            id="user-notes"
+                            oninput="setState({ userNotes: this.value })"
+                            class="w-full h-24 p-3 border border-gray-300 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            placeholder="例如：我發現題目 4 很容易因為符號錯誤而算錯，以後要特別注意！..."
+                        >${userNotes}</textarea>
+                    </div>
+
+                    <!-- AI 產生觀念解析 (備用功能) -->
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            讓 AI 老師示範 (觀念解析 / 範例產出)
+                        </h3>
+                        <button
+                            onclick="handleAIGenerateConcept()"
+                            ${isLoading ? 'disabled' : ''}
+                            class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-150 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                            ${isLoading ? `
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                AI 老師正在準備 ${currentTopic ? currentTopic.title : '觀念'} 的解析...
+                            ` : (
+                                `單純生成 ${currentTopic ? currentTopic.title : '觀念'} 的觀念解析與範例`
+                            )}
+                        </button>
+                        
+                        ${aiResponse ? `
+                            <div class="mt-4 p-4 border border-purple-200 bg-purple-50 rounded-lg">
+                                <h4 class="text-md font-semibold text-purple-800 mb-2">AI 老師的示範/解析：</h4>
+                                <pre class="whitespace-pre-wrap font-sans text-gray-800 text-sm md:text-base leading-relaxed">
+                                    ${aiResponse}
+                                </pre>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            // 確保 textarea 的值被正確設置
+            document.getElementById('user-notes').value = userNotes;
+        }
+
+        // 啟動應用程式
+        window.onload = function() {
+            // 第一次渲染，顯示初始狀態
+            renderApp(); 
+            // 載入後預設選中主題 4 並開始生成第一道題
+            handleTopicSelect(state.selectedTopicId);
+        };
+
+    </script>
+</body>
+</html>
