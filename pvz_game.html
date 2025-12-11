@@ -3,259 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xtjh-yucc 的植物保衛戰</title>
+    <title>植物保衛戰 V4.0：音效全開版</title>
     <style>
-        /* --- 全局設定 --- */
+        /* --- 核心樣式 --- */
         body {
             background-color: #222;
             color: white;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            user-select: none; /* 避免一直選取到文字 */
+            user-select: none;
+            margin: 0;
+            padding: 10px;
         }
 
-        h1 { margin: 10px 0; font-size: 2rem; }
-
-        /* --- UI 控制列 --- */
+        /* --- 頂部資訊列 --- */
         #ui-bar {
             display: flex;
             gap: 15px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             padding: 10px 20px;
             background: #444;
             border-radius: 10px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             align-items: center;
+            width: 620px;
+            justify-content: space-between;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        /* 植物選擇按鈕 */
+        .resource-box { font-weight: bold; color: #ffeb3b; }
+        .level-box { font-weight: bold; color: #00e5ff; }
+
+        /* 音效開關 */
+        #sound-toggle {
+            cursor: pointer;
+            font-size: 1.2rem;
+            background: none;
+            border: none;
+            filter: grayscale(0);
+            transition: filter 0.2s;
+        }
+        #sound-toggle.muted { filter: grayscale(1); opacity: 0.5; }
+
+        /* --- 植物選單 --- */
+        #controls { display: flex; gap: 8px; }
+
         .plant-btn {
-            padding: 8px 15px;
-            font-size: 1rem;
+            padding: 5px 10px;
             cursor: pointer;
             background: #eee;
             border: 3px solid #999;
-            border-radius: 8px;
-            transition: all 0.2s;
+            border-radius: 5px;
+            color: #333;
+            font-size: 0.9rem;
+            display: none; 
+            position: relative;
         }
-        
-        .plant-btn:hover { background: #fff; }
-
-        /* 被選中的按鈕樣式 */
+        .plant-btn:hover { background: #fff; transform: translateY(-2px); }
         .plant-btn.selected {
-            background: #ffeb3b;
+            background: #fff59d;
             border-color: #fbc02d;
-            font-weight: bold;
-            transform: scale(1.05);
-            box-shadow: 0 0 10px #ffeb3b;
+            box-shadow: 0 0 8px #ffeb3b;
         }
 
-        /* --- 遊戲主戰場 --- */
+        /* --- 遊戲主畫面 --- */
+        #game-container {
+            position: relative;
+            width: 558px; 
+            height: 316px; 
+        }
+
         #game-board {
             display: grid;
             grid-template-columns: repeat(9, 60px);
             grid-template-rows: repeat(5, 60px);
             gap: 2px;
             background-color: #333;
-            border: 8px solid #5d4037; /* 深棕色邊框 */
+            border: 8px solid #5d4037;
             border-radius: 5px;
-            position: relative; /* 關鍵：讓殭屍和子彈可以定位 */
-            overflow: hidden;   /* 避免東西跑出框框 */
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: absolute;
+            top: 0; left: 0;
+            overflow: hidden;
         }
 
-        /* --- 每一格草地 --- */
         .cell {
-            width: 60px;
-            height: 60px;
+            width: 60px; height: 60px;
             background-color: #2d8f2d;
             border: 1px solid #1e6b1e;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            font-size: 35px; /* 植物的大小 */
-            position: relative;
-            z-index: 1; /* 確保植物在草地上 */
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; font-size: 35px;
+            position: relative; z-index: 1;
         }
+        .cell.dark { background-color: #267f26; }
+        .nut { filter: drop-shadow(2px 2px 0 #3e2723); }
+        .double-shooter { filter: drop-shadow(0 0 5px #ff0000); }
 
-        .cell:hover { background-color: #3cb03c; }
-        .cell.dark { background-color: #267f26; } /* 深色格子 */
-
-        /* --- 堅果樣式 (稍微不同) --- */
-        .nut { font-size: 32px; filter: drop-shadow(2px 2px 0px #3e2723); }
-
-        /* --- 遊戲角色與物件 (絕對定位) --- */
         .zombie {
             position: absolute;
-            width: 60px;
-            height: 60px;
+            width: 60px; height: 60px;
             font-size: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10; /* 殭屍在最上面 */
-            transition: opacity 0.2s; /* 受傷時的閃爍效果 */
-            filter: drop-shadow(3px 3px 2px rgba(0,0,0,0.5));
+            display: flex; justify-content: center; align-items: center;
+            z-index: 10;
+            transition: opacity 0.1s;
         }
+        .zombie.bucket { filter: hue-rotate(180deg) drop-shadow(2px 2px 0 #000); font-size: 42px; }
 
         .bullet {
             position: absolute;
-            width: 18px;
-            height: 18px;
+            width: 18px; height: 18px;
             background-color: #32CD32;
             border-radius: 50%;
             box-shadow: 0 0 5px #76ff03;
             z-index: 5;
         }
 
-        /* 頁尾 */
-        .footer {
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: #777;
+        /* --- 彈跳視窗 --- */
+        #modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 100;
+            color: white;
+            text-align: center;
         }
+        .modal-btn {
+            padding: 10px 20px; font-size: 1.5rem;
+            background: #4CAF50; color: white;
+            border: none; border-radius: 5px; cursor: pointer;
+            margin-top: 20px;
+        }
+        .modal-btn:hover { background: #45a049; }
+        .hidden { display: none !important; }
+
+        .footer { margin-top: 10px; color: #aaa; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
-    <h1>🌱 植物保衛戰 🧟</h1>
+    <h1>🌱 植物保衛戰 V4.0 (音效版)</h1>
 
     <div id="ui-bar">
-        <div style="margin-right: 10px;">🌞 陽光: <span id="sun-display">100</span></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button id="sound-toggle" onclick="toggleSound()">🔊</button>
+            <span class="level-box">LV.<span id="level-display">1</span></span>
+            <span class="resource-box">🌞<span id="sun-display">150</span></span>
+        </div>
         
-        <div id="controls" style="display:flex; gap:10px;">
-            <button class="plant-btn selected" onclick="selectPlant('shooter')">🌱 射手 ($50)</button>
-            <button class="plant-btn" onclick="selectPlant('nut')">🥔 堅果 ($50)</button>
+        <div id="controls">
+            <button id="btn-shooter" class="plant-btn selected" onclick="selectPlant('shooter')">🌱 射手($50)</button>
+            <button id="btn-nut" class="plant-btn" onclick="selectPlant('nut')">🥔 堅果($50)</button>
+            <button id="btn-double" class="plant-btn" onclick="selectPlant('double')">🍒 雙發($100)</button>
         </div>
 
-        <div style="margin-left: 20px;">🧟 殭屍剩餘: <span id="wave-display">10</span></div>
+        <div>🧟 <span id="wave-display">0</span></div>
     </div>
 
-    <div id="game-board">
+    <div id="game-container">
+        <div id="game-board"></div>
+        <div id="modal-overlay">
+            <h2 id="modal-title">準備好了嗎？</h2>
+            <p id="modal-desc">點擊開始後，音效引擎將會啟動。</p>
+            <button class="modal-btn" onclick="startGame()">▶ 開始遊戲</button>
         </div>
+    </div>
 
-    <div class="footer">Made by Xtjh-yucc | 點擊格子種植 | 堅果可以擋很久</div>
+    <div class="footer">Made by Xtjh-yucc | ⚠️ 沒聲音？請檢查電腦喇叭或瀏覽器分頁是否靜音</div>
 
     <script>
-        // --- 遊戲參數設定 ---
+        // ==========================================
+        // 🎵 音效引擎 (Web Audio API) - 純代碼合成音效
+        // ==========================================
+        const AudioEngine = {
+            ctx: null,
+            muted: false,
+
+            init: function() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                // 瀏覽器政策要求：必須在使用者互動(點擊)後才能恢復 AudioContext
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playTone: function(freq, type, duration, volume = 0.1) {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gainNode = this.ctx.createGain();
+                
+                osc.type = type; // 'sine', 'square', 'sawtooth', 'triangle'
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gainNode.gain.setValueAtTime(volume, this.ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+
+                osc.connect(gainNode);
+                gainNode.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+
+            // 各種音效預設
+            playShoot: function() {
+                // 咻咻聲：高音滑落
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+            },
+
+            playHit: function() {
+                // 擊中聲：短促的低音
+                this.playTone(150, 'sawtooth', 0.1, 0.05);
+            },
+
+            playPlant: function() {
+                // 種植聲：可愛的氣泡音
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(600, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            },
+
+            playZombie: function() {
+                // 殭屍出現：低沉詭異
+                this.playTone(80, 'square', 0.5, 0.03);
+            },
+
+            playWin: function() {
+                // 勝利：大三和弦
+                setTimeout(() => this.playTone(523.25, 'sine', 0.2, 0.1), 0);   // C5
+                setTimeout(() => this.playTone(659.25, 'sine', 0.2, 0.1), 200); // E5
+                setTimeout(() => this.playTone(783.99, 'sine', 0.4, 0.1), 400); // G5
+            },
+
+            playLose: function() {
+                // 失敗：不協和音
+                setTimeout(() => this.playTone(300, 'sawtooth', 0.5, 0.1), 0);
+                setTimeout(() => this.playTone(200, 'sawtooth', 1.0, 0.1), 400);
+            }
+        };
+
+        // ==========================================
+        // 🎮 遊戲邏輯 (與 V3.0 相同，插入音效)
+        // ==========================================
+        
         const rows = 5;
         const cols = 9;
         const cellSize = 60;
-        
-        let sun = 150;            // 初始陽光 (給多一點好上手)
-        let currentPlantType = 'shooter'; 
-        
-        // 關卡設定
-        const totalZombiesInWave = 10; // 總共要打幾隻
-        let zombiesSpawned = 0;        
-        let gameActive = true;         
 
-        // 遊戲物件容器
-        let zombies = []; 
-        let bullets = [];
+        const levels = [
+            { id: 1, zombies: 5,  interval: 3000, types: ['normal'], unlock: 'shooter', intro: "第1關：新手教學\n點擊格子種植植物！" },
+            { id: 2, zombies: 8,  interval: 2800, types: ['normal'], unlock: 'nut', intro: "第2關：堅果牆解鎖\n用它來擋住殭屍！" },
+            { id: 3, zombies: 12, interval: 2500, types: ['normal'], unlock: 'double', intro: "第3關：雙發射手\n火力加倍！" },
+            { id: 4, zombies: 10, interval: 3000, types: ['normal', 'bucket'], unlock: '', intro: "第4關：鐵桶來襲\n這傢伙超硬！" },
+            { id: 5, zombies: 15, interval: 2000, types: ['normal', 'bucket'], unlock: '', intro: "第5關：屍潮警報" },
+            { id: 6, zombies: 20, interval: 1800, types: ['normal', 'bucket'], unlock: '', intro: "第6關：堅守陣地" },
+            { id: 7, zombies: 25, interval: 1500, types: ['normal', 'bucket'], unlock: '', intro: "第7關：瘋狂模式" },
+            { id: 8, zombies: 30, interval: 1200, types: ['normal', 'bucket'], unlock: '', intro: "第8關：快節奏" },
+            { id: 9, zombies: 40, interval: 1000, types: ['normal', 'bucket'], unlock: '', intro: "第9關：絕望深淵" },
+            { id: 10,zombies: 50, interval: 800,  types: ['normal', 'bucket'], unlock: '', intro: "第10關：最終決戰" }
+        ];
 
-        // DOM 元素
+        let currentLevelIndex = 0;
+        let sun = 150;
+        let currentPlantType = 'shooter';
+        let zombiesSpawned = 0;
+        let gameActive = false;
+        
+        let gameLoopTimer, zombieSpawnerTimer, plantShootTimer, sunTimer;
+        let zombies = [], bullets = [];
+
         const board = document.getElementById('game-board');
         const sunDisplay = document.getElementById('sun-display');
         const waveDisplay = document.getElementById('wave-display');
-        const btns = document.querySelectorAll('.plant-btn');
+        const levelDisplay = document.getElementById('level-display');
+        const modal = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const modalBtn = document.querySelector('.modal-btn');
+        const soundBtn = document.getElementById('sound-toggle');
 
-        // ==========================================
-        // 1. 初始化遊戲與地圖
-        // ==========================================
+        const btns = {
+            shooter: document.getElementById('btn-shooter'),
+            nut: document.getElementById('btn-nut'),
+            double: document.getElementById('btn-double')
+        };
+
+        // --- 音效開關 ---
+        function toggleSound() {
+            AudioEngine.muted = !AudioEngine.muted;
+            if (AudioEngine.muted) {
+                soundBtn.textContent = "🔇";
+                soundBtn.classList.add('muted');
+            } else {
+                soundBtn.textContent = "🔊";
+                soundBtn.classList.remove('muted');
+                // 嘗試恢復 AudioContext
+                AudioEngine.init();
+            }
+        }
+
+        // --- 初始化 ---
         function createBoard() {
+            board.innerHTML = ''; 
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const cell = document.createElement('div');
                     cell.classList.add('cell');
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-                    cell.dataset.hp = 0; // 植物血量
-                    
-                    // 棋盤格紋路
+                    cell.dataset.row = r; cell.dataset.col = c;
+                    cell.dataset.hp = 0; 
                     if ((r + c) % 2 === 1) cell.classList.add('dark');
-                    
-                    // 點擊事件
                     cell.addEventListener('click', () => plantTower(cell));
-                    
                     board.appendChild(cell);
                 }
             }
+        }
+
+        function updateUnlockState() {
+            btns.shooter.style.display = 'block';
+            if (currentLevelIndex + 1 >= 2) btns.nut.style.display = 'block';
+            if (currentLevelIndex + 1 >= 3) btns.double.style.display = 'block';
+        }
+
+        function showModal(title, desc, btnText, action) {
+            modalTitle.textContent = title;
+            modalDesc.textContent = desc; 
+            modalDesc.style.whiteSpace = 'pre-line'; 
+            modalBtn.textContent = btnText;
+            modalBtn.onclick = action;
+            modal.classList.remove('hidden');
+        }
+
+        function startGame() {
+            // 點擊開始時，初始化音效引擎
+            AudioEngine.init();
+            
+            modal.classList.add('hidden');
+            const config = levels[currentLevelIndex];
+            zombiesSpawned = 0;
+            sun = 200; 
+            zombies = []; bullets = [];
+            createBoard(); 
             updateUI();
+            updateUnlockState(); // 確保按鈕狀態正確
+            
+            gameActive = true;
+            
+            gameLoopTimer = setInterval(() => { moveZombies(); moveBullets(); }, 30);
+            zombieSpawnerTimer = setInterval(spawnZombie, config.interval);
+            plantShootTimer = setInterval(plantsShoot, 1200);
+            sunTimer = setInterval(autoSun, 3000);
         }
 
-        // ==========================================
-        // 2. 種植系統
-        // ==========================================
-        
-        // 切換植物類型
-        window.selectPlant = function(type) {
-            currentPlantType = type;
-            btns.forEach(btn => btn.classList.remove('selected'));
-            if(type === 'shooter') btns[0].classList.add('selected');
-            else btns[1].classList.add('selected');
+        function stopGame() {
+            gameActive = false;
+            clearInterval(gameLoopTimer);
+            clearInterval(zombieSpawnerTimer);
+            clearInterval(plantShootTimer);
+            clearInterval(sunTimer);
         }
 
-        // 種下植物
-        function plantTower(cell) {
-            if (!gameActive) return;
-            if (cell.innerHTML !== "") return; // 已經有植物了
-
-            const cost = 50; 
-            if (sun >= cost) {
-                sun -= cost;
-                updateUI();
-
-                if (currentPlantType === 'shooter') {
-                    cell.innerHTML = "🌱";
-                    cell.dataset.hp = 3;   // 射手血量
-                    cell.dataset.type = 'shooter';
-                } else if (currentPlantType === 'nut') {
-                    cell.innerHTML = "<div class='nut'>🥔</div>";
-                    cell.dataset.hp = 20;  // 堅果血量 (超厚)
-                    cell.dataset.type = 'nut';
-                }
+        function levelComplete() {
+            stopGame();
+            AudioEngine.playWin(); // 播放勝利音效
+            if (currentLevelIndex + 1 >= levels.length) {
+                showModal("🏆 遊戲通關！", "太神啦！你守住了所有的攻勢！", "重新開始", () => location.reload());
             } else {
-                alert("陽光不足！需要 50 🌞");
+                currentLevelIndex++;
+                const nextConfig = levels[currentLevelIndex];
+                showModal("🎉 關卡完成！", nextConfig.intro, "下一關", startGame);
             }
         }
 
-        function updateUI() {
-            sunDisplay.textContent = sun;
-            waveDisplay.textContent = totalZombiesInWave - zombiesSpawned;
+        function gameOver() {
+            stopGame();
+            AudioEngine.playLose(); // 播放失敗音效
+            showModal("🧟 失敗...", "腦袋被吃了...", "重試本關", startGame);
         }
 
-        // ==========================================
-        // 3. 殭屍邏輯 (生成、移動、吃)
-        // ==========================================
-        
+        // --- 核心操作 ---
+        window.selectPlant = function(type) {
+            currentPlantType = type;
+            Object.values(btns).forEach(b => b.classList.remove('selected'));
+            btns[type].classList.add('selected');
+        }
+
+        function plantTower(cell) {
+            if (!gameActive || cell.innerHTML !== "") return;
+            
+            let cost = 0, html = "", hp = 0;
+            if (currentPlantType === 'shooter') { cost = 50; html = "🌱"; hp = 4; }
+            else if (currentPlantType === 'nut') { cost = 50; html = "<div class='nut'>🥔</div>"; hp = 25; }
+            else if (currentPlantType === 'double') { cost = 100; html = "<div class='double-shooter'>🍒</div>"; hp = 4; }
+
+            if (sun >= cost) {
+                sun -= cost;
+                cell.innerHTML = html;
+                cell.dataset.hp = hp;
+                cell.dataset.type = currentPlantType;
+                AudioEngine.playPlant(); // 播放種植音效
+                updateUI();
+            } else {
+                sunDisplay.style.color = 'red';
+                setTimeout(()=> sunDisplay.style.color = '#ffeb3b', 200);
+            }
+        }
+
+        function autoSun() {
+            if(gameActive) {
+                sun += 25;
+                updateUI();
+            }
+        }
+
         function spawnZombie() {
-            if (!gameActive) return;
-            if (zombiesSpawned >= totalZombiesInWave) return;
+            const config = levels[currentLevelIndex];
+            if (zombiesSpawned >= config.zombies) return;
+
+            let type = 'normal';
+            if (config.types.includes('bucket') && Math.random() > 0.7) type = 'bucket';
 
             const row = Math.floor(Math.random() * rows);
-            const zombieEl = document.createElement('div');
-            zombieEl.classList.add('zombie');
-            zombieEl.innerHTML = "🧟";
+            const zEl = document.createElement('div');
+            zEl.classList.add('zombie');
             
-            // 初始位置設定在畫面外最右邊
-            zombieEl.style.top = (row * cellSize) + 'px';
-            zombieEl.style.left = (cols * cellSize) + 'px';
+            let hp = 5; 
+            if (type === 'bucket') {
+                zEl.classList.add('bucket');
+                zEl.innerHTML = "👹";
+                hp = 15;
+            } else {
+                zEl.innerHTML = "🧟";
+            }
+
+            zEl.style.top = (row * cellSize) + 'px';
+            zEl.style.left = (cols * cellSize) + 'px';
+            board.appendChild(zEl);
             
-            board.appendChild(zombieEl);
+            // 只有當場上殭屍不多時才播放音效，避免太吵
+            if(zombies.length < 5) AudioEngine.playZombie();
 
             zombies.push({
-                el: zombieEl,
-                row: row,
-                x: cols * cellSize,
-                speed: 0.5,     // 移動速度
-                health: 3,      // 殭屍血量
-                isEating: false,
-                biteTimer: 0    // 啃咬計時器
+                el: zEl, row: row, x: cols * cellSize,
+                speed: type === 'bucket' ? 0.4 : 0.6 + (Math.random() * 0.2),
+                hp: hp, isEating: false, biteTimer: 0
             });
 
             zombiesSpawned++;
@@ -263,167 +474,128 @@
         }
 
         function moveZombies() {
-            if (!gameActive) return;
-
-            // --- 勝利判定 ---
-            if (zombiesSpawned >= totalZombiesInWave && zombies.length === 0) {
-                gameActive = false;
-                setTimeout(() => alert("🏆 恭喜！你的花園安全了！"), 100);
+            const config = levels[currentLevelIndex];
+            if (zombiesSpawned >= config.zombies && zombies.length === 0) {
+                levelComplete();
                 return;
             }
 
-            zombies.forEach((z, index) => {
-                // --- 吃植物邏輯 ---
+            zombies.forEach((z, idx) => {
                 if (z.isEating) {
                     z.biteTimer++;
-                    if (z.biteTimer > 20) { // 每 20 幀 (約0.6秒) 咬一口
+                    if (z.biteTimer > 20) {
                         z.biteTimer = 0;
-                        bitePlant(z); 
+                        bitePlant(z);
                     }
-                    return; // 吃東西時不移動
+                    return;
                 }
-
-                // --- 移動邏輯 ---
                 z.x -= z.speed;
                 z.el.style.left = z.x + 'px';
 
-                // 檢查是否碰到植物
                 const currentCol = Math.floor((z.x + 30) / cellSize);
                 const cell = document.querySelector(`.cell[data-row='${z.row}'][data-col='${currentCol}']`);
+                if (cell && cell.dataset.hp > 0) z.isEating = true;
 
-                if (cell && cell.dataset.hp > 0) { 
-                    z.isEating = true; // 停下來開始吃
-                }
-
-                // --- Game Over 判定 ---
-                if (z.x < -30) {
-                    gameActive = false;
-                    alert("🧟 慘了！殭屍吃掉了你的腦袋！(重新整理再來一次)");
-                    location.reload();
-                }
+                if (z.x < -30) gameOver();
             });
         }
 
-        // 殭屍啃咬動作
-        function bitePlant(zombie) {
-            const currentCol = Math.floor((zombie.x + 30) / cellSize);
-            const cell = document.querySelector(`.cell[data-row='${zombie.row}'][data-col='${currentCol}']`);
-
+        function bitePlant(z) {
+            const currentCol = Math.floor((z.x + 30) / cellSize);
+            const cell = document.querySelector(`.cell[data-row='${z.row}'][data-col='${currentCol}']`);
+            
             if (cell && cell.dataset.hp > 0) {
                 let hp = parseInt(cell.dataset.hp);
-                hp -= 1;
+                hp--;
                 cell.dataset.hp = hp;
-                
-                // 視覺回饋：植物變淡
-                cell.style.opacity = 0.5 + (hp/10); 
-
+                cell.style.opacity = 0.5 + (hp/20);
+                // 這裡加入啃咬音效會太吵，所以省略
                 if (hp <= 0) {
-                    cell.innerHTML = ""; // 植物死亡
-                    cell.style.opacity = 1;
-                    cell.dataset.hp = 0;
-                    cell.dataset.type = "";
-                    zombie.isEating = false; // 吃飽了繼續走
+                    cell.innerHTML = ""; cell.dataset.hp = 0; cell.dataset.type = "";
+                    cell.style.opacity = 1; z.isEating = false;
                 }
             } else {
-                zombie.isEating = false; // 植物不見了，繼續走
+                z.isEating = false;
             }
         }
 
-        // ==========================================
-        // 4. 戰鬥系統 (發射子彈、碰撞)
-        // ==========================================
-        
         function plantsShoot() {
-            if (!gameActive) return;
-
             const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => {
-                // 只有射手會攻擊
-                if (cell.dataset.type === 'shooter') {
-                    const plantRow = parseInt(cell.dataset.row);
-                    const plantCol = parseInt(cell.dataset.col);
-                    const plantX = plantCol * cellSize;
-
-                    // 索敵：同一排且在右邊有殭屍才射擊
-                    const enemyInSight = zombies.some(z => z.row === plantRow && z.x > plantX);
-                    if (enemyInSight) {
-                        createBullet(cell);
+                const type = cell.dataset.type;
+                if (type === 'shooter' || type === 'double') {
+                    const r = parseInt(cell.dataset.row);
+                    const c = parseInt(cell.dataset.col);
+                    const pX = c * cellSize;
+                    if (zombies.some(z => z.row === r && z.x > pX)) {
+                        createBullet(r, c, type);
                     }
                 }
             });
         }
 
-        function createBullet(cell) {
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
-            
-            const bulletEl = document.createElement('div');
-            bulletEl.classList.add('bullet');
-            
-            const startX = (col * cellSize) + 30;
-            const startY = (row * cellSize) + 20;
-            
-            bulletEl.style.left = startX + 'px';
-            bulletEl.style.top = startY + 'px';
-            board.appendChild(bulletEl);
+        function createBullet(r, c, type) {
+            const startX = (c * cellSize) + 30;
+            const startY = (r * cellSize) + 20;
 
-            bullets.push({ el: bulletEl, row: row, x: startX, speed: 5 });
+            const fire = (delay) => {
+                setTimeout(() => {
+                    const bEl = document.createElement('div');
+                    bEl.classList.add('bullet');
+                    bEl.style.left = startX + 'px';
+                    bEl.style.top = startY + 'px';
+                    board.appendChild(bEl);
+                    bullets.push({ el: bEl, row: r, x: startX, speed: 6 });
+                    
+                    // 播放發射音效
+                    AudioEngine.playShoot();
+                }, delay);
+            };
+
+            fire(0);
+            if (type === 'double') fire(150);
         }
 
         function moveBullets() {
-            if (!gameActive) return;
-            
-            bullets.forEach((b, bIndex) => {
+            bullets.forEach((b, bIdx) => {
                 b.x += b.speed;
                 b.el.style.left = b.x + 'px';
-
-                // 碰撞偵測
-                zombies.forEach((z, zIndex) => {
+                
+                let hit = false;
+                for (let i = zombies.length - 1; i >= 0; i--) {
+                    const z = zombies[i];
                     if (b.row === z.row && b.x > z.x && b.x < z.x + 40) {
-                        // 命中！
-                        b.el.remove();
-                        bullets.splice(bIndex, 1);
+                        hit = true;
+                        z.hp--;
+                        z.el.style.opacity = 0.5;
+                        setTimeout(() => z.el.style.opacity = 1, 100);
                         
-                        // 殭屍扣血
-                        z.health -= 1;
-                        if (z.health <= 0) {
-                            z.el.remove();
-                            zombies.splice(zIndex, 1);
-                        } else {
-                            // 受傷閃爍
-                            z.el.style.opacity = 0.5;
-                            setTimeout(()=> z.el.style.opacity = 1, 100);
-                        }
-                    }
-                });
+                        // 播放擊中音效
+                        AudioEngine.playHit();
 
-                // 子彈飛出畫面移除
-                if (b.x > cols * cellSize) {
+                        if (z.hp <= 0) {
+                            z.el.remove();
+                            zombies.splice(i, 1);
+                        }
+                        break;
+                    }
+                }
+                if (hit || b.x > cols * cellSize) {
                     b.el.remove();
-                    bullets.splice(bIndex, 1);
+                    bullets.splice(bIdx, 1);
                 }
             });
         }
 
-        // ==========================================
-        // 5. 遊戲迴圈 (Game Loop)
-        // ==========================================
-        
-        // 啟動畫面
+        function updateUI() {
+            sunDisplay.textContent = sun;
+            levelDisplay.textContent = currentLevelIndex + 1;
+            const config = levels[currentLevelIndex];
+            waveDisplay.textContent = config.zombies - zombiesSpawned;
+        }
+
         createBoard();
-
-        // 畫面與物理計算 (每 30ms 一次，約 33 FPS)
-        setInterval(() => {
-            moveZombies();
-            moveBullets();
-        }, 30);
-
-        // 殭屍生成 (每 2 秒一隻)
-        setInterval(spawnZombie, 2000);
-
-        // 植物攻擊 (每 1.4 秒一次)
-        setInterval(plantsShoot, 1400);
-
+        // 初始載入時按鈕預設隱藏，等待開始
     </script>
 </body>
 </html>
