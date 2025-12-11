@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xtjh-yucc 的植物保衛戰</title>
+    <style>
+        /* --- 全局設定 --- */
+        body {
+            background-color: #222;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none; /* 避免一直選取到文字 */
+        }
+
+        h1 { margin: 10px 0; font-size: 2rem; }
+
+        /* --- UI 控制列 --- */
+        #ui-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            background: #444;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* 植物選擇按鈕 */
+        .plant-btn {
+            padding: 8px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: #eee;
+            border: 3px solid #999;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .plant-btn:hover { background: #fff; }
+
+        /* 被選中的按鈕樣式 */
+        .plant-btn.selected {
+            background: #ffeb3b;
+            border-color: #fbc02d;
+            font-weight: bold;
+            transform: scale(1.05);
+            box-shadow: 0 0 10px #ffeb3b;
+        }
+
+        /* --- 遊戲主戰場 --- */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(9, 60px);
+            grid-template-rows: repeat(5, 60px);
+            gap: 2px;
+            background-color: #333;
+            border: 8px solid #5d4037; /* 深棕色邊框 */
+            border-radius: 5px;
+            position: relative; /* 關鍵：讓殭屍和子彈可以定位 */
+            overflow: hidden;   /* 避免東西跑出框框 */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* --- 每一格草地 --- */
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: #2d8f2d;
+            border: 1px solid #1e6b1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 35px; /* 植物的大小 */
+            position: relative;
+            z-index: 1; /* 確保植物在草地上 */
+        }
+
+        .cell:hover { background-color: #3cb03c; }
+        .cell.dark { background-color: #267f26; } /* 深色格子 */
+
+        /* --- 堅果樣式 (稍微不同) --- */
+        .nut { font-size: 32px; filter: drop-shadow(2px 2px 0px #3e2723); }
+
+        /* --- 遊戲角色與物件 (絕對定位) --- */
+        .zombie {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            font-size: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10; /* 殭屍在最上面 */
+            transition: opacity 0.2s; /* 受傷時的閃爍效果 */
+            filter: drop-shadow(3px 3px 2px rgba(0,0,0,0.5));
+        }
+
+        .bullet {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background-color: #32CD32;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #76ff03;
+            z-index: 5;
+        }
+
+        /* 頁尾 */
+        .footer {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌱 植物保衛戰 🧟</h1>
+
+    <div id="ui-bar">
+        <div style="margin-right: 10px;">🌞 陽光: <span id="sun-display">100</span></div>
+        
+        <div id="controls" style="display:flex; gap:10px;">
+            <button class="plant-btn selected" onclick="selectPlant('shooter')">🌱 射手 ($50)</button>
+            <button class="plant-btn" onclick="selectPlant('nut')">🥔 堅果 ($50)</button>
+        </div>
+
+        <div style="margin-left: 20px;">🧟 殭屍剩餘: <span id="wave-display">10</span></div>
+    </div>
+
+    <div id="game-board">
+        </div>
+
+    <div class="footer">Made by Xtjh-yucc | 點擊格子種植 | 堅果可以擋很久</div>
+
+    <script>
+        // --- 遊戲參數設定 ---
+        const rows = 5;
+        const cols = 9;
+        const cellSize = 60;
+        
+        let sun = 150;            // 初始陽光 (給多一點好上手)
+        let currentPlantType = 'shooter'; 
+        
+        // 關卡設定
+        const totalZombiesInWave = 10; // 總共要打幾隻
+        let zombiesSpawned = 0;        
+        let gameActive = true;         
+
+        // 遊戲物件容器
+        let zombies = []; 
+        let bullets = [];
+
+        // DOM 元素
+        const board = document.getElementById('game-board');
+        const sunDisplay = document.getElementById('sun-display');
+        const waveDisplay = document.getElementById('wave-display');
+        const btns = document.querySelectorAll('.plant-btn');
+
+        // ==========================================
+        // 1. 初始化遊戲與地圖
+        // ==========================================
+        function createBoard() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.dataset.hp = 0; // 植物血量
+                    
+                    // 棋盤格紋路
+                    if ((r + c) % 2 === 1) cell.classList.add('dark');
+                    
+                    // 點擊事件
+                    cell.addEventListener('click', () => plantTower(cell));
+                    
+                    board.appendChild(cell);
+                }
+            }
+            updateUI();
+        }
+
+        // ==========================================
+        // 2. 種植系統
+        // ==========================================
+        
+        // 切換植物類型
+        window.selectPlant = function(type) {
+            currentPlantType = type;
+            btns.forEach(btn => btn.classList.remove('selected'));
+            if(type === 'shooter') btns[0].classList.add('selected');
+            else btns[1].classList.add('selected');
+        }
+
+        // 種下植物
+        function plantTower(cell) {
+            if (!gameActive) return;
+            if (cell.innerHTML !== "") return; // 已經有植物了
+
+            const cost = 50; 
+            if (sun >= cost) {
+                sun -= cost;
+                updateUI();
+
+                if (currentPlantType === 'shooter') {
+                    cell.innerHTML = "🌱";
+                    cell.dataset.hp = 3;   // 射手血量
+                    cell.dataset.type = 'shooter';
+                } else if (currentPlantType === 'nut') {
+                    cell.innerHTML = "<div class='nut'>🥔</div>";
+                    cell.dataset.hp = 20;  // 堅果血量 (超厚)
+                    cell.dataset.type = 'nut';
+                }
+            } else {
+                alert("陽光不足！需要 50 🌞");
+            }
+        }
+
+        function updateUI() {
+            sunDisplay.textContent = sun;
+            waveDisplay.textContent = totalZombiesInWave - zombiesSpawned;
+        }
+
+        // ==========================================
+        // 3. 殭屍邏輯 (生成、移動、吃)
+        // ==========================================
+        
+        function spawnZombie() {
+            if (!gameActive) return;
+            if (zombiesSpawned >= totalZombiesInWave) return;
+
+            const row = Math.floor(Math.random() * rows);
+            const zombieEl = document.createElement('div');
+            zombieEl.classList.add('zombie');
+            zombieEl.innerHTML = "🧟";
+            
+            // 初始位置設定在畫面外最右邊
+            zombieEl.style.top = (row * cellSize) + 'px';
+            zombieEl.style.left = (cols * cellSize) + 'px';
+            
+            board.appendChild(zombieEl);
+
+            zombies.push({
+                el: zombieEl,
+                row: row,
+                x: cols * cellSize,
+                speed: 0.5,     // 移動速度
+                health: 3,      // 殭屍血量
+                isEating: false,
+                biteTimer: 0    // 啃咬計時器
+            });
+
+            zombiesSpawned++;
+            updateUI();
+        }
+
+        function moveZombies() {
+            if (!gameActive) return;
+
+            // --- 勝利判定 ---
+            if (zombiesSpawned >= totalZombiesInWave && zombies.length === 0) {
+                gameActive = false;
+                setTimeout(() => alert("🏆 恭喜！你的花園安全了！"), 100);
+                return;
+            }
+
+            zombies.forEach((z, index) => {
+                // --- 吃植物邏輯 ---
+                if (z.isEating) {
+                    z.biteTimer++;
+                    if (z.biteTimer > 20) { // 每 20 幀 (約0.6秒) 咬一口
+                        z.biteTimer = 0;
+                        bitePlant(z); 
+                    }
+                    return; // 吃東西時不移動
+                }
+
+                // --- 移動邏輯 ---
+                z.x -= z.speed;
+                z.el.style.left = z.x + 'px';
+
+                // 檢查是否碰到植物
+                const currentCol = Math.floor((z.x + 30) / cellSize);
+                const cell = document.querySelector(`.cell[data-row='${z.row}'][data-col='${currentCol}']`);
+
+                if (cell && cell.dataset.hp > 0) { 
+                    z.isEating = true; // 停下來開始吃
+                }
+
+                // --- Game Over 判定 ---
+                if (z.x < -30) {
+                    gameActive = false;
+                    alert("🧟 慘了！殭屍吃掉了你的腦袋！(重新整理再來一次)");
+                    location.reload();
+                }
+            });
+        }
+
+        // 殭屍啃咬動作
+        function bitePlant(zombie) {
+            const currentCol = Math.floor((zombie.x + 30) / cellSize);
+            const cell = document.querySelector(`.cell[data-row='${zombie.row}'][data-col='${currentCol}']`);
+
+            if (cell && cell.dataset.hp > 0) {
+                let hp = parseInt(cell.dataset.hp);
+                hp -= 1;
+                cell.dataset.hp = hp;
+                
+                // 視覺回饋：植物變淡
+                cell.style.opacity = 0.5 + (hp/10); 
+
+                if (hp <= 0) {
+                    cell.innerHTML = ""; // 植物死亡
+                    cell.style.opacity = 1;
+                    cell.dataset.hp = 0;
+                    cell.dataset.type = "";
+                    zombie.isEating = false; // 吃飽了繼續走
+                }
+            } else {
+                zombie.isEating = false; // 植物不見了，繼續走
+            }
+        }
+
+        // ==========================================
+        // 4. 戰鬥系統 (發射子彈、碰撞)
+        // ==========================================
+        
+        function plantsShoot() {
+            if (!gameActive) return;
+
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                // 只有射手會攻擊
+                if (cell.dataset.type === 'shooter') {
+                    const plantRow = parseInt(cell.dataset.row);
+                    const plantCol = parseInt(cell.dataset.col);
+                    const plantX = plantCol * cellSize;
+
+                    // 索敵：同一排且在右邊有殭屍才射擊
+                    const enemyInSight = zombies.some(z => z.row === plantRow && z.x > plantX);
+                    if (enemyInSight) {
+                        createBullet(cell);
+                    }
+                }
+            });
+        }
+
+        function createBullet(cell) {
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            const bulletEl = document.createElement('div');
+            bulletEl.classList.add('bullet');
+            
+            const startX = (col * cellSize) + 30;
+            const startY = (row * cellSize) + 20;
+            
+            bulletEl.style.left = startX + 'px';
+            bulletEl.style.top = startY + 'px';
+            board.appendChild(bulletEl);
+
+            bullets.push({ el: bulletEl, row: row, x: startX, speed: 5 });
+        }
+
+        function moveBullets() {
+            if (!gameActive) return;
+            
+            bullets.forEach((b, bIndex) => {
+                b.x += b.speed;
+                b.el.style.left = b.x + 'px';
+
+                // 碰撞偵測
+                zombies.forEach((z, zIndex) => {
+                    if (b.row === z.row && b.x > z.x && b.x < z.x + 40) {
+                        // 命中！
+                        b.el.remove();
+                        bullets.splice(bIndex, 1);
+                        
+                        // 殭屍扣血
+                        z.health -= 1;
+                        if (z.health <= 0) {
+                            z.el.remove();
+                            zombies.splice(zIndex, 1);
+                        } else {
+                            // 受傷閃爍
+                            z.el.style.opacity = 0.5;
+                            setTimeout(()=> z.el.style.opacity = 1, 100);
+                        }
+                    }
+                });
+
+                // 子彈飛出畫面移除
+                if (b.x > cols * cellSize) {
+                    b.el.remove();
+                    bullets.splice(bIndex, 1);
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. 遊戲迴圈 (Game Loop)
+        // ==========================================
+        
+        // 啟動畫面
+        createBoard();
+
+        // 畫面與物理計算 (每 30ms 一次，約 33 FPS)
+        setInterval(() => {
+            moveZombies();
+            moveBullets();
+        }, 30);
+
+        // 殭屍生成 (每 2 秒一隻)
+        setInterval(spawnZombie, 2000);
+
+        // 植物攻擊 (每 1.4 秒一次)
+        setInterval(plantsShoot, 1400);
+
+    </script>
+</body>
+</html>
