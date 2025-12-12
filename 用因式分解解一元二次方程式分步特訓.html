@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>用因式分解解一元二次方程式：分步特訓</title>
     <style>
         :root {
@@ -16,7 +16,7 @@
         }
 
         body {
-            font-family: "Microsoft JhengHei", sans-serif;
+            font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg);
             display: flex;
             justify-content: center;
@@ -24,6 +24,8 @@
             min-height: 100vh;
             margin: 0;
             color: #333;
+            /* Prevent bouncing on iOS */
+            overscroll-behavior: none;
         }
 
         .container {
@@ -37,6 +39,7 @@
             max-height: 95vh;
             overflow-y: auto;
             position: relative;
+            -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
         }
 
         h1 { color: var(--primary); margin-bottom: 0.5rem; font-size: 1.8rem; }
@@ -83,18 +86,34 @@
         
         /* Inputs */
         .math-input-group { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; font-size: 1.3rem; font-family: 'Times New Roman', serif; }
-        input[type="number"], input[type="text"] { padding: 5px; text-align: center; font-size: 1.2rem; border: 2px solid #ced4da; border-radius: 5px; }
+        input[type="number"], input[type="text"] { 
+            padding: 5px; text-align: center; font-size: 1.2rem; 
+            border: 2px solid #ced4da; border-radius: 5px; 
+            -webkit-appearance: none; /* iOS input fix */
+            margin: 0;
+        }
         .short-input { width: 50px; } .medium-input { width: 70px; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        select { padding: 5px; font-size: 1.2rem; border: 2px solid #ced4da; border-radius: 5px; background: white; cursor: pointer; }
         
-        /* General Select Styling */
+        /* --- 重要修改：針對所有下拉選單的優化 --- */
+        select { 
+            padding: 5px; font-size: 1.5rem; border: 2px solid #ced4da; border-radius: 5px; background: white; cursor: pointer; 
+            -webkit-appearance: none; /* Remove iOS default style */
+            -moz-appearance: none;
+            appearance: none;
+            text-align: center;
+            text-align-last: center;
+        }
+        
+        /* Step 2 Sign Selects */
         .sign-select { 
             background-color: #e7f1ff; 
             color: var(--primary); 
-            font-weight: bold; 
+            font-weight: 900; 
             border: 2px solid var(--primary);
-            font-size: 1.5rem; /* Larger font for Step 2 as well */
+            font-size: 1.5rem;
+            width: 50px; /* Force width */
+            padding: 0; /* Center vertically */
         }
 
         /* Formula Mode Specifics */
@@ -109,32 +128,45 @@
             display: flex; justify-content: center; align-items: center; gap: 20px;
             margin: 20px 0; font-family: 'Times New Roman', serif; font-size: 1.5rem;
         }
-        .cross-col { display: flex; flex-direction: column; justify-content: space-between; height: 160px; /* Slightly taller for bigger boxes */ }
+        .cross-col { display: flex; flex-direction: column; justify-content: space-between; height: 160px; }
         .cross-item-row { display: flex; align-items: center; gap: 10px; height: 70px; justify-content: center; }
         .big-x { font-size: 7rem; color: #888; font-family: sans-serif; font-weight: lighter; line-height: 0; margin: 0 10px; transform: scaleY(1.3); }
         
-        /* Box Input (Numbers) */
         .box-input { 
             border: 3px solid #4361ee; border-radius: 8px; text-align: center; 
             font-size: 1.8rem; font-weight: bold;
             padding: 5px; width: 80px; background: white; height: 60px; box-sizing: border-box; 
         }
         
-        /* 【修改點】Box Select (+/- Sign) - HUGE VISIBILITY */
+        /* --- 【重點修改】Box Select (+/- Sign) - iPad/iOS Optimized --- */
         .box-select { 
+            -webkit-appearance: none; /* Critical for iOS: Remove native gradient/arrow */
+            -moz-appearance: none;
+            appearance: none;
+            
             border: 3px solid #4361ee; 
             border-radius: 8px; 
+            
             text-align: center; 
-            text-align-last: center; /* For Chrome/Safari centering */
-            font-size: 2.2rem; /* Huge Font */
-            font-weight: 900; /* Extra Bold */
+            text-align-last: center; /* Fix centering for some browsers */
+            
+            font-size: 2.5rem; /* VERY LARGE FONT */
+            font-weight: 900;  /* Extra Bold */
             color: var(--primary);
-            padding: 0; 
-            width: 80px; /* Wider */
-            background: #f0f4ff; /* Light blue background */
+            
+            padding: 0;        /* Reset padding */
+            margin: 0;
+            width: 80px;       /* Wider target */
+            height: 60px;      /* Taller target */
+            
+            background-color: #f0f4ff; /* Light blue bg to indicate interactive */
+            background-image: none; /* Ensure no arrow image */
+            
             cursor: pointer; 
-            height: 60px; /* Taller */
             box-sizing: border-box; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .term-x { font-size: 2.5rem; font-style: italic; font-weight: bold; }
