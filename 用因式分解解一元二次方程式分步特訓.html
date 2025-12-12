@@ -86,7 +86,6 @@
         /* Inputs */
         .math-input-group { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; font-size: 1.3rem; font-family: 'Times New Roman', serif; }
         
-        /* 【修改點】通用輸入框樣式，確保所有 text/number 類型一致 */
         input[type="number"], input[type="text"] { 
             padding: 5px; text-align: center; font-size: 1.2rem; 
             border: 2px solid #ced4da; border-radius: 5px; 
@@ -126,7 +125,7 @@
         .formula-option.selected { border-color: var(--primary); background: #eef2ff; color: var(--primary); font-weight: bold; }
         .hint-text { font-size: 0.9rem; color: #666; margin-bottom: 10px; background: #fff8e1; padding: 8px; border-radius: 5px; border-left: 4px solid #ffc107; }
 
-        /* Cross Diagram Layout */
+        /* --- Cross Diagram Layout (Hand-drawn style) --- */
         .cross-layout-container {
             display: flex; justify-content: center; align-items: center; gap: 20px;
             margin: 20px 0; font-family: 'Times New Roman', serif; font-size: 1.5rem;
@@ -154,8 +153,30 @@
             cursor: pointer; box-sizing: border-box; display: flex; justify-content: center; align-items: center;
         }
 
+        /* --- Check Row (Verification) Styling --- */
+        /* Updated to use flexbox for proper alignment of split inputs */
+        .cross-check { 
+            font-size: 1.2rem; color: #555; 
+            text-align: center; margin-top: 20px; border-top: 2px dashed #ccc; padding-top:15px; 
+            display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px;
+        }
+        
+        /* Smaller version of box select/input for the check row */
+        .mini-select {
+            -webkit-appearance: none; appearance: none;
+            border: 2px solid #999; border-radius: 5px; 
+            font-size: 1.2rem; font-weight: bold; width: 45px; height: 40px; 
+            text-align: center; text-align-last: center; 
+            background: #f8f9fa; cursor: pointer; padding: 0;
+        }
+        
+        .mini-input {
+            border: 2px solid #999; border-radius: 5px;
+            font-size: 1.2rem; width: 60px; height: 40px;
+            text-align: center; padding: 5px;
+        }
+
         .term-x { font-size: 2.5rem; font-style: italic; font-weight: bold; }
-        .cross-check { font-size: 1.2rem; color: #555; text-align: center; margin-top: 20px; border-top: 2px dashed #ccc; padding-top:15px; }
         .hidden-input { display: none; }
 
         /* Feedback */
@@ -254,7 +275,11 @@
             </div>
 
             <div class="cross-check">
-                驗算中間項：( <input type="text" inputmode="decimal" id="cross_val1" class="short-input"> x ) + ( <input type="text" inputmode="decimal" id="cross_val2" class="short-input"> x ) = <span id="middle-term-target" style="color:var(--primary); font-weight:bold;">?</span> x
+                驗算中間項：( 
+                <select id="cross_val1_op" class="mini-select"><option value="1">+</option><option value="-1">-</option></select>
+                <input type="number" id="cross_val1_num" class="mini-input"> x ) + ( 
+                <select id="cross_val2_op" class="mini-select"><option value="1">+</option><option value="-1">-</option></select>
+                <input type="number" id="cross_val2_num" class="mini-input"> x ) = <span id="middle-term-target" style="color:var(--primary); font-weight:bold;">?</span> x
             </div>
 
             <button class="menu-btn btn-check" onclick="checkStep1()">檢查十字交乘</button>
@@ -404,6 +429,7 @@
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('step2-hint').classList.add('hidden');
         document.querySelectorAll('input').forEach(el => el.value = '');
+        document.querySelectorAll('select').forEach(el => el.value = '1'); // Reset selects to +
         document.querySelectorAll('.formula-option').forEach(el => el.classList.remove('selected'));
         state.formulaType = '';
 
@@ -472,7 +498,7 @@
         
         let A = a1*a2, B = a1*c2 + a2*c1, C = c1*c2;
         
-        // BUG FIX: Calculate roots for standard cross questions
+        // Calculate roots for standard cross questions
         let r1 = formatFraction(-c1, a1);
         let r2 = formatFraction(-c2, a2);
         
@@ -566,8 +592,16 @@
             let uc1 = (parseInt(document.getElementById('cross_c1').value)||0) * parseInt(document.getElementById('cross_op1').value);
             let ua2 = parseInt(document.getElementById('cross_a2').value)||0;
             let uc2 = (parseInt(document.getElementById('cross_c2').value)||0) * parseInt(document.getElementById('cross_op2').value);
-            let uVal1 = parseInt(document.getElementById('cross_val1').value)||0;
-            let uVal2 = parseInt(document.getElementById('cross_val2').value)||0;
+            
+            // --- NEW: Handle Split Verification Inputs ---
+            let val1_num = parseInt(document.getElementById('cross_val1_num').value)||0;
+            let val1_op = parseInt(document.getElementById('cross_val1_op').value);
+            let uVal1 = val1_num * val1_op;
+
+            let val2_num = parseInt(document.getElementById('cross_val2_num').value)||0;
+            let val2_op = parseInt(document.getElementById('cross_val2_op').value);
+            let uVal2 = val2_num * val2_op;
+            // ---------------------------------------------
             
             let checkA = (ua1*ua2===d.A), checkC = (uc1*uc2===d.C);
             let cp1 = ua1*uc2, cp2 = ua2*uc1;
