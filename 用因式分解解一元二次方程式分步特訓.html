@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>用因式分解解一元二次方程式：分步特訓</title>
+    <title>國中數學：一元二次方程式特訓 (根號切換版)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -12,7 +12,7 @@
             --error: #e63946;
             --bg: #f8f9fa;
             --gold: #ffb703;
-            --purple: #7209b7;
+            --pink: #ff006e;
         }
 
         body {
@@ -30,292 +30,187 @@
         .container {
             background: white;
             padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 95%;
-            max-width: 750px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 650px;
             text-align: center;
             max-height: 95vh;
             overflow-y: auto;
             position: relative;
-            -webkit-overflow-scrolling: touch;
         }
 
-        h1 { color: var(--primary); margin-bottom: 0.5rem; font-size: 1.8rem; }
-        .sub-title { color: #666; margin-bottom: 1.5rem; font-size: 1rem; }
+        h1 { color: var(--primary); margin-bottom: 1.5rem; font-size: 1.8rem; font-weight: 800; letter-spacing: 1px; }
         
-        /* Login */
-        .login-group { margin-bottom: 15px; text-align: left; max-width: 300px; margin: 10px auto; }
-        .login-label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .login-input { width: 100%; padding: 10px; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        /* 登入畫面 */
+        .login-container { max-width: 400px; margin: 0 auto; text-align: left; }
+        .login-group { margin-bottom: 20px; }
+        .login-label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; font-size: 1.1rem; }
+        .login-input { 
+            width: 100%; padding: 12px; font-size: 1.2rem; 
+            border: 2px solid #e0e0e0; border-radius: 12px; 
+            box-sizing: border-box; transition: 0.3s; background: #fff;
+        }
+        .login-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2); }
 
-        /* Course Selector */
-        .course-selector { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        /* 選單按鈕 */
+        .course-selector { display: flex; gap: 8px; margin-bottom: 20px; justify-content: center; }
         .course-btn {
-            flex: 1; padding: 15px; border: 2px solid #ddd; background: white; border-radius: 10px;
-            cursor: pointer; font-weight: bold; color: #555; transition: 0.2s; max-width: 200px;
+            flex: 1; padding: 12px 5px; border: 2px solid #ddd; background: white; border-radius: 10px;
+            cursor: pointer; font-weight: bold; color: #666; transition: 0.2s; font-size: 1rem;
         }
         .course-btn.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
-        .course-btn:hover { border-color: var(--primary); }
 
-        /* Menu Buttons */
-        .menu-btn { width: 100%; padding: 15px; margin: 10px 0; font-size: 1.2rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; position: relative; }
-        .btn-easy { background-color: #4cc9f0; }
-        .btn-medium { background-color: #4361ee; }
-        .btn-hard { background-color: #3a0ca3; }
-        .btn-special { background-color: var(--purple); }
-        .btn-submit { background-color: var(--success); margin-top: 15px; }
-        .btn-check { background-color: #f72585; margin-top: 15px; color: white;}
-        .btn-next { background-color: #fb8500; display: none; margin-top: 20px;}
-        .btn-cert { background-color: var(--gold); color: #333; display: none; margin-top: 20px; animation: pulse 2s infinite;}
-
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-
-        .badge { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: white; color: var(--success); padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; display: none; border: 1px solid var(--success); }
-        .done .badge { display: block; }
-
-        /* Game Elements */
-        .status-bar { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
-        .progress-track { background: #eee; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
-        .progress-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.3s; }
-        .question-box { font-size: 2rem; font-family: 'Times New Roman', serif; background: #e9ecef; padding: 20px; border-radius: 10px; margin-bottom: 20px; word-break: break-word; }
+        .menu-btn { 
+            width: 100%; padding: 16px; margin: 10px 0; font-size: 1.1rem; 
+            border: none; border-radius: 15px; cursor: pointer; color: white; 
+            font-weight: bold; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transition: transform 0.1s;
+        }
+        .menu-btn:active { transform: scale(0.98); }
         
-        .step-container { text-align: left; margin-bottom: 15px; padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; background: #fff; }
-        .step-title { font-weight: bold; color: var(--primary); margin-bottom: 10px; display: block; font-size: 1.1rem; }
+        .btn-easy { background: linear-gradient(135deg, #4cc9f0, #4361ee) !important; }
+        .btn-medium { background: linear-gradient(135deg, #4361ee, #3a0ca3) !important; }
+        .btn-hard { background: linear-gradient(135deg, #7209b7, #560bad) !important; }
+        .btn-action { background: var(--success) !important; }
+        .btn-gray { background: #6c757d !important; box-shadow: none; }
+        
+        .btn-check { 
+            background: var(--pink) !important; 
+            color: white !important; 
+            box-shadow: 0 4px 10px rgba(255, 0, 110, 0.3);
+            margin-top: 15px;
+        }
+        
+        .btn-toggle {
+            background: #eee; border: 1px solid #ccc; color: #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; margin-left: 10px;
+        }
+
+        /* Game UI */
+        .status-bar { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; font-size: 1rem; color: #555; background: #f1f5f9; padding: 12px; border-radius: 10px;}
+        .question-box { font-size: 2.2rem; font-family: 'Times New Roman', serif; background: #e9ecef; padding: 25px; border-radius: 15px; margin-bottom: 20px; }
+        
+        .step-container { text-align: left; margin-bottom: 15px; padding: 20px; border: 2px solid #e9ecef; border-radius: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .step-title { font-weight: bold; color: var(--primary); margin-bottom: 15px; display: block; font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 5px;}
         
         /* Inputs */
-        .math-input-group { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; font-size: 1.3rem; font-family: 'Times New Roman', serif; }
-        
         input[type="number"], input[type="text"] { 
-            padding: 5px; text-align: center; font-size: 1.2rem; 
-            border: 2px solid #ced4da; border-radius: 5px; 
-            -webkit-appearance: none; 
-            margin: 0;
+            padding: 8px; text-align: center; font-size: 1.5rem; border: 2px solid #ced4da; border-radius: 10px; 
+            -webkit-appearance: none; margin: 0 4px; font-family: 'Times New Roman'; background: #fff;
         }
+        .short-input { width: 70px; } .medium-input { width: 110px; }
         
-        .short-input { width: 60px; } 
-        .medium-input { width: 80px; }
-        
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        
-        /* Select Styling */
         select { 
-            padding: 5px; font-size: 1.5rem; border: 2px solid #ced4da; border-radius: 5px; background: white; cursor: pointer; 
-            -webkit-appearance: none; 
-            -moz-appearance: none;
-            appearance: none;
-            text-align: center;
-            text-align-last: center;
+            padding: 8px; font-size: 1.5rem; border: 2px solid #ced4da; border-radius: 10px; background: white; cursor: pointer; 
+            -webkit-appearance: none; text-align-last: center;
         }
-        
-        .sign-select { 
-            background-color: #e7f1ff; 
-            color: var(--primary); 
-            font-weight: 900; 
-            border: 2px solid var(--primary);
-            font-size: 1.5rem;
-            width: 50px; 
-            padding: 0; 
-        }
+        .sign-select { width: 60px; background-color: #e7f1ff; color: var(--primary); font-weight: bold; border-color: var(--primary); }
 
-        /* Formula Mode Specifics */
-        .formula-options { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .formula-option { padding: 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; text-align: center; font-family: "Times New Roman", serif; font-size: 1.2rem; }
-        .formula-option:hover { background: #f0f0f0; }
+        .cross-layout { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 10px 0; }
+        .cross-col { display: flex; flex-direction: column; gap: 10px; }
+        .cross-row { display: flex; align-items: center; gap: 5px; }
+        .big-x { font-size: 8rem; line-height: 0.7; color: #cbd5e1; font-weight: 300; }
+        .box-input { width: 80px; height: 60px; font-size: 1.8rem; }
+        
+        .formula-options { display: grid; gap: 10px; }
+        .formula-option { padding: 15px; border: 2px solid #ddd; border-radius: 10px; cursor: pointer; text-align: center; font-size: 1.2rem; transition: 0.2s; }
+        .formula-option:hover { background: #f8f9fa; }
         .formula-option.selected { border-color: var(--primary); background: #eef2ff; color: var(--primary); font-weight: bold; }
-        .hint-text { font-size: 0.9rem; color: #666; margin-bottom: 10px; background: #fff8e1; padding: 8px; border-radius: 5px; border-left: 4px solid #ffc107; }
 
-        /* --- Cross Diagram Layout (Hand-drawn style) --- */
-        .cross-layout-container {
-            display: flex; justify-content: center; align-items: center; gap: 20px;
-            margin: 20px 0; font-family: 'Times New Roman', serif; font-size: 1.5rem;
-        }
-        .cross-col { display: flex; flex-direction: column; justify-content: space-between; height: 160px; }
-        .cross-item-row { display: flex; align-items: center; gap: 10px; height: 70px; justify-content: center; }
-        .big-x { font-size: 7rem; color: #888; font-family: sans-serif; font-weight: lighter; line-height: 0; margin: 0 10px; transform: scaleY(1.3); }
-        
-        /* Box Input (Numbers) */
-        .box-input { 
-            border: 3px solid #4361ee; border-radius: 8px; text-align: center; 
-            font-size: 1.8rem; font-weight: bold;
-            padding: 5px; width: 80px; background: white; height: 60px; box-sizing: border-box; 
-        }
-        
-        /* Box Select (+/- Sign) */
-        .box-select { 
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            border: 3px solid #4361ee; border-radius: 8px; text-align: center; text-align-last: center; 
-            font-size: 2.5rem; font-weight: 900; color: var(--primary);
-            padding: 0; margin: 0; width: 80px; height: 60px;
-            background-color: #f0f4ff; background-image: none;
-            cursor: pointer; box-sizing: border-box; display: flex; justify-content: center; align-items: center;
+        .radical-input { 
+            font-family: 'Times New Roman'; font-size: 1.4rem; 
+            display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; 
+            background: #fff8e1; padding: 20px; border-radius: 12px; border: 2px solid #ffe082;
         }
 
-        /* --- Check Row (Verification) Styling --- */
-        /* Updated to use flexbox for proper alignment of split inputs */
-        .cross-check { 
-            font-size: 1.2rem; color: #555; 
-            text-align: center; margin-top: 20px; border-top: 2px dashed #ccc; padding-top:15px; 
-            display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px;
-        }
-        
-        /* Smaller version of box select/input for the check row */
-        .mini-select {
-            -webkit-appearance: none; appearance: none;
-            border: 2px solid #999; border-radius: 5px; 
-            font-size: 1.2rem; font-weight: bold; width: 45px; height: 40px; 
-            text-align: center; text-align-last: center; 
-            background: #f8f9fa; cursor: pointer; padding: 0;
-        }
-        
-        .mini-input {
-            border: 2px solid #999; border-radius: 5px;
-            font-size: 1.2rem; width: 60px; height: 40px;
-            text-align: center; padding: 5px;
-        }
-
-        .term-x { font-size: 2.5rem; font-style: italic; font-weight: bold; }
-        .hidden-input { display: none; }
-
-        /* Feedback */
-        .feedback-area { display: none; background: #fff3cd; border: 1px solid #ffecb5; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left; }
-        .feedback-area.correct { background: #d1e7dd; border-color: #badbcc; color: #0f5132; }
-        .feedback-area.wrong { background: #f8d7da; border-color: #f5c2c7; color: #842029; }
-
-        /* Utilities */
         .hidden { display: none !important; }
-        .disabled-step { opacity: 0.5; pointer-events: none; }
-        .user-info-display { position: absolute; top: 10px; right: 20px; font-size: 0.9rem; color: #666; font-weight: bold; }
+        .disabled-step { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
         
-        /* Certificate */
-        .cert-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
-        .cert-content { background: #fff; width: 100%; max-width: 800px; max-height: 95vh; overflow-y: auto; padding: 30px; border: 15px double #daa520; text-align: center; position: relative; background-image: radial-gradient(circle, #fff 0%, #fdfbf7 100%); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; }
-        .cert-title { font-size: 2.5rem; color: #b8860b; font-family: "Baskerville", serif; margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-        .cert-name { font-size: 2.2rem; font-weight: bold; color: #333; margin: 15px 0; border-bottom: 2px solid #333; display: inline-block; padding: 0 30px; }
-        .cert-seal { width: 100px; height: 100px; border: 4px solid #d62828; border-radius: 50%; color: #d62828; display: flex; justify-content: center; align-items: center; font-weight: bold; transform: rotate(-15deg); font-size: 1.1rem; box-shadow: 0 0 0 4px white, 0 0 0 7px #d62828; opacity: 0.9; margin: 0 auto; }
-        .close-cert-btn { margin-top: 15px; padding: 8px 25px; background: #333; color: white; border: none; cursor: pointer; font-size: 1rem; border-radius: 50px; }
-        @media (max-width: 600px) { .cert-title { font-size: 1.8rem; } .cert-name { font-size: 1.5rem; } }
+        .feedback { margin-top: 15px; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; display: none; }
+        .feedback.correct { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .feedback.wrong { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .toggle-container { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .toggle-btn { padding: 8px 25px; background: #eee; border-radius: 20px; cursor: pointer; font-size: 1rem; border: 1px solid #ddd; }
+        .toggle-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
     </style>
 </head>
 <body>
 
-<div class="container" id="login-screen">
-    <h1>🎓 數學特訓系統</h1>
-    <p>請輸入資料以開始特訓</p>
-    <div class="login-group"><label class="login-label">班級</label><input type="text" id="input-class" class="login-input" placeholder="例如：801"></div>
-    <div class="login-group"><label class="login-label">座號</label><input type="text" id="input-seat" class="login-input" placeholder="例如：05"></div>
-    <div class="login-group"><label class="login-label">姓名</label><input type="text" id="input-name" class="login-input" placeholder="請輸入真實姓名"></div>
-    <button class="menu-btn btn-medium" onclick="login()">登入系統</button>
+<div class="container" id="screen-login">
+    <h1>📐 數學特訓系統</h1>
+    <div class="login-container">
+        <div class="login-group">
+            <label class="login-label">班級</label>
+            <input type="text" id="in-class" class="login-input" placeholder="例如：801">
+        </div>
+        <div class="login-group">
+            <label class="login-label">座號</label>
+            <input type="text" id="in-seat" class="login-input" placeholder="例如：05">
+        </div>
+        <div class="login-group">
+            <label class="login-label">姓名</label>
+            <input type="text" id="in-name" class="login-input" placeholder="請輸入真實姓名">
+        </div>
+        <button class="menu-btn btn-action" onclick="doLogin()">登入系統</button>
+    </div>
 </div>
 
-<div class="container hidden" id="menu-screen">
-    <div class="user-info-display" id="user-display"></div>
-    <h1>用因式分解解一元二次方程式：分步特訓</h1>
-    <p class="sub-title">請選擇你要挑戰的解題方法</p>
-    
+<div class="container hidden" id="screen-menu">
+    <div style="text-align:right; margin-bottom:10px; color:#666; font-weight:bold;" id="user-display"></div>
+    <h1>選擇特訓課程</h1>
     <div class="course-selector">
-        <div class="course-btn active" id="course-btn-cross" onclick="selectCourse('cross')">課程 A<br>十字交乘法</div>
-        <div class="course-btn" id="course-btn-formula" onclick="selectCourse('formula')">課程 B<br>乘法公式</div>
+        <div class="course-btn active" id="tab-cross" onclick="switchTab('cross')">A.十字交乘</div>
+        <div class="course-btn" id="tab-formula" onclick="switchTab('formula')">B.乘法公式</div>
+        <div class="course-btn" id="tab-square" onclick="switchTab('square')">C.配方法</div>
     </div>
-
-    <div id="menu-content-cross">
-        <button id="menu-c-easy" class="menu-btn btn-easy" onclick="startGame('cross', 'easy')">🟢 初階 (x² 係數為 1)<span class="badge">已通關 ✅</span></button>
-        <button id="menu-c-medium" class="menu-btn btn-medium" onclick="startGame('cross', 'medium')">🔵 中階 (x² 係數為質數)<span class="badge">已通關 ✅</span></button>
-        <button id="menu-c-hard" class="menu-btn btn-hard" onclick="startGame('cross', 'hard')">🟣 進階 (x² 係數為合數)<span class="badge">已通關 ✅</span></button>
-        <button id="cert-cross" class="menu-btn btn-cert hidden" onclick="showFinalCertificate('cross')">🏆 領取「十字交乘大師」證書</button>
-    </div>
-
-    <div id="menu-content-formula" class="hidden">
-        <button id="menu-f-easy" class="menu-btn btn-easy" onclick="startGame('formula', 'easy')">🟢 Level 1 平方差公式<br><span style="font-size:0.8rem">A² - B² = 0</span><span class="badge">已通關 ✅</span></button>
-        <button id="menu-f-medium" class="menu-btn btn-medium" onclick="startGame('formula', 'medium')">🔵 Level 2 完全平方公式<br><span style="font-size:0.8rem">(x² ± 2ax + a² = 0)</span><span class="badge">已通關 ✅</span></button>
-        <button id="menu-f-hard" class="menu-btn btn-special" onclick="startGame('formula', 'hard')">🟣 Level 3 進階題型<br><span style="font-size:0.8rem">((ax+b)²...結構題)</span><span class="badge">已通關 ✅</span></button>
-        <button id="cert-formula" class="menu-btn btn-cert hidden" onclick="showFinalCertificate('formula')">🏆 領取「乘法公式大師」證書</button>
-    </div>
+    <div id="menu-content"></div>
 </div>
 
-<div class="container hidden" id="game-screen">
+<div class="container hidden" id="screen-game">
     <div class="status-bar">
-        <span id="level-label">難度</span>
-        <span>進度: <span id="score">0</span> / 10</span>
+        <span id="level-label"></span>
+        <span id="score-display">進度: 0 / 10</span>
     </div>
-    <div class="progress-track"><div class="progress-fill" id="progress-bar"></div></div>
-
-    <div class="question-box" id="question-display">Loading...</div>
+    
+    <div class="question-box" id="q-text">Loading...</div>
 
     <div class="step-container" id="step1-container">
         <span class="step-title" id="step1-title">步驟一</span>
-        
-        <div id="step1-cross" class="hidden">
-            <div class="cross-layout-container">
-                <div class="cross-col" style="text-align: right; align-items: flex-end;">
-                    <div class="cross-item-row">
-                        <input type="number" id="cross_a1" class="box-input" style="width:70px; margin-right:5px;" placeholder="a"> 
-                        <span class="term-x">x</span>
-                    </div>
-                    <div class="cross-item-row">
-                        <input type="number" id="cross_a2" class="box-input" style="width:70px; margin-right:5px;" placeholder="a"> 
-                        <span class="term-x">x</span>
-                    </div>
-                </div>
-
-                <div class="big-x">╳</div>
-
-                <div class="cross-col" style="text-align: left; align-items: flex-start;">
-                    <div class="cross-item-row">
-                        <select id="cross_op1" class="box-select" style="margin-right:10px"><option value="1">+</option><option value="-1">-</option></select>
-                        <input type="number" id="cross_c1" class="box-input" placeholder="c">
-                    </div>
-                    <div class="cross-item-row">
-                        <select id="cross_op2" class="box-select" style="margin-right:10px"><option value="1">+</option><option value="-1">-</option></select>
-                        <input type="number" id="cross_c2" class="box-input" placeholder="c">
-                    </div>
-                </div>
-            </div>
-
-            <div class="cross-check">
-                驗算中間項：( 
-                <select id="cross_val1_op" class="mini-select"><option value="1">+</option><option value="-1">-</option></select>
-                <input type="number" id="cross_val1_num" class="mini-input"> x ) + ( 
-                <select id="cross_val2_op" class="mini-select"><option value="1">+</option><option value="-1">-</option></select>
-                <input type="number" id="cross_val2_num" class="mini-input"> x ) = <span id="middle-term-target" style="color:var(--primary); font-weight:bold;">?</span> x
-            </div>
-
-            <button class="menu-btn btn-check" onclick="checkStep1()">檢查十字交乘</button>
-        </div>
-
-        <div id="step1-formula" class="hidden">
-            <p style="margin-top:0">請觀察題目，選擇適用的乘法公式：</p>
-            <div class="formula-options">
-                <div class="formula-option" id="opt-sq-diff" onclick="selectFormulaOption('diff')">1. 平方差：A² - B² = (A+B)(A-B)</div>
-                <div class="formula-option" id="opt-sq-sum" onclick="selectFormulaOption('sum')">2. 和的平方：A² + 2AB + B² = (A+B)²</div>
-                <div class="formula-option" id="opt-sq-sub" onclick="selectFormulaOption('sub')">3. 差的平方：A² - 2AB + B² = (A-B)²</div>
-            </div>
-            <button class="menu-btn btn-check" onclick="checkStep1()">確認公式</button>
-        </div>
-        
-        <div id="step1-feedback" class="feedback-area"></div>
+        <div id="game-area-s1"></div>
     </div>
 
-    <div class="step-container disabled-step" id="step2-container">
-        <span class="step-title">步驟二：寫出因式分解</span>
-        <div id="step2-hint" class="hint-text hidden"></div>
-        <div class="math-input-group" id="step2-input-area">
-            </div>
+    <div class="step-container hidden" id="step2-container">
+        <span class="step-title" id="step2-title">步驟二</span>
+        <div id="game-area-s2"></div>
     </div>
 
     <div class="step-container disabled-step" id="step3-container">
-        <span class="step-title">步驟三：求解 x (若為分數請填 a/b)</span>
-        <div class="math-input-group">
-            x = <input type="text" inputmode="decimal" id="step3_x1" class="medium-input"> 或 x = <input type="text" inputmode="decimal" id="step3_x2" class="medium-input">
+        <span class="step-title" id="solve-title">求解 x</span>
+        <div id="solve-input-area">
+            <div id="input-rational">
+                x = <input type="text" id="sol-x1" class="medium-input"> 或 <input type="text" id="sol-x2" class="medium-input">
+            </div>
+            <div id="input-radical" class="hidden">
+                <div class="radical-input">
+                    x = <input type="text" id="rad-a" class="short-input" placeholder="0"> ± 
+                    <input type="text" id="rad-k" style="width:40px" value="1"> √
+                    <input type="text" id="rad-b" class="short-input" placeholder="n">
+                    <span id="rad-div-part" class="hidden"> / <input type="text" id="rad-c" style="width:40px" value="1"></span>
+                </div>
+                <div style="font-size:0.8rem; color:#666; margin-top:5px;">格式: (a ± k√b) / c (請填最簡根式)</div>
+            </div>
+            <div id="ans-toggle" class="toggle-container hidden">
+                <div class="toggle-btn active" id="btn-rat" onclick="setAnsMode('rational')">整數/分數</div>
+                <div class="toggle-btn" id="btn-rad" onclick="setAnsMode('radical')">根號解</div>
+            </div>
         </div>
     </div>
 
-    <button class="menu-btn btn-submit hidden" id="final-submit-btn" onclick="finalCheck()">送出最終答案</button>
-    <div class="feedback-area" id="final-feedback"></div>
-    <button class="menu-btn btn-next" id="next-btn" onclick="nextQuestion()">下一題</button>
-    <button class="menu-btn" style="background:#6c757d; margin-top:10px" onclick="showMenu()">回主選單</button>
+    <div class="feedback" id="feedback-msg"></div>
+    <button class="menu-btn btn-action hidden" id="btn-submit" onclick="checkAnswer()">送出最終答案</button>
+    <button class="menu-btn btn-easy hidden" id="btn-next" onclick="nextQuestion()">下一題</button>
+    <button class="menu-btn btn-gray" style="margin-top:10px;" onclick="showMenu()">回主選單</button>
 </div>
 
 <div class="cert-modal" id="cert-modal">
@@ -324,494 +219,497 @@
         <div class="cert-body" style="margin-top:20px;">
             <p>茲證明</p>
             <div class="cert-name" id="cert-student-info"></div>
-            <p>
-                在「<span id="cert-course-name">數學特訓</span>」中表現優異，<br>
-                成功通過 <strong id="cert-level-name" style="font-size:1.2em; color: #d62828;">關卡</strong> 考驗。
-            </p>
+            <p>在「<span id="cert-course-name"></span>」中表現優異，成功通過 <strong id="cert-level-name" style="font-size:1.2em; color:#d62828;"></strong> 考驗。</p>
         </div>
         <div class="cert-seal" id="cert-seal-text">通關</div>
-        <p style="font-size:0.9rem; margin-top:20px;">日期：<span id="cert-date"></span></p>
         <button class="close-cert-btn" onclick="closeCert()">關閉</button>
     </div>
 </div>
 
 <script>
-    // State
-    let student = { class: '', seat: '', name: '' };
-    let state = { course: 'cross', level: 'easy', score: 0, target: 10, q: null, formulaType: '' };
-    let progress = { 
-        cross: { easy: false, medium: false, hard: false },
-        formula: { easy: false, medium: false, hard: false }
-    };
+let user = { cls:'', no:'', name:'' };
+let state = { course:'', level:'', q:null, score:0, subStreak:0, subType:1, ansMode:'rational', step1InputMode:'auto' };
 
-    // --- Core Functions ---
-    function getStorageKey(cls, seat, name) { return `math_v3_${cls}_${seat}_${name}`; }
-    function saveProgress() {
-        if(!student.name) return;
-        localStorage.setItem(getStorageKey(student.class, student.seat, student.name), JSON.stringify(progress));
+function doLogin() {
+    let c = document.getElementById('in-class').value.trim();
+    let s = document.getElementById('in-seat').value.trim();
+    let n = document.getElementById('in-name').value.trim();
+    if(!c || !s || !n) return alert("請輸入完整資料");
+    user = {cls:c, no:s, name:n};
+    document.getElementById('user-display').innerText = `${c}班 ${s}號 ${n}`;
+    document.getElementById('screen-login').classList.add('hidden');
+    document.getElementById('screen-menu').classList.remove('hidden');
+    switchTab('cross');
+}
+
+function switchTab(c) {
+    state.course = c;
+    ['cross','formula','square'].forEach(k => document.getElementById('tab-'+k).className = (k===c?'course-btn active':'course-btn'));
+    
+    let html = '';
+    if(c === 'cross') {
+        html = `<button class="menu-btn btn-easy" onclick="startGame('cross','easy')">🟢 初階 (x²係數為1)</button>
+                <button class="menu-btn btn-medium" onclick="startGame('cross','medium')">🔵 中階 (質數係數)</button>
+                <button class="menu-btn btn-hard" onclick="startGame('cross','hard')">🟣 進階 (合數係數)</button>`;
+    } else if (c === 'formula') {
+        html = `<button class="menu-btn btn-easy" onclick="startGame('formula','easy')">🟢 Level 1 平方差</button>
+                <button class="menu-btn btn-medium" onclick="startGame('formula','medium')">🔵 Level 2 完全平方</button>
+                <button class="menu-btn btn-hard" onclick="startGame('formula','hard')">🟣 Level 3 進階題型</button>`;
+    } else {
+        html = `<button class="menu-btn btn-easy" onclick="startGame('square','concept')">1️⃣ 平方根概念 (3種題型)</button>
+                <button class="menu-btn btn-medium" onclick="startGame('square','move')">2️⃣ 移項開方 (直接求解)</button>
+                <button class="menu-btn btn-hard" onclick="startGame('square','complete')">3️⃣ 配方練習 (5題過關)</button>
+                <button class="menu-btn btn-action" onclick="startGame('square','solve')">4️⃣ 配方法全攻略 (5種題型)</button>`;
     }
-    function loadProgress(cls, seat, name) {
-        let data = localStorage.getItem(getStorageKey(cls, seat, name));
-        if(data) progress = JSON.parse(data);
-        else progress = { cross: { easy: false, medium: false, hard: false }, formula: { easy: false, medium: false, hard: false } };
-    }
+    document.getElementById('menu-content').innerHTML = html;
+}
 
-    function login() {
-        const c = document.getElementById('input-class').value.trim();
-        const s = document.getElementById('input-seat').value.trim();
-        const n = document.getElementById('input-name').value.trim();
-        if(!c || !s || !n) { alert("請填寫完整資訊"); return; }
-        
-        student = { class: c, seat: s, name: n };
-        loadProgress(c, s, n);
-        document.getElementById('user-display').innerText = `${c}班 ${s}號 ${n}`;
-        showMenu();
-    }
+function showMenu() {
+    document.getElementById('screen-game').classList.add('hidden');
+    document.getElementById('screen-menu').classList.remove('hidden');
+}
 
-    function showMenu() {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.add('hidden');
-        document.getElementById('menu-screen').classList.remove('hidden');
-        selectCourse(state.course);
-    }
+function startGame(c, lv) {
+    state.course = c; state.level = lv; state.score = 0; state.subStreak = 0; state.subType = 1;
+    document.getElementById('screen-menu').classList.add('hidden');
+    document.getElementById('screen-game').classList.remove('hidden');
+    
+    // Reset UI
+    document.getElementById('step2-container').classList.add('hidden');
+    document.getElementById('step3-container').classList.remove('hidden');
+    document.getElementById('solve-title').innerText = "求解 x";
+    document.getElementById('ans-toggle').classList.add('hidden');
+    
+    let title = (c==='cross'?'十字交乘':c==='formula'?'乘法公式':'配方法') + ' - ' + lv;
+    document.getElementById('level-label').innerText = title;
+    
+    nextQuestion();
+}
 
-    function selectCourse(course) {
-        state.course = course;
-        document.getElementById('course-btn-cross').className = course === 'cross' ? 'course-btn active' : 'course-btn';
-        document.getElementById('course-btn-formula').className = course === 'formula' ? 'course-btn active' : 'course-btn';
-        
-        document.getElementById('menu-content-cross').classList.toggle('hidden', course !== 'cross');
-        document.getElementById('menu-content-formula').classList.toggle('hidden', course !== 'formula');
-
-        updateBadges();
-    }
-
-    function updateBadges() {
-        const setBadge = (id, done) => document.getElementById(id).classList.toggle('done', done);
-        setBadge('menu-c-easy', progress.cross.easy);
-        setBadge('menu-c-medium', progress.cross.medium);
-        setBadge('menu-c-hard', progress.cross.hard);
-        document.getElementById('cert-cross').classList.toggle('hidden', !(progress.cross.easy && progress.cross.medium && progress.cross.hard));
-
-        setBadge('menu-f-easy', progress.formula.easy);
-        setBadge('menu-f-medium', progress.formula.medium);
-        setBadge('menu-f-hard', progress.formula.hard);
-        document.getElementById('cert-formula').classList.toggle('hidden', !(progress.formula.easy && progress.formula.medium && progress.formula.hard));
-    }
-
-    function startGame(course, level) {
-        state.course = course;
-        state.level = level;
-        state.score = 0;
-        updateScore();
-        document.getElementById('menu-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-        
-        document.getElementById('step1-title').innerText = course === 'cross' ? '步驟一：十字交乘湊數' : '步驟一：判斷適用公式';
-        document.getElementById('step1-cross').classList.toggle('hidden', course !== 'cross');
-        document.getElementById('step1-formula').classList.toggle('hidden', course !== 'formula');
-        
-        let label = (course==='cross'?'十字交乘 ':'乘法公式 ') + (level==='easy'?'初階':level==='medium'?'中階':'進階');
-        document.getElementById('level-label').innerText = label;
-
-        nextQuestion();
-    }
-
-    // --- Question Generator ---
-    function generateQuestion() {
-        // Reset UI
-        document.getElementById('step1-feedback').style.display = 'none';
-        document.getElementById('final-feedback').style.display = 'none';
-        document.getElementById('step1-container').classList.remove('disabled-step');
-        document.getElementById('step2-container').classList.add('disabled-step');
-        document.getElementById('step3-container').classList.add('disabled-step');
-        document.getElementById('final-submit-btn').classList.add('hidden');
-        document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('step2-hint').classList.add('hidden');
-        document.querySelectorAll('input').forEach(el => el.value = '');
-        document.querySelectorAll('select').forEach(el => el.value = '1'); // Reset selects to +
-        document.querySelectorAll('.formula-option').forEach(el => el.classList.remove('selected'));
-        state.formulaType = '';
-
-        if (state.course === 'cross') {
-            generateCrossQuestion();
+function nextQuestion() {
+    // Progression Logic
+    if(state.course === 'square') {
+        if(state.level === 'complete') {
+             if(state.score >= 5) { alert("恭喜通關！"); showMenu(); return; }
         } else {
-            generateFormulaQuestion();
-        }
-    }
-
-    function generateCrossQuestion() {
-        // Reset inputs visibility (Show all by default)
-        document.getElementById('cross_a1').classList.remove('hidden-input');
-        document.getElementById('cross_a2').classList.remove('hidden-input');
-
-        // Advanced Logic for Q8, Q9, Q10: Substitution
-        if (state.score >= 7) {
-            let uA = 1, uC1 = rnd(-5, 5, true), uC2 = rnd(-5, 5, true);
-            let k = rnd(1, 5) * (Math.random()<0.5 ? 1 : -1);
-            let B = uC1 + uC2;
-            let C = uC1 * uC2;
-            let kStr = k>0 ? `+${k}` : `${k}`;
-            let eqStr = `(x${kStr})² ${fmtSign(B)}(x${kStr}) ${fmtSign(C)} = 0`;
-            let r1 = -k - uC1;
-            let r2 = -k - uC2;
-            
-            state.q = { 
-                type: 'cross', subtype: 'advanced',
-                a1: 1, a2: 1, c1: uC1, c2: uC2, 
-                A: 1, B: B, C: C, 
-                root1: formatFraction(r1, 1), root2: formatFraction(r2, 1),
-                displayEq: eqStr
-            };
-            
-            // For advanced mode in easy level, hide inputs
-            if (state.level === 'easy') {
-                 document.getElementById('cross_a1').value = 1;
-                 document.getElementById('cross_a2').value = 1;
-                 document.getElementById('cross_a1').classList.add('hidden-input');
-                 document.getElementById('cross_a2').classList.add('hidden-input');
-            }
-
-            displayEq(eqStr);
-            document.getElementById('middle-term-target').innerText = B;
-            document.getElementById('step2-hint').innerHTML = `💡 提示：此為進階題，請先解出十字交乘後的括號，再整理成 x 的因式。<br>例如十字交乘結果為 (u${uC1>0?'+'+uC1:uC1})(u${uC2>0?'+'+uC2:uC2})，還原後為 (x${kStr}${uC1>0?'+'+uC1:uC1})...`;
-            document.getElementById('step2-hint').classList.remove('hidden');
-            return;
-        }
-
-        // Standard Logic
-        let a1, c1, a2, c2;
-        if (state.level === 'easy') {
-            a1 = 1; a2 = 1; c1 = rnd(-9, 9, true); c2 = rnd(-9, 9, true);
-            // Hide a1, a2 inputs for Easy level
-            document.getElementById('cross_a1').value = 1;
-            document.getElementById('cross_a2').value = 1;
-            document.getElementById('cross_a1').classList.add('hidden-input');
-            document.getElementById('cross_a2').classList.add('hidden-input');
-        } else if (state.level === 'medium') {
-            const primes = [2, 3, 5]; a1 = primes[Math.floor(Math.random()*3)]; a2 = 1;
-            c1 = rnd(-5, 5, true); c2 = rnd(-5, 5, true);
-        } else {
-            a1 = rnd(2, 5); a2 = rnd(2, 4); c1 = rnd(-4, 4, true); c2 = rnd(-4, 4, true);
-        }
-        if(a1<0){a1=-a1;c1=-c1} if(a2<0){a2=-a2;c2=-c2}
-        
-        let A = a1*a2, B = a1*c2 + a2*c1, C = c1*c2;
-        
-        // Calculate roots for standard cross questions
-        let r1 = formatFraction(-c1, a1);
-        let r2 = formatFraction(-c2, a2);
-        
-        state.q = { a1, c1, a2, c2, A, B, C, type: 'cross', subtype: 'standard', root1: r1, root2: r2 };
-        
-        displayEq(`${fmtCoef(A)}x² ${fmtSign(B)}x ${fmtSign(C)} = 0`);
-        document.getElementById('middle-term-target').innerText = B;
-    }
-
-    function generateFormulaQuestion() {
-        let type, eqStr;
-        
-        if (state.level === 'easy') {
-            // Level 1: Difference of Squares
-            type = 'diff';
-            if (Math.random() < 0.3) {
-                let a = rnd(1, 3);
-                let b = rnd(1, 5) * (Math.random()<0.5?1:-1);
-                let c = rnd(1, 6);
-                let bStr = b>0 ? `+${b}` : `${b}`;
-                eqStr = `(${a===1?'':a}x${bStr})² - ${c*c} = 0`;
-                let r1 = formatFraction(c-b, a);
-                let r2 = formatFraction(-c-b, a);
-                
-                state.q = { 
-                    type, subtype: 'advanced',
-                    a_val: a, b_val: b, c_val: c,
-                    final_a: a, final_c1: b+c, final_c2: b-c,
-                    root1: r1, root2: r2 
-                };
-            } else {
-                let a_val = Math.random() < 0.2 ? 1 : rnd(2, 9);
-                let b_val;
-                do { b_val = rnd(1, 9); } while (b_val === a_val);
-                
-                let A = a_val*a_val;
-                eqStr = `${fmtCoef(A)}x² - ${b_val*b_val} = 0`;
-                state.q = { 
-                    type, subtype: 'standard', 
-                    a_val: a_val, b_val: b_val, 
-                    root1: formatFraction(b_val, a_val), root2: formatFraction(-b_val, a_val) 
-                };
-            }
-
-        } else if (state.level === 'medium') {
-            type = Math.random() < 0.5 ? 'sum' : 'sub';
-            let a_val = 1, b_val = rnd(1, 8);
-            if(Math.random()<0.3) a_val = rnd(2,3);
-            
-            let A = a_val*a_val;
-            let B = (type === 'sum' ? 1 : -1) * 2 * a_val * b_val;
-            let C = b_val*b_val;
-            eqStr = `${fmtCoef(A)}x² ${fmtSign(B)}x + ${C} = 0`;
-            let r = formatFraction((type==='sum'?-b_val:b_val), a_val);
-            state.q = { type, a_val, b_val, root1: r, root2: r };
-
-        } else {
-            type = Math.random() < 0.5 ? 'sum' : 'sub';
-            let a = rnd(2, 5), b = rnd(-5, 5, true), k = rnd(1, 4);
-            let signStr = type==='sum' ? '+' : '-';
-            let bStr = b >= 0 ? `+${b}` : `${b}`;
-            eqStr = `(${a}x${bStr})² ${signStr} ${2*k}(${a}x${bStr}) + ${k*k} = 0`;
-            
-            let final_const = type==='sum' ? (b+k) : (b-k);
-            state.q = { 
-                type: 'advanced', subtype: type, 
-                inner_a: a, inner_b: b, outer_k: k,
-                final_a: a, final_b: final_const,
-                root1: formatFraction(-final_const, a), root2: formatFraction(-final_const, a)
-            };
-        }
-        
-        if (state.q.displayEq) displayEq(state.q.displayEq);
-        else displayEq(eqStr);
-    }
-
-    // --- Step Logic ---
-    function selectFormulaOption(type) {
-        state.formulaType = type;
-        document.querySelectorAll('.formula-option').forEach(el => el.classList.remove('selected'));
-        document.getElementById('opt-sq-'+type).classList.add('selected');
-    }
-
-    function checkStep1() {
-        let isCorrect = false;
-        let msg = "";
-
-        if (state.course === 'cross') {
-            const d = state.q;
-            let ua1 = parseInt(document.getElementById('cross_a1').value)||0;
-            let uc1 = (parseInt(document.getElementById('cross_c1').value)||0) * parseInt(document.getElementById('cross_op1').value);
-            let ua2 = parseInt(document.getElementById('cross_a2').value)||0;
-            let uc2 = (parseInt(document.getElementById('cross_c2').value)||0) * parseInt(document.getElementById('cross_op2').value);
-            
-            // --- NEW: Handle Split Verification Inputs ---
-            let val1_num = parseInt(document.getElementById('cross_val1_num').value)||0;
-            let val1_op = parseInt(document.getElementById('cross_val1_op').value);
-            let uVal1 = val1_num * val1_op;
-
-            let val2_num = parseInt(document.getElementById('cross_val2_num').value)||0;
-            let val2_op = parseInt(document.getElementById('cross_val2_op').value);
-            let uVal2 = val2_num * val2_op;
-            // ---------------------------------------------
-            
-            let checkA = (ua1*ua2===d.A), checkC = (uc1*uc2===d.C);
-            let cp1 = ua1*uc2, cp2 = ua2*uc1;
-            let checkMiddle = (cp1+cp2===d.B), checkVals = (uVal1===cp1 && uVal2===cp2)||(uVal1===cp2 && uVal2===cp1);
-            
-            if(checkA && checkC && checkMiddle && checkVals) isCorrect = true;
-            else msg = "❌ 數字湊錯了，請再檢查積與和！";
-            
-            if(isCorrect) renderStep2Inputs('cross', {ua1, uc1, ua2, uc2});
-
-        } else {
-            if(!state.formulaType) { alert("請選擇一個公式！"); return; }
-            let targetType = state.q.type === 'advanced' ? state.q.subtype : state.q.type;
-            if(state.formulaType === targetType) {
-                isCorrect = true;
-                msg = "✅ 公式選擇正確！";
-                renderStep2Inputs('formula', state.formulaType);
-            } else {
-                msg = "❌ 公式選錯囉，請觀察題目特徵。";
+             if(state.subStreak >= 3) {
+                state.subType++; state.subStreak = 0;
+                let maxT = (state.level==='concept'||state.level==='move')?3 : 5;
+                if(state.subType > maxTypes) { alert("恭喜通關！"); showMenu(); return; }
             }
         }
+    } else {
+        if(state.score >= 10) { alert("恭喜通關！"); showMenu(); return; }
+    }
 
-        let fb = document.getElementById('step1-feedback');
-        fb.innerHTML = msg;
-        fb.className = `feedback-area ${isCorrect?'correct':'wrong'}`;
-        fb.style.display = 'block';
+    resetInputs();
+    
+    try {
+        if(state.course === 'cross') genCross();
+        else if(state.course === 'formula') genFormula();
+        else genSquare();
+    } catch(e) {
+        console.error(e); alert("出題錯誤"); showMenu();
+    }
+    
+    // Update Score UI
+    if(state.course === 'square') {
+        if(state.level === 'complete') {
+            document.getElementById('score-display').innerText = `進度: ${state.score} / 5`;
+        } else {
+            let maxT = (state.level==='concept'||state.level==='move')?3 : 5;
+            document.getElementById('score-display').innerText = `題型 ${state.subType}/${maxT} (連對 ${state.subStreak}/3)`;
+        }
+    } else {
+        document.getElementById('score-display').innerText = `進度: ${state.score} / 10`;
+    }
+}
 
-        if(isCorrect) {
+function resetInputs() {
+    document.querySelectorAll('input').forEach(i => i.value = '');
+    document.querySelectorAll('select').forEach(s => s.value = '1');
+    document.querySelectorAll('.formula-option').forEach(o => o.classList.remove('selected'));
+    
+    // Clear dynamic containers
+    document.getElementById('game-area-s1').innerHTML = '';
+    document.getElementById('game-area-s2').innerHTML = '';
+
+    document.getElementById('step1-container').classList.remove('disabled-step');
+    document.getElementById('step2-container').classList.add('disabled-step');
+    document.getElementById('step3-container').classList.add('disabled-step');
+    
+    document.getElementById('feedback-msg').style.display = 'none';
+    document.getElementById('btn-submit').classList.add('hidden');
+    document.getElementById('btn-next').classList.add('hidden');
+    
+    setAnsMode('rational');
+    if(state.course === 'square' && state.level === 'solve') {
+        document.getElementById('step2-container').classList.remove('hidden');
+    } else {
+        document.getElementById('step2-container').classList.add('hidden');
+    }
+    
+    if(document.getElementById('rad-k')) document.getElementById('rad-k').value = 1;
+    if(document.getElementById('rad-c')) document.getElementById('rad-c').value = 1;
+}
+
+function setAnsMode(m) {
+    state.ansMode = m;
+    document.getElementById('input-rational').classList.toggle('hidden', m!=='rational');
+    document.getElementById('input-radical').classList.toggle('hidden', m!=='radical');
+    document.getElementById('btn-rat').className = m==='rational'?'toggle-btn active':'toggle-btn';
+    document.getElementById('btn-rad').className = m==='radical'?'toggle-btn active':'toggle-btn';
+    document.getElementById('ans-toggle').classList.remove('hidden');
+    
+    if(state.course==='square' && state.level==='solve' && state.subType>=4) {
+        document.getElementById('rad-div-part').classList.remove('hidden');
+    } else {
+        document.getElementById('rad-div-part').classList.add('hidden');
+    }
+}
+
+// --- Generators ---
+function rnd(min, max) { return Math.floor(Math.random()*(max-min+1))+min; }
+function rndNz(min, max) { let n=0; while(n===0) n=rnd(min,max); return n; }
+function fmt(n) { return n>=0 ? `+ ${n}` : `- ${Math.abs(n)}`; }
+function fmt2(n) { return n>=0 ? `+${n}` : `${n}`; }
+function getSimpRad(n) {
+    if(n<=0) return {k:0, n:0};
+    let k=1;
+    for(let i=2; i*i<=n; i++) {
+        while(n%(i*i)===0) { k*=i; n/=(i*i); }
+    }
+    return {k, n};
+}
+
+function genCross() {
+    let a1=1, a2=1, c1, c2;
+    if(state.level==='easy') { c1=rndNz(-9,9); c2=rndNz(-9,9); }
+    else if(state.level==='medium') { let ps=[2,3,5]; a1=ps[rnd(0,2)]; c1=rndNz(-5,5); c2=rndNz(-5,5); }
+    else { a1=rnd(2,5); a2=rnd(2,4); c1=rndNz(-4,4); c2=rndNz(-4,4); }
+    
+    let A=a1*a2, B=a1*c2+a2*c1, C=c1*c2;
+    document.getElementById('q-text').innerText = `${A===1?'':A}x² ${fmt(B)}x ${fmt(C)} = 0`;
+    state.q = { type:'cross', step1:{B}, roots:[-c1/a1, -c2/a2] };
+    
+    document.getElementById('step1-title').innerText = "步驟一：十字交乘湊數";
+    document.getElementById('game-area-s1').innerHTML = `
+        <div class="cross-layout">
+            <div class="cross-col" style="text-align:right">
+                <div class="cross-row">${state.level==='easy'?'':'<input type="text" id="cr-a1" class="box-input" placeholder="a">'} <span style="font-size:2rem">x</span></div>
+                <div class="cross-row">${state.level==='easy'?'':'<input type="text" id="cr-a2" class="box-input" placeholder="a">'} <span style="font-size:2rem">x</span></div>
+            </div>
+            <div class="big-x">╳</div>
+            <div class="cross-col">
+                <div class="cross-row"><select id="cr-op1" class="box-select"><option value="1">+</option><option value="-1">-</option></select><input type="text" id="cr-c1" class="box-input" placeholder="c"></div>
+                <div class="cross-row"><select id="cr-op2" class="box-select"><option value="1">+</option><option value="-1">-</option></select><input type="text" id="cr-c2" class="box-input" placeholder="c"></div>
+            </div>
+        </div>
+        <div style="text-align:center; margin-top:10px;">驗算：( <input type="text" id="chk-1" style="width:60px"> x ) + ( <input type="text" id="chk-2" style="width:60px"> x ) = ?</div>
+        <button class="menu-btn btn-check" onclick="checkCrossStep1()">檢查湊數步驟</button>
+    `;
+    document.getElementById('ans-toggle').classList.add('hidden');
+}
+
+function genFormula() {
+    let type='diff', a=1, b=1, eq='';
+    if(state.level==='easy') { type='diff'; a=(Math.random()<0.3?rnd(2,5):1); b=rnd(1,9); eq=`(${a===1?'':a}x)² - ${b*b} = 0`; }
+    else if(state.level==='medium') { type=Math.random()<0.5?'sum':'sub'; b=rnd(1,9); eq=`x² ${type==='sum'?'+':'-'} ${2*b}x + ${b*b} = 0`; }
+    else { type='diff'; a=rnd(2,5); b=rnd(1,9); eq=`(${a}x)² - ${b*b} = 0`; }
+    
+    document.getElementById('q-text').innerText = eq;
+    let r1, r2;
+    if(type==='diff') { r1=b/a; r2=-b/a; } else { let v=(type==='sum'?-b:b)/a; r1=r2=v; }
+    state.q = { type:'formula', ftype:type, roots:[r1,r2] };
+    
+    document.getElementById('step1-title').innerText = "步驟一：選擇公式";
+    document.getElementById('game-area-s1').innerHTML = `
+        <div class="formula-options">
+            <div class="formula-option" id="opt-diff" onclick="selForm('diff')">1. 平方差 A² - B²</div>
+            <div class="formula-option" id="opt-sum" onclick="selForm('sum')">2. 和的平方 (A+B)²</div>
+            <div class="formula-option" id="opt-sub" onclick="selForm('sub')">3. 差的平方 (A-B)²</div>
+        </div>
+        <button class="menu-btn btn-check" onclick="checkFormStep1()">確認公式</button>
+    `;
+    document.getElementById('ans-toggle').classList.add('hidden');
+}
+
+function genSquare() {
+    let lv = state.level, st = state.subType;
+    let q = { type:'square', stage:lv };
+    document.getElementById('step1-title').innerText = "步驟一：去平方 / 移項";
+
+    if(lv === 'concept') {
+        if(st===1) { // x^2 = k
+            let k=rnd(2,9)**2; document.getElementById('q-text').innerText = `x² = ${k}`;
+            q.roots=[Math.sqrt(k), -Math.sqrt(k)]; q.form='rational';
             document.getElementById('step1-container').classList.add('disabled-step');
-            document.getElementById('step2-container').classList.remove('disabled-step');
             document.getElementById('step3-container').classList.remove('disabled-step');
-            document.getElementById('final-submit-btn').classList.remove('hidden');
-        }
-    }
-
-    function renderStep2Inputs(mode, data) {
-        const area = document.getElementById('step2-input-area');
-        area.innerHTML = '';
-        if (state.course === 'cross' && state.q.subtype === 'advanced') {
-            document.getElementById('step2-hint').classList.remove('hidden');
-        } else if (state.course === 'cross') {
-            document.getElementById('step2-hint').classList.add('hidden');
-        }
-
-        if (mode === 'cross') {
-            if (state.q.subtype === 'advanced') {
-                area.innerHTML = `
-                ( <input type="number" id="s2_a1" class="short-input" placeholder="a"> x 
-                  <select id="s2_op1" class="sign-select"><option value="1">+</option><option value="-1">-</option></select> 
-                  <input type="number" id="s2_c1" class="short-input" placeholder="c"> ) 
-                ( <input type="number" id="s2_a2" class="short-input" placeholder="a"> x 
-                  <select id="s2_op2" class="sign-select"><option value="1">+</option><option value="-1">-</option></select> 
-                  <input type="number" id="s2_c2" class="short-input" placeholder="c"> ) = 0`;
-            } else {
-                area.innerHTML = `
-                ( <input type="number" id="s2_a1" class="short-input" value="${data.ua1}" readonly> x 
-                  <select id="s2_op1" class="sign-select" disabled><option value="1" ${data.uc1>=0?'selected':''}>+</option><option value="-1" ${data.uc1<0?'selected':''}>-</option></select> 
-                  <input type="number" id="s2_c1" class="short-input" value="${Math.abs(data.uc1)}" readonly> ) 
-                ( <input type="number" id="s2_a2" class="short-input" value="${data.ua2}" readonly> x 
-                  <select id="s2_op2" class="sign-select" disabled><option value="1" ${data.uc2>=0?'selected':''}>+</option><option value="-1" ${data.uc2<0?'selected':''}>-</option></select> 
-                  <input type="number" id="s2_c2" class="short-input" value="${Math.abs(data.uc2)}" readonly> ) = 0`;
-            }
+            document.getElementById('btn-submit').classList.remove('hidden');
+            state.q = q; setAnsMode(q.form);
+        } else if(st===2) {
+            let a=rndNz(-9,9), k=rnd(2,9)**2; 
+            document.getElementById('q-text').innerText = `(x${fmt2(a)})² = ${k}`;
+            let r=Math.sqrt(k); q.roots=[r-a, -r-a]; q.form='rational';
+            q.step1_check=r; q.lhs = `x${fmt(a)}`;
+            state.q = q;
+            renderSqStage1UI();
         } else {
-            if(state.q.type === 'advanced') {
-                let op = state.q.subtype === 'sum' ? '+' : '-';
-                let bStr = state.q.inner_b >= 0 ? `+${state.q.inner_b}` : state.q.inner_b;
-                document.getElementById('step2-hint').innerHTML = `💡 提示：因式分解為 (A ${op} ${state.q.outer_k})² = 0，其中 A = (${state.q.inner_a}x${bStr})，請填入整理後的係數。`;
-                document.getElementById('step2-hint').classList.remove('hidden');
-                area.innerHTML = `( <input type="text" inputmode="decimal" id="s2_fa" class="short-input"> x <select id="s2_fop" class="sign-select"><option value="1">+</option><option value="-1">-</option></select> <input type="text" inputmode="decimal" id="s2_fc" class="short-input"> )² = 0`;
-            } else if (state.formulaType === 'diff') {
-                if (state.q.subtype === 'advanced') {
-                     area.innerHTML = `( <input type="text" inputmode="decimal" id="s2_fa1" class="short-input"> x <select id="s2_fop1" class="sign-select"><option value="1">+</option><option value="-1">-</option></select> <input type="text" inputmode="decimal" id="s2_fc1" class="short-input"> ) ( <input type="text" inputmode="decimal" id="s2_fa2" class="short-input"> x <select id="s2_fop2" class="sign-select"><option value="1">+</option><option value="-1">-</option></select> <input type="text" inputmode="decimal" id="s2_fc2" class="short-input"> ) = 0`;
-                } else {
-                     area.innerHTML = `( <input type="text" inputmode="decimal" id="s2_fa1" class="short-input"> x + <input type="text" inputmode="decimal" id="s2_fc1" class="short-input"> ) ( <input type="text" inputmode="decimal" id="s2_fa2" class="short-input"> x - <input type="text" inputmode="decimal" id="s2_fc2" class="short-input"> ) = 0`;
-                }
+            let a=rndNz(-9,9), k=[2,3,5,6,7][rnd(0,4)]; 
+            document.getElementById('q-text').innerText = `(x${fmt2(a)})² = ${k}`;
+            let simp = getSimpRad(k);
+            q.rad = {a:-a, k:simp.k, n:simp.n, c:1}; q.form='radical';
+            q.step1_check=k; q.lhs = `x${fmt(a)}`;
+            state.q = q;
+            renderSqStage1UI();
+        }
+    } 
+    else if (lv === 'move') {
+        if(st===1) { // (x+a)^2 = k
+            let a=rndNz(-5,5), k=rnd(2,9)**2;
+            document.getElementById('q-text').innerText = `(x${fmt2(a)})² - ${k} = 0`;
+            let r=Math.sqrt(k); q.roots=[r-a, -r-a]; q.form='rational';
+        } else { // (ax+b)^2 = total
+            let a=rnd(2,3), c=rnd(1,10), d=rnd(1,5); let total = c+d;
+            let b=rndNz(-5,5);
+            document.getElementById('q-text').innerText = `(${a}x${fmt2(b)})² - ${c} = ${d}`;
+            if(Number.isInteger(Math.sqrt(total))) {
+                let r=Math.sqrt(total); q.roots=[(r-b)/a, (-r-b)/a]; q.form='rational';
             } else {
-                let op = state.formulaType === 'sum' ? '+' : '-';
-                area.innerHTML = `( <input type="text" inputmode="decimal" id="s2_fa" class="short-input"> x ${op} <input type="text" inputmode="decimal" id="s2_fc" class="short-input"> )² = 0`;
+                let simp = getSimpRad(total);
+                q.rad = {a:-b, k:simp.k, n:simp.n, c:a}; q.form='radical';
             }
         }
+        // Direct solve for move stage (as requested)
+        document.getElementById('step1-container').classList.add('disabled-step');
+        document.getElementById('game-area-s1').innerHTML = '<p style="text-align:center; color:#999;">(此階段直接求解)</p>';
+        document.getElementById('step3-container').classList.remove('disabled-step');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        state.q = q; setAnsMode(q.form);
     }
+    else if (lv === 'complete') {
+        let a=1, b=rnd(1,9)*2; if(st===2) b=rnd(1,9)*2+1; if(Math.random()<0.5) b=-b;
+        document.getElementById('q-text').innerText = `x² ${fmt(b)}x + □ = (x + △)²`;
+        let h = `□ = <input type="text" id="sq3-1" class="box-input"> , △ = <input type="text" id="sq3-2" class="box-input">`;
+        document.getElementById('game-area-s1').innerHTML = h;
+        document.getElementById('step3-container').classList.add('hidden');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        q.ans1 = (b/2)**2; q.ans2 = b/2;
+        state.q = q;
+    }
+    else if (lv === 'solve') {
+        let a=1, b=2, c=1;
+        if(st===1) { b=2*rnd(1,5); c=rnd(-10, -1); document.getElementById('q-text').innerText = `x² ${fmt(b)}x ${fmt(c)} = 0`;}
+        if(st===2) { b=2*rnd(1,5); c=rnd(1,10); document.getElementById('q-text').innerText = `x² = ${c} ${fmt(-b)}x`; c=-c; }
+        if(st===3) { b=2*rnd(10,20); c=rnd(-200,-50); document.getElementById('q-text').innerText = `x² ${fmt(b)}x ${fmt(c)} = 0`;}
+        if(st===4) { a=rnd(2,5); b=a*2*rnd(1,3); c=rnd(-20,20); while(b*b-4*a*c<0) c++; document.getElementById('q-text').innerText = `${a}x² ${fmt(b)}x ${fmt(c)} = 0`;}
+        if(st===5) { a=-rnd(2,5); b=a*2*rnd(1,3); c=rnd(-20,20); while(b*b-4*a*c<0) c--; document.getElementById('q-text').innerText = `${a}x² ${fmt(b)}x ${fmt(c)} = 0`;}
 
-    function finalCheck() {
-        let isCorrect = false;
-        let msg = "";
-        let q = state.q;
-        let s2Correct = true;
+        let normB = b/a; let normC = c/a;
+        let halfB = normB/2; let addVal = halfB*halfB; let rhs = -normC + addVal;
         
-        if (state.course === 'cross' && q.subtype === 'advanced') {
-            let ua1 = parseInt(document.getElementById('s2_a1').value)||0;
-            let uc1 = (parseInt(document.getElementById('s2_c1').value)||0) * parseInt(document.getElementById('s2_op1').value);
-            let ua2 = parseInt(document.getElementById('s2_a2').value)||0;
-            let uc2 = (parseInt(document.getElementById('s2_c2').value)||0) * parseInt(document.getElementById('s2_op2').value);
-            let ur1 = -uc1/ua1, ur2 = -uc2/ua2;
-            let realR1 = parseFloat(eval(q.root1)), realR2 = parseFloat(eval(q.root2));
-            if (! ((Math.abs(ur1 - realR1) < 0.01 && Math.abs(ur2 - realR2) < 0.01) || 
-                   (Math.abs(ur1 - realR2) < 0.01 && Math.abs(ur2 - realR1) < 0.01)) ) {
-                s2Correct = false;
-            }
-        } else if (state.course === 'formula') {
-             if (q.type === 'advanced') {
-                let u_a = parseInt(document.getElementById('s2_fa').value)||0;
-                let u_c = (parseInt(document.getElementById('s2_fc').value)||0) * parseInt(document.getElementById('s2_fop').value);
-                if (u_a !== q.final_a || u_c !== q.final_b) s2Correct = false;
-            } else if (state.formulaType === 'diff') {
-                let u_a1 = parseInt(document.getElementById('s2_fa1').value)||0;
-                let u_a2 = parseInt(document.getElementById('s2_fa2').value)||0;
-                let u_c1, u_c2;
-                if (q.subtype === 'advanced') {
-                    u_c1 = (parseInt(document.getElementById('s2_fc1').value)||0) * parseInt(document.getElementById('s2_fop1').value);
-                    u_c2 = (parseInt(document.getElementById('s2_fc2').value)||0) * parseInt(document.getElementById('s2_fop2').value);
-                    let p1 = (u_a1===q.final_a && u_c1===q.final_c1) && (u_a2===q.final_a && u_c2===q.final_c2);
-                    let p2 = (u_a1===q.final_a && u_c1===q.final_c2) && (u_a2===q.final_a && u_c2===q.final_c1);
-                    if (!p1 && !p2) s2Correct = false;
-                } else {
-                    u_c1 = parseInt(document.getElementById('s2_fc1').value)||0;
-                    u_c2 = parseInt(document.getElementById('s2_fc2').value)||0;
-                    if (u_a1!==q.a_val || u_c1!==q.b_val || u_a2!==q.a_val || u_c2!==q.b_val) s2Correct = false;
-                }
-            } else {
-                let u_a = parseInt(document.getElementById('s2_fa').value)||0;
-                let u_c = parseInt(document.getElementById('s2_fc').value)||0;
-                if (u_a!==q.a_val || u_c!==q.b_val) s2Correct = false;
-            }
-        }
-
-        let ux1 = normalizeFrac(document.getElementById('step3_x1').value);
-        let ux2 = normalizeFrac(document.getElementById('step3_x2').value);
-        let r1 = q.root1, r2 = q.root2;
-        let rootsMatch = false;
-        if(ux1 && ux2) {
-            if((ux1===r1 && ux2===r2) || (ux1===r2 && ux2===r1)) rootsMatch = true;
-            if(r1===r2 && ux1===r1 && ux2===r1) rootsMatch = true;
-        }
-
-        if(s2Correct && rootsMatch) {
-            isCorrect = true;
-            msg = "🎉 完全正確！太棒了！";
-            state.score++;
-            updateScore();
-            if(state.score >= state.target) {
-                progress[state.course][state.level] = true;
-                saveProgress();
-                setTimeout(() => showCertModal(), 1000);
-            }
+        let D = b*b - 4*a*c;
+        let simp = getSimpRad(D);
+        
+        if(simp.n <= 1) { // Rational
+            let rD = Math.sqrt(D);
+            q.roots = [(-b+rD)/(2*a), (-b-rD)/(2*a)];
+            q.form = 'rational';
         } else {
-            msg = "🤔 答案有誤。<br>";
-            if(!s2Correct) msg += "因式分解整理錯了。<br>";
-            if(!rootsMatch) msg += "最後的 x 解算錯了。<br>";
-            msg += `<br>正確答案：x = ${r1}, x = ${r2}`;
+            let den = 2*a; let numA = -b; let numK = simp.k;
+            if(den < 0) { den=-den; numA=-numA; } 
+            q.rad = {a:numA, k:numK, n:simp.n, c:den};
+            q.form = 'radical';
         }
+        
+        q.s1_add = addVal; q.s2_p = Math.abs(halfB); q.s2_op = halfB>0?1:-1; q.s2_q = rhs;
+        
+        document.getElementById('step1-title').innerText = "步驟一：移項並配方";
+        document.getElementById('game-area-s1').innerHTML = `x² ${fmt(normB)}x + <input type="text" id="sq4-add1" style="width:60px"> = ${-normC} + <input type="text" id="sq4-add2" style="width:60px"> <button class="menu-btn btn-check" onclick="checkSq4S1()">檢查步驟</button>`;
+        
+        document.getElementById('game-area-s2').innerHTML = `( x <select id="sq4-op" class="sign-select"><option value="1">+</option><option value="-1">-</option></select> <input type="text" id="sq4-p" style="width:60px"> )² = <input type="text" id="sq4-q" style="width:60px"> <button class="menu-btn btn-check" onclick="checkSq4S2()">檢查步驟</button>`;
+        state.q = q; setAnsMode(q.form);
+    }
+}
 
-        let fb = document.getElementById('final-feedback');
-        fb.innerHTML = msg;
-        fb.className = `feedback-area ${isCorrect?'correct':'wrong'}`;
-        fb.style.display = 'block';
-        if(isCorrect) {
-            document.getElementById('final-submit-btn').classList.add('hidden');
-            document.getElementById('next-btn').style.display = 'block';
+// --- Render Helpers ---
+function renderSqStage1UI() {
+    let mode = state.step1InputMode || 'auto';
+    // Auto-detect if not set manually
+    if(mode === 'auto') {
+        mode = state.q.form === 'radical' ? 'radical' : 'text';
+    }
+
+    let inputHTML = '';
+    if(mode === 'radical') {
+        let simp = getSimpRad(state.q.step1_check);
+        // Ensure k is at least 1 for validation if missing
+        state.q.step1_check_k = simp.k || 1;
+        state.q.step1_check_n = simp.n;
+        inputHTML = `± <input type="text" id="sq1-k" class="short-input" value="1"> √ <input type="text" id="sq1-n" class="short-input">`;
+    } else {
+        inputHTML = `± <input type="text" id="sq1-val" class="box-input">`;
+    }
+
+    let h = `
+    <div style="text-align:center; font-size:1.5rem; margin-bottom:10px;">
+        ${state.q.lhs} = ${inputHTML}
+        <button class="btn-toggle" onclick="toggleStep1Mode()">切換根號輸入</button>
+    </div>
+    <button class="menu-btn btn-check" onclick="checkSqS1()">檢查步驟</button>
+    `;
+    document.getElementById('game-area-s1').innerHTML = h;
+}
+
+function toggleStep1Mode() {
+    let current = state.step1InputMode || (state.q.form === 'radical' ? 'radical' : 'text');
+    state.step1InputMode = (current === 'text') ? 'radical' : 'text';
+    renderSqStage1UI();
+}
+
+// --- Check Logic ---
+function checkCrossStep1() {
+    let v1 = document.getElementById('chk-1').value;
+    let v2 = document.getElementById('chk-2').value;
+    if(!v1 || !v2) return alert("請填寫驗算");
+    if( (parseInt(v1)+parseInt(v2)) === state.q.step1.B ) {
+        document.getElementById('step3-container').classList.remove('disabled-step');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        document.getElementById('step1-container').classList.add('disabled-step');
+    } else alert("驗算錯誤");
+}
+
+function selForm(t) {
+    state.selectedFormula = t;
+    document.querySelectorAll('.formula-option').forEach(el => el.classList.remove('selected'));
+    document.getElementById('opt-'+t).classList.add('selected');
+}
+function checkFormStep1() {
+    if(!state.selectedFormula) return alert("請選擇公式");
+    if(state.selectedFormula === state.q.ftype) {
+        document.getElementById('step3-container').classList.remove('disabled-step');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        document.getElementById('step1-container').classList.add('disabled-step');
+    } else alert("公式選錯囉！");
+}
+
+function checkSqS1() {
+    let isCorrect = false;
+    let mode = state.step1InputMode || (state.q.form === 'radical' ? 'radical' : 'text');
+    
+    if(mode === 'radical') {
+        let uk = parseFloat(document.getElementById('sq1-k').value);
+        let un = parseFloat(document.getElementById('sq1-n').value);
+        let targetK = state.q.step1_check_k || 1; 
+        if(uk == targetK && un == state.q.step1_check_n) isCorrect = true;
+        // Accept unsimplified e.g. 1 sqrt 12 vs 2 sqrt 3? No, enforce simple.
+    } else {
+        let val = parseFloat(document.getElementById('sq1-val').value);
+        // Allow numeric approx for rational, or strict for int
+        if(Math.abs(val - state.q.step1_check) < 0.01) isCorrect = true;
+    }
+
+    if(isCorrect) {
+        document.getElementById('step3-container').classList.remove('disabled-step');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        document.getElementById('step1-container').classList.add('disabled-step');
+    } else alert("數值錯誤");
+}
+
+function checkSq4S1() {
+    let v1 = eval(document.getElementById('sq4-add1').value);
+    let v2 = eval(document.getElementById('sq4-add2').value);
+    if(Math.abs(v1 - state.q.s1_add)<0.01 && Math.abs(v2 - state.q.s1_add)<0.01) {
+        document.getElementById('step1-container').classList.add('disabled-step');
+        document.getElementById('step2-container').classList.remove('hidden');
+    } else alert("配方數字錯誤");
+}
+
+function checkSq4S2() {
+    let p = eval(document.getElementById('sq4-p').value);
+    let op = parseInt(document.getElementById('sq4-op').value);
+    let q = parseFloat(eval(document.getElementById('sq4-q').value));
+    if(Math.abs(p - state.q.s2_p)<0.01 && op===state.q.s2_op && Math.abs(q - state.q.s2_q)<0.01) {
+        document.getElementById('step2-container').classList.add('disabled-step');
+        document.getElementById('step3-container').classList.remove('disabled-step');
+        document.getElementById('btn-submit').classList.remove('hidden');
+    } else alert("整理錯誤");
+}
+
+function checkAnswer() {
+    // Stage 3 Fill
+    if(state.course==='square' && state.level==='complete') {
+        let u1 = eval(document.getElementById('sq3-1').value);
+        let u2 = eval(document.getElementById('sq3-2').value);
+        if(Math.abs(u1-state.q.ans1)<0.001 && Math.abs(u2-state.q.ans2)<0.001) passQuestion();
+        else showFeedback(false);
+        return;
+    }
+
+    // Solve Check
+    let isCorrect = false;
+    if(state.ansMode === 'rational') {
+        let x1 = eval(document.getElementById('sol-x1').value);
+        let x2 = eval(document.getElementById('sol-x2').value);
+        if(x1!==undefined && x2!==undefined) {
+            let r1 = state.q.roots[0], r2 = state.q.roots[1];
+            if( (Math.abs(x1-r1)<0.01 && Math.abs(x2-r2)<0.01) || (Math.abs(x1-r2)<0.01 && Math.abs(x2-r1)<0.01) ) isCorrect=true;
         }
+    } else {
+        let ua = parseFloat(document.getElementById('rad-a').value);
+        let uk = parseFloat(document.getElementById('rad-k').value);
+        let ub = parseFloat(document.getElementById('rad-b').value);
+        let uc = parseFloat(document.getElementById('rad-c').value);
+        if(Math.abs(ua-state.q.rad.a)<0.1 && uk==state.q.rad.k && ub==state.q.rad.n && uc==state.q.rad.c) isCorrect=true;
     }
 
-    // --- Helpers ---
-    function rnd(min, max, noZero=false) {
-        let n;
-        do { n = Math.floor(Math.random()*(max-min+1))+min; } while(noZero && n===0);
-        return n;
-    }
-    function gcd(a, b) { return b===0?a:gcd(b, a%b); }
-    function formatFraction(n, d) {
-        if(d===0) return "undefined";
-        let sign = 1; if(n<0){sign*=-1;n=-n} if(d<0){sign*=-1;d=-d}
-        let c=gcd(n,d); n/=c; d/=c;
-        return (sign===-1?"-":"") + n + (d===1?"":"/"+d);
-    }
-    function normalizeFrac(str) {
-        str = str.trim(); if(!str) return null;
-        if(str.includes('/')) { let [n,d]=str.split('/').map(Number); return formatFraction(n,d); }
-        return formatFraction(parseInt(str), 1);
-    }
-    function fmtCoef(n) { return n===1?"":n===-1?"-":n; }
-    function fmtSign(n) { return n>=0 ? `+ ${n}` : `- ${Math.abs(n)}`; }
-    function displayEq(s) { document.getElementById('question-display').innerText = s.replace(" 1x", " x").replace("- 1x", "- x").replace(/\+ 0x/g,"").replace(/- 0x/g,""); }
-    function updateScore() { document.getElementById('score').innerText = state.score; document.getElementById('progress-bar').style.width = (state.score/state.target*100)+'%'; }
-    function nextQuestion() { generateQuestion(); }
+    showFeedback(isCorrect);
+    if(isCorrect) passQuestion();
+}
 
-    // --- Certificate ---
-    function showCertModal() {
-        let title = state.course==='cross' ? '十字交乘' : '乘法公式';
-        let lv = state.level==='easy'?'初階':state.level==='medium'?'中階':'進階';
-        document.getElementById('cert-student-info').innerText = `${student.class}班 ${student.seat}號 ${student.name}`;
-        document.getElementById('cert-course-name').innerText = title + "特訓";
-        document.getElementById('cert-level-name').innerText = lv + "關卡";
-        document.getElementById('cert-seal-text').innerText = lv + "通關";
-        document.getElementById('cert-date').innerText = new Date().toLocaleDateString();
-        document.querySelector('.cert-content').style.borderColor = "#daa520";
-        document.getElementById('cert-modal').style.display = 'flex';
-    }
-    function showFinalCertificate(course) {
-        let title = course==='cross' ? '十字交乘大師' : '乘法公式大師';
-        document.getElementById('cert-student-info').innerText = `${student.class}班 ${student.seat}號 ${student.name}`;
-        document.getElementById('cert-course-name').innerText = "全階段制霸";
-        document.getElementById('cert-level-name').innerText = "終極榮譽";
-        document.getElementById('cert-title').innerText = "🏅 終極榮譽證書";
-        document.getElementById('cert-seal-text').innerText = "大師";
-        document.querySelector('.cert-content').style.borderColor = "#ffd700";
-        document.getElementById('cert-modal').style.display = 'flex';
-    }
-    function closeCert() { document.getElementById('cert-modal').style.display = 'none'; showMenu(); }
+function passQuestion() {
+    document.getElementById('btn-submit').classList.add('hidden');
+    document.getElementById('btn-next').classList.remove('hidden');
+    
+    if(state.course==='square') {
+        if(state.level === 'complete') {
+            state.score++; 
+             if(state.score >= 5) alert("恭喜通關！");
+        } else {
+            state.subStreak++; 
+            if(state.subStreak >= 3) {
+                state.subType++; state.subStreak = 0;
+                let maxT = (state.level==='concept'||state.level==='move')?3:5;
+                if(state.subType > maxTypes) alert("恭喜！本階段通關！");
+                else alert("晉級下一種題型！");
+            }
+        }
+    } else state.score++;
+}
 
+// Utils
+function showFeedback(ok, text) {
+    let el = document.getElementById('feedback-msg');
+    el.style.display = 'block';
+    el.className = ok ? 'feedback correct' : 'feedback wrong';
+    el.innerText = text ? text : (ok ? "🎉 答對了！" : "❌ 答案有誤");
+}
+function setAnsMode(m) {
+    state.ansMode = m;
+    document.getElementById('input-rational').classList.toggle('hidden', m!=='rational');
+    document.getElementById('input-radical').classList.toggle('hidden', m!=='radical');
+    document.getElementById('btn-rat').className = m==='rational'?'toggle-btn active':'toggle-btn';
+    document.getElementById('btn-rad').className = m==='radical'?'toggle-btn active':'toggle-btn';
+    document.getElementById('ans-toggle').classList.remove('hidden');
+    
+    if(state.course==='square' && state.level==='solve' && state.subType>=4) {
+        document.getElementById('rad-div-part').classList.remove('hidden');
+    } else {
+        document.getElementById('rad-div-part').classList.add('hidden');
+    }
+}
+function showCertModal() { document.getElementById('cert-modal').style.display='flex'; }
+function closeCert() { document.getElementById('cert-modal').style.display='none'; showMenu(); }
 </script>
 </body>
 </html>
