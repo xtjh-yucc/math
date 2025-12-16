@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>國中數學：一元二次方程式特訓 (v27 根號題型版)</title>
+    <title>國中數學：一元二次方程式特訓 (v30 根號題型強化版)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -137,6 +137,7 @@
         .close-cert-btn { margin-top: 15px; padding: 10px 30px; background: #333; color: white; border: none; cursor: pointer; font-size: 1rem; border-radius: 50px; }
         
         .menu-section { width: 100%; }
+        .radical-symbol { font-size: 1.8rem; font-family: 'Times New Roman'; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -174,7 +175,7 @@
         <button class="menu-btn btn-easy" onclick="startGame('square','concept')">1️⃣ 平方根概念 (3種題型)</button>
         <button class="menu-btn btn-medium" onclick="startGame('square','move')">2️⃣ 移項開方 (分步驟解題)</button>
         <button class="menu-btn btn-hard" onclick="startGame('square','complete')">3️⃣ 配方練習 (5題過關)</button>
-        <button class="menu-btn btn-action" onclick="startGame('square','solve')">4️⃣ 配方法全攻略 (混合題型)</button>
+        <button class="menu-btn btn-action" onclick="startGame('square','solve')">4️⃣ 配方法全攻略 (分四步引導)</button>
     </div>
 </div>
 
@@ -251,6 +252,11 @@ function safeEval(val) {
         safe = safe.replace(/[^0-9\-\.\/\*\(\)\+]/g, '');
         return eval(safe);
     } catch(e) { return NaN; }
+}
+
+function toFractionString(val) {
+    if (Number.isInteger(val)) return val;
+    return (val * 2) + "/2";
 }
 
 function doLogin() {
@@ -512,12 +518,11 @@ function genSquare() {
         state.q = { type: 'complete', ans: [c, half] };
     }
     else if (lv === 'solve') {
-        // Updated: 50% chance for Irrational Root (Surd) question
-        let isRadical = Math.random() < 0.5;
-        let B, C, p, q_val, root_val;
+        // High probability of irrational roots
+        let isRadical = Math.random() < 0.7; 
+        let B, C, p;
         
         if (!isRadical) {
-            // Standard Rational Case
             let r1 = rnd(-8, 8);
             let r2 = rnd(-8, 8);
             B = -(r1+r2);
@@ -525,28 +530,24 @@ function genSquare() {
             while(B===0 || C===0) { r1=rnd(-5,5); r2=rnd(-5,5); B=-(r1+r2); C=r1*r2; }
             state.solveMode = 'rational';
         } else {
-            // Irrational Case: (x+p)^2 = q where q is not square
-            // To ensure B is integer, p must be k or k.5. Let's stick to even B => p is int.
             p = rndNz(-6, 6);
             let q_surd = 0;
-            // find non-square positive q
             while(true) {
                 q_surd = rnd(2, 15);
                 if (Math.floor(Math.sqrt(q_surd)) !== Math.sqrt(q_surd)) break;
             }
-            // Expand: x^2 + 2px + p^2 - q = 0
             B = 2 * p;
             C = p**2 - q_surd;
-            state.solveMode = 'radical_mixed'; // Prepare UI for root
+            state.solveMode = 'radical_mixed'; 
         }
 
         document.getElementById('q-text').innerText = `x² ${fmt(B)}x ${fmt(C)} = 0`;
         
-        // Recalculate for consistency
         let s1_add = (B/2)**2;
-        let s1_rhs = -C + s1_add; // This is q_val
+        let s1_rhs = -C + s1_add;
         let s2_p = B/2;
         let s2_q = s1_rhs;
+        let s3_root = Math.sqrt(s2_q);
         
         state.q = { 
             type: 'solve_steps', 
@@ -554,32 +555,39 @@ function genSquare() {
             s1_rhs: s1_rhs,
             s2_p: s2_p,
             s2_q: s2_q,
-            s3_root: Math.sqrt(s2_q), // If irrational, this float will be checked with epsilon
-            ans_rational: isRadical ? null : [(-B/2)+Math.sqrt(s2_q), (-B/2)-Math.sqrt(s2_q)],
+            s3_root: s3_root,
+            s3_is_perfect: Number.isInteger(s3_root), 
+            roots: [0, 0], // Not used for radical check
+            ans: isRadical ? null : [(-B/2)+s3_root, (-B/2)-s3_root],
             ans_radical: isRadical ? { a: -B/2, k: 1, b: s2_q, c: 1 } : null
         };
 
-        // Step 1 UI
         document.getElementById('step1-title').innerText = "步驟一：移項並配方";
         document.getElementById('game-area-s1').innerHTML = `
             x² ${fmt(B)}x + <input type="text" id="sq4_s1_add" class="medium-input" placeholder="(b/2)²"> = ${-C} + <input type="text" id="sq4_s1_rhs" class="medium-input" placeholder="(b/2)²">
             <button class="menu-btn btn-check" style="margin-top:10px" onclick="checkSq4S1()">檢查步驟一</button>
         `;
         
-        // Step 2 UI (Hidden)
         document.getElementById('step2-title').innerText = "步驟二：整理平方";
         document.getElementById('game-area-s2').innerHTML = `
             (x + <input type="text" id="sq4_s2_p" class="medium-input">)² = <input type="text" id="sq4_s2_q" class="medium-input">
             <button class="menu-btn btn-check" style="margin-top:10px" onclick="checkSq4S2()">檢查步驟二</button>
         `;
         
-        // Step 3 UI (Hidden)
+        let s3_input_html = '';
+        if (state.q.s3_is_perfect) {
+            s3_input_html = `± <input type="text" id="sq4_s3_root" class="medium-input" placeholder="整數">`;
+        } else {
+            s3_input_html = `± <span class="radical-symbol">√</span> <input type="text" id="sq4_s3_root" class="medium-input" placeholder="根號內數字">`;
+        }
+
+        document.getElementById('step3-title').innerText = "步驟三：開根號";
         document.getElementById('game-area-s3').innerHTML = `
-            x + <input type="text" id="sq4_s3_p" class="medium-input" readonly> = ± <input type="text" id="sq4_s3_root" class="medium-input" placeholder="開根號結果">
+            x + <input type="text" id="sq4_s3_p" class="medium-input" readonly> = ${s3_input_html}
             <button class="menu-btn btn-check" style="margin-top:10px" onclick="checkSq4S3()">檢查步驟三</button>
         `;
         
-        document.getElementById('step3-container').classList.add('hidden'); // Hide solve
+        document.getElementById('step3-container').classList.add('hidden'); 
     }
 }
 
@@ -611,17 +619,15 @@ function renderSqStage1UI() {
     document.getElementById('btn-submit').classList.add('hidden');
 }
 
-// --- Multi-Step Checks ---
 function checkSq4S1() {
     let add = safeEval(sanitizeInput(document.getElementById('sq4_s1_add').value));
     let rhs = safeEval(sanitizeInput(document.getElementById('sq4_s1_rhs').value));
     
-    // FIX: Check if BOTH inputs are the "add term", not sum.
     if(Math.abs(add - state.q.s1_add) < 0.01 && Math.abs(rhs - state.q.s1_add) < 0.01) { 
         document.getElementById('step1-container').classList.add('disabled-step');
         document.getElementById('step2-container').classList.remove('hidden');
     } else {
-        alert("配方數字錯誤，提示：左右兩邊都要加上 (b/2)²，例如加上 4 或 2^2");
+        alert("配方數字錯誤，提示：左右兩邊都要加上 (b/2)²");
     }
 }
 
@@ -632,59 +638,32 @@ function checkSq4S2() {
     if(Math.abs(p - state.q.s2_p) < 0.01 && Math.abs(q_val - state.q.s2_q) < 0.01) {
         document.getElementById('step2-container').classList.add('disabled-step');
         document.getElementById('step3-container-root').classList.remove('hidden');
-        document.getElementById('sq4_s3_p').value = p; // Auto fill p
+        // Auto fill p with fraction display
+        document.getElementById('sq4_s3_p').value = toFractionString(state.q.s2_p); 
     } else {
         alert("整理錯誤，請檢查");
     }
 }
 
 function checkSq4S3() {
-    let root_str = sanitizeInput(document.getElementById('sq4_s3_root').value);
-    // Determine if user entered "sqrt(10)" or "3.16..."
-    // Since we want standard form, usually we keep sqrt(q).
-    // If q is perfect square, root is int. If not, user should input sqrt(q) or decimal.
-    // Let's allow sqrt(q) notation or decimal.
-    // However, our safeEval supports sqrt function? No.
-    // But if state.solveMode is radical_mixed, it expects a radical.
-    // Step 3 asks for "Value".
-    // If rational case, q is perfect square.
-    // If irrational case, q is not.
-    // For simplicity in step 3, we check the squared value match.
-    // If user enters "√5", safeEval might fail unless we parse.
-    // Simplified: Check if input^2 == q OR input == sqrt(q)
-    
-    let root_val = safeEval(root_str);
-    // If input is "√5", simple eval fails.
-    // Let's assume user enters decimal or we skip strict radical check here and focus on final.
-    // Or, allow them to type "sqrt(5)" ? No.
-    // Let's just check the numeric value.
-    // If q=5, root=2.236. Hard to type.
-    // Fix: If q is not perfect square, display the root automatically or skip this step check?
-    // Better: Auto-fill this step for irrational cases to avoid typing issues, or ask for q inside radical.
-    
-    // For now, let's auto-pass if it's irrational to avoid "how to type root" issues in middle step
-    let q = state.q.s2_q;
-    let isPerfect = Math.floor(Math.sqrt(q)) === Math.sqrt(q);
-    
-    if (!isPerfect) {
-        // Auto pass visual for irrational
-        document.getElementById('sq4_s3_root').value = "√" + q;
-        setTimeout(()=> {
-             document.getElementById('step3-container-root').classList.add('disabled-step');
-             document.getElementById('step3-container').classList.remove('hidden');
-             document.getElementById('step3-container').classList.remove('disabled-step');
-             document.getElementById('btn-submit').classList.remove('hidden');
-             setSolveMode('radical_mixed'); // Auto switch
-             renderSolveInput();
-        }, 800);
-        return;
+    let input_val = safeEval(sanitizeInput(document.getElementById('sq4_s3_root').value));
+    let isCorrect = false;
+
+    if (state.q.s3_is_perfect) {
+        if (Math.abs(input_val - state.q.s3_root) < 0.01) isCorrect = true;
+    } else {
+        if (Math.abs(input_val - state.q.s2_q) < 0.01) isCorrect = true;
     }
 
-    if(Math.abs(root_val - state.q.s3_root) < 0.01) {
+    if(isCorrect) {
         document.getElementById('step3-container-root').classList.add('disabled-step');
         document.getElementById('step3-container').classList.remove('hidden');
         document.getElementById('step3-container').classList.remove('disabled-step');
         document.getElementById('btn-submit').classList.remove('hidden');
+        
+        if (!state.q.s3_is_perfect) setSolveMode('radical_mixed');
+        else setSolveMode('rational');
+        
         renderSolveInput();
     } else {
         alert("開根號錯誤");
@@ -757,13 +736,12 @@ function checkAnswer() {
             
             if(isNaN(u1) || isNaN(u2)) return alert("請輸入有效數字");
             
-            let r1 = state.q.ans_rational ? state.q.ans_rational[0] : (state.q.ans ? state.q.ans[0] : 0);
-            let r2 = state.q.ans_rational ? state.q.ans_rational[1] : (state.q.ans ? state.q.ans[1] : 0);
+            let r1 = state.q.ans ? state.q.ans[0] : 0;
+            let r2 = state.q.ans ? state.q.ans[1] : 0;
 
             if ( (Math.abs(u1-r1)<0.01 && Math.abs(u2-r2)<0.01) || (Math.abs(u1-r2)<0.01 && Math.abs(u2-r1)<0.01) ) isCorrect=true;
 
         } else {
-            // Radical Check
             let ua = safeEval(sanitizeInput(document.getElementById('rad_a').value));
             let ub = safeEval(sanitizeInput(document.getElementById('rad_b').value));
             let uk = safeEval(sanitizeInput(document.getElementById('rad_k') ? document.getElementById('rad_k').value : 1));
@@ -776,19 +754,13 @@ function checkAnswer() {
             let u1 = (ua + v)/uc;
             let u2 = (ua - v)/uc;
             
-            // If strictly using irrational target
             if (state.q.ans_radical) {
-                // Check components for precise matching to standard form if desired, or just value
-                // Value check is safer
                 let target_a = state.q.ans_radical.a;
                 let target_b = state.q.ans_radical.b;
-                // Target value = a +/- sqrt(b)
                 let t1 = target_a + Math.sqrt(target_b);
                 let t2 = target_a - Math.sqrt(target_b);
-                
                 if ( (Math.abs(u1-t1)<0.01 && Math.abs(u2-t2)<0.01) || (Math.abs(u1-t2)<0.01 && Math.abs(u2-t1)<0.01) ) isCorrect=true;
             } else {
-                // Rational fallback
                 let r1 = state.q.ans[0];
                 let r2 = state.q.ans[1];
                 if ( (Math.abs(u1-r1)<0.01 && Math.abs(u2-r2)<0.01) || (Math.abs(u1-r2)<0.01 && Math.abs(u2-r1)<0.01) ) isCorrect=true;
@@ -811,7 +783,6 @@ function passQuestion() {
     let leveledUp = false;
     let maxT = (state.level==='concept'||state.level==='move')?3:5;
     
-    // FIX: Check for complete level pass condition (>= 5) and force pass
     if (state.level === 'complete') {
         if(state.score >= 5) { passLevel(); return; }
     }
