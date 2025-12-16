@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>國中數學：一元二次方程式特訓 (根號切換版)</title>
+    <title>國中數學：一元二次方程式特訓 (v27 根號題型版)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -11,8 +11,8 @@
             --success: #2ec4b6;
             --error: #e63946;
             --bg: #f8f9fa;
-            --gold: #ffb703;
-            --pink: #ff006e;
+            --pink: #ff006e; 
+            --gray: #6c757d;
         }
 
         body {
@@ -32,8 +32,8 @@
             padding: 2rem;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 650px;
+            width: 95%;
+            max-width: 750px;
             text-align: center;
             max-height: 95vh;
             overflow-y: auto;
@@ -73,32 +73,29 @@
         .btn-medium { background: linear-gradient(135deg, #4361ee, #3a0ca3) !important; }
         .btn-hard { background: linear-gradient(135deg, #7209b7, #560bad) !important; }
         .btn-action { background: var(--success) !important; }
-        .btn-gray { background: #6c757d !important; box-shadow: none; }
-        
-        .btn-check { 
-            background: var(--pink) !important; 
-            color: white !important; 
-            box-shadow: 0 4px 10px rgba(255, 0, 110, 0.3);
-            margin-top: 15px;
+        .btn-gray { background: var(--gray) !important; box-shadow: none; }
+        .btn-check { background: var(--pink) !important; color: white !important; box-shadow: 0 4px 10px rgba(255, 0, 110, 0.3); margin-top: 15px; }
+
+        /* 模式切換按鈕 */
+        .mode-btn-group { display: flex; justify-content: center; gap: 5px; margin: 10px 0; flex-wrap: wrap; }
+        .mode-btn { 
+            padding: 6px 15px; font-size: 0.9rem; border: 1px solid #ccc; 
+            background: #eee; border-radius: 20px; cursor: pointer; color: #555; transition: 0.2s;
         }
-        
-        .btn-toggle {
-            background: #eee; border: 1px solid #ccc; color: #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; margin-left: 10px;
-        }
+        .mode-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 5px rgba(67,97,238,0.3); }
 
         /* Game UI */
         .status-bar { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; font-size: 1rem; color: #555; background: #f1f5f9; padding: 12px; border-radius: 10px;}
-        .question-box { font-size: 2.2rem; font-family: 'Times New Roman', serif; background: #e9ecef; padding: 25px; border-radius: 15px; margin-bottom: 20px; }
+        .question-box { font-size: 2.2rem; font-family: 'Times New Roman', serif; background: #e9ecef; padding: 25px; border-radius: 15px; margin-bottom: 20px; word-break: break-word;}
         
         .step-container { text-align: left; margin-bottom: 15px; padding: 20px; border: 2px solid #e9ecef; border-radius: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .step-title { font-weight: bold; color: var(--primary); margin-bottom: 15px; display: block; font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 5px;}
         
-        /* Inputs */
         input[type="number"], input[type="text"] { 
             padding: 8px; text-align: center; font-size: 1.5rem; border: 2px solid #ced4da; border-radius: 10px; 
             -webkit-appearance: none; margin: 0 4px; font-family: 'Times New Roman'; background: #fff;
         }
-        .short-input { width: 70px; } .medium-input { width: 110px; }
+        .short-input { width: 60px; } .medium-input { width: 100px; }
         
         select { 
             padding: 8px; font-size: 1.5rem; border: 2px solid #ced4da; border-radius: 10px; background: white; cursor: pointer; 
@@ -117,54 +114,68 @@
         .formula-option:hover { background: #f8f9fa; }
         .formula-option.selected { border-color: var(--primary); background: #eef2ff; color: var(--primary); font-weight: bold; }
 
-        .radical-input { 
-            font-family: 'Times New Roman'; font-size: 1.4rem; 
-            display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; 
-            background: #fff8e1; padding: 20px; border-radius: 12px; border: 2px solid #ffe082;
+        .radical-wrapper { 
+            font-family: 'Times New Roman'; font-size: 1.5rem; 
+            display: inline-flex; align-items: center; justify-content: center; gap: 5px; 
+            background: #fff8e1; padding: 15px; border-radius: 10px; border: 1px solid #ffe082;
+            flex-wrap: wrap;
         }
 
         .hidden { display: none !important; }
         .disabled-step { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+        .user-info-display { position: absolute; top: 15px; right: 20px; font-size: 0.9rem; color: #666; font-weight: bold; }
         
-        .feedback { margin-top: 15px; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; display: none; }
+        .feedback { margin-top: 20px; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; display: none; text-align: center; }
         .feedback.correct { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
         .feedback.wrong { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-
-        .toggle-container { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-        .toggle-btn { padding: 8px 25px; background: #eee; border-radius: 20px; cursor: pointer; font-size: 1rem; border: 1px solid #ddd; }
-        .toggle-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        /* Certificate */
+        .cert-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
+        .cert-content { background: #fff; width: 100%; max-width: 800px; max-height: 95vh; overflow-y: auto; padding: 30px; border: 15px double #daa520; text-align: center; position: relative; background-image: radial-gradient(circle, #fff 0%, #fdfbf7 100%); border-radius: 10px; }
+        .cert-title { font-size: 2.5rem; color: #b8860b; font-family: "Baskerville", serif; margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        .cert-name { font-size: 2.2rem; font-weight: bold; color: #333; margin: 15px 0; border-bottom: 2px solid #333; display: inline-block; padding: 0 30px; }
+        .close-cert-btn { margin-top: 15px; padding: 10px 30px; background: #333; color: white; border: none; cursor: pointer; font-size: 1rem; border-radius: 50px; }
+        
+        .menu-section { width: 100%; }
     </style>
 </head>
 <body>
 
-<div class="container" id="screen-login">
+<div class="container" id="screen-login-container">
     <h1>📐 數學特訓系統</h1>
     <div class="login-container">
-        <div class="login-group">
-            <label class="login-label">班級</label>
-            <input type="text" id="in-class" class="login-input" placeholder="例如：801">
-        </div>
-        <div class="login-group">
-            <label class="login-label">座號</label>
-            <input type="text" id="in-seat" class="login-input" placeholder="例如：05">
-        </div>
-        <div class="login-group">
-            <label class="login-label">姓名</label>
-            <input type="text" id="in-name" class="login-input" placeholder="請輸入真實姓名">
-        </div>
+        <div class="login-group"><label class="login-label">班級</label><input type="text" id="input-class" class="login-input" placeholder="例如：801"></div>
+        <div class="login-group"><label class="login-label">座號</label><input type="text" id="input-seat" class="login-input" placeholder="例如：05"></div>
+        <div class="login-group"><label class="login-label">姓名</label><input type="text" id="input-name" class="login-input" placeholder="請輸入真實姓名"></div>
         <button class="menu-btn btn-action" onclick="doLogin()">登入系統</button>
     </div>
 </div>
 
 <div class="container hidden" id="screen-menu">
-    <div style="text-align:right; margin-bottom:10px; color:#666; font-weight:bold;" id="user-display"></div>
+    <div style="text-align:right; margin-bottom:10px; font-weight:bold; color:#666;" id="user-display"></div>
     <h1>選擇特訓課程</h1>
     <div class="course-selector">
         <div class="course-btn active" id="tab-cross" onclick="switchTab('cross')">A.十字交乘</div>
         <div class="course-btn" id="tab-formula" onclick="switchTab('formula')">B.乘法公式</div>
         <div class="course-btn" id="tab-square" onclick="switchTab('square')">C.配方法</div>
     </div>
-    <div id="menu-content"></div>
+    
+    <div id="menu-cross" class="menu-section">
+        <button class="menu-btn btn-easy" onclick="startGame('cross','easy')">🟢 初階 (x²係數為1)</button>
+        <button class="menu-btn btn-medium" onclick="startGame('cross','medium')">🔵 中階 (x²係數為質數)</button>
+        <button class="menu-btn btn-hard" onclick="startGame('cross','hard')">🟣 進階 (x²係數為合數)</button>
+    </div>
+    <div id="menu-formula" class="menu-section hidden">
+        <button class="menu-btn btn-easy" onclick="startGame('formula','easy')">🟢 Level 1 平方差</button>
+        <button class="menu-btn btn-medium" onclick="startGame('formula','medium')">🔵 Level 2 完全平方</button>
+        <button class="menu-btn btn-hard" onclick="startGame('formula','hard')">🟣 Level 3 進階題型</button>
+    </div>
+    <div id="menu-square" class="menu-section hidden">
+        <button class="menu-btn btn-easy" onclick="startGame('square','concept')">1️⃣ 平方根概念 (3種題型)</button>
+        <button class="menu-btn btn-medium" onclick="startGame('square','move')">2️⃣ 移項開方 (分步驟解題)</button>
+        <button class="menu-btn btn-hard" onclick="startGame('square','complete')">3️⃣ 配方練習 (5題過關)</button>
+        <button class="menu-btn btn-action" onclick="startGame('square','solve')">4️⃣ 配方法全攻略 (混合題型)</button>
+    </div>
 </div>
 
 <div class="container hidden" id="screen-game">
@@ -172,7 +183,6 @@
         <span id="level-label"></span>
         <span id="score-display">進度: 0 / 10</span>
     </div>
-    
     <div class="question-box" id="q-text">Loading...</div>
 
     <div class="step-container" id="step1-container">
@@ -185,26 +195,19 @@
         <div id="game-area-s2"></div>
     </div>
 
+    <div class="step-container hidden" id="step3-container-root">
+        <span class="step-title" id="step3-title">步驟三：開根號</span>
+        <div id="game-area-s3"></div>
+    </div>
+
     <div class="step-container disabled-step" id="step3-container">
-        <span class="step-title" id="solve-title">求解 x</span>
-        <div id="solve-input-area">
-            <div id="input-rational">
-                x = <input type="text" id="sol-x1" class="medium-input"> 或 <input type="text" id="sol-x2" class="medium-input">
-            </div>
-            <div id="input-radical" class="hidden">
-                <div class="radical-input">
-                    x = <input type="text" id="rad-a" class="short-input" placeholder="0"> ± 
-                    <input type="text" id="rad-k" style="width:40px" value="1"> √
-                    <input type="text" id="rad-b" class="short-input" placeholder="n">
-                    <span id="rad-div-part" class="hidden"> / <input type="text" id="rad-c" style="width:40px" value="1"></span>
-                </div>
-                <div style="font-size:0.8rem; color:#666; margin-top:5px;">格式: (a ± k√b) / c (請填最簡根式)</div>
-            </div>
-            <div id="ans-toggle" class="toggle-container hidden">
-                <div class="toggle-btn active" id="btn-rat" onclick="setAnsMode('rational')">整數/分數</div>
-                <div class="toggle-btn" id="btn-rad" onclick="setAnsMode('radical')">根號解</div>
-            </div>
+        <span class="step-title" id="solve-title">步驟四：求解 x</span>
+        <div class="mode-btn-group" id="solve-mode-selector">
+            <button class="mode-btn active" onclick="setSolveMode('rational')">123 (整數/分數)</button>
+            <button class="mode-btn" onclick="setSolveMode('radical_simple')">√ (單根號)</button>
+            <button class="mode-btn" onclick="setSolveMode('radical_mixed')">k√ (係數/分數)</button>
         </div>
+        <div id="solve-input-area"></div>
     </div>
 
     <div class="feedback" id="feedback-msg"></div>
@@ -215,7 +218,7 @@
 
 <div class="cert-modal" id="cert-modal">
     <div class="cert-content">
-        <div class="cert-title" id="cert-title">榮譽證書</div>
+        <div class="cert-title">榮譽證書</div>
         <div class="cert-body" style="margin-top:20px;">
             <p>茲證明</p>
             <div class="cert-name" id="cert-student-info"></div>
@@ -228,40 +231,47 @@
 
 <script>
 let user = { cls:'', no:'', name:'' };
-let state = { course:'', level:'', q:null, score:0, subStreak:0, subType:1, ansMode:'rational', step1InputMode:'auto' };
+let state = { course:'', level:'', q:null, score:0, subStreak:0, subType:1, step1Mode:'rational', solveMode:'rational' };
+let questionHistory = []; 
+
+function sanitizeInput(str) {
+    if (!str) return "";
+    str = String(str).trim();
+    str = str.replace(/[\uff01-\uff5e]/g, function(ch) {
+        return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+    }).replace(/[\u3000]/g, ' ').replace(/\s/g, '');
+    str = str.replace(/²/g, '**2').replace(/\^/g, '**'); 
+    return str;
+}
+
+function safeEval(val) {
+    if (!val) return NaN;
+    try {
+        let safe = val.replace(/[xX]/g, '*');
+        safe = safe.replace(/[^0-9\-\.\/\*\(\)\+]/g, '');
+        return eval(safe);
+    } catch(e) { return NaN; }
+}
 
 function doLogin() {
-    let c = document.getElementById('in-class').value.trim();
-    let s = document.getElementById('in-seat').value.trim();
-    let n = document.getElementById('in-name').value.trim();
+    let c = document.getElementById('input-class').value.trim();
+    let s = document.getElementById('input-seat').value.trim();
+    let n = document.getElementById('input-name').value.trim();
     if(!c || !s || !n) return alert("請輸入完整資料");
+    try { localStorage.removeItem('math_app_crash_guard'); } catch(e) {}
     user = {cls:c, no:s, name:n};
     document.getElementById('user-display').innerText = `${c}班 ${s}號 ${n}`;
-    document.getElementById('screen-login').classList.add('hidden');
+    document.getElementById('screen-login-container').classList.add('hidden');
     document.getElementById('screen-menu').classList.remove('hidden');
     switchTab('cross');
 }
 
 function switchTab(c) {
     state.course = c;
-    ['cross','formula','square'].forEach(k => document.getElementById('tab-'+k).className = (k===c?'course-btn active':'course-btn'));
-    
-    let html = '';
-    if(c === 'cross') {
-        html = `<button class="menu-btn btn-easy" onclick="startGame('cross','easy')">🟢 初階 (x²係數為1)</button>
-                <button class="menu-btn btn-medium" onclick="startGame('cross','medium')">🔵 中階 (質數係數)</button>
-                <button class="menu-btn btn-hard" onclick="startGame('cross','hard')">🟣 進階 (合數係數)</button>`;
-    } else if (c === 'formula') {
-        html = `<button class="menu-btn btn-easy" onclick="startGame('formula','easy')">🟢 Level 1 平方差</button>
-                <button class="menu-btn btn-medium" onclick="startGame('formula','medium')">🔵 Level 2 完全平方</button>
-                <button class="menu-btn btn-hard" onclick="startGame('formula','hard')">🟣 Level 3 進階題型</button>`;
-    } else {
-        html = `<button class="menu-btn btn-easy" onclick="startGame('square','concept')">1️⃣ 平方根概念 (3種題型)</button>
-                <button class="menu-btn btn-medium" onclick="startGame('square','move')">2️⃣ 移項開方 (直接求解)</button>
-                <button class="menu-btn btn-hard" onclick="startGame('square','complete')">3️⃣ 配方練習 (5題過關)</button>
-                <button class="menu-btn btn-action" onclick="startGame('square','solve')">4️⃣ 配方法全攻略 (5種題型)</button>`;
-    }
-    document.getElementById('menu-content').innerHTML = html;
+    ['cross','formula','square'].forEach(k => {
+        document.getElementById('tab-'+k).className = (k===c?'course-btn active':'course-btn');
+        document.getElementById('menu-'+k).classList.toggle('hidden', k!==c);
+    });
 }
 
 function showMenu() {
@@ -271,157 +281,141 @@ function showMenu() {
 
 function startGame(c, lv) {
     state.course = c; state.level = lv; state.score = 0; state.subStreak = 0; state.subType = 1;
+    questionHistory = []; 
     document.getElementById('screen-menu').classList.add('hidden');
     document.getElementById('screen-game').classList.remove('hidden');
-    
-    // Reset UI
-    document.getElementById('step2-container').classList.add('hidden');
-    document.getElementById('step3-container').classList.remove('hidden');
-    document.getElementById('solve-title').innerText = "求解 x";
-    document.getElementById('ans-toggle').classList.add('hidden');
-    
     let title = (c==='cross'?'十字交乘':c==='formula'?'乘法公式':'配方法') + ' - ' + lv;
     document.getElementById('level-label').innerText = title;
-    
     nextQuestion();
 }
 
 function nextQuestion() {
-    // Progression Logic
-    if(state.course === 'square') {
-        if(state.level === 'complete') {
-             if(state.score >= 5) { alert("恭喜通關！"); showMenu(); return; }
-        } else {
-             if(state.subStreak >= 3) {
-                state.subType++; state.subStreak = 0;
-                let maxT = (state.level==='concept'||state.level==='move')?3 : 5;
-                if(state.subType > maxTypes) { alert("恭喜通關！"); showMenu(); return; }
-            }
-        }
-    } else {
-        if(state.score >= 10) { alert("恭喜通關！"); showMenu(); return; }
-    }
-
     resetInputs();
-    
     try {
+        state.q = null; 
         if(state.course === 'cross') genCross();
         else if(state.course === 'formula') genFormula();
         else genSquare();
-    } catch(e) {
-        console.error(e); alert("出題錯誤"); showMenu();
-    }
-    
-    // Update Score UI
-    if(state.course === 'square') {
-        if(state.level === 'complete') {
-            document.getElementById('score-display').innerText = `進度: ${state.score} / 5`;
-        } else {
-            let maxT = (state.level==='concept'||state.level==='move')?3 : 5;
-            document.getElementById('score-display').innerText = `題型 ${state.subType}/${maxT} (連對 ${state.subStreak}/3)`;
+    } catch(e) { console.error(e); alert("出題錯誤，請重試"); showMenu(); }
+    updateScoreUI();
+}
+
+function updateScoreUI() {
+    let txt = `進度: ${state.score} / 10`;
+    if(state.course==='square') {
+        if(state.level==='complete') txt = `進度: ${state.score} / 5`;
+        else {
+            let maxT = (state.level==='concept'||state.level==='move')?3:5;
+            txt = `第 ${state.subType} 關 (共 ${maxT} 關) - 連對 ${state.subStreak}/3`;
         }
-    } else {
-        document.getElementById('score-display').innerText = `進度: ${state.score} / 10`;
     }
+    document.getElementById('score-display').innerText = txt;
 }
 
 function resetInputs() {
-    document.querySelectorAll('input').forEach(i => i.value = '');
-    document.querySelectorAll('select').forEach(s => s.value = '1');
-    document.querySelectorAll('.formula-option').forEach(o => o.classList.remove('selected'));
-    
-    // Clear dynamic containers
-    document.getElementById('game-area-s1').innerHTML = '';
+    document.getElementById('game-area-s1').innerHTML = ''; 
     document.getElementById('game-area-s2').innerHTML = '';
-
+    document.getElementById('game-area-s3').innerHTML = '';
     document.getElementById('step1-container').classList.remove('disabled-step');
-    document.getElementById('step2-container').classList.add('disabled-step');
+    document.getElementById('step2-container').classList.add('hidden');
+    document.getElementById('step2-container').classList.remove('disabled-step');
+    document.getElementById('step3-container-root').classList.add('hidden');
+    document.getElementById('step3-container-root').classList.remove('disabled-step');
+    document.getElementById('step3-container').classList.remove('hidden'); 
     document.getElementById('step3-container').classList.add('disabled-step');
-    
     document.getElementById('feedback-msg').style.display = 'none';
     document.getElementById('btn-submit').classList.add('hidden');
     document.getElementById('btn-next').classList.add('hidden');
-    
-    setAnsMode('rational');
-    if(state.course === 'square' && state.level === 'solve') {
-        document.getElementById('step2-container').classList.remove('hidden');
-    } else {
-        document.getElementById('step2-container').classList.add('hidden');
-    }
-    
-    if(document.getElementById('rad-k')) document.getElementById('rad-k').value = 1;
-    if(document.getElementById('rad-c')) document.getElementById('rad-c').value = 1;
+    state.step1Mode = 'rational';
+    state.solveMode = 'rational';
+    renderSolveInput();
 }
 
-function setAnsMode(m) {
-    state.ansMode = m;
-    document.getElementById('input-rational').classList.toggle('hidden', m!=='rational');
-    document.getElementById('input-radical').classList.toggle('hidden', m!=='radical');
-    document.getElementById('btn-rat').className = m==='rational'?'toggle-btn active':'toggle-btn';
-    document.getElementById('btn-rad').className = m==='radical'?'toggle-btn active':'toggle-btn';
-    document.getElementById('ans-toggle').classList.remove('hidden');
-    
-    if(state.course==='square' && state.level==='solve' && state.subType>=4) {
-        document.getElementById('rad-div-part').classList.remove('hidden');
+function setStep1Mode(mode) { state.step1Mode = mode; if(state.course === 'square') renderSqStage1UI(); }
+function setSolveMode(mode) { state.solveMode = mode; renderSolveInput(); }
+
+function renderSolveInput() {
+    let m = state.solveMode;
+    let btns = document.getElementById('solve-mode-selector').children;
+    for(let b of btns) b.classList.remove('active');
+    if(m==='rational') btns[0].classList.add('active');
+    else if(m==='radical_simple') btns[1].classList.add('active');
+    else btns[2].classList.add('active');
+
+    let h = '';
+    if(m === 'rational') {
+        h = `x = <input type="text" id="sol_x1" class="medium-input" inputmode="decimal" placeholder="例如 4/3"> 或 <input type="text" id="sol_x2" class="medium-input" inputmode="decimal" placeholder="例如 -2/3">`;
+    } else if(m === 'radical_simple') {
+        h = `<div class="radical-wrapper">x = <input type="text" id="rad_a" class="short-input" placeholder="0"> ± √ <input type="text" id="rad_b" class="short-input" placeholder="n"> <span id="rad_div" class="hidden">/ <input type="text" id="rad_c" class="short-input" value="1"></span></div>`;
     } else {
-        document.getElementById('rad-div-part').classList.add('hidden');
+        h = `<div class="radical-wrapper">x = ( <input type="text" id="rad_a" class="short-input" placeholder="a"> ± <input type="text" id="rad_k" class="short-input" value="1"> √ <input type="text" id="rad_b" class="short-input" placeholder="b"> ) / <input type="text" id="rad_c" class="short-input" value="1"></div>`;
     }
+    document.getElementById('solve-input-area').innerHTML = h;
 }
 
-// --- Generators ---
-function rnd(min, max) { return Math.floor(Math.random()*(max-min+1))+min; }
-function rndNz(min, max) { let n=0; while(n===0) n=rnd(min,max); return n; }
-function fmt(n) { return n>=0 ? `+ ${n}` : `- ${Math.abs(n)}`; }
-function fmt2(n) { return n>=0 ? `+${n}` : `${n}`; }
-function getSimpRad(n) {
-    if(n<=0) return {k:0, n:0};
+function rnd(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function rndNz(min,max){let n=0;while(n===0)n=rnd(min,max);return n;}
+function fmt(n){return n>=0?`+ ${n}`:`- ${Math.abs(n)}`;}
+function fmt2(n){return n>=0?`+${n}`:`${n}`;}
+function getSimpRad(n){
+    if(n<=0)return{k:0,n:0};
     let k=1;
-    for(let i=2; i*i<=n; i++) {
-        while(n%(i*i)===0) { k*=i; n/=(i*i); }
-    }
-    return {k, n};
+    for(let i=2;i*i<=n;i++){while(n%(i*i)===0){k*=i;n/=(i*i);}}
+    return{k,n};
+}
+
+function checkDuplicate(key) {
+    if(questionHistory.includes(key)) return true;
+    questionHistory.push(key);
+    if(questionHistory.length > 5) questionHistory.shift();
+    return false;
 }
 
 function genCross() {
-    let a1=1, a2=1, c1, c2;
-    if(state.level==='easy') { c1=rndNz(-9,9); c2=rndNz(-9,9); }
-    else if(state.level==='medium') { let ps=[2,3,5]; a1=ps[rnd(0,2)]; c1=rndNz(-5,5); c2=rndNz(-5,5); }
-    else { a1=rnd(2,5); a2=rnd(2,4); c1=rndNz(-4,4); c2=rndNz(-4,4); }
-    
-    let A=a1*a2, B=a1*c2+a2*c1, C=c1*c2;
+    let a1=1,a2=1,c1,c2, key;
+    do {
+        if(state.level==='easy'){c1=rndNz(-9,9);c2=rndNz(-9,9);}
+        else if(state.level==='medium'){let ps=[2,3,5];a1=ps[rnd(0,2)];c1=rndNz(-5,5);c2=rndNz(-5,5);}
+        else{a1=rnd(2,5);a2=rnd(2,4);c1=rndNz(-4,4);c2=rndNz(-4,4);}
+        key = `cross_${a1}_${a2}_${c1}_${c2}`;
+    } while(checkDuplicate(key));
+
+    let A=a1*a2,B=a1*c2+a2*c1,C=c1*c2;
+    state.q = {type:'cross',step1:{B},roots:[-c1/a1,-c2/a2], ans:[-c1/a1,-c2/a2]};
     document.getElementById('q-text').innerText = `${A===1?'':A}x² ${fmt(B)}x ${fmt(C)} = 0`;
-    state.q = { type:'cross', step1:{B}, roots:[-c1/a1, -c2/a2] };
     
     document.getElementById('step1-title').innerText = "步驟一：十字交乘湊數";
     document.getElementById('game-area-s1').innerHTML = `
         <div class="cross-layout">
             <div class="cross-col" style="text-align:right">
-                <div class="cross-row">${state.level==='easy'?'':'<input type="text" id="cr-a1" class="box-input" placeholder="a">'} <span style="font-size:2rem">x</span></div>
-                <div class="cross-row">${state.level==='easy'?'':'<input type="text" id="cr-a2" class="box-input" placeholder="a">'} <span style="font-size:2rem">x</span></div>
+                <div class="cross-row">${state.level==='easy'?'':'<input type="text" id="cr_a1" class="box-input" placeholder="a">'} <span style="font-size:2rem">x</span></div>
+                <div class="cross-row">${state.level==='easy'?'':'<input type="text" id="cr_a2" class="box-input" placeholder="a">'} <span style="font-size:2rem">x</span></div>
             </div>
             <div class="big-x">╳</div>
             <div class="cross-col">
-                <div class="cross-row"><select id="cr-op1" class="box-select"><option value="1">+</option><option value="-1">-</option></select><input type="text" id="cr-c1" class="box-input" placeholder="c"></div>
-                <div class="cross-row"><select id="cr-op2" class="box-select"><option value="1">+</option><option value="-1">-</option></select><input type="text" id="cr-c2" class="box-input" placeholder="c"></div>
+                <div class="cross-row"><select id="cr_op1" class="box-select"><option value="1">+</option><option value="-1">-</option></select><input type="text" id="cr_c1" class="box-input" placeholder="c"></div>
+                <div class="cross-row"><select id="cr_op2" class="box-select"><option value="1">+</option><option value="-1">-</option></select><input type="text" id="cr_c2" class="box-input" placeholder="c"></div>
             </div>
         </div>
-        <div style="text-align:center; margin-top:10px;">驗算：( <input type="text" id="chk-1" style="width:60px"> x ) + ( <input type="text" id="chk-2" style="width:60px"> x ) = ?</div>
+        <div style="text-align:center;">驗算：( <input type="text" id="chk_1" style="width:60px"> x ) + ( <input type="text" id="chk_2" style="width:60px"> x ) = ?</div>
         <button class="menu-btn btn-check" onclick="checkCrossStep1()">檢查湊數步驟</button>
     `;
-    document.getElementById('ans-toggle').classList.add('hidden');
+    document.getElementById('solve-mode-selector').style.display = 'flex';
 }
 
 function genFormula() {
-    let type='diff', a=1, b=1, eq='';
-    if(state.level==='easy') { type='diff'; a=(Math.random()<0.3?rnd(2,5):1); b=rnd(1,9); eq=`(${a===1?'':a}x)² - ${b*b} = 0`; }
-    else if(state.level==='medium') { type=Math.random()<0.5?'sum':'sub'; b=rnd(1,9); eq=`x² ${type==='sum'?'+':'-'} ${2*b}x + ${b*b} = 0`; }
-    else { type='diff'; a=rnd(2,5); b=rnd(1,9); eq=`(${a}x)² - ${b*b} = 0`; }
-    
+    let type='diff',a=1,b=1, key;
+    do {
+        if(state.level==='easy'){type='diff';a=(Math.random()<0.3?rnd(2,5):1);b=rnd(1,9);}
+        else{type='sum';b=rnd(1,9);}
+        key = `form_${type}_${a}_${b}`;
+    } while(checkDuplicate(key));
+
+    let eq = (type==='diff') ? `(${a===1?'':a}x)² - ${b*b} = 0` : `x² + ${2*b}x + ${b*b} = 0`;
+    let r1 = (type==='diff') ? b/a : -b;
+    let r2 = (type==='diff') ? -b/a : -b;
+    state.q = {type:'formula', ftype:type, roots:[r1, r2], ans:[r1,r2]};
     document.getElementById('q-text').innerText = eq;
-    let r1, r2;
-    if(type==='diff') { r1=b/a; r2=-b/a; } else { let v=(type==='sum'?-b:b)/a; r1=r2=v; }
-    state.q = { type:'formula', ftype:type, roots:[r1,r2] };
-    
     document.getElementById('step1-title').innerText = "步驟一：選擇公式";
     document.getElementById('game-area-s1').innerHTML = `
         <div class="formula-options">
@@ -431,7 +425,6 @@ function genFormula() {
         </div>
         <button class="menu-btn btn-check" onclick="checkFormStep1()">確認公式</button>
     `;
-    document.getElementById('ans-toggle').classList.add('hidden');
 }
 
 function genSquare() {
@@ -439,276 +432,422 @@ function genSquare() {
     let q = { type:'square', stage:lv };
     document.getElementById('step1-title').innerText = "步驟一：去平方 / 移項";
 
+    let key;
     if(lv === 'concept') {
-        if(st===1) { // x^2 = k
-            let k=rnd(2,9)**2; document.getElementById('q-text').innerText = `x² = ${k}`;
-            q.roots=[Math.sqrt(k), -Math.sqrt(k)]; q.form='rational';
+        let k, a=0;
+        do {
+            if(st===1) { k=rnd(2,9)**2; key=`sq_c_1_${k}`; }
+            else { a=rndNz(-9,9); k=(st===2 ? rnd(2,9)**2 : [2,3,5,6,7][rnd(0,4)]); key=`sq_c_${st}_${a}_${k}`; }
+        } while(checkDuplicate(key));
+
+        if(st===1) {
+            q.roots=[Math.sqrt(k), -Math.sqrt(k)]; q.ans = q.roots; q.form='rational';
+            state.q = q; state.solveMode='rational';
+            document.getElementById('q-text').innerText = `x² = ${k}`;
             document.getElementById('step1-container').classList.add('disabled-step');
             document.getElementById('step3-container').classList.remove('disabled-step');
             document.getElementById('btn-submit').classList.remove('hidden');
-            state.q = q; setAnsMode(q.form);
-        } else if(st===2) {
-            let a=rndNz(-9,9), k=rnd(2,9)**2; 
-            document.getElementById('q-text').innerText = `(x${fmt2(a)})² = ${k}`;
-            let r=Math.sqrt(k); q.roots=[r-a, -r-a]; q.form='rational';
-            q.step1_check=r; q.lhs = `x${fmt(a)}`;
-            state.q = q;
-            renderSqStage1UI();
+            renderSolveInput();
         } else {
-            let a=rndNz(-9,9), k=[2,3,5,6,7][rnd(0,4)]; 
             document.getElementById('q-text').innerText = `(x${fmt2(a)})² = ${k}`;
-            let simp = getSimpRad(k);
-            q.rad = {a:-a, k:simp.k, n:simp.n, c:1}; q.form='radical';
-            q.step1_check=k; q.lhs = `x${fmt(a)}`;
+            if(st===2) {
+                q.form='rational'; 
+                let r = Math.sqrt(k);
+                q.roots = [r-a, -r-a]; q.ans = q.roots;
+            } else {
+                q.form='radical';
+                let simp = getSimpRad(k);
+                q.ans = [ (-a + simp.k*Math.sqrt(simp.n)), (-a - simp.k*Math.sqrt(simp.n)) ];
+            }
+            q.step1_check = k; q.lhs = `x${fmt(a)}`;
             state.q = q;
+            state.step1Mode = (q.form==='radical') ? 'radical_simple' : 'rational';
             renderSqStage1UI();
         }
     } 
     else if (lv === 'move') {
-        if(st===1) { // (x+a)^2 = k
-            let a=rndNz(-5,5), k=rnd(2,9)**2;
+        let a, c, d, total;
+        do {
+            a=(st===1?1:rnd(2,3)); 
+            if(st===1) { a=rndNz(-5,5); c=rnd(2,9)**2; d=0; }
+            else { c=rnd(1,10); d=rnd(1,5); total=c+d; }
+            key = `sq_m_${st}_${a}_${c}_${d}`;
+        } while(checkDuplicate(key));
+
+        if(st===1) {
+            let k=c; 
             document.getElementById('q-text').innerText = `(x${fmt2(a)})² - ${k} = 0`;
-            let r=Math.sqrt(k); q.roots=[r-a, -r-a]; q.form='rational';
-        } else { // (ax+b)^2 = total
-            let a=rnd(2,3), c=rnd(1,10), d=rnd(1,5); let total = c+d;
-            let b=rndNz(-5,5);
-            document.getElementById('q-text').innerText = `(${a}x${fmt2(b)})² - ${c} = ${d}`;
-            if(Number.isInteger(Math.sqrt(total))) {
-                let r=Math.sqrt(total); q.roots=[(r-b)/a, (-r-b)/a]; q.form='rational';
-            } else {
-                let simp = getSimpRad(total);
-                q.rad = {a:-b, k:simp.k, n:simp.n, c:a}; q.form='radical';
-            }
+            let r=Math.sqrt(k);
+            q.ans = [r-a, -r-a]; q.form='rational';
+            q.step1_check = k; q.lhs = `x${fmt(a)}`;
+            state.q = q;
+            state.step1Mode = 'rational';
+            renderSqStage1UI(); 
+        } else {
+            let b = rndNz(-5,5);
+            document.getElementById('q-text').innerText = `(${a}x${fmt(b)})² - ${c} = ${d}`;
+            total = c+d;
+            q.step1_check = total; q.lhs = `${a}x${fmt(b)}`;
+            let simp = getSimpRad(total);
+            q.ans = [ (-b + Math.sqrt(total))/a, (-b - Math.sqrt(total))/a ];
+            q.form = (simp.n<=1 ? 'rational' : 'radical');
+            state.q = q;
+            state.step1Mode = (q.form==='radical' ? 'radical_simple' : 'rational');
+            renderSqStage1UI();
         }
-        // Direct solve for move stage (as requested)
-        document.getElementById('step1-container').classList.add('disabled-step');
-        document.getElementById('game-area-s1').innerHTML = '<p style="text-align:center; color:#999;">(此階段直接求解)</p>';
-        document.getElementById('step3-container').classList.remove('disabled-step');
-        document.getElementById('btn-submit').classList.remove('hidden');
-        state.q = q; setAnsMode(q.form);
     }
     else if (lv === 'complete') {
-        let a=1, b=rnd(1,9)*2; if(st===2) b=rnd(1,9)*2+1; if(Math.random()<0.5) b=-b;
+        let b = rnd(1, 9) * 2; 
+        let c = (b/2)**2;
+        let half = b/2;
         document.getElementById('q-text').innerText = `x² ${fmt(b)}x + □ = (x + △)²`;
-        let h = `□ = <input type="text" id="sq3-1" class="box-input"> , △ = <input type="text" id="sq3-2" class="box-input">`;
-        document.getElementById('game-area-s1').innerHTML = h;
-        document.getElementById('step3-container').classList.add('hidden');
-        document.getElementById('btn-submit').classList.remove('hidden');
-        q.ans1 = (b/2)**2; q.ans2 = b/2;
-        state.q = q;
+        document.getElementById('game-area-s1').innerHTML = `
+            <div style="font-size:1.5rem; margin-bottom:15px;">
+                □ = <input type="text" id="sq_c_val" class="medium-input" placeholder="例如 (2)² 或 4"> 
+                △ = <input type="text" id="sq_b_val" class="medium-input" placeholder="例如 5/2">
+            </div>
+            <button class="menu-btn btn-check" onclick="checkSqComplete()">檢查答案</button>
+        `;
+        document.getElementById('step3-container').classList.add('hidden'); 
+        state.q = { type: 'complete', ans: [c, half] };
     }
     else if (lv === 'solve') {
-        let a=1, b=2, c=1;
-        if(st===1) { b=2*rnd(1,5); c=rnd(-10, -1); document.getElementById('q-text').innerText = `x² ${fmt(b)}x ${fmt(c)} = 0`;}
-        if(st===2) { b=2*rnd(1,5); c=rnd(1,10); document.getElementById('q-text').innerText = `x² = ${c} ${fmt(-b)}x`; c=-c; }
-        if(st===3) { b=2*rnd(10,20); c=rnd(-200,-50); document.getElementById('q-text').innerText = `x² ${fmt(b)}x ${fmt(c)} = 0`;}
-        if(st===4) { a=rnd(2,5); b=a*2*rnd(1,3); c=rnd(-20,20); while(b*b-4*a*c<0) c++; document.getElementById('q-text').innerText = `${a}x² ${fmt(b)}x ${fmt(c)} = 0`;}
-        if(st===5) { a=-rnd(2,5); b=a*2*rnd(1,3); c=rnd(-20,20); while(b*b-4*a*c<0) c--; document.getElementById('q-text').innerText = `${a}x² ${fmt(b)}x ${fmt(c)} = 0`;}
-
-        let normB = b/a; let normC = c/a;
-        let halfB = normB/2; let addVal = halfB*halfB; let rhs = -normC + addVal;
+        // Updated: 50% chance for Irrational Root (Surd) question
+        let isRadical = Math.random() < 0.5;
+        let B, C, p, q_val, root_val;
         
-        let D = b*b - 4*a*c;
-        let simp = getSimpRad(D);
-        
-        if(simp.n <= 1) { // Rational
-            let rD = Math.sqrt(D);
-            q.roots = [(-b+rD)/(2*a), (-b-rD)/(2*a)];
-            q.form = 'rational';
+        if (!isRadical) {
+            // Standard Rational Case
+            let r1 = rnd(-8, 8);
+            let r2 = rnd(-8, 8);
+            B = -(r1+r2);
+            C = r1*r2;
+            while(B===0 || C===0) { r1=rnd(-5,5); r2=rnd(-5,5); B=-(r1+r2); C=r1*r2; }
+            state.solveMode = 'rational';
         } else {
-            let den = 2*a; let numA = -b; let numK = simp.k;
-            if(den < 0) { den=-den; numA=-numA; } 
-            q.rad = {a:numA, k:numK, n:simp.n, c:den};
-            q.form = 'radical';
+            // Irrational Case: (x+p)^2 = q where q is not square
+            // To ensure B is integer, p must be k or k.5. Let's stick to even B => p is int.
+            p = rndNz(-6, 6);
+            let q_surd = 0;
+            // find non-square positive q
+            while(true) {
+                q_surd = rnd(2, 15);
+                if (Math.floor(Math.sqrt(q_surd)) !== Math.sqrt(q_surd)) break;
+            }
+            // Expand: x^2 + 2px + p^2 - q = 0
+            B = 2 * p;
+            C = p**2 - q_surd;
+            state.solveMode = 'radical_mixed'; // Prepare UI for root
         }
+
+        document.getElementById('q-text').innerText = `x² ${fmt(B)}x ${fmt(C)} = 0`;
         
-        q.s1_add = addVal; q.s2_p = Math.abs(halfB); q.s2_op = halfB>0?1:-1; q.s2_q = rhs;
+        // Recalculate for consistency
+        let s1_add = (B/2)**2;
+        let s1_rhs = -C + s1_add; // This is q_val
+        let s2_p = B/2;
+        let s2_q = s1_rhs;
         
+        state.q = { 
+            type: 'solve_steps', 
+            s1_add: s1_add, 
+            s1_rhs: s1_rhs,
+            s2_p: s2_p,
+            s2_q: s2_q,
+            s3_root: Math.sqrt(s2_q), // If irrational, this float will be checked with epsilon
+            ans_rational: isRadical ? null : [(-B/2)+Math.sqrt(s2_q), (-B/2)-Math.sqrt(s2_q)],
+            ans_radical: isRadical ? { a: -B/2, k: 1, b: s2_q, c: 1 } : null
+        };
+
+        // Step 1 UI
         document.getElementById('step1-title').innerText = "步驟一：移項並配方";
-        document.getElementById('game-area-s1').innerHTML = `x² ${fmt(normB)}x + <input type="text" id="sq4-add1" style="width:60px"> = ${-normC} + <input type="text" id="sq4-add2" style="width:60px"> <button class="menu-btn btn-check" onclick="checkSq4S1()">檢查步驟</button>`;
+        document.getElementById('game-area-s1').innerHTML = `
+            x² ${fmt(B)}x + <input type="text" id="sq4_s1_add" class="medium-input" placeholder="(b/2)²"> = ${-C} + <input type="text" id="sq4_s1_rhs" class="medium-input" placeholder="(b/2)²">
+            <button class="menu-btn btn-check" style="margin-top:10px" onclick="checkSq4S1()">檢查步驟一</button>
+        `;
         
-        document.getElementById('game-area-s2').innerHTML = `( x <select id="sq4-op" class="sign-select"><option value="1">+</option><option value="-1">-</option></select> <input type="text" id="sq4-p" style="width:60px"> )² = <input type="text" id="sq4-q" style="width:60px"> <button class="menu-btn btn-check" onclick="checkSq4S2()">檢查步驟</button>`;
-        state.q = q; setAnsMode(q.form);
+        // Step 2 UI (Hidden)
+        document.getElementById('step2-title').innerText = "步驟二：整理平方";
+        document.getElementById('game-area-s2').innerHTML = `
+            (x + <input type="text" id="sq4_s2_p" class="medium-input">)² = <input type="text" id="sq4_s2_q" class="medium-input">
+            <button class="menu-btn btn-check" style="margin-top:10px" onclick="checkSq4S2()">檢查步驟二</button>
+        `;
+        
+        // Step 3 UI (Hidden)
+        document.getElementById('game-area-s3').innerHTML = `
+            x + <input type="text" id="sq4_s3_p" class="medium-input" readonly> = ± <input type="text" id="sq4_s3_root" class="medium-input" placeholder="開根號結果">
+            <button class="menu-btn btn-check" style="margin-top:10px" onclick="checkSq4S3()">檢查步驟三</button>
+        `;
+        
+        document.getElementById('step3-container').classList.add('hidden'); // Hide solve
     }
 }
 
-// --- Render Helpers ---
 function renderSqStage1UI() {
-    let mode = state.step1InputMode || 'auto';
-    // Auto-detect if not set manually
-    if(mode === 'auto') {
-        mode = state.q.form === 'radical' ? 'radical' : 'text';
-    }
-
+    let m = state.step1Mode;
     let inputHTML = '';
-    if(mode === 'radical') {
-        let simp = getSimpRad(state.q.step1_check);
-        // Ensure k is at least 1 for validation if missing
-        state.q.step1_check_k = simp.k || 1;
-        state.q.step1_check_n = simp.n;
-        inputHTML = `± <input type="text" id="sq1-k" class="short-input" value="1"> √ <input type="text" id="sq1-n" class="short-input">`;
-    } else {
-        inputHTML = `± <input type="text" id="sq1-val" class="box-input">`;
-    }
-
-    let h = `
-    <div style="text-align:center; font-size:1.5rem; margin-bottom:10px;">
-        ${state.q.lhs} = ${inputHTML}
-        <button class="btn-toggle" onclick="toggleStep1Mode()">切換根號輸入</button>
-    </div>
-    <button class="menu-btn btn-check" onclick="checkSqS1()">檢查步驟</button>
+    let buttons = `
+        <div class="mode-btn-group">
+            <button class="mode-btn ${m==='rational'?'active':''}" onclick="setStep1Mode('rational')">123</button>
+            <button class="mode-btn ${m==='radical_simple'?'active':''}" onclick="setStep1Mode('radical_simple')">√</button>
+            <button class="mode-btn ${m==='radical_mixed'?'active':''}" onclick="setStep1Mode('radical_mixed')">k√</button>
+        </div>
     `;
-    document.getElementById('game-area-s1').innerHTML = h;
-}
 
-function toggleStep1Mode() {
-    let current = state.step1InputMode || (state.q.form === 'radical' ? 'radical' : 'text');
-    state.step1InputMode = (current === 'text') ? 'radical' : 'text';
-    renderSqStage1UI();
-}
+    if(m === 'rational') inputHTML = `± <input type="text" id="sq1_val" class="box-input">`;
+    else if (m === 'radical_simple') inputHTML = `± √ <input type="text" id="sq1_n" class="short-input">`;
+    else inputHTML = `± <input type="text" id="sq1_k" class="short-input" placeholder="k"> √ <input type="text" id="sq1_n" class="short-input" placeholder="n">`;
 
-// --- Check Logic ---
-function checkCrossStep1() {
-    let v1 = document.getElementById('chk-1').value;
-    let v2 = document.getElementById('chk-2').value;
-    if(!v1 || !v2) return alert("請填寫驗算");
-    if( (parseInt(v1)+parseInt(v2)) === state.q.step1.B ) {
-        document.getElementById('step3-container').classList.remove('disabled-step');
-        document.getElementById('btn-submit').classList.remove('hidden');
-        document.getElementById('step1-container').classList.add('disabled-step');
-    } else alert("驗算錯誤");
-}
-
-function selForm(t) {
-    state.selectedFormula = t;
-    document.querySelectorAll('.formula-option').forEach(el => el.classList.remove('selected'));
-    document.getElementById('opt-'+t).classList.add('selected');
-}
-function checkFormStep1() {
-    if(!state.selectedFormula) return alert("請選擇公式");
-    if(state.selectedFormula === state.q.ftype) {
-        document.getElementById('step3-container').classList.remove('disabled-step');
-        document.getElementById('btn-submit').classList.remove('hidden');
-        document.getElementById('step1-container').classList.add('disabled-step');
-    } else alert("公式選錯囉！");
-}
-
-function checkSqS1() {
-    let isCorrect = false;
-    let mode = state.step1InputMode || (state.q.form === 'radical' ? 'radical' : 'text');
+    document.getElementById('game-area-s1').innerHTML = `
+        <div style="text-align:center; font-size:1.5rem; margin-bottom:10px;">
+            ${state.q.lhs} = ${inputHTML}
+        </div>
+        ${buttons}
+        <button class="menu-btn btn-check" onclick="checkSqS1()">檢查步驟</button>
+    `;
     
-    if(mode === 'radical') {
-        let uk = parseFloat(document.getElementById('sq1-k').value);
-        let un = parseFloat(document.getElementById('sq1-n').value);
-        let targetK = state.q.step1_check_k || 1; 
-        if(uk == targetK && un == state.q.step1_check_n) isCorrect = true;
-        // Accept unsimplified e.g. 1 sqrt 12 vs 2 sqrt 3? No, enforce simple.
-    } else {
-        let val = parseFloat(document.getElementById('sq1-val').value);
-        // Allow numeric approx for rational, or strict for int
-        if(Math.abs(val - state.q.step1_check) < 0.01) isCorrect = true;
-    }
-
-    if(isCorrect) {
-        document.getElementById('step3-container').classList.remove('disabled-step');
-        document.getElementById('btn-submit').classList.remove('hidden');
-        document.getElementById('step1-container').classList.add('disabled-step');
-    } else alert("數值錯誤");
+    document.getElementById('step1-container').classList.remove('disabled-step');
+    document.getElementById('step3-container').classList.add('disabled-step');
+    document.getElementById('btn-submit').classList.add('hidden');
 }
 
+// --- Multi-Step Checks ---
 function checkSq4S1() {
-    let v1 = eval(document.getElementById('sq4-add1').value);
-    let v2 = eval(document.getElementById('sq4-add2').value);
-    if(Math.abs(v1 - state.q.s1_add)<0.01 && Math.abs(v2 - state.q.s1_add)<0.01) {
+    let add = safeEval(sanitizeInput(document.getElementById('sq4_s1_add').value));
+    let rhs = safeEval(sanitizeInput(document.getElementById('sq4_s1_rhs').value));
+    
+    // FIX: Check if BOTH inputs are the "add term", not sum.
+    if(Math.abs(add - state.q.s1_add) < 0.01 && Math.abs(rhs - state.q.s1_add) < 0.01) { 
         document.getElementById('step1-container').classList.add('disabled-step');
         document.getElementById('step2-container').classList.remove('hidden');
-    } else alert("配方數字錯誤");
+    } else {
+        alert("配方數字錯誤，提示：左右兩邊都要加上 (b/2)²，例如加上 4 或 2^2");
+    }
 }
 
 function checkSq4S2() {
-    let p = eval(document.getElementById('sq4-p').value);
-    let op = parseInt(document.getElementById('sq4-op').value);
-    let q = parseFloat(eval(document.getElementById('sq4-q').value));
-    if(Math.abs(p - state.q.s2_p)<0.01 && op===state.q.s2_op && Math.abs(q - state.q.s2_q)<0.01) {
+    let p = safeEval(sanitizeInput(document.getElementById('sq4_s2_p').value));
+    let q_val = safeEval(sanitizeInput(document.getElementById('sq4_s2_q').value));
+    
+    if(Math.abs(p - state.q.s2_p) < 0.01 && Math.abs(q_val - state.q.s2_q) < 0.01) {
         document.getElementById('step2-container').classList.add('disabled-step');
-        document.getElementById('step3-container').classList.remove('disabled-step');
-        document.getElementById('btn-submit').classList.remove('hidden');
-    } else alert("整理錯誤");
+        document.getElementById('step3-container-root').classList.remove('hidden');
+        document.getElementById('sq4_s3_p').value = p; // Auto fill p
+    } else {
+        alert("整理錯誤，請檢查");
+    }
 }
 
-function checkAnswer() {
-    // Stage 3 Fill
-    if(state.course==='square' && state.level==='complete') {
-        let u1 = eval(document.getElementById('sq3-1').value);
-        let u2 = eval(document.getElementById('sq3-2').value);
-        if(Math.abs(u1-state.q.ans1)<0.001 && Math.abs(u2-state.q.ans2)<0.001) passQuestion();
-        else showFeedback(false);
+function checkSq4S3() {
+    let root_str = sanitizeInput(document.getElementById('sq4_s3_root').value);
+    // Determine if user entered "sqrt(10)" or "3.16..."
+    // Since we want standard form, usually we keep sqrt(q).
+    // If q is perfect square, root is int. If not, user should input sqrt(q) or decimal.
+    // Let's allow sqrt(q) notation or decimal.
+    // However, our safeEval supports sqrt function? No.
+    // But if state.solveMode is radical_mixed, it expects a radical.
+    // Step 3 asks for "Value".
+    // If rational case, q is perfect square.
+    // If irrational case, q is not.
+    // For simplicity in step 3, we check the squared value match.
+    // If user enters "√5", safeEval might fail unless we parse.
+    // Simplified: Check if input^2 == q OR input == sqrt(q)
+    
+    let root_val = safeEval(root_str);
+    // If input is "√5", simple eval fails.
+    // Let's assume user enters decimal or we skip strict radical check here and focus on final.
+    // Or, allow them to type "sqrt(5)" ? No.
+    // Let's just check the numeric value.
+    // If q=5, root=2.236. Hard to type.
+    // Fix: If q is not perfect square, display the root automatically or skip this step check?
+    // Better: Auto-fill this step for irrational cases to avoid typing issues, or ask for q inside radical.
+    
+    // For now, let's auto-pass if it's irrational to avoid "how to type root" issues in middle step
+    let q = state.q.s2_q;
+    let isPerfect = Math.floor(Math.sqrt(q)) === Math.sqrt(q);
+    
+    if (!isPerfect) {
+        // Auto pass visual for irrational
+        document.getElementById('sq4_s3_root').value = "√" + q;
+        setTimeout(()=> {
+             document.getElementById('step3-container-root').classList.add('disabled-step');
+             document.getElementById('step3-container').classList.remove('hidden');
+             document.getElementById('step3-container').classList.remove('disabled-step');
+             document.getElementById('btn-submit').classList.remove('hidden');
+             setSolveMode('radical_mixed'); // Auto switch
+             renderSolveInput();
+        }, 800);
         return;
     }
 
-    // Solve Check
-    let isCorrect = false;
-    if(state.ansMode === 'rational') {
-        let x1 = eval(document.getElementById('sol-x1').value);
-        let x2 = eval(document.getElementById('sol-x2').value);
-        if(x1!==undefined && x2!==undefined) {
-            let r1 = state.q.roots[0], r2 = state.q.roots[1];
-            if( (Math.abs(x1-r1)<0.01 && Math.abs(x2-r2)<0.01) || (Math.abs(x1-r2)<0.01 && Math.abs(x2-r1)<0.01) ) isCorrect=true;
-        }
+    if(Math.abs(root_val - state.q.s3_root) < 0.01) {
+        document.getElementById('step3-container-root').classList.add('disabled-step');
+        document.getElementById('step3-container').classList.remove('hidden');
+        document.getElementById('step3-container').classList.remove('disabled-step');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        renderSolveInput();
     } else {
-        let ua = parseFloat(document.getElementById('rad-a').value);
-        let uk = parseFloat(document.getElementById('rad-k').value);
-        let ub = parseFloat(document.getElementById('rad-b').value);
-        let uc = parseFloat(document.getElementById('rad-c').value);
-        if(Math.abs(ua-state.q.rad.a)<0.1 && uk==state.q.rad.k && ub==state.q.rad.n && uc==state.q.rad.c) isCorrect=true;
+        alert("開根號錯誤");
     }
+}
 
-    showFeedback(isCorrect);
-    if(isCorrect) passQuestion();
+function checkSqS1() {
+    let m = state.step1Mode;
+    let target = state.q.step1_check;
+    let userVal = 0;
+    
+    if(m === 'rational') {
+        let v = sanitizeInput(document.getElementById('sq1_val').value);
+        if(v==="") return alert("請輸入數字");
+        userVal = safeEval(v)**2; 
+    } else {
+        let k = m==='radical_mixed' ? safeEval(sanitizeInput(document.getElementById('sq1_k').value)) : 1;
+        let n = safeEval(sanitizeInput(document.getElementById('sq1_n').value));
+        if(isNaN(k) || isNaN(n)) return alert("請輸入數字");
+        userVal = (k*k*n);
+    }
+    
+    if(Math.abs(userVal - target) < 0.1) {
+        document.getElementById('step1-container').classList.add('disabled-step');
+        document.getElementById('step3-container').classList.remove('disabled-step');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        if(state.q.form === 'radical') setSolveMode('radical_mixed'); 
+        else setSolveMode('rational');
+    } else alert("數值錯誤");
+}
+
+function checkSqComplete() {
+    let c = safeEval(sanitizeInput(document.getElementById('sq_c_val').value));
+    let b = safeEval(sanitizeInput(document.getElementById('sq_b_val').value));
+    let ans = state.q.ans;
+    if(Math.abs(c - ans[0]) < 0.01 && Math.abs(b - ans[1]) < 0.01) {
+        passQuestion();
+    } else {
+        showFeedback(false, "❌ 答案有誤，提示：(b/2)^2");
+    }
+}
+
+function checkCrossStep1() {
+    let v1 = parseInt(document.getElementById('chk_1').value)||0;
+    let v2 = parseInt(document.getElementById('chk_2').value)||0;
+    if(v1+v2 === state.q.step1.B) {
+        alert('驗算正確'); document.getElementById('step3-container').classList.remove('disabled-step'); document.getElementById('btn-submit').classList.remove('hidden');
+    } else alert('驗算錯誤');
+}
+
+function selForm(t) { state.selectedFormula = t; document.querySelectorAll('.formula-option').forEach(e=>e.classList.remove('selected')); document.getElementById('opt-'+t).classList.add('selected'); }
+function checkFormStep1() { if(state.selectedFormula===state.q.ftype){ document.getElementById('step3-container').classList.remove('disabled-step'); document.getElementById('btn-submit').classList.remove('hidden'); } else alert("公式選錯"); }
+
+function checkAnswer() {
+    try {
+        let isCorrect = false;
+        
+        if (state.solveMode === 'rational') {
+            let el1 = document.getElementById('sol_x1');
+            let el2 = document.getElementById('sol_x2');
+            if(!el1 || !el2) throw new Error("找不到輸入框");
+
+            let val1 = sanitizeInput(el1.value.trim());
+            let val2 = sanitizeInput(el2.value.trim());
+            
+            if(val1 === "" || val2 === "") return alert("請輸入完整答案");
+            
+            let u1 = safeEval(val1);
+            let u2 = safeEval(val2);
+            
+            if(isNaN(u1) || isNaN(u2)) return alert("請輸入有效數字");
+            
+            let r1 = state.q.ans_rational ? state.q.ans_rational[0] : (state.q.ans ? state.q.ans[0] : 0);
+            let r2 = state.q.ans_rational ? state.q.ans_rational[1] : (state.q.ans ? state.q.ans[1] : 0);
+
+            if ( (Math.abs(u1-r1)<0.01 && Math.abs(u2-r2)<0.01) || (Math.abs(u1-r2)<0.01 && Math.abs(u2-r1)<0.01) ) isCorrect=true;
+
+        } else {
+            // Radical Check
+            let ua = safeEval(sanitizeInput(document.getElementById('rad_a').value));
+            let ub = safeEval(sanitizeInput(document.getElementById('rad_b').value));
+            let uk = safeEval(sanitizeInput(document.getElementById('rad_k') ? document.getElementById('rad_k').value : 1));
+            let uc = safeEval(sanitizeInput(document.getElementById('rad_c') ? document.getElementById('rad_c').value : 1));
+            
+            if(isNaN(ua)||isNaN(ub)||isNaN(uk)||isNaN(uc)) return alert("請輸入有效數字");
+            
+            // Calculate value
+            let v = uk*Math.sqrt(ub);
+            let u1 = (ua + v)/uc;
+            let u2 = (ua - v)/uc;
+            
+            // If strictly using irrational target
+            if (state.q.ans_radical) {
+                // Check components for precise matching to standard form if desired, or just value
+                // Value check is safer
+                let target_a = state.q.ans_radical.a;
+                let target_b = state.q.ans_radical.b;
+                // Target value = a +/- sqrt(b)
+                let t1 = target_a + Math.sqrt(target_b);
+                let t2 = target_a - Math.sqrt(target_b);
+                
+                if ( (Math.abs(u1-t1)<0.01 && Math.abs(u2-t2)<0.01) || (Math.abs(u1-t2)<0.01 && Math.abs(u2-t1)<0.01) ) isCorrect=true;
+            } else {
+                // Rational fallback
+                let r1 = state.q.ans[0];
+                let r2 = state.q.ans[1];
+                if ( (Math.abs(u1-r1)<0.01 && Math.abs(u2-r2)<0.01) || (Math.abs(u1-r2)<0.01 && Math.abs(u2-r1)<0.01) ) isCorrect=true;
+            }
+        }
+
+        if(isCorrect) passQuestion();
+        else showFeedback(false, "❌ 答案有誤，請再檢查計算過程");
+        
+    } catch(e) {
+        alert("程式發生錯誤：" + e.message);
+        console.error(e);
+    }
 }
 
 function passQuestion() {
+    state.subStreak++; 
+    state.score++;
+    
+    let leveledUp = false;
+    let maxT = (state.level==='concept'||state.level==='move')?3:5;
+    
+    // FIX: Check for complete level pass condition (>= 5) and force pass
+    if (state.level === 'complete') {
+        if(state.score >= 5) { passLevel(); return; }
+    }
+    else if(state.course==='square') {
+        if(state.subStreak >= 3) {
+            state.subType++;
+            state.subStreak = 0;
+            leveledUp = true;
+            if(state.subType > maxT) { passLevel(); return; }
+        }
+    } else {
+        if(state.score >= 10) { passLevel(); return; }
+    }
+
     document.getElementById('btn-submit').classList.add('hidden');
     document.getElementById('btn-next').classList.remove('hidden');
     
-    if(state.course==='square') {
-        if(state.level === 'complete') {
-            state.score++; 
-             if(state.score >= 5) alert("恭喜通關！");
-        } else {
-            state.subStreak++; 
-            if(state.subStreak >= 3) {
-                state.subType++; state.subStreak = 0;
-                let maxT = (state.level==='concept'||state.level==='move')?3:5;
-                if(state.subType > maxTypes) alert("恭喜！本階段通關！");
-                else alert("晉級下一種題型！");
-            }
-        }
-    } else state.score++;
+    let msg = leveledUp ? "🎉 答對了！恭喜晉級下一種題型！" : "🎉 答對了！繼續保持！";
+    showFeedback(true, msg);
+    updateScoreUI();
 }
 
-// Utils
+function passLevel() {
+    let title = (state.course==='cross'?'十字交乘':state.course==='formula'?'乘法公式':'配方法') + ' - ' + state.level;
+    document.getElementById('cert-student-info').innerText = `${user.cls}班 ${user.no}號 ${user.name}`;
+    document.getElementById('cert-course-name').innerText = title;
+    document.getElementById('cert-level-name').innerText = "全數通關";
+    document.getElementById('cert-modal').style.display='flex';
+}
+
 function showFeedback(ok, text) {
     let el = document.getElementById('feedback-msg');
     el.style.display = 'block';
     el.className = ok ? 'feedback correct' : 'feedback wrong';
-    el.innerText = text ? text : (ok ? "🎉 答對了！" : "❌ 答案有誤");
+    el.innerText = text || (ok ? '🎉 答對了！' : '❌ 答案有誤');
 }
-function setAnsMode(m) {
-    state.ansMode = m;
-    document.getElementById('input-rational').classList.toggle('hidden', m!=='rational');
-    document.getElementById('input-radical').classList.toggle('hidden', m!=='radical');
-    document.getElementById('btn-rat').className = m==='rational'?'toggle-btn active':'toggle-btn';
-    document.getElementById('btn-rad').className = m==='radical'?'toggle-btn active':'toggle-btn';
-    document.getElementById('ans-toggle').classList.remove('hidden');
-    
-    if(state.course==='square' && state.level==='solve' && state.subType>=4) {
-        document.getElementById('rad-div-part').classList.remove('hidden');
-    } else {
-        document.getElementById('rad-div-part').classList.add('hidden');
-    }
-}
-function showCertModal() { document.getElementById('cert-modal').style.display='flex'; }
 function closeCert() { document.getElementById('cert-modal').style.display='none'; showMenu(); }
 </script>
 </body>
