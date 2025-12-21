@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code 與短網址產生器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* 自定義動畫 */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* QR Code 容器樣式微調 */
+        #qrcode img, #qrcode canvas {
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-blue-50 min-h-screen flex flex-col items-center justify-center p-4 text-gray-800">
+
+    <div class="w-full max-w-4xl bg-white/80 backdrop-blur-lg shadow-2xl rounded-3xl overflow-hidden border border-white/50 fade-in">
+        
+        <!-- Header -->
+        <header class="bg-indigo-600 p-6 text-white text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+            <h1 class="text-3xl font-bold relative z-10 flex items-center justify-center gap-3">
+                <i class="ph ph-qr-code text-4xl"></i>
+                連結工具箱
+            </h1>
+            <p class="mt-2 text-indigo-100 text-sm relative z-10">快速產生 QR Code 與縮短您的網址</p>
+        </header>
+
+        <main class="p-8">
+            <!-- 輸入區域 -->
+            <div class="mb-8">
+                <label for="urlInput" class="block text-sm font-medium text-gray-700 mb-2">輸入您的長網址</label>
+                <div class="flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-grow">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="ph ph-link text-gray-400 text-xl"></i>
+                        </div>
+                        <input type="url" id="urlInput" 
+                            class="block w-full pl-10 pr-3 py-4 border-gray-300 rounded-xl bg-gray-50 border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none shadow-sm" 
+                            placeholder="https://example.com/very/long/url..."
+                            onkeydown="if(event.key === 'Enter') generateAll()">
+                    </div>
+                    <button onclick="generateAll()" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 group whitespace-nowrap">
+                        <i class="ph ph-magic-wand text-xl group-hover:rotate-12 transition-transform"></i>
+                        立即產生
+                    </button>
+                </div>
+                <p id="errorMsg" class="text-red-500 text-sm mt-2 hidden flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i> 請輸入有效的網址 (需包含 http:// 或 https://)
+                </p>
+            </div>
+
+            <!-- 結果區域 (預設隱藏) -->
+            <!-- 修改：改為垂直排列 (flex-col items-center)，移除 md:flex-row -->
+            <div id="resultArea" class="hidden flex flex-col items-center gap-8">
+                
+                <!-- 上方：QR Code -->
+                <!-- 修改：設定 max-w-lg 讓卡片寬度適中 -->
+                <div class="w-full max-w-lg bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center text-center">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="ph ph-scan text-indigo-500"></i> QR Code
+                    </h3>
+                    
+                    <div id="qrcodeWrapper" class="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl mb-4">
+                        <div id="qrcode"></div>
+                    </div>
+
+                    <button onclick="downloadQR()" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                        <i class="ph ph-download-simple"></i> 下載圖片 (PNG)
+                    </button>
+                </div>
+
+                <!-- 下方：縮網址結果 -->
+                <!-- 修改：設定 max-w-lg 讓卡片寬度適中 -->
+                <div class="w-full max-w-lg bg-gradient-to-br from-gray-50 to-indigo-50 border border-indigo-100 rounded-2xl p-6 shadow-sm flex flex-col">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="ph ph-scissors text-indigo-500"></i> 縮短網址
+                    </h3>
+                    
+                    <div class="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm mb-4 flex flex-col justify-center">
+                        <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">原始網址</div>
+                        <div id="displayOriginalUrl" class="text-sm text-gray-500 truncate mb-6 border-b border-gray-100 pb-2"></div>
+
+                        <div class="text-xs text-indigo-500 uppercase tracking-wider font-semibold mb-1">短網址</div>
+                        <div class="flex items-center gap-2">
+                            <div id="shortUrlLoading" class="hidden items-center gap-2 text-gray-400">
+                                <div class="loader"></div> 正在縮短中...
+                            </div>
+                            <a id="shortUrlResult" href="#" target="_blank" class="text-2xl font-bold text-indigo-600 hover:underline truncate block"></a>
+                        </div>
+                    </div>
+
+                    <button onclick="copyShortUrl()" id="copyBtn" class="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <i class="ph ph-copy"></i> 複製短網址
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- 空狀態指示 (尚未生成時顯示) -->
+            <div id="emptyState" class="text-center py-12 opacity-50">
+                <i class="ph ph-arrow-u-left-up text-6xl text-gray-300 mb-2 block mx-auto md:hidden"></i>
+                <i class="ph ph-arrow-up text-6xl text-gray-300 mb-2 hidden md:block mx-auto"></i>
+                <p>在上方輸入網址並點擊按鈕</p>
+            </div>
+        </main>
+
+        <footer class="bg-gray-50 p-4 text-center text-xs text-gray-400 border-t border-gray-100">
+            &copy; 2025 連結工具箱. 縮網址服務由 TinyURL 提供.
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 flex items-center gap-2 z-50">
+        <i class="ph ph-check-circle text-green-400 text-xl"></i>
+        <span id="toastMsg">操作成功</span>
+    </div>
+
+    <script>
+        let qrcodeObj = null;
+
+        // 檢查網址格式
+        function isValidURL(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // 確保網址有 protocol
+        function formatURL(url) {
+            if (!/^https?:\/\//i.test(url)) {
+                return 'https://' + url;
+            }
+            return url;
+        }
+
+        async function generateAll() {
+            const input = document.getElementById('urlInput');
+            const errorMsg = document.getElementById('errorMsg');
+            const resultArea = document.getElementById('resultArea');
+            const emptyState = document.getElementById('emptyState');
+            
+            let url = input.value.trim();
+
+            if (!url) {
+                errorMsg.innerText = "請輸入網址";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            url = formatURL(url);
+            
+            if (!isValidURL(url)) {
+                errorMsg.innerText = "請輸入有效的網址格式";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // Reset UI
+            errorMsg.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            resultArea.classList.add('fade-in');
+            emptyState.classList.add('hidden');
+
+            // 1. 生成 QR Code
+            generateQRCode(url);
+
+            // 2. 生成短網址
+            document.getElementById('displayOriginalUrl').innerText = url;
+            await generateShortUrl(url);
+        }
+
+        function generateQRCode(url) {
+            const container = document.getElementById("qrcode");
+            container.innerHTML = ""; // 清空舊的
+
+            // 修正：加大 QR Code 尺寸至 360x360
+            qrcodeObj = new QRCode(container, {
+                text: url,
+                width: 360,
+                height: 360,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        async function generateShortUrl(longUrl) {
+            const resultElem = document.getElementById('shortUrlResult');
+            const loadingElem = document.getElementById('shortUrlLoading');
+            const copyBtn = document.getElementById('copyBtn');
+
+            resultElem.classList.add('hidden');
+            loadingElem.classList.remove('hidden');
+            loadingElem.classList.add('flex');
+            copyBtn.disabled = true;
+            copyBtn.classList.add('opacity-50');
+
+            try {
+                // 使用 allorigins.win 作為代理，避免中間驗證頁面
+                const proxyUrl = "https://api.allorigins.win/raw?url=";
+                const apiUrl = "https://tinyurl.com/api-create.php?url=" + encodeURIComponent(longUrl);
+                
+                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+                
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                // 確保去除前後空白
+                let shortUrl = (await response.text()).trim();
+
+                // 錯誤檢查
+                if (shortUrl.length > 100 || shortUrl.includes("<html")) {
+                    throw new Error("Invalid short URL response");
+                }
+                
+                resultElem.innerText = shortUrl;
+                resultElem.href = shortUrl;
+                
+            } catch (error) {
+                console.error("Shortener Error:", error);
+                resultElem.innerText = "無法連接縮網址服務";
+                resultElem.href = "#";
+            } finally {
+                loadingElem.classList.add('hidden');
+                loadingElem.classList.remove('flex');
+                resultElem.classList.remove('hidden');
+                copyBtn.disabled = false;
+                copyBtn.classList.remove('opacity-50');
+            }
+        }
+
+        function downloadQR() {
+            const qrContainer = document.getElementById("qrcode");
+            const img = qrContainer.querySelector("img");
+            
+            if (img && img.src) {
+                const link = document.createElement("a");
+                link.href = img.src;
+                link.download = "qrcode.png";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("QR Code 下載已開始");
+            } else {
+                // Fallback for Canvas if image is not yet rendered
+                const canvas = qrContainer.querySelector("canvas");
+                if (canvas) {
+                    const link = document.createElement("a");
+                    link.href = canvas.toDataURL("image/png");
+                    link.download = "qrcode.png";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showToast("QR Code 下載已開始");
+                }
+            }
+        }
+
+        function copyShortUrl() {
+            const shortUrl = document.getElementById('shortUrlResult').innerText;
+            if (!shortUrl || shortUrl === "無法連接縮網址服務") return;
+
+            navigator.clipboard.writeText(shortUrl).then(() => {
+                showToast("短網址已複製！");
+            }).catch(err => {
+                // Fallback for iframes where clipboard API might be restricted
+                const textArea = document.createElement("textarea");
+                textArea.value = shortUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast("短網址已複製！");
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            
+            toastMsg.innerText = message;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100', 'bottom-10');
+            toast.classList.remove('bottom-5');
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                toast.classList.remove('opacity-100', 'bottom-10');
+                toast.classList.add('bottom-5');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
