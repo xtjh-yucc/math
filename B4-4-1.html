@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 4-1 完整複習卷</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            /* 字體堆疊 */
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif; /* 解析用標楷體 */
+            
+            /* 顏色變數 */
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --correct-color: #008000; /* 深綠 */
+            --wrong-color: #cc0000;   /* 深紅 */
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+        }
+
+        body {
+            background-color: #555; /* 網頁背景深灰 */
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px; /* B4 寬度 */
+            padding: 60px 70px; /* 寬裕留白 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        /* 標題區 */
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 16px; }
+
+        /* 大題標題 */
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        /* =========================================
+           通用題目結構
+           ========================================= */
+        .question-block {
+            margin-bottom: 30px;
+            break-inside: avoid;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .q-num {
+            font-family: "Times New Roman", serif;
+            font-weight: bold;
+            margin-right: 8px;
+            min-width: 25px;
+        }
+
+        .q-content { font-weight: normal; width: 100%; }
+
+        /* =========================================
+           [一、選擇題] 專用樣式
+           ========================================= */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 雙欄 */
+            gap: 8px 0;
+            padding-left: 33px;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            padding: 2px 5px;
+            display: flex;
+            align-items: center;
+            transition: color 0.1s;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            text-decoration: underline;
+            color: #555;
+        }
+
+        .opt-label {
+            font-family: "Times New Roman", serif;
+            margin-right: 10px;
+        }
+
+        .option-btn.wrong { color: var(--wrong-color); font-weight: bold; text-decoration: line-through; }
+        .option-btn.correct { color: var(--correct-color); font-weight: bold; }
+        .option-btn.dimmed { opacity: 0.3; pointer-events: none; }
+
+        /* =========================================
+           [二、填充題] 專用樣式
+           ========================================= */
+        .sub-question-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 小題雙欄排列 */
+            gap: 20px;
+            margin-left: 33px;
+            margin-bottom: 10px;
+        }
+        
+        .sub-item {
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        /* =========================================
+           按鈕與解析通用
+           ========================================= */
+        .reveal-btn {
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            border-top: 1px dashed #aaa;
+            color: var(--note-color);
+            font-family: var(--font-note); /* 手寫感 */
+            font-size: 17px;
+            background-color: #fffaf0;
+            line-height: 1.5;
+        }
+        
+        .note-label { font-weight: bold; margin-bottom: 5px; display: block; }
+
+        /* RWD */
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+            .options-grid, .sub-question-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-1 總複習卷</h1>
+        <div class="subtitle">範圍：因式分解解一元二次方程式</div>
+    </header>
+
+    <div class="section-header">一、選擇題 (每題 4 分，共 48 分)</div>
+    <div id="selection-container"></div>
+
+    <div class="section-header">二、填充題 (每格 3 分，共 24 分)</div>
+    <div id="fill-container">
+        </div>
+
+    <div class="section-header">三、非選擇題 (每題 8 分，共 16 分)</div>
+    <div id="non-choice-container"></div>
+    
+    <div class="section-header">四、素養題 (每題 4 分，共 12 分)</div>
+    <div id="literacy-container"></div>
+</div>
+
+<script>
+    // ================= 資料庫 =================
+
+    // 1. 選擇題資料 (11題)
+    const selectionData = [
+        {
+            id: 1,
+            q: "化簡一元二次方程式 $15x^2 - 5x - 2 = 2x$，可算得其解為何？",
+            opts: ["$x = \\frac{2}{3}$ 或 $x = -5$", "$x = \\frac{3}{5}$ 或 $x = -2$", "$x = \\frac{2}{3}$ 或 $x = -\\frac{1}{5}$", "$x = \\frac{3}{5}$ 或 $x = -\\frac{1}{2}$"],
+            ans: 2, // C
+            exp: "1. 移項：$15x^2 - 7x - 2 = 0$<br>2. 十字交乘：$(3x - 2)(5x + 1) = 0$<br>3. 解得：$x = \\frac{2}{3}$ 或 $x = -\\frac{1}{5}$"
+        },
+        {
+            id: 2,
+            q: "下列何者為 $x^2 - 3x + 5 = 5$ 的解？",
+            opts: ["2", "3", "-1", "-2"],
+            ans: 1, // B
+            exp: "兩邊消去 5 得 $x^2 - 3x = 0 \\Rightarrow x(x-3)=0$，故 $x=0, 3$。"
+        },
+        {
+            id: 3,
+            q: "已知一元二次方程式為 $(x+5)(x-7)=0$，其解為何？",
+            opts: ["$x=5$ 或 $7$", "$x=5$ 或 $-7$", "$x=-5$ 或 $7$", "$x=-5$ 或 $-7$"],
+            ans: 2, // C
+            exp: "令各因式為 0，得 $x+5=0$ 或 $x-7=0 \\Rightarrow x=-5$ 或 $7$。"
+        },
+        {
+            id: 4,
+            q: "方程式 $5x(x+2)-8(x+2)=0$，則其解為何？",
+            opts: ["$x = -2$ 或 $\\frac{8}{5}$", "$x = -2$ 或 $-7$", "$x = -2$ 或 $-\\frac{8}{5}$", "重根 $x = -2$"],
+            ans: 0, // A
+            exp: "提公因式 $(x+2)$ 得 $(x+2)(5x-8)=0$。<br>故 $x=-2$ 或 $5x=8 \\Rightarrow x=\\frac{8}{5}$。"
+        },
+        {
+            id: 5,
+            q: "解 $\\frac{1}{2}(x+17) = \\frac{2}{3}x(x+2)$，則其解為何？",
+            opts: ["$x = \\frac{1}{2}, \\frac{2}{3}$", "$x = 1, \\frac{17}{2}$", "$x = 3, -\\frac{17}{4}$", "$x = -2, -17$"],
+            ans: 2, // C
+            exp: "同乘 6 $\\Rightarrow 3(x+17)=4x(x+2)$<br>展開 $3x+51=4x^2+8x$<br>移項 $4x^2+5x-51=0 \\Rightarrow (x-3)(4x+17)=0$"
+        },
+        {
+            id: 6,
+            q: "若 $x^2-2x-323=0$ 解為 $a, b$ 且 $a>b$，則 $a-b=$？",
+            opts: ["36", "25", "16", "9"],
+            ans: 0, // A
+            exp: "$323=17\\times19$，故 $(x-19)(x+17)=0$。<br>解為 $19, -17$。$a-b = 19-(-17)=36$。"
+        },
+        {
+            id: 7,
+            q: "明憲解方程式 $3x^2+5x+2=2x^2+5x+3$，步驟一 $(3x+2)(x+1)=(2x+3)(x+1)$，步驟二兩邊同除以 $(x+1)$...他從哪一步驟開始錯誤？",
+            opts: ["步驟一", "步驟二", "步驟三", "步驟四"],
+            ans: 1, // B
+            exp: "不可同除以未知數 $(x+1)$，因為 $x+1$ 可能為 0，會導致漏掉 $x=-1$ 的解。"
+        },
+        {
+            id: 8,
+            q: "解一元二次方程式 $3x^2-75=0$，其解為何？",
+            opts: ["$x=5$ (重根)", "$x=-5$ (重根)", "$x=\\pm 5$", "$x=\\pm \\sqrt{5}$"],
+            ans: 2, // C
+            exp: "$3(x^2-25)=0 \\Rightarrow x^2=25 \\Rightarrow x=\\pm 5$。"
+        },
+        {
+            id: 9,
+            q: "下列哪一個方程式與 $3x^2+x-52=0$ 有相同的解？",
+            opts: ["$x^2+2=3x$", "$(3x-1)^2=50$", "$2x^2+7x+6=0$", "$(3x-5)(x+2)=42$"],
+            ans: 3, // D
+            exp: "(D) 展開：$(3x-5)(x+2) = 3x^2+6x-5x-10 = 3x^2+x-10$。<br>方程式 $3x^2+x-10=42 \\Rightarrow 3x^2+x-52=0$。"
+        },
+        {
+            id: 10,
+            q: "若 $k$ 為一元二次方程式 $2+5x-x^2=0$ 的其中一解，求 $k^2-5k+4$ 的值 = ？",
+            opts: ["7", "6", "5", "4"],
+            ans: 1, // B
+            exp: "$k$ 代入：$2+5k-k^2=0 \\Rightarrow k^2-5k=2$。<br>所求 $= 2+4=6$。"
+        },
+        {
+            id: 11,
+            q: "若一元二次方程式 $kx^2-7x+2=0$ 有一解為 2，則 $k+\\frac{1}{k}$ 的值為何？",
+            opts: ["$\\frac{1}{2}$", "$3\\frac{1}{3}$", "$-\\frac{1}{2}$", "$-3\\frac{1}{3}$"],
+            ans: 1, // B
+            exp: "$x=2$ 代入 $4k-14+2=0 \\Rightarrow 4k=12 \\Rightarrow k=3$。<br>所求 $3+\\frac{1}{3}=3\\frac{1}{3}$。"
+        }
+    ];
+
+    // 2. 填充題資料 (Q1含4小題 + Q2~Q5)
+    // Q1 結構特殊，用程式碼獨立處理，這裡存放 Q2~Q5
+    const fillOthers = [
+        { 
+            id: 2, 
+            q: "已知一元二次方程式 $\\frac{(x+2)(x-6)}{3} = \\frac{x(x-1)}{4}$ 的解為 $a$ 和 $b$，則 $a+b =$ <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "13", 
+            exp: "1. 交叉相乘：$4(x^2-4x-12) = 3(x^2-x)$<br>2. 整理：$4x^2-16x-48 = 3x^2-3x$<br>3. 移項：$x^2-13x-48=0$<br>4. 分解：$(x-16)(x+3)=0 \\Rightarrow x=16, -3$<br>5. $a+b = 16+(-3)=13$" 
+        },
+        { 
+            id: 3, 
+            q: "已知 $12x^2 - 5x - 2 = 0$，則方程式兩個解的和為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "$\\frac{5}{12}$", 
+            exp: "兩根和 $= -\\frac{b}{a} = -\\frac{-5}{12} = \\frac{5}{12}$。<br>(亦可直接解得 $x=-\\frac{1}{4}, \\frac{2}{3}$ 相加)" 
+        },
+        { 
+            id: 4, 
+            q: "一元二次方程式 $5(x+2)^2 + 11(x+2) - 12 = 0$，方程式的解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "$x = -5$ 或 $-\\frac{6}{5}$", 
+            exp: "令 $A=x+2$，$5A^2+11A-12=0 \\Rightarrow (5A-4)(A+3)=0$<br>$A=\\frac{4}{5}$ 或 $-3$<br>1. $x+2=\\frac{4}{5} \\Rightarrow x=-\\frac{6}{5}$<br>2. $x+2=-3 \\Rightarrow x=-5$" 
+        },
+        { 
+            id: 5, 
+            q: "已知 $\\frac{2}{3}$ 為一元二次方程式 $12x^2 + ax - 2 = 0$ 的其中一根，則此方程式另一根為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "$-\\frac{1}{4}$", 
+            exp: "兩根積 $= \\frac{c}{a} = -\\frac{2}{12} = -\\frac{1}{6}$。<br>另一根 $= (-\\frac{1}{6}) \\div \\frac{2}{3} = -\\frac{1}{4}$。" 
+        }
+    ];
+
+    // 3. 非選擇題資料
+    const nonChoiceData = [
+        { 
+            id: 1, 
+            q: "<strong>(情境題)</strong> 小辰與小樂解方程式 $x^2+ax+b=0$。<br>小辰錯看 $x$ 項係數，解得兩根為 3, -6；<br>小樂錯看常數項，解得兩根為 10, -3。<br>若其他計算無誤，求正確方程式的解？",
+            ans: "$x = 9$ 或 $-2$",
+            exp: "1. 小辰常數正確：$3 \\times (-6) = -18$。<br>2. 小樂 $x$ 項正確：$-(10+(-3)) = -7$。<br>3. 正確方程式：$x^2-7x-18=0$<br>4. 分解 $(x-9)(x+2)=0$，得解 $9, -2$。"
+        },
+        {
+            id: 2,
+            q: "若 $x = -5$ 為一元二次方程式 $x^2 + ax - 10 = 0$ 的一個解，則：<br>(1) $a$ 的值為何？<br>(2) 此方程式的兩根乘積為何？",
+            ans: "(1) $a=3$；(2) -10",
+            exp: "(1) 將 $-5$ 代入：$(-5)^2 - 5a - 10 = 0 \\Rightarrow 15 - 5a = 0 \\Rightarrow a = 3$。<br>(2) 兩根乘積即為常數項 $-10$ (或解出方程式 $(x+5)(x-2)=0$，兩根 $-5, 2$，積為 $-10$)。"
+        }
+    ];
+
+    // 4. 素養題資料
+    const literacyData = [
+        {
+            id: 1,
+            q: "一元二次方程式解的定義為：將數值代入未知數中，使等式成立。下列何者正確？<br>(A) 若 $k=3$ 則 $(k-3)x^2+2x=6$ 是二次方程式<br>(B) $-\\frac{3}{2}$ 和 4 是 $2x^2-11x+12=0$ 的解<br>(C) 0 和 5 是 $x^2-5x=0$ 的解",
+            ans: "(C)",
+            exp: "(A) $k=3$ 時 $x^2$ 係數為 0，退化為一次方程式。<br>(B) 代入 $x=4$ 合，但 $x=-\\frac{3}{2}$ 不合。<br>(C) $x(x-5)=0 \Rightarrow x=0$ 或 $5$，正確。"
+        },
+        {
+            id: 2,
+            q: "<strong>(多根問題)</strong> 某方程式 $(x-3)(x-2)=(3x+2)(x-2)$，則下列敘述何者正確？<br>(A) 方程式只有一根<br>(B) 方程式有兩根，且為重根<br>(C) 方程式有兩根，且為同號數<br>(D) 方程式有兩根，一根為正根，一根為負根",
+            ans: "(D)",
+            exp: "移項提公因式：$(x-2)[(x-3)-(3x+2)] = 0$<br>$(x-2)(-2x-5)=0$<br>解得 $x=2$ (正) 或 $x=-\\frac{5}{2}$ (負)。<br>故選 (D)。"
+        },
+        {
+            id: 3,
+            q: "<strong>(整數解問題)</strong> 若一元二次方程式 $x^2+ax-12=0$ 的兩個解均為<strong>整數</strong>，則 $a$ <strong>不可能</strong>為下列何者？<br>(A) 13  (B) -1  (C) 1  (D) 4",
+            ans: "(A) 13",
+            exp: "兩根積 -12，整數根組合 $(m,n)$ 有：<br>$(1,-12) \rightarrow a=11$<br>$(-1,12) \rightarrow a=-11$<br>$(2,-6) \rightarrow a=4$ (D)<br>$(-2,6) \rightarrow a=-4$<br>$(3,-4) \rightarrow a=1$ (C)<br>$(-3,4) \rightarrow a=-1$ (B)<br>無法產生 $a=13$。"
+        }
+    ];
+
+    // ================= 渲染邏輯 =================
+
+    // 1. 渲染選擇題
+    function renderSelection() {
+        const container = document.getElementById("selection-container");
+        const labels = ["(A)", "(B)", "(C)", "(D)"];
+
+        selectionData.forEach((q, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+            
+            let optionsHTML = `<div class="options-grid" id="opt-grid-${idx}">`;
+            q.opts.forEach((opt, optIdx) => {
+                optionsHTML += `
+                    <button class="option-btn" onclick="checkSelect(this, ${idx}, ${optIdx}, ${q.ans})">
+                        <span class="opt-label">${labels[optIdx]}</span>
+                        <span>${opt}</span>
+                    </button>
+                `;
+            });
+            optionsHTML += `</div>`;
+
+            block.innerHTML = `
+                <div class="q-line">
+                    <span class="q-num">${q.id}.</span>
+                    <span class="q-content">${q.q}</span>
+                </div>
+                ${optionsHTML}
+                <div class="note-box" id="sel-note-${idx}">
+                    <span class="note-label">解析：</span>
+                    ${q.exp}
+                </div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    // 2. 渲染填充題 (含特殊結構 Q1)
+    function renderFill() {
+        const container = document.getElementById("fill-container");
+
+        // --- Render Q1 (4 Sub-questions) ---
+        const q1Block = document.createElement("div");
+        q1Block.className = "question-block";
+        q1Block.innerHTML = `
+            <div class="q-line">
+                <span class="q-num">1.</span>
+                <span class="q-content">解下列各一元二次方程式：</span>
+            </div>
+            <div class="sub-question-grid">
+                <div class="sub-item">
+                    (1) $9x^2 - 16 = 0$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-1')">看解答</button>
+                    <div class="note-box" id="fill-1-1" style="margin-left:0;">答：$x=\\pm\\frac{4}{3}$</div>
+                </div>
+                <div class="sub-item">
+                    (2) $3x^2 + 11x + 6 = 0$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-2')">看解答</button>
+                    <div class="note-box" id="fill-1-2" style="margin-left:0;">答：$x=-\\frac{2}{3}, -3$</div>
+                </div>
+                <div class="sub-item">
+                    (3) $4x^2 - 12x + 9 = 0$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-3')">看解答</button>
+                    <div class="note-box" id="fill-1-3" style="margin-left:0;">答：$x=\\frac{3}{2}$ (重根)</div>
+                </div>
+                <div class="sub-item">
+                    (4) $25x^2 + 10x + 1 = 0$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-4')">看解答</button>
+                    <div class="note-box" id="fill-1-4" style="margin-left:0;">答：$x=-\\frac{1}{5}$ (重根)</div>
+                </div>
+            </div>
+        `;
+        container.appendChild(q1Block);
+
+        // --- Render Q2-Q5 ---
+        fillOthers.forEach((q, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+            block.innerHTML = `
+                <div class="q-line">
+                    <span class="q-num">${q.id}.</span>
+                    <span class="q-content">${q.q}</span>
+                </div>
+                <button class="reveal-btn" onclick="toggleNote('fill-other-${idx}')">顯示解析與答案</button>
+                <div class="note-box" id="fill-other-${idx}">
+                    <span class="note-label">答：${q.ans}</span>
+                    <hr style="border:0; border-top:1px dashed #d32f2f; margin:5px 0;">
+                    ${q.exp}
+                </div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    // 3. 渲染通用題型 (非選、素養)
+    function renderSimple(data, containerId, prefix) {
+        const container = document.getElementById(containerId);
+        data.forEach((q, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+            block.innerHTML = `
+                <div class="q-line">
+                    <span class="q-num">${q.id}.</span>
+                    <span class="q-content">${q.q}</span>
+                </div>
+                <button class="reveal-btn" onclick="toggleNote('${prefix}-${idx}')">顯示解析與答案</button>
+                <div class="note-box" id="${prefix}-${idx}">
+                    <span class="note-label">答：${q.ans}</span>
+                    <hr style="border:0; border-top:1px dashed #d32f2f; margin:5px 0;">
+                    ${q.exp}
+                </div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    // ================= 互動控制 =================
+    window.checkSelect = function(btn, qIdx, userIdx, correctIdx) {
+        const parent = document.getElementById(`opt-grid-${qIdx}`);
+        const btns = parent.querySelectorAll(".option-btn");
+        const note = document.getElementById(`sel-note-${qIdx}`);
+
+        if (btn.classList.contains("disabled") || parent.getAttribute("data-done")) return;
+        parent.setAttribute("data-done", "true");
+
+        btns.forEach(b => {
+            b.classList.add("disabled");
+            if (b !== btn) b.classList.add("dimmed");
+        });
+        btn.classList.remove("dimmed");
+
+        if (userIdx === correctIdx) {
+            btn.classList.add("correct");
+        } else {
+            btn.classList.add("wrong");
+            btns[correctIdx].classList.remove("dimmed");
+            btns[correctIdx].classList.add("correct");
+        }
+        note.style.display = "block";
+    };
+
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === "block") ? "none" : "block";
+    };
+
+    // ================= 執行 =================
+    renderSelection();
+    renderFill();
+    renderSimple(nonChoiceData, "non-choice-container", "non");
+    renderSimple(literacyData, "literacy-container", "lit");
+
+</script>
+
+</body>
+</html>
