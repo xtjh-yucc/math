@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 4-2 完整複習卷</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            /* 字體堆疊 */
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif; /* 解析用標楷體 */
+            
+            /* 顏色變數 */
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --correct-color: #008000; /* 深綠 */
+            --wrong-color: #cc0000;   /* 深紅 */
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+        }
+
+        body {
+            background-color: #555; /* 網頁背景深灰 */
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px; /* B4 寬度 */
+            padding: 60px 70px; /* 寬裕留白 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        /* 標題區 */
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 16px; }
+
+        /* 大題標題 */
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        /* =========================================
+           通用題目結構
+           ========================================= */
+        .question-block {
+            margin-bottom: 30px;
+            break-inside: avoid;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .q-num {
+            font-family: "Times New Roman", serif;
+            font-weight: bold;
+            margin-right: 8px;
+            min-width: 25px;
+        }
+
+        .q-content { font-weight: normal; width: 100%; }
+
+        /* =========================================
+           [一、選擇題] 專用樣式
+           ========================================= */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 雙欄 */
+            gap: 8px 0;
+            padding-left: 33px;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            padding: 2px 5px;
+            display: flex;
+            align-items: center;
+            transition: color 0.1s;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            text-decoration: underline;
+            color: #555;
+        }
+
+        .opt-label {
+            font-family: "Times New Roman", serif;
+            margin-right: 10px;
+        }
+
+        .option-btn.wrong { color: var(--wrong-color); font-weight: bold; text-decoration: line-through; }
+        .option-btn.correct { color: var(--correct-color); font-weight: bold; }
+        .option-btn.dimmed { opacity: 0.3; pointer-events: none; }
+
+        /* =========================================
+           [二、填充題] 專用樣式
+           ========================================= */
+        .sub-question-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 小題雙欄排列 */
+            gap: 20px;
+            margin-left: 33px;
+            margin-bottom: 10px;
+        }
+        
+        .sub-item {
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        /* =========================================
+           按鈕與解析通用
+           ========================================= */
+        .reveal-btn {
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            border-top: 1px dashed #aaa;
+            color: var(--note-color);
+            font-family: var(--font-note); /* 手寫感 */
+            font-size: 17px;
+            background-color: #fffaf0;
+            line-height: 1.5;
+        }
+        
+        .note-label { font-weight: bold; margin-bottom: 5px; display: block; }
+
+        /* RWD */
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+            .options-grid, .sub-question-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-2 練習卷</h1>
+        <div class="subtitle">單元：配方法與公式解</div>
+    </header>
+
+    <div class="section-header">一、選擇題 (每題 4 分，共 48 分)</div>
+    <div id="selection-container"></div>
+
+    <div class="section-header">二、填充題 (每格 3 分，共 24 分)</div>
+    <div id="fill-container">
+        </div>
+
+    <div class="section-header">三、非選擇題 (每題 8 分，共 16 分)</div>
+    <div id="non-choice-container"></div>
+    
+    <div class="section-header">四、素養題 (每題 4 分，共 12 分)</div>
+    <div id="literacy-container"></div>
+</div>
+
+<script>
+    // ================= 資料庫 (B4-4-2.pdf 內容) =================
+
+    // 1. 選擇題資料 (12題)
+    const selectionData = [
+        {
+            id: 1,
+            q: "已知一元二次方程式 $(x-2)^2=16$，則 $x$ 的解為何？",
+            opts: ["(A) $x=2$", "(B) $x=\\pm 2$", "(C) $x=-6$ 或 $2$", "(D) $x=6$ 或 $-2$"],
+            ans: 3, // D
+            exp: "$(x-2)^2=16 \\Rightarrow x-2=\\pm 4$<br>$x = 2+4=6$ 或 $x = 2-4=-2$。"
+        },
+        {
+            id: 2,
+            q: "若欲將 $x^2+10x$ 配成完全平方式，應再加上下列哪一個數？",
+            opts: ["(A) 5", "(B) 25", "(C) 50", "(D) 100"],
+            ans: 1, // B
+            exp: "配方公式 $(\\frac{b}{2})^2 \\Rightarrow (\\frac{10}{2})^2 = 5^2 = 25$。"
+        },
+        {
+            id: 3,
+            q: "下列哪一個一元二次方程式有兩個相同的解 (重根)？",
+            opts: ["(A) $9x^2+6x=0$", "(B) $9x^2+6x+2=0$", "(C) $4x^2-4x+2=0$", "(D) $4x^2+4x+1=0$"],
+            ans: 3, // D
+            exp: "(D) $4x^2+4x+1 = (2x+1)^2 = 0$，故有重根 $x=-\\frac{1}{2}$。"
+        },
+        {
+            id: 4,
+            q: "若想以公式解解一元二次方程式 $x^2+x-3=0$，得 $x=\\frac{-1\\pm\\sqrt{k}}{2}$，則 $k=$？",
+            opts: ["(A) 7", "(B) 9", "(C) 13", "(D) 15"],
+            ans: 2, // C
+            exp: "公式解判別式 $k = b^2-4ac = 1^2 - 4(1)(-3) = 1 + 12 = 13$。"
+        },
+        {
+            id: 5,
+            q: "已知一元二次方程式 $3x^2-5x=k-2$ 無解，且 $k$ 為整數，則 $k$ 可能為下列何數？",
+            opts: ["(A) -2", "(B) 3", "(C) 2", "(D) 0"],
+            ans: 0, // A
+            exp: "整理得 $3x^2-5x-(k-2)=0$。<br>無解 $\\Rightarrow b^2-4ac < 0$<br>$(-5)^2 - 4(3)(-(k-2)) < 0$<br>$25 + 12(k-2) < 0 \\Rightarrow 25 + 12k - 24 < 0$<br>$12k < -1 \\Rightarrow k < -\\frac{1}{12}$<br>選項中只有 (A) -2 符合。"
+        },
+        {
+            id: 6,
+            q: "以配方法解 $x^2-7x+2=0$，可化簡得 $(x-\\frac{7}{2})^2=k$，則 $k=$？",
+            opts: ["(A) $\\frac{41}{4}$", "(B) $\\frac{57}{4}$", "(C) $\\pm\\frac{\\sqrt{41}}{2}$", "(D) $\\frac{41}{2}$"],
+            ans: 0, // A
+            exp: "$x^2-7x = -2$<br>$x^2-7x+(\\frac{7}{2})^2 = -2+\\frac{49}{4}$<br>$(x-\\frac{7}{2})^2 = \\frac{41}{4}$"
+        },
+        {
+            id: 7,
+            q: "已知 $75^2=5625$，則 $x^2+6x-5616=0$ 的解為何？",
+            opts: ["(A) 72, 75", "(B) 72, -78", "(C) 75, -72", "(D) 75, -78"],
+            ans: 1, // B
+            exp: "$x^2+6x = 5616$<br>$(x+3)^2 = 5616+9 = 5625 = 75^2$<br>$x+3 = \\pm 75$<br>$x = 72$ 或 $-78$。"
+        },
+        {
+            id: 8,
+            q: "已知 $5+\\sqrt{3}$ 與 $5-\\sqrt{3}$ 皆為 $x^2+ax+b=0$ 的解，則 $b-a=$？",
+            opts: ["(A) 30", "(B) 32", "(C) 36", "(D) -24"],
+            ans: 1, // B
+            exp: "兩根和 $-a = (5+\\sqrt{3})+(5-\\sqrt{3}) = 10 \\Rightarrow a=-10$<br>兩根積 $b = (5+\\sqrt{3})(5-\\sqrt{3}) = 25-3=22$<br>$b-a = 22-(-10) = 32$。"
+        },
+        {
+            id: 9,
+            q: "下列哪一個方程式的解為兩個相異的數？",
+            opts: ["(A) $9x^2=0$", "(B) $x^2+6=0$", "(C) $(x+\\sqrt{3})^2-7=0$", "(D) $(x-\\sqrt{5})^2+5=0$"],
+            ans: 2, // C
+            exp: "(A) $x=0$ (重根)<br>(B) $x^2=-6$ (無解)<br>(C) $(x+\\sqrt{3})^2=7 \\Rightarrow x+\\sqrt{3}=\\pm\\sqrt{7}$ (兩相異根)<br>(D) 平方數為 -5 (無解)"
+        },
+        {
+            id: 10,
+            q: "將 $3x^2-2x-2=0$ 化簡成 $a(x+p)^2+q=0$，則 $a+p+q=$？",
+            opts: ["(A) $\\frac{2}{3}$", "(B) $\\frac{1}{3}$", "(C) 32", "(D) -1"],
+            ans: 1, // B
+            exp: "$3(x^2-\\frac{2}{3}x)-2=0$<br>$3(x-\\frac{1}{3})^2 - 3(\\frac{1}{9}) - 2 = 0$<br>$3(x-\\frac{1}{3})^2 - \\frac{7}{3} = 0$<br>$a=3, p=-\\frac{1}{3}, q=-\\frac{7}{3}$<br>$a+p+q = 3-\\frac{1}{3}-\\frac{7}{3} = 3-\\frac{8}{3} = \\frac{1}{3}$"
+        },
+        {
+            id: 11,
+            q: "若 $x^2-5x+k=0$ 其解為兩相異數，則 $k$ 的最大整數解為何？",
+            opts: ["(A) 5", "(B) 6", "(C) -2", "(D) -3"],
+            ans: 1, // B
+            exp: "判別式 $D > 0 \\Rightarrow (-5)^2 - 4k > 0$<br>$25 > 4k \\Rightarrow k < 6.25$<br>最大整數為 6。"
+        },
+        {
+            id: 12,
+            q: "已知 $a\\neq 0$，方程式 $ax^2-2bx-c=0$ 可利用配方法化成 $(x+p)^2=q$，則 $p+q=$？",
+            opts: ["(A)", "(B)", "(C)", "(D) $\\frac{b^2+ac-ab}{a^2}$"],
+            ans: 3, // D
+            exp: "同除 $a$: $x^2 - \\frac{2b}{a}x - \\frac{c}{a} = 0$<br>$(x-\\frac{b}{a})^2 = \\frac{c}{a} + \\frac{b^2}{a^2} = \\frac{ac+b^2}{a^2}$<br>$p=-\\frac{b}{a}, q=\\frac{ac+b^2}{a^2}$<br>$p+q = -\\frac{ab}{a^2} + \\frac{ac+b^2}{a^2} = \\frac{b^2+ac-ab}{a^2}$"
+        }
+    ];
+
+    // 2. 填充題資料
+    const fillOthers = [
+        { 
+            id: 2, 
+            q: "已知 $a,b,c \\neq 0$，方程式 $(a+b)x^2+4cx+4(a-b)=0$ 的解為重根，若 $a,b,c$ 為 $\\triangle ABC$ 三邊長，則 $\\triangle ABC$ 為何種三角形？", 
+            ans: "直角三角形 (斜邊為 a)", 
+            exp: "重根 $\\Rightarrow D=0$<br>$(4c)^2 - 4(a+b)[4(a-b)] = 0$<br>$16c^2 - 16(a^2-b^2) = 0$<br>$c^2 - a^2 + b^2 = 0 \\Rightarrow a^2 = b^2 + c^2$<br>故為以 $a$ 為斜邊的直角三角形。" 
+        },
+        { 
+            id: 3, 
+            q: "已知 $(x+4)(x+k)+1=0$ 為完全平方式，則 $k=$ <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "2 或 6", 
+            exp: "展開 $x^2 + (4+k)x + (4k+1) = 0$<br>完全平方式 $\\Rightarrow D=0$<br>$(4+k)^2 - 4(4k+1) = 0$<br>$16+8k+k^2 - 16k - 4 = 0$<br>$k^2 - 8k + 12 = 0 \\Rightarrow (k-2)(k-6)=0$" 
+        },
+        { 
+            id: 4, 
+            q: "若方程式 $3x^2-5x+k=0$ 無解，則 $k$ 的範圍為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "$k > \\frac{25}{12}$", 
+            exp: "無解 $\\Rightarrow b^2-4ac < 0$<br>$(-5)^2 - 4(3)k < 0$<br>$25 - 12k < 0 \\Rightarrow 12k > 25 \\Rightarrow k > \\frac{25}{12}$" 
+        },
+        { 
+            id: 5, 
+            q: "若方程式 $ax^2+x+b=0$ 其解為 $x=-2$ (重根)，則 $a+b=$ <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "$\\frac{5}{4}$", 
+            exp: "重根 $-2 \\Rightarrow$ 因式為 $(x+2)^2 = x^2+4x+4$<br>比較係數：$a(x^2+4x+4) = ax^2 + 4ax + 4a$<br>對照原式 $ax^2+1x+b$<br>$4a=1 \\Rightarrow a=\\frac{1}{4}$<br>$b=4a = 1$<br>$a+b = \\frac{1}{4} + 1 = \\frac{5}{4}$" 
+        },
+        { 
+            id: 6, 
+            q: "已知 $x^2+2x-5=0$ 其解為 $\\alpha, \\beta$，則 $\\alpha^2+\\beta^2=$ <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。", 
+            ans: "14", 
+            exp: "由根與係數關係：$\\alpha+\\beta = -2, \\alpha\\beta = -5$<br>$\\alpha^2+\\beta^2 = (\\alpha+\\beta)^2 - 2\\alpha\\beta = (-2)^2 - 2(-5) = 4+10=14$"
+        }
+    ];
+
+    // 3. 非選擇題資料
+    const nonChoiceData = [
+        { 
+            id: 1, 
+            q: "<strong>(情境題)</strong> 小孟和小偉討論方程式 $2x^2+5x-k-1=0$。<br>小孟：無解時 $k$ 最大整數為 -4；有解時 $k$ 最小整數為 -4。<br>小偉：(計算過程如解析)<br>請問誰說的話正確？", 
+            ans: "小偉", 
+            exp: "判別式 $D = 5^2 - 4(2)(-k-1) = 25 + 8k + 8 = 8k + 33$<br>(1) 無解 $D < 0 \\Rightarrow 8k < -33 \\Rightarrow k < -4.125$。最大整數為 -5。<br>(2) 有解 $D \\ge 0 \\Rightarrow k \\ge -4.125$。最小整數為 -4。<br>小孟在無解部分說錯了(-4不小於-4.125)，故小偉正確。" 
+        },
+        {
+            id: 2, 
+            q: "<strong>(盲人摸象)</strong> 某方程式描述如下：<br>1. 二次項係數為 1。<br>2. 可化成 $(2x+a)^2=49$ 的形式。<br>3. 兩根和為 -1。<br>試推測此方程式為何？", 
+            ans: "$x^2+x-12=0$ (選項B)", 
+            exp: "描述3：兩根和 -1 $\\Rightarrow -b/1 = -1 \\Rightarrow b=1$。方程式為 $x^2+1x+c=0$。<br>描述2：$(2x+a)^2=49 \\Rightarrow (2x+1)^2=49$ (因為展開要配合 $x$ 項比例)。<br>$(2x+1)^2 = 4x^2+4x+1 = 49 \\Rightarrow 4x^2+4x-48=0$<br>同除 4 得 $x^2+x-12=0$。<br>符合所有條件。" 
+        }
+    ];
+
+    // 4. 素養題資料
+    const literacyData = [
+        {
+            id: 1,
+            q: "小龍解 $\\frac{5}{7}x^2-x=\\frac{6}{7}$。<br>步驟一：$5x^2-7x-6=0$<br>步驟二：$a=5, b=-7, c=-6$<br>步驟三：判別式 $= 5^2 - 4(-7)(-6)$<br>步驟四：判別式 < 0 無解。<br>請問哪一步開始錯？",
+            ans: "(C) 步驟三",
+            exp: "判別式公式為 $b^2-4ac$。<br>應為 $(-7)^2 - 4(5)(-6)$。<br>小龍寫成 $5^2$ (把 a 當 b 用) 且符號混亂，故步驟三錯誤。"
+        },
+        {
+            id: 2,
+            q: "女孩給小鈞的紙條寫著方程式：$3x^2-75x+300=0$。<br>試解出此方程式的答案。",
+            ans: "$x=5$ 或 $20$",
+            exp: "同除 3：$x^2-25x+100=0$<br>因式分解：$(x-5)(x-20)=0$<br>解得 $x=5$ 或 $x=20$。"
+        }
+    ];
+
+    // ================= 渲染邏輯 =================
+
+    // 1. 渲染選擇題
+    function renderSelection() {
+        const container = document.getElementById("selection-container");
+        const labels = ["", "", "", ""]; // 選項內文已包含 (A)(B)
+
+        selectionData.forEach((q, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+            
+            let optionsHTML = `<div class="options-grid" id="opt-grid-${idx}">`;
+            q.opts.forEach((opt, optIdx) => {
+                optionsHTML += `
+                    <button class="option-btn" onclick="checkSelect(this, ${idx}, ${optIdx}, ${q.ans})">
+                        <span class="opt-label">${labels[optIdx]}</span>
+                        <span>${opt}</span>
+                    </button>
+                `;
+            });
+            optionsHTML += `</div>`;
+
+            block.innerHTML = `
+                <div class="q-line">
+                    <span class="q-num">${q.id}.</span>
+                    <span class="q-content">${q.q}</span>
+                </div>
+                ${optionsHTML}
+                <div class="note-box" id="sel-note-${idx}">
+                    <span class="note-label">解析：</span>
+                    ${q.exp}
+                </div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    // 2. 渲染填充題 (含特殊 Q1)
+    function renderFill() {
+        const container = document.getElementById("fill-container");
+
+        // --- Q1: 4 小題 ---
+        const q1Block = document.createElement("div");
+        q1Block.className = "question-block";
+        q1Block.innerHTML = `
+            <div class="q-line">
+                <span class="q-num">1.</span>
+                <span class="q-content">解下列各一元二次方程式：</span>
+            </div>
+            <div class="sub-question-grid">
+                <div class="sub-item">
+                    (1) $(x+4)^2=9$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-1')">看解答</button>
+                    <div class="note-box" id="fill-1-1" style="margin-left:0;">答：$x=-1, -7$</div>
+                </div>
+                <div class="sub-item">
+                    (2) $x^2-4x-3=0$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-2')">看解答</button>
+                    <div class="note-box" id="fill-1-2" style="margin-left:0;">答：$x=2\\pm\\sqrt{7}$</div>
+                </div>
+                <div class="sub-item">
+                    (3) $3x^2-2x-4=0$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-3')">看解答</button>
+                    <div class="note-box" id="fill-1-3" style="margin-left:0;">答：$x=\\frac{1\\pm\\sqrt{13}}{3}$</div>
+                </div>
+                <div class="sub-item">
+                    (4) $2x^2+3x+3=0$，解為 <span style='text-decoration:underline;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>。
+                    <button class="reveal-btn" style="margin-left:0; display:block; margin-top:5px;" onclick="toggleNote('fill-1-4')">看解答</button>
+                    <div class="note-box" id="fill-1-4" style="margin-left:0;">答：無解 ($D<0$)</div>
+                </div>
+            </div>
+        `;
+        container.appendChild(q1Block);
+
+        // --- Q2-Q6 ---
+        fillOthers.forEach((q, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+            block.innerHTML = `
+                <div class="q-line">
+                    <span class="q-num">${q.id}.</span>
+                    <span class="q-content">${q.q}</span>
+                </div>
+                <button class="reveal-btn" onclick="toggleNote('fill-other-${idx}')">顯示解析與答案</button>
+                <div class="note-box" id="fill-other-${idx}">
+                    <span class="note-label">答：${q.ans}</span>
+                    <hr style="border:0; border-top:1px dashed #d32f2f; margin:5px 0;">
+                    ${q.exp}
+                </div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    // 3. 渲染通用題型
+    function renderSimple(data, containerId, prefix) {
+        const container = document.getElementById(containerId);
+        data.forEach((q, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+            block.innerHTML = `
+                <div class="q-line">
+                    <span class="q-num">${q.id}.</span>
+                    <span class="q-content">${q.q}</span>
+                </div>
+                <button class="reveal-btn" onclick="toggleNote('${prefix}-${idx}')">顯示解析與答案</button>
+                <div class="note-box" id="${prefix}-${idx}">
+                    <span class="note-label">答：${q.ans}</span>
+                    <hr style="border:0; border-top:1px dashed #d32f2f; margin:5px 0;">
+                    ${q.exp}
+                </div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    // ================= 互動控制 =================
+    window.checkSelect = function(btn, qIdx, userIdx, correctIdx) {
+        const parent = document.getElementById(`opt-grid-${qIdx}`);
+        const btns = parent.querySelectorAll(".option-btn");
+        const note = document.getElementById(`sel-note-${qIdx}`);
+
+        if (btn.classList.contains("disabled") || parent.getAttribute("data-done")) return;
+        parent.setAttribute("data-done", "true");
+
+        btns.forEach(b => {
+            b.classList.add("disabled");
+            if (b !== btn) b.classList.add("dimmed");
+        });
+        btn.classList.remove("dimmed");
+
+        if (userIdx === correctIdx) {
+            btn.classList.add("correct");
+        } else {
+            btn.classList.add("wrong");
+            btns[correctIdx].classList.remove("dimmed");
+            btns[correctIdx].classList.add("correct");
+        }
+        note.style.display = "block";
+    };
+
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === "block") ? "none" : "block";
+    };
+
+    // ================= 執行渲染 =================
+    renderSelection();
+    renderFill();
+    renderSimple(nonChoiceData, "non-choice-container", "non");
+    renderSimple(literacyData, "literacy-container", "lit");
+
+</script>
+
+</body>
+</html>
