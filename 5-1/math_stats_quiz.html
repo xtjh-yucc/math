@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 5-1 練習卷 (最終修正版)</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --correct-color: #008000;
+            --wrong-color: #cc0000;
+            --note-color: #d32f2f;
+        }
+
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 60px 70px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 16px; color: #555; }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .q-num {
+            font-family: "Times New Roman", serif;
+            font-weight: bold;
+            margin-right: 8px;
+            min-width: 25px;
+        }
+
+        .q-content { font-weight: normal; width: 100%; }
+
+        /* 圖片容器 */
+        .q-image-box {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 2px dashed #ccc;
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+        }
+        
+        .q-image-box img {
+            max-width: 100%;
+            max-height: 300px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* 選項樣式 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 0;
+            padding-left: 33px;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            text-decoration: underline;
+            color: #555;
+            background-color: #f0f0f0;
+        }
+
+        .opt-label { margin-right: 10px; font-family: "Times New Roman", serif; font-weight: bold; }
+        .option-btn.wrong { color: var(--wrong-color); font-weight: bold; text-decoration: line-through; }
+        .option-btn.correct { color: var(--correct-color); font-weight: bold; }
+        .option-btn.dimmed { opacity: 0.3; pointer-events: none; }
+
+        /* 解析區 */
+        .reveal-btn {
+            margin-left: 33px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            margin-left: 33px;
+            padding: 10px;
+            border-top: 1px dashed #aaa;
+            color: var(--note-color);
+            background-color: #fffaf0;
+        }
+        .note-label { font-weight: bold; margin-bottom: 5px; display: block; }
+
+        /* 表格樣式 */
+        .styled-table {
+            width: 90%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.9em;
+            margin-left: 33px;
+        }
+        .styled-table thead tr {
+            background-color: #f3f3f3;
+            text-align: center;
+        }
+        .styled-table th, .styled-table td {
+            padding: 8px 10px;
+            border: 1px solid #000;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+            .options-grid { grid-template-columns: 1fr; }
+            .styled-table { width: 100%; margin-left: 0; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 5-1 練習卷</h1>
+        <div class="subtitle">單元：統計資料處理</div>
+    </header>
+
+    <div class="section-header">一、選擇題 (每題 4 分)</div>
+    <div id="selection-container"></div>
+
+    <div class="section-header">二、填充題 (每格 3 分)</div>
+    <div id="fill-container"></div>
+
+    <div class="section-header">三、非選擇題 (每題 8 分)</div>
+    <div id="non-choice-container"></div>
+    
+    <div class="section-header">四、素養題 (每題 4 分)</div>
+    <div id="literacy-container"></div>
+</div>
+
+<script>
+    // ==========================================
+    // 資料庫設定 (已移除重複的(A)(B)文字)
+    // ==========================================
+
+    const selectionData = [
+        {
+            id: 1,
+            q: "整理數據時，計算各組相對次數的方法為何？",
+            opts: ["(各組次數 / 總次數) × 100%", "(總次數 / 各組次數) × 100%", "(累積次數 / 總次數) × 100%", "(各組次數 / 累積次數) × 100%"],
+            ans: 0,
+            exp: "相對次數 = (該組次數 ÷ 總次數) × 100%。"
+        },
+        {
+            id: 2,
+            q: "右圖為一圓形圖 (羽球扇形角度為 $54^\\circ$)，下列敘述何者正確？",
+            imgSrc: "sel_2.png", 
+            imgHint: "請截取第2題圓餅圖",
+            opts: ["羽球占 54%", "羽球相對次數 54", "羽球相對次數 15%", "羽球圓心角 $(54/360)^\\circ$"],
+            ans: 2,
+            exp: "羽球占比 = $54/360 = 0.15 = 15\\%$。"
+        },
+        {
+            id: 3,
+            q: "右表為累積次數分配表，下列敘述何者正確？",
+            tableData: {
+                headers: ["體重(公斤)", "次數(人)", "累積次數(人)"],
+                rows: [["20~40", "2", "$a$"], ["40~60", "16", "$b$"], ["60~80", "2", "$c$"], ["合計", "$d$", "-"]]
+            },
+            opts: ["$a=b$", "$b-2=c$", "$d=b+c$", "$a+16=b$"],
+            ans: 3,
+            exp: "$a=2$<br>$b=2+16=18$<br>$c=18+2=20$<br>$d=20$<br>故 (D) $a+16 = 2+16 = 18 = b$ 正確。"
+        },
+        {
+            id: 4,
+            q: "右圖為托育中心 3~6 歲小朋友的次數分配長條圖，年齡在 5 歲以上(含)的小朋友占多少 %？",
+            imgSrc: "sel_4.png",
+            imgHint: "請截取第4題長條圖",
+            opts: ["50", "55", "60", "65"],
+            ans: 0,
+            exp: "設總人數為20。5歲以上(5,6歲)共 $6+4=10$。<br>$10/20 = 50\\%$。"
+        },
+        {
+            id: 5,
+            q: "右圖為某次數學評量成績直方圖，成績在 20~60 分的共有多少人？",
+            imgSrc: "sel_5.png",
+            imgHint: "請截取第5題直方圖",
+            opts: ["4", "10", "14", "16"],
+            ans: 2,
+            exp: "加總 20~60 分各組次數，依圖判讀總和為 14 人。"
+        },
+        {
+            id: 6,
+            q: "右圖為英文科成績相對次數折線圖，若 40~50 分有 4 人 (10%)，則 70~80 分 (30%) 有多少人？",
+            imgSrc: "sel_6.png",
+            imgHint: "請截取第6題折線圖",
+            opts: ["10", "12", "15", "16"],
+            ans: 1,
+            exp: "總人數 $= 4 \\div 10\\% = 40$。<br>70~80分人數 $= 40 \\times 30\\% = 12$。"
+        },
+        {
+            id: 7,
+            q: "右圖為體重累積相對次數折線圖，全校 250 人。60~70kg 與 40~50kg 的人數相差多少百分比？",
+            imgSrc: "sel_7.png",
+            imgHint: "請截取第7題累積折線圖",
+            opts: ["10", "20", "30", "40"],
+            ans: 2,
+            exp: "60~70kg區間占比40%。40~50kg區間占比10%。<br>相差 $40-10=30\\%$。"
+        },
+        {
+            id: 8,
+            q: "右圖為立定跳遠累積次數折線圖，哪一組人數最多？",
+            imgSrc: "sel_8.png",
+            imgHint: "請截取第8題累積折線圖",
+            opts: ["100~120", "120~140", "140~160", "160~180"],
+            ans: 2,
+            exp: "線段最陡代表次數最多。圖中 140~160 最陡。"
+        },
+        {
+            id: 9,
+            q: "下表為國文段考成績次數分配表，70 分以上人數占全班百分之幾？",
+            tableData: {
+                headers: ["成績", "40~50", "50~60", "60~70", "70~80", "80~90", "90~100"],
+                rows: [["次數", "5", "10", "6", "3", "7", "4"]]
+            },
+            opts: ["40", "45", "50", "55"],
+            ans: 0,
+            exp: "70分以上 = $3+7+4 = 14$。<br>全班 = 35。<br>$14/35 = 40\\%$。"
+        },
+        {
+            id: 10,
+            q: "右圖為雨量次數分配長條圖 (中間高)，其累積相對次數折線圖應為何者？",
+            imgSrc: "sel_10.png",
+            imgHint: "請截取第10題長條圖",
+            opts: ["平滑", "直線", "凹口向上", "S型 (中間陡峭)"],
+            ans: 3,
+            exp: "中間次數多，累積圖形在中間上升最快，呈 S 型。"
+        },
+        {
+            id: 11,
+            q: "右表為捐款資料，文琪捐 2400 (總額 12000)，在圓形圖中占多少度？",
+            tableData: {
+                headers: ["人名", "文章", "文食", "文琪", "文香"],
+                rows: [["金額", "700", "1900", "2400", "7000"]]
+            },
+            opts: ["60", "72", "80", "90"],
+            ans: 1,
+            exp: "$2400 / 12000 = 1/5$。<br>$360^\\circ \\times 1/5 = 72^\\circ$。"
+        },
+        {
+            id: 12,
+            q: "右圖為汙損的球類長條圖，全班 36 人，籃:羽=3:5。下列何者正確？",
+            imgSrc: "sel_12.png",
+            imgHint: "請截取第12題長條圖",
+            opts: ["眾數在籃球", "羽球+足球=20", "籃球相對次數 20%", "最多與最少比值為 3"],
+            ans: 3,
+            exp: "推算得籃9人, 羽15人。最多(羽15)與最少(假設5)比值為3。"
+        }
+    ];
+
+    const fillData = [
+        {
+            id: 1,
+            q: "下表為讀書時間統計，求 $a, b, c, d$。<br>(提示：$a$為第一組累積, $b$為60-90相對%, $c$為30-60相對%, $d$為總累積)",
+            tableData: {
+                headers: ["時間", "0-30", "30-60", "60-90", "90-120", "120-150"],
+                rows: [
+                    ["次數", "3", "9", "18", "6", "4"],
+                    ["累積次數", "$a$", "", "", "", "$d$"]
+                ]
+            },
+            ans: "$a=3, b=45, c=22.5, d=36$",
+            exp: "總數40。<br>$a=3$。<br>$b=18/40=45\\%$。<br>$c=9/40=22.5\\%$。<br>$d=3+9+18+6 = 36$。"
+        },
+        {
+            id: 2,
+            // 修正：題目更新為身高累積次數折線圖 (參考附圖1 image_951423.png)
+            q: "八年忠班學生身高的累積次數分配折線圖上，若橫坐標代表身高(公分)，縱坐標代表累積次數(人)，各點坐標分別為 $(150, 0)$、$(160, 9)$、$(170, 26)$、$(180, 34)$、$(190, 40)$，則 $180 \\sim 190$ 公分占全部人數的 _______ %。",
+            imgSrc: "fill_2.png", // 需將 image_951423.png 改名為 fill_2.png
+            imgHint: "請截取填充第2題圖片",
+            ans: "15",
+            exp: "1. 全班總人數為最後一點的累積次數：40 人。<br>2. 180~190公分的人數 = (累積到190的人數) - (累積到180的人數) = $40 - 34 = 6$ 人。<br>3. 百分比 = $\\frac{6}{40} \\times 100\\% = 15\\%$。"
+        },
+        {
+            id: 3,
+            q: "右圖為累積相對次數折線圖，全校 640 人，60分對應累積 20%。求 60 分以上人數。",
+            imgSrc: "fill_3.png",
+            imgHint: "請截取填充第3題折線圖",
+            ans: "512",
+            exp: "60分以上占 $100\\% - 20\\% = 80\\%$。<br>$640 \\times 0.8 = 512$。"
+        },
+        {
+            id: 4,
+            q: "下表為年齡分配表，40-50歲(80人)，60-70歲(30人)，總數200。求兩組相對次數之和 $a+b$。",
+            tableData: {
+                headers: ["年齡", "20-30", "30-40", "40-50", "50-60", "60-70", "70-80"],
+                rows: [["次數", "8", "42", "80", "38", "30", "2"]]
+            },
+            ans: "55",
+            exp: "$a = 80/200 = 40\\%$。<br>$b = 30/200 = 15\\%$。<br>$a+b=55$。"
+        },
+        {
+            id: 5,
+            q: "右表為通勤時間累積次數表，求 $d$ (30-40分之累積次數)。(已知 50-60 分累積為 45，且 50-60 頻率為 3)",
+            tableData: {
+                headers: ["時間", "...", "30-40", "40-50", "50-60"],
+                rows: [["累積", "...", "$d$", "...", "45"]]
+            },
+            ans: "32",
+            exp: "此題依箭頭提示數值為 32。"
+        }
+    ];
+
+    const nonChoiceData = [
+        {
+            id: 1,
+            q: "比較甲、乙兩班數學成績及格(60分以上)比例。",
+            tableData: {
+                headers: ["成績", "甲班(30人)", "乙班(50人)"],
+                rows: [["20-40", "3", "5"], ["40-60", "6", "10"], ["60-80", "9", "22"], ["80-100", "12", "13"]]
+            },
+            ans: "一樣高 (70%)",
+            exp: "甲班及格：$9+12=21$，比例 $21/30=70\\%$。<br>乙班及格：$22+13=35$，比例 $35/50=70\\%$。"
+        },
+        {
+            id: 2,
+            // 補上遺漏的非選第二題 (參考附圖2 image_956adb.jpg)
+            q: "右圖為青崗國中運動類社團人數的圓形圖，試於下圖繪出各社團人數的相對次數分配長條圖。(請先計算出各社團相對次數百分比)",
+            imgSrc: "non_2.png", // 需將 image_956adb.jpg 改名為 non_2.png
+            imgHint: "請截取非選第2題圓餅圖",
+            ans: "羽球25%, 籃球30%, 足球15%, 排球10%, 桌球20%",
+            exp: "1. <strong>羽球社</strong>：$\\frac{90^{\\circ}}{360^{\\circ}} \\times 100\\% = 25\\%$<br>2. <strong>籃球社</strong>：$\\frac{108^{\\circ}}{360^{\\circ}} \\times 100\\% = 30\\%$<br>3. <strong>桌球社</strong>：全部 - (羽球+籃球+足球+排球)<br>$100\\% - (25\\% + 30\\% + 15\\% + 10\\%) = 100\\% - 80\\% = 20\\%$<br>根據以上數據繪製長條圖。"
+        }
+    ];
+
+    const literacyData = [
+        {
+            id: 1,
+            q: "右圖為籃球投籃數據，誰的命中率最高？(詠安:6/10, 一民:8/16, 信瑜:10/15, 冠宏:12/20)",
+            imgSrc: "lit_1.png",
+            imgHint: "請截取素養第1題折線圖",
+            ans: "信瑜",
+            exp: "信瑜命中率 $10/15 \\approx 66.7\\%$ 最高。"
+        },
+        {
+            id: 2,
+            q: "某年宗教信仰相對次數圖，全國 2500 萬人，佛教約占 27.5%。求佛教人數(科學記號)。",
+            imgSrc: "lit_2.png",
+            imgHint: "請截取素養第2題長條圖",
+            ans: "$6.875 \\times 10^6$",
+            exp: "$25000000 \\times 0.275 = 6875000 = 6.875 \\times 10^6$。"
+        },
+        {
+            id: 3,
+            q: "車主年齡累積相對次數表。40-50歲(累積由35%變65%) 與 70-80歲(累積由95%變100%) 人數差多少？(總數720萬)",
+            tableData: {
+                headers: ["年齡", "30~40", "40~50", "50~60", "60~70", "70~80"],
+                rows: [["累積%", "35", "65", "85", "95", "100"]]
+            },
+            ans: "180 萬",
+            exp: "40-50歲占 $30\\%$。<br>70-80歲占 $5\\%$。<br>差 $25\\%$。<br>$720 \\times 0.25 = 180$ 萬。"
+        }
+    ];
+
+    // 渲染函式
+    function renderContent() {
+        renderSection("selection-container", selectionData, "select");
+        renderSection("fill-container", fillData, "fill");
+        renderSection("non-choice-container", nonChoiceData, "non");
+        renderSection("literacy-container", literacyData, "lit");
+        if (window.MathJax) MathJax.typesetPromise();
+    }
+
+    function renderSection(containerId, data, type) {
+        const container = document.getElementById(containerId);
+        const labels = ["(A)", "(B)", "(C)", "(D)"];
+
+        data.forEach((item, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            // 題目
+            let html = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+            `;
+
+            // 表格
+            if (item.tableData) {
+                let tableHtml = `<table class="styled-table"><thead><tr>`;
+                item.tableData.headers.forEach(h => tableHtml += `<th>${h}</th>`);
+                tableHtml += `</tr></thead><tbody>`;
+                item.tableData.rows.forEach(row => {
+                    tableHtml += `<tr>`;
+                    row.forEach(cell => tableHtml += `<td>${cell}</td>`);
+                    tableHtml += `</tr>`;
+                });
+                tableHtml += `</tbody></table>`;
+                html += tableHtml;
+            }
+
+            // 圖片
+            if (item.imgSrc) {
+                html += `
+                    <div class="q-image-box">
+                        <img src="${item.imgSrc}" alt="${item.imgHint}" onerror="this.style.display='none'; this.previousElementSibling.style.color='red'; this.previousElementSibling.innerText='⚠️ 圖片未載入，請將圖檔命名為 ${item.imgSrc}';">
+                        <p style="margin-top:5px;font-size:12px;color:#999;">(圖檔：${item.imgSrc})</p>
+                    </div>
+                `;
+            }
+
+            // 選項或按鈕
+            if (type === "select") {
+                html += `<div class="options-grid" id="opt-grid-${type}-${idx}">`;
+                item.opts.forEach((opt, i) => {
+                    html += `
+                        <button class="option-btn" onclick="checkAnswer(this, '${type}', ${idx}, ${i}, ${item.ans})">
+                            <span class="opt-label">${labels[i]}</span>
+                            <span>${opt}</span>
+                        </button>
+                    `;
+                });
+                html += `</div>`;
+            } else {
+                html += `<button class="reveal-btn" onclick="toggleNote('note-${type}-${idx}')">顯示解析與答案</button>`;
+            }
+
+            // 解析
+            html += `
+                <div class="note-box" id="note-${type}-${idx}" ${type === 'select' ? '' : 'style="display:none"'}>
+                    <span class="note-label">${type === 'select' ? '解析：' : '答：' + item.ans}</span>
+                    ${type === 'select' ? item.exp : '<hr style="border:0;border-top:1px dashed #d32f2f;margin:5px 0">' + item.exp}
+                </div>
+            `;
+
+            block.innerHTML = html;
+            container.appendChild(block);
+        });
+    }
+
+    // 互動函式
+    window.checkAnswer = function(btn, type, qIdx, userIdx, correctIdx) {
+        const parent = document.getElementById(`opt-grid-${type}-${qIdx}`);
+        if (parent.getAttribute("data-done")) return;
+        parent.setAttribute("data-done", "true");
+
+        const btns = parent.querySelectorAll(".option-btn");
+        btns.forEach(b => {
+            b.classList.add("disabled");
+            if (b !== btn) b.classList.add("dimmed");
+        });
+        btn.classList.remove("dimmed");
+
+        if (userIdx === correctIdx) {
+            btn.classList.add("correct");
+        } else {
+            btn.classList.add("wrong");
+            btns[correctIdx].classList.remove("dimmed");
+            btns[correctIdx].classList.add("correct");
+        }
+        document.getElementById(`note-${type}-${qIdx}`).style.display = "block";
+    }
+
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === "block" ? "none" : "block");
+    }
+
+    // 初始化
+    renderContent();
+
+</script>
+
+</body>
+</html>
