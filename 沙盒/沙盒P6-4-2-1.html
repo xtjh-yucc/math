@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 4-2-1 練習卷</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif;
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+            --correct-color: #008000; /* 深綠 */
+            --wrong-color: #cc0000;   /* 深紅 */
+        }
+
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 60px 70px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .q-num {
+            margin-right: 10px;
+            min-width: 25px;
+        }
+
+        .reveal-btn {
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            transition: background 0.2s;
+            margin-left: 35px;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+            color: var(--note-color);
+            font-family: var(--font-note);
+            font-size: 18px;
+            margin-left: 35px;
+        }
+
+        /* 選擇題樣式 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-left: 35px;
+            margin-top: 10px;
+        }
+        .option-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            font-size: 18px;
+            color: inherit;
+            padding: 5px;
+        }
+        .option-btn:hover { text-decoration: underline; background: #f0f0f0; }
+        .option-btn.wrong { color: var(--wrong-color); text-decoration: line-through; font-weight: bold; }
+        .option-btn.correct { color: var(--correct-color); font-weight: bold; }
+
+        /* 圖片區 */
+        .q-image-box {
+            margin-left: 35px;
+            margin-bottom: 10px;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            text-align: center;
+            background: #fafafa;
+            color: #777;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+            .options-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-2-1 練習卷</h1>
+        <div class="subtitle">單元：利用平方根概念解方程式</div>
+        <div style="text-align: center; margin-top: 10px; font-size: 16px;">每題 10 分</div>
+    </header>
+
+    <div class="section-header">計算題與選擇題</div>
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // 題目資料庫 (依據 image_3c46c1.png)
+    const quizData = [
+        {
+            id: 1,
+            q: "$x^2 = 4$",
+            ans: "$x = \\pm 2$",
+            exp: "直接開平方：<br>$x = \\pm \\sqrt{4}$<br>$x = \\pm 2$"
+        },
+        {
+            id: 2,
+            q: "$x^2 = 49$",
+            ans: "$x = \\pm 7$",
+            exp: "直接開平方：<br>$x = \\pm \\sqrt{49}$<br>$x = \\pm 7$"
+        },
+        {
+            id: 3,
+            q: "$(x+2)^2 = 64$",
+            ans: "$x = 6$ 或 $-10$",
+            exp: "開平方：<br>$x+2 = \\pm \\sqrt{64}$<br>$x+2 = \\pm 8$<br>$x = -2 \\pm 8$<br>故 $x = 6$ 或 $x = -10$"
+        },
+        {
+            id: 4,
+            q: "$(x-5)^2 = 81$",
+            ans: "$x = 14$ 或 $-4$",
+            exp: "開平方：<br>$x-5 = \\pm \\sqrt{81}$<br>$x-5 = \\pm 9$<br>$x = 5 \\pm 9$<br>故 $x = 14$ 或 $x = -4$"
+        },
+        {
+            id: 5,
+            q: "$(x+2)^2 = 3$",
+            ans: "$x = -2 \\pm \\sqrt{3}$",
+            exp: "開平方：<br>$x+2 = \\pm \\sqrt{3}$<br>移項得：<br>$x = -2 \\pm \\sqrt{3}$"
+        },
+        {
+            id: 6,
+            q: "$(x-8)^2 = 5$",
+            ans: "$x = 8 \\pm \\sqrt{5}$",
+            exp: "開平方：<br>$x-8 = \\pm \\sqrt{5}$<br>移項得：<br>$x = 8 \\pm \\sqrt{5}$"
+        },
+        {
+            id: 7,
+            q: "$(x+1)^2 - 7 = 0$",
+            ans: "$x = -1 \\pm \\sqrt{7}$",
+            exp: "移項：<br>$(x+1)^2 = 7$<br>開平方：<br>$x+1 = \\pm \\sqrt{7}$<br>故 $x = -1 \\pm \\sqrt{7}$"
+        },
+        {
+            id: 8,
+            q: "$(x-4)^2 - 5 = 0$",
+            ans: "$x = 4 \\pm \\sqrt{5}$",
+            exp: "移項：<br>$(x-4)^2 = 5$<br>開平方：<br>$x-4 = \\pm \\sqrt{5}$<br>故 $x = 4 \\pm \\sqrt{5}$"
+        },
+        {
+            id: 9,
+            q: "$(3x+5)^2 - 4 = 3$",
+            ans: "$x = \\frac{-5 \\pm \\sqrt{7}}{3}$",
+            exp: "移項：<br>$(3x+5)^2 = 7$<br>開平方：<br>$3x+5 = \\pm \\sqrt{7}$<br>$3x = -5 \\pm \\sqrt{7}$<br>故 $x = \\frac{-5 \\pm \\sqrt{7}}{3}$"
+        },
+        {
+            id: 10,
+            q: "$(8x-3)^2 - 4 = 6$",
+            ans: "$x = \\frac{3 \\pm \\sqrt{10}}{8}$",
+            exp: "移項：<br>$(8x-3)^2 = 10$<br>開平方：<br>$8x-3 = \\pm \\sqrt{10}$<br>$8x = 3 \\pm \\sqrt{10}$<br>故 $x = \\frac{3 \\pm \\sqrt{10}}{8}$"
+        },
+        {
+            id: 11,
+            q: "阿南用配方法解 $(3x-4)^2 - 8 = -1$ 的過程如下，請問他從哪一個步驟開始發生錯誤？<br>(A) 步驟一 (B) 步驟二 (C) 步驟三 (D) 步驟四",
+            type: "select",
+            imgSrc: "image_3c46c1_crop.png", // 需自行截圖，或者直接看文字描述
+            imgHint: "題目圖示：步驟一移項得=7，步驟二開方得3x-4=√7...",
+            opts: ["(A) 步驟一", "(B) 步驟二", "(C) 步驟三", "(D) 步驟四"],
+            ans: 1, // Index 1 correspond to (B)
+            exp: "<strong>題目解析：</strong><br>原式：$(3x-4)^2 - 8 = -1$<br>步驟一：移項 $(3x-4)^2 = 7$ (正確)<br>步驟二：開平方應加上正負號 $\\pm$，即 $3x-4 = \\pm \\sqrt{7}$。<br>阿南寫成 $3x-4 = \\sqrt{7}$，漏了負號。<br>故從<strong>步驟二</strong>開始錯誤。"
+        }
+    ];
+
+    function renderQuestions() {
+        const container = document.getElementById("quiz-container");
+
+        quizData.forEach((item) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            let contentHtml = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+            `;
+
+            if (item.type === "select") {
+                // 選擇題 (第11題)
+                contentHtml += `
+                    <div class="q-image-box" style="margin-left:35px; border:1px dashed #ccc; padding:10px; background:#fafafa; text-align:center;">
+                        <p style="color:#777; font-size:14px;">(若有截圖請命名為 ${item.imgSrc} 放入資料夾)</p>
+                        <img src="${item.imgSrc}" alt="${item.imgHint}" style="max-width:100%; display:block; margin:0 auto;" onerror="this.style.display='none'">
+                    </div>
+                    <div class="options-grid">
+                `;
+                item.opts.forEach((opt, idx) => {
+                    contentHtml += `<button class="option-btn" onclick="checkAnswer(this, ${item.id}, ${idx}, ${item.ans})">${opt}</button>`;
+                });
+                contentHtml += `</div>
+                    <div class="note-box" id="note-${item.id}">
+                        <span class="note-label">解析：</span>
+                        ${item.exp}
+                    </div>
+                `;
+            } else {
+                // 計算題
+                contentHtml += `
+                    <button class="reveal-btn" onclick="toggleNote('note-${item.id}')">顯示解析與答案</button>
+                    <div class="note-box" id="note-${item.id}">
+                        <span class="note-label">答：${item.ans}</span>
+                        <hr style="border:0;border-top:1px dashed #d32f2f;margin:10px 0">
+                        <span class="note-label">解析：</span>
+                        ${item.exp}
+                    </div>
+                `;
+            }
+
+            block.innerHTML = contentHtml;
+            container.appendChild(block);
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    // 選擇題互動
+    window.checkAnswer = function(btn, id, userIdx, correctIdx) {
+        const parent = btn.parentElement;
+        const btns = parent.querySelectorAll(".option-btn");
+        
+        btns.forEach(b => {
+            b.classList.add("disabled");
+            if(b !== btn) b.style.opacity = "0.5";
+        });
+
+        if(userIdx === correctIdx) {
+            btn.classList.add("correct");
+        } else {
+            btn.classList.add("wrong");
+            btns[correctIdx].style.opacity = "1";
+            btns[correctIdx].classList.add("correct");
+        }
+        document.getElementById(`note-${id}`).style.display = "block";
+    }
+
+    // 計算題互動
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === "block") {
+            el.style.display = "none";
+        } else {
+            el.style.display = "block";
+        }
+    }
+
+    renderQuestions();
+</script>
+
+</body>
+</html>

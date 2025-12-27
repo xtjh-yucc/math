@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 4-2-3 練習卷</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif;
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+        }
+
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 60px 70px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .q-num {
+            margin-right: 10px;
+            min-width: 25px;
+        }
+
+        .reveal-btn {
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            transition: background 0.2s;
+            margin-left: 35px;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+            color: var(--note-color);
+            font-family: var(--font-note);
+            font-size: 18px;
+            margin-left: 35px;
+        }
+
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-2-3 練習卷</h1>
+        <div class="subtitle">單元：利用配方法解一元二次方程式 ($x^2$項係數 $\neq 1$)</div>
+        <div style="text-align: center; margin-top: 10px; font-size: 16px;">第1~3題每題30分，第4~6題每題10分，共120分</div>
+    </header>
+
+    <div class="section-header">計算題</div>
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // 題目資料庫 (依據 image_3bd566.png)
+    const quizData = [
+        {
+            id: 1,
+            q: "$2x^2 + 8x + 3 = 0$",
+            ans: "$x = \\frac{-4 \\pm \\sqrt{10}}{2}$ (或 $-2 \\pm \\frac{\\sqrt{10}}{2}$)",
+            exp: "1. 同除以 2：$x^2 + 4x + \\frac{3}{2} = 0$<br>2. 移項：$x^2 + 4x = -\\frac{3}{2}$<br>3. 配方：$x^2 + 4x + 2^2 = -\\frac{3}{2} + 4$<br>4. 整理：$(x+2)^2 = \\frac{5}{2}$<br>5. 開根號：$x+2 = \\pm \\sqrt{\\frac{5}{2}} = \\pm \\frac{\\sqrt{10}}{2}$<br>6. 移項得解：$x = -2 \\pm \\frac{\\sqrt{10}}{2} = \\frac{-4 \\pm \\sqrt{10}}{2}$"
+        },
+        {
+            id: 2,
+            q: "$3x^2 - 6x + 1 = 0$",
+            ans: "$x = \\frac{3 \\pm \\sqrt{6}}{3}$ (或 $1 \\pm \\frac{\\sqrt{6}}{3}$)",
+            exp: "1. 同除以 3：$x^2 - 2x + \\frac{1}{3} = 0$<br>2. 移項：$x^2 - 2x = -\\frac{1}{3}$<br>3. 配方：$x^2 - 2x + 1^2 = -\\frac{1}{3} + 1$<br>4. 整理：$(x-1)^2 = \\frac{2}{3}$<br>5. 開根號：$x-1 = \\pm \\sqrt{\\frac{2}{3}} = \\pm \\frac{\\sqrt{6}}{3}$<br>6. 移項得解：$x = 1 \\pm \\frac{\\sqrt{6}}{3} = \\frac{3 \\pm \\sqrt{6}}{3}$"
+        },
+        {
+            id: 3,
+            q: "$-5x^2 + 10x - 3 = 0$",
+            ans: "$x = \\frac{5 \\pm \\sqrt{10}}{5}$ (或 $1 \\pm \\frac{\\sqrt{10}}{5}$)",
+            exp: "1. 同除以 -5：$x^2 - 2x + \\frac{3}{5} = 0$<br>2. 移項：$x^2 - 2x = -\\frac{3}{5}$<br>3. 配方：$x^2 - 2x + 1^2 = -\\frac{3}{5} + 1$<br>4. 整理：$(x-1)^2 = \\frac{2}{5}$<br>5. 開根號：$x-1 = \\pm \\sqrt{\\frac{2}{5}} = \\pm \\frac{\\sqrt{10}}{5}$<br>6. 移項得解：$x = 1 \\pm \\frac{\\sqrt{10}}{5} = \\frac{5 \\pm \\sqrt{10}}{5}$"
+        },
+        {
+            id: 4,
+            q: "小玲以配方法解一元二次方程式 $3x^2 + mx + n = 0$，可得 $x = \\frac{2 \\pm \\sqrt{22}}{3}$，則 $m - n = ？$",
+            ans: "$2$",
+            exp: "由解反推方程式：<br>$x = \\frac{2 \\pm \\sqrt{22}}{3} \\Rightarrow 3x = 2 \\pm \\sqrt{22}$<br>移項：$3x - 2 = \\pm \\sqrt{22}$<br>兩邊平方：$(3x-2)^2 = 22$<br>展開：$9x^2 - 12x + 4 = 22$<br>整理：$9x^2 - 12x - 18 = 0$<br>同除以 3 (為了符合題目 $3x^2$ 係數)：<br>$3x^2 - 4x - 6 = 0$<br>對照 $3x^2 + mx + n = 0$，可得 $m=-4, n=-6$<br>所以 $m-n = -4 - (-6) = 2$"
+        },
+        {
+            id: 5,
+            q: "若 $a, b$ 為整數，且 $x$ 的一元二次方程式 $ax^2 + bx - 1 = 0$ 其中一根為 $\\frac{1 - \\sqrt{5}}{2}$，則 $4a - 2b = ？$",
+            ans: "$6$",
+            exp: "由根反推方程式：<br>$x = \\frac{1 - \\sqrt{5}}{2} \\Rightarrow 2x - 1 = -\\sqrt{5}$<br>兩邊平方：$(2x-1)^2 = 5$<br>展開：$4x^2 - 4x + 1 = 5$<br>整理：$4x^2 - 4x - 4 = 0$<br>同除以 4：$x^2 - x - 1 = 0$<br>題目方程式為 $ax^2 + bx - 1 = 0$ (常數項為 -1)<br>比較係數得：$a=1, b=-1$<br>所求 $4a - 2b = 4(1) - 2(-1) = 4 + 2 = 6$"
+        },
+        {
+            id: 6,
+            q: "已知一元二次方程式 $ax^2 - bx + 5 = 0$ 的解為 $\\sqrt{5}$ (重根)，則 $2a - b^2 = ？$",
+            ans: "$-18$",
+            exp: "方程式有重根 $\\sqrt{5}$，可設為 $a(x-\\sqrt{5})^2 = 0$<br>展開：$a(x^2 - 2\\sqrt{5}x + 5) = 0$<br>$ax^2 - 2\\sqrt{5}ax + 5a = 0$<br>與原式 $ax^2 - bx + 5 = 0$ 比較係數：<br>常數項：$5a = 5 \\Rightarrow a = 1$<br>一次項：$-b = -2\\sqrt{5}a \\Rightarrow b = 2\\sqrt{5}(1) = 2\\sqrt{5}$<br>所求 $2a - b^2 = 2(1) - (2\\sqrt{5})^2$<br>$= 2 - (4 \\times 5) = 2 - 20 = -18$"
+        }
+    ];
+
+    function renderQuestions() {
+        const container = document.getElementById("quiz-container");
+
+        quizData.forEach((item) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            let html = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+                <button class="reveal-btn" onclick="toggleNote('note-${item.id}')">顯示解析與答案</button>
+                <div class="note-box" id="note-${item.id}">
+                    <span class="note-label">答：${item.ans}</span>
+                    <hr style="border:0;border-top:1px dashed #d32f2f;margin:10px 0">
+                    <span class="note-label">解析：</span>
+                    ${item.exp}
+                </div>
+            `;
+
+            block.innerHTML = html;
+            container.appendChild(block);
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === "block") {
+            el.style.display = "none";
+        } else {
+            el.style.display = "block";
+        }
+    }
+
+    renderQuestions();
+</script>
+
+</body>
+</html>

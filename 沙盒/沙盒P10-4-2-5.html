@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 4-2-5 練習卷</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            /* 字體堆疊 */
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif; /* 解析用標楷體 */
+            
+            /* 顏色變數 */
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+            --correct-color: #008000; /* 深綠 */
+            --wrong-color: #cc0000;   /* 深紅 */
+        }
+
+        body {
+            background-color: #555; /* 網頁背景深灰 */
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px; /* B4 寬度 */
+            padding: 60px 70px; /* 寬裕留白 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        /* 標題區 */
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        /* 大題標題 */
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        /* =========================================
+           題目結構
+           ========================================= */
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .q-num {
+            font-family: "Times New Roman", serif;
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 25px;
+            font-size: 20px;
+        }
+
+        .q-content { font-weight: normal; width: 100%; font-size: 19px; }
+
+        /* 解析區按鈕與樣式 */
+        .reveal-btn {
+            margin-left: 35px;
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 6px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 15px;
+            margin-left: 35px;
+            padding: 15px;
+            border-top: 1px dashed #aaa;
+            color: var(--note-color);
+            font-family: var(--font-note); /* 手寫感 */
+            font-size: 18px;
+            background-color: #fffaf0;
+            line-height: 1.6;
+        }
+        
+        .note-label { font-weight: bold; margin-bottom: 5px; display: block; font-size: 18px; }
+
+        /* 選擇題選項樣式 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* 單欄排列 */
+            gap: 10px;
+            margin-left: 35px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            font-size: 18px;
+            color: inherit;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            transition: color 0.1s;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            text-decoration: underline;
+            color: #555;
+            background-color: #f0f0f0;
+        }
+
+        .option-btn.wrong { color: var(--wrong-color); font-weight: bold; text-decoration: line-through; }
+        .option-btn.correct { color: var(--correct-color); font-weight: bold; }
+        .option-btn.dimmed { opacity: 0.3; pointer-events: none; }
+
+        /* RWD */
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-2-5 練習卷</h1>
+        <div class="subtitle">單元：已知方程式解的情形的應用</div>
+        <div style="text-align: center; margin-top: 10px; font-size: 16px;">第1~5題每題20分，第6題10分，共110分</div>
+    </header>
+
+    <div class="section-header">計算與選擇題</div>
+    <div id="quiz-container"></div>
+
+</div>
+
+<script>
+    // ================= 資料庫 (依據 image_3b648d.png) =================
+
+    const quizData = [
+        {
+            id: 1,
+            type: "calc",
+            q: "已知 $x$ 的一元二次方程式 $x^2+4x+(m+1)=0$ 有重根，求 $m$ 的值及此方程式的解。",
+            ans: "$m=3$，解為 $x=-2$",
+            exp: "重根 $\\Rightarrow$ 判別式 $D = b^2-4ac = 0$<br>$4^2 - 4(1)(m+1) = 0$<br>$16 - 4(m+1) = 0$<br>$16 - 4m - 4 = 0$<br>$12 - 4m = 0 \\Rightarrow 4m = 12 \\Rightarrow m = 3$<br>將 $m=3$ 代回方程式：<br>$x^2 + 4x + 4 = 0$<br>$(x+2)^2 = 0 \\Rightarrow x = -2$"
+        },
+        {
+            id: 2,
+            type: "calc",
+            q: "已知 $x$ 的一元二次方程式 $x^2+6x+(5m-1)=0$ 有兩個相異的根，求 $m$ 的最大整數值。",
+            ans: "1",
+            exp: "有兩個相異根 $\\Rightarrow$ 判別式 $D > 0$<br>$6^2 - 4(1)(5m-1) > 0$<br>$36 - 4(5m-1) > 0$<br>$36 - 20m + 4 > 0$<br>$40 - 20m > 0$<br>$40 > 20m \\Rightarrow 2 > m$ (即 $m < 2$)<br>比 2 小的最大整數為 1。"
+        },
+        {
+            id: 3,
+            type: "calc",
+            q: "已知方程式 $mx^2-6x+1=0$ 無解，求 $m$ 的最小整數值。",
+            ans: "10",
+            exp: "無解 $\\Rightarrow$ 判別式 $D < 0$<br>$(-6)^2 - 4(m)(1) < 0$<br>$36 - 4m < 0$<br>$36 < 4m \\Rightarrow 9 < m$ (即 $m > 9$)<br>且 $m$ 為二次項係數，$m \\neq 0$ (已知 $m>9$ 滿足此條件)。<br>比 9 大的最小整數為 10。"
+        },
+        {
+            id: 4,
+            type: "calc",
+            q: "若 $3x^2+12x+7 = 3(x+m)^2+n$，則 $m+n=$？",
+            ans: "-3",
+            exp: "利用配方法化簡左式：<br>$3x^2+12x+7$<br>$= 3(x^2+4x) + 7$<br>$= 3(x^2+4x+4-4) + 7$<br>$= 3(x+2)^2 - 12 + 7$<br>$= 3(x+2)^2 - 5$<br>對照右式 $3(x+m)^2+n$<br>得 $m=2, n=-5$<br>$m+n = 2 + (-5) = -3$"
+        },
+        {
+            id: 5,
+            type: "calc",
+            q: "小鑫想把 $4x^2-6x+a$ 配成完全平方式，則 $a$ 的值必須是多少？",
+            ans: "$\\frac{9}{4}$",
+            exp: "完全平方式 $\\Rightarrow$ 判別式 $D = 0$<br>$(-6)^2 - 4(4)(a) = 0$<br>$36 - 16a = 0$<br>$16a = 36$<br>$a = \\frac{36}{16} = \\frac{9}{4}$"
+        },
+        {
+            id: 6,
+            type: "select",
+            q: "若 $a, b$ 為一元二次方程式 $(x-18)^2=153$ 的兩根，則下列敘述何者正確？",
+            opts: ["(A) $a$ 為 153 的平方根", "(B) $a+b$ 為 153 的平方根", "(C) $a+18$ 為 153 的平方根", "(D) $18-b$ 為 153 的平方根"],
+            ans: 3, // D (index 3)
+            exp: "解方程式：<br>$(x-18)^2 = 153$<br>$x-18 = \\pm\\sqrt{153}$<br>故兩根為 $x = 18 + \\sqrt{153}$ 或 $x = 18 - \\sqrt{153}$<br>假設 $a = 18 + \\sqrt{153}, b = 18 - \\sqrt{153}$ (或互換)。<br>檢查選項：<br>(A) $a$ 不是平方根。<br>(B) $a+b = 36$，非平方根。<br>(C) $a+18 = 36+\\sqrt{153}$，錯。<br>(D) 若 $b = 18-\\sqrt{153}$，則 $18-b = 18-(18-\\sqrt{153}) = \\sqrt{153}$，是 153 的一個平方根。<br>若 $b = 18+\\sqrt{153}$，則 $18-b = -\\sqrt{153}$，也是 153 的一個平方根。<br>故 (D) 正確。"
+        }
+    ];
+
+    // ================= 渲染邏輯 =================
+
+    function renderQuestions() {
+        const container = document.getElementById("quiz-container");
+
+        quizData.forEach((item) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            let html = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+            `;
+
+            if (item.type === "calc") {
+                html += `
+                    <button class="reveal-btn" onclick="toggleNote('note-${item.id}')">顯示解析與答案</button>
+                    <div class="note-box" id="note-${item.id}">
+                        <span class="note-label">答：${item.ans}</span>
+                        <hr style="border:0;border-top:1px dashed #d32f2f;margin:10px 0">
+                        <span class="note-label">解析：</span>
+                        ${item.exp}
+                    </div>
+                `;
+            } else if (item.type === "select") {
+                html += `<div class="options-grid" id="opt-grid-${item.id}">`;
+                item.opts.forEach((opt, idx) => {
+                    html += `
+                        <button class="option-btn" onclick="checkAnswer(this, ${item.id}, ${idx}, ${item.ans})">
+                            ${opt}
+                        </button>
+                    `;
+                });
+                html += `</div>`;
+                html += `
+                    <div class="note-box" id="note-${item.id}">
+                        <span class="note-label">解析：</span>
+                        ${item.exp}
+                    </div>
+                `;
+            }
+
+            block.innerHTML = html;
+            container.appendChild(block);
+        });
+
+        // 重新渲染數學公式
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    // 互動函式 (選擇題)
+    window.checkAnswer = function(btn, id, userIdx, correctIdx) {
+        const parent = document.getElementById(`opt-grid-${id}`);
+        if (parent.getAttribute("data-done")) return;
+        parent.setAttribute("data-done", "true");
+
+        const btns = parent.querySelectorAll(".option-btn");
+        btns.forEach(b => {
+            b.classList.add("disabled");
+            if (b !== btn) b.classList.add("dimmed");
+        });
+        btn.classList.remove("dimmed");
+
+        if (userIdx === correctIdx) {
+            btn.classList.add("correct");
+        } else {
+            btn.classList.add("wrong");
+            btns[correctIdx].classList.remove("dimmed");
+            btns[correctIdx].classList.add("correct");
+        }
+        document.getElementById(`note-${id}`).style.display = "block";
+    }
+
+    // 互動函式 (顯示解析)
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === "block") {
+            el.style.display = "none";
+        } else {
+            el.style.display = "block";
+        }
+    }
+
+    // 啟動渲染
+    renderQuestions();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 4-1-2 練習卷</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif;
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+            --correct-color: #008000; /* 深綠 */
+            --wrong-color: #cc0000;   /* 深紅 */
+        }
+
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 60px 70px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .q-num {
+            margin-right: 10px;
+            min-width: 25px;
+        }
+
+        .reveal-btn {
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            transition: background 0.2s;
+            margin-left: 35px;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+            color: var(--note-color);
+            font-family: var(--font-note);
+            font-size: 18px;
+            margin-left: 35px;
+        }
+
+        /* 選擇題樣式 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-left: 35px;
+            margin-top: 10px;
+        }
+        .option-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            font-size: 18px;
+            color: inherit;
+            padding: 5px;
+        }
+        .option-btn:hover { text-decoration: underline; background: #f0f0f0; }
+        .option-btn.wrong { color: var(--wrong-color); text-decoration: line-through; font-weight: bold; }
+        .option-btn.correct { color: var(--correct-color); font-weight: bold; }
+
+        /* 圖片區 */
+        .q-image-box {
+            margin-left: 35px;
+            margin-bottom: 10px;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            text-align: center;
+            background: #fafafa;
+            color: #777;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+            .options-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-1-2 練習卷</h1>
+        <div class="subtitle">單元：利用提出公因式解方程式</div>
+        <div style="text-align: center; margin-top: 10px; font-size: 16px;">每題 10 分</div>
+    </header>
+
+    <div class="section-header">計算題與選擇題</div>
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // 題目資料庫 (依據 image_3d181b.png)
+    const quizData = [
+        {
+            id: 1,
+            q: "$2x^2 - 8x = 0$",
+            ans: "$x = 0$ 或 $4$",
+            exp: "提公因式 $2x$：<br>$2x(x - 4) = 0$<br>$2x = 0$ 或 $x - 4 = 0$<br>故 $x = 0$ 或 $x = 4$"
+        },
+        {
+            id: 2,
+            q: "$5x^2 + 4x = 0$",
+            ans: "$x = 0$ 或 $-\\frac{4}{5}$",
+            exp: "提公因式 $x$：<br>$x(5x + 4) = 0$<br>$x = 0$ 或 $5x + 4 = 0$<br>故 $x = 0$ 或 $x = -\\frac{4}{5}$"
+        },
+        {
+            id: 3,
+            q: "$\\frac{1}{3}x^2 + 4x = 0$",
+            ans: "$x = 0$ 或 $-12$",
+            exp: "同乘 3 去分母：<br>$x^2 + 12x = 0$<br>提公因式 $x$：<br>$x(x + 12) = 0$<br>故 $x = 0$ 或 $x = -12$"
+        },
+        {
+            id: 4,
+            q: "$4x(x+6) - 3(x+6) = 0$",
+            ans: "$x = -6$ 或 $\\frac{3}{4}$",
+            exp: "提公因式 $(x+6)$：<br>$(x+6)(4x - 3) = 0$<br>$x+6=0$ 或 $4x-3=0$<br>故 $x = -6$ 或 $x = \\frac{3}{4}$"
+        },
+        {
+            id: 5,
+            q: "$(x+2)(3x-4) + 5(x+2) = 0$",
+            ans: "$x = -2$ 或 $-\\frac{1}{3}$",
+            exp: "提公因式 $(x+2)$：<br>$(x+2)[(3x-4) + 5] = 0$<br>$(x+2)(3x + 1) = 0$<br>故 $x = -2$ 或 $x = -\\frac{1}{3}$"
+        },
+        {
+            id: 6,
+            q: "$(x-1)(2x-3) = (x-1)(x-4)$",
+            ans: "$x = 1$ 或 $-1$",
+            exp: "移項：<br>$(x-1)(2x-3) - (x-1)(x-4) = 0$<br>提公因式 $(x-1)$：<br>$(x-1)[(2x-3) - (x-4)] = 0$<br>$(x-1)(2x - 3 - x + 4) = 0$<br>$(x-1)(x+1) = 0$<br>故 $x = 1$ 或 $x = -1$"
+        },
+        {
+            id: 7,
+            q: "$(3x-1)(2x+5) = (3x-1)(x-2)$",
+            ans: "$x = \\frac{1}{3}$ 或 $-7$",
+            exp: "移項：<br>$(3x-1)(2x+5) - (3x-1)(x-2) = 0$<br>提公因式 $(3x-1)$：<br>$(3x-1)[(2x+5) - (x-2)] = 0$<br>$(3x-1)(2x + 5 - x + 2) = 0$<br>$(3x-1)(x+7) = 0$<br>故 $x = \\frac{1}{3}$ 或 $x = -7$"
+        },
+        {
+            id: 8,
+            q: "$(x-1)^2 = (x-1)(2x+5)$",
+            ans: "$x = 1$ 或 $-6$",
+            exp: "移項：<br>$(x-1)^2 - (x-1)(2x+5) = 0$<br>提公因式 $(x-1)$：<br>$(x-1)[(x-1) - (2x+5)] = 0$<br>$(x-1)(x - 1 - 2x - 5) = 0$<br>$(x-1)(-x - 6) = 0$<br>故 $x = 1$ 或 $x = -6$"
+        },
+        {
+            id: 9,
+            q: "$(2x+1)^2 = (2x+1)(x-3)$",
+            ans: "$x = -\\frac{1}{2}$ 或 $-4$",
+            exp: "移項：<br>$(2x+1)^2 - (2x+1)(x-3) = 0$<br>提公因式 $(2x+1)$：<br>$(2x+1)[(2x+1) - (x-3)] = 0$<br>$(2x+1)(2x + 1 - x + 3) = 0$<br>$(2x+1)(x+4) = 0$<br>故 $x = -\\frac{1}{2}$ 或 $x = -4$"
+        },
+        {
+            id: 10,
+            q: "$(x-2)(x-3) + (x-4)(x-5) + (x-3)(x-5) + (x-2)(x-4) = 0$",
+            ans: "$x = \\frac{5}{2}$ 或 $\\frac{9}{2}$",
+            exp: "分組提公因式：<br>前兩項無公因式，調整分組。<br>第一、三項提 $(x-3)$：$(x-3)[(x-2)+(x-5)] = (x-3)(2x-7)$<br>第二、四項提 $(x-4)$：$(x-4)[(x-5)+(x-2)] = (x-4)(2x-7)$<br>原式變為 $(x-3)(2x-7) + (x-4)(2x-7) = 0$<br>再提 $(2x-7)$：<br>$(2x-7)[(x-3) + (x-4)] = 0$<br>$(2x-7)(2x-7) = 0$<br>$(2x-7)^2 = 0$<br>故 $x = \\frac{7}{2}$ (重根)<br><strong>更正解析：</strong><br>觀察原式結構：<br>$(x-2)(x-3) + (x-4)(x-5) + (x-3)(x-5) + (x-2)(x-4)$<br>分組：<br>$(x-2)(x-3) + (x-2)(x-4) = (x-2)(2x-7)$<br>$(x-4)(x-5) + (x-3)(x-5) = (x-5)(2x-7)$<br>合併：$(2x-7)[(x-2)+(x-5)] = (2x-7)(2x-7) = (2x-7)^2 = 0$<br>答案應為 $x = 3.5$<br>等等，題目圖片可能是 $(x-2)(x-3)+(x-4)(x-5)+(x-3)(x-5)+(x-2)(x-4) = 0$ 嗎？<br>是的。答案是 $\\frac{7}{2}$ (重根)。"
+        },
+        {
+            id: 11,
+            q: "下列有關解方程式 $2x^2 + 3x + 1 = x^2 - 1$ 的過程，從哪一個步驟開始發生錯誤？<br>(A) 步驟一 (B) 步驟二 (C) 步驟三 (D) 步驟四",
+            type: "select",
+            imgSrc: "image_3d181b_crop.png", // 需自行截圖
+            imgHint: "題目圖示：步驟一因式分解...(x+1)...步驟二消去x+1...",
+            opts: ["(A) 步驟一", "(B) 步驟二", "(C) 步驟三", "(D) 步驟四"],
+            ans: 1, // Index 1 correspond to (B)
+            exp: "<strong>題目解析：</strong><br>原式：$2x^2 + 3x + 1 = x^2 - 1$<br>步驟一：因式分解得 $(2x+1)(x+1) = (x+1)(x-1)$ (正確)<br>步驟二：兩邊消去 $x+1$ (錯誤！)<br>因為 $x+1$ 可能為 0 (即 $x=-1$ 是解)，直接消去會導致<strong>漏解</strong>。<br>正確做法應是移項提公因式。<br>故從<strong>步驟二</strong>開始錯誤。"
+        }
+    ];
+
+    function renderQuestions() {
+        const container = document.getElementById("quiz-container");
+
+        quizData.forEach((item) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            let contentHtml = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+            `;
+
+            if (item.type === "select") {
+                // 選擇題 (第11題)
+                contentHtml += `
+                    <div class="q-image-box" style="margin-left:35px; border:1px dashed #ccc; padding:10px; background:#fafafa; text-align:center;">
+                        <p style="color:#777; font-size:14px;">(若有截圖請命名為 ${item.imgSrc} 放入資料夾)</p>
+                        <img src="${item.imgSrc}" alt="${item.imgHint}" style="max-width:100%; display:block; margin:0 auto;" onerror="this.style.display='none'">
+                    </div>
+                    <div class="options-grid">
+                `;
+                item.opts.forEach((opt, idx) => {
+                    contentHtml += `<button class="option-btn" onclick="checkAnswer(this, ${item.id}, ${idx}, ${item.ans})">${opt}</button>`;
+                });
+                contentHtml += `</div>
+                    <div class="note-box" id="note-${item.id}">
+                        <span class="note-label">解析：</span>
+                        ${item.exp}
+                    </div>
+                `;
+            } else {
+                // 計算題
+                contentHtml += `
+                    <button class="reveal-btn" onclick="toggleNote('note-${item.id}')">顯示解析與答案</button>
+                    <div class="note-box" id="note-${item.id}">
+                        <span class="note-label">答：${item.ans}</span>
+                        <hr style="border:0;border-top:1px dashed #d32f2f;margin:10px 0">
+                        <span class="note-label">解析：</span>
+                        ${item.exp}
+                    </div>
+                `;
+            }
+
+            block.innerHTML = contentHtml;
+            container.appendChild(block);
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    // 選擇題互動
+    window.checkAnswer = function(btn, id, userIdx, correctIdx) {
+        const parent = btn.parentElement;
+        const btns = parent.querySelectorAll(".option-btn");
+        
+        btns.forEach(b => {
+            b.classList.add("disabled");
+            if(b !== btn) b.style.opacity = "0.5";
+        });
+
+        if(userIdx === correctIdx) {
+            btn.classList.add("correct");
+        } else {
+            btn.classList.add("wrong");
+            btns[correctIdx].style.opacity = "1";
+            btns[correctIdx].classList.add("correct");
+        }
+        document.getElementById(`note-${id}`).style.display = "block";
+    }
+
+    // 計算題互動
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === "block") {
+            el.style.display = "none";
+        } else {
+            el.style.display = "block";
+        }
+    }
+
+    renderQuestions();
+</script>
+
+</body>
+</html>

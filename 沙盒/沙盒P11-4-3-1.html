@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沙盒P11-- 4-3-1 應用問題</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            /* 字體堆疊 */
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif; /* 解析用標楷體 */
+            
+            /* 顏色變數 */
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+        }
+
+        body {
+            background-color: #555; /* 網頁背景深灰 */
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px; /* B4 寬度 */
+            padding: 60px 70px; /* 寬裕留白 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        /* 標題區 */
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        /* 大題標題 */
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        /* =========================================
+           題目結構
+           ========================================= */
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .q-num {
+            font-family: "Times New Roman", serif;
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 25px;
+            font-size: 20px;
+        }
+
+        .q-content { font-weight: normal; width: 100%; font-size: 19px; }
+
+        /* 解析區按鈕與樣式 */
+        .reveal-btn {
+            margin-left: 35px;
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 6px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 15px;
+            margin-left: 35px;
+            padding: 15px;
+            border-top: 1px dashed #aaa;
+            color: var(--note-color);
+            font-family: var(--font-note); /* 手寫感 */
+            font-size: 18px;
+            background-color: #fffaf0;
+            line-height: 1.6;
+        }
+        
+        .note-label { font-weight: bold; margin-bottom: 5px; display: block; font-size: 18px; }
+
+        /* RWD */
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-3-1 練習卷</h1>
+        <div class="subtitle">單元：應用問題——數字問題、價格問題</div>
+        <div style="text-align: center; margin-top: 10px; font-size: 16px;">每題 20 分，共 120 分</div>
+    </header>
+
+    <div class="section-header">計算題 (請寫出計算過程)</div>
+    <div id="quiz-container"></div>
+
+</div>
+
+<script>
+    // ================= 資料庫 (依據 image_3a74c6.png) =================
+
+    const quizData = [
+        {
+            id: 1,
+            q: "已知一個正數的平方比該正數的 6 倍多 16，則該正數是多少？",
+            ans: "8",
+            exp: "設該正數為 $x$ ($x>0$)。<br>依題意列式：$x^2 = 6x + 16$<br>移項得：$x^2 - 6x - 16 = 0$<br>因式分解：$(x-8)(x+2) = 0$<br>解得：$x=8$ 或 $x=-2$<br>因為題目要求為正數，故 $x=8$。"
+        },
+        {
+            id: 2,
+            q: "有大小兩個數，它們的和為 8，乘積為 15，則這兩個數分別是多少？",
+            ans: "3 和 5",
+            exp: "設其中一數為 $x$，則另一數為 $(8-x)$。<br>依題意列式：$x(8-x) = 15$<br>$8x - x^2 = 15$<br>移項整理：$x^2 - 8x + 15 = 0$<br>因式分解：$(x-3)(x-5) = 0$<br>解得：$x=3$ 或 $x=5$<br>當 $x=3$ 時，另一數為 5；當 $x=5$ 時，另一數為 3。<br>故這兩個數為 3 和 5。"
+        },
+        {
+            id: 3,
+            q: "兩個連續正奇數的平方和為 290，則這兩個數分別是多少？",
+            ans: "11 和 13",
+            exp: "設兩個連續正奇數為 $x$、$x+2$ ($x$ 為正奇數)。<br>依題意列式：$x^2 + (x+2)^2 = 290$<br>展開：$x^2 + x^2 + 4x + 4 = 290$<br>整理：$2x^2 + 4x - 286 = 0$<br>同除以 2：$x^2 + 2x - 143 = 0$<br>因式分解：$(x+13)(x-11) = 0$<br>解得：$x=11$ 或 $x=-13$ (不合，因須為正數)<br>故兩數為 11 與 $11+2=13$。"
+        },
+        {
+            id: 4,
+            q: "小多班上在園遊會販賣蛋餅，已知當天賣出蛋餅的數量是蛋餅單價的 2 倍多 5，並獲得收入 1950 元。試問蛋餅每個賣多少元？",
+            ans: "30 元",
+            exp: "設蛋餅單價為 $x$ 元，則賣出數量為 $(2x+5)$ 個。<br>依題意列式：$x(2x+5) = 1950$<br>展開：$2x^2 + 5x - 1950 = 0$<br>利用十字交乘法：<br>$(x-30)(2x+65) = 0$<br>解得：$x=30$ 或 $x=-32.5$ (價格不為負，不合)<br>故蛋餅每個賣 30 元。"
+        },
+        {
+            id: 5,
+            q: "阿文帶 50 元買巧克力，已知巧克力每顆 $x$ 元，共買了 $(x+2)$ 顆，並找回 2 元，則巧克力每顆多少元？",
+            ans: "6 元",
+            exp: "花費金額 = 總金額 - 找回金額 = $50 - 2 = 48$ 元。<br>依題意列式：$x(x+2) = 48$<br>$x^2 + 2x - 48 = 0$<br>因式分解：$(x+8)(x-6) = 0$<br>解得：$x=6$ 或 $x=-8$ (價格不為負，不合)<br>故巧克力每顆 6 元。"
+        },
+        {
+            id: 6,
+            q: "小嘉班上在園遊會販賣冰淇淋，已知當天賣出冰淇淋的數量是冰淇淋單價的 5 倍多 4，並獲得收入 1185 元。試問冰淇淋每個賣多少元？",
+            ans: "15 元",
+            exp: "設冰淇淋單價為 $x$ 元，則賣出數量為 $(5x+4)$ 個。<br>依題意列式：$x(5x+4) = 1185$<br>展開：$5x^2 + 4x - 1185 = 0$<br>利用公式解或十字交乘：<br>$(x-15)(5x+79) = 0$<br>解得：$x=15$ 或 $x=-15.8$ (不合)<br>故冰淇淋每個賣 15 元。"
+        }
+    ];
+
+    // ================= 渲染邏輯 =================
+
+    function renderQuestions() {
+        const container = document.getElementById("quiz-container");
+
+        quizData.forEach((item) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            let html = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+                
+                <button class="reveal-btn" onclick="toggleNote('note-${item.id}')">顯示解析與答案</button>
+                
+                <div class="note-box" id="note-${item.id}">
+                    <span class="note-label">答：${item.ans}</span>
+                    <hr style="border:0;border-top:1px dashed #d32f2f;margin:10px 0">
+                    <span class="note-label">解析：</span>
+                    ${item.exp}
+                </div>
+            `;
+
+            block.innerHTML = html;
+            container.appendChild(block);
+        });
+
+        // 重新渲染數學公式
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    // 互動函式
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === "block") {
+            el.style.display = "none";
+        } else {
+            el.style.display = "block";
+        }
+    }
+
+    // 啟動渲染
+    renderQuestions();
+
+</script>
+
+</body>
+</html>

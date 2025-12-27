@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 4-1-5 練習卷</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* =========================================
+           核心設定：國中教科書印刷風格
+           ========================================= */
+        :root {
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --font-note: "BiauKai", "DFKai-SB", "標楷體", serif;
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --note-color: #d32f2f;    /* 批改紅字 */
+            --btn-bg: #f5f5f5;
+        }
+
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 60px 70px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .q-num {
+            margin-right: 10px;
+            min-width: 25px;
+        }
+
+        .reveal-btn {
+            background: var(--btn-bg);
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            transition: background 0.2s;
+            margin-left: 35px;
+        }
+
+        .reveal-btn:hover { background: #e0e0e0; }
+
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+            color: var(--note-color);
+            font-family: var(--font-note);
+            font-size: 18px;
+            margin-left: 35px;
+        }
+
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 4-1-5 練習卷</h1>
+        <div class="subtitle">單元：解一元二次方程式綜合應用</div>
+        <div style="text-align: center; margin-top: 10px; font-size: 16px;">1~6題每題20分，共120分</div>
+    </header>
+
+    <div class="section-header">計算題</div>
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // 題目資料庫 (依據 image_3ca853.png)
+    const quizData = [
+        {
+            id: 1,
+            q: "$(x+1)(x-4) = 24$",
+            ans: "$x = 7$ 或 $-4$",
+            exp: "1. 展開：$x^2 - 3x - 4 = 24$<br>2. 移項：$x^2 - 3x - 28 = 0$<br>3. 十字交乘：$(x-7)(x+4) = 0$<br>4. 解得：$x = 7$ 或 $x = -4$"
+        },
+        {
+            id: 2,
+            q: "$(x-7)(x-2) = 14$",
+            ans: "$x = 9$ 或 $0$",
+            exp: "1. 展開：$x^2 - 9x + 14 = 14$<br>2. 移項：$x^2 - 9x = 0$<br>3. 提公因式：$x(x-9) = 0$<br>4. 解得：$x = 0$ 或 $x = 9$"
+        },
+        {
+            id: 3,
+            q: "$(4x+3)^2 + 5(4x+3) - 6 = 0$",
+            ans: "$x = -\\frac{1}{2}$ 或 $-\\frac{9}{4}$",
+            exp: "1. 令 $A = 4x+3$，原式變為 $A^2 + 5A - 6 = 0$<br>2. 十字交乘：$(A+6)(A-1) = 0$<br>3. 解得 $A = -6$ 或 $A = 1$<br>4. 代回 $x$：<br>   $4x+3 = -6 \\Rightarrow 4x = -9 \\Rightarrow x = -\\frac{9}{4}$<br>   $4x+3 = 1 \\Rightarrow 4x = -2 \\Rightarrow x = -\\frac{2}{4} = -\\frac{1}{2}$"
+        },
+        {
+            id: 4,
+            q: "已知 $x$ 的一元二次方程式 $x^2 + x + (m+1) = 0$ 的一根為 $-2$，則 $m$ 的值與方程式的另一根分別為多少？",
+            ans: "$m = -3$，另一根為 $1$",
+            exp: "1. 將 $x = -2$ 代入方程式：<br>   $(-2)^2 + (-2) + m + 1 = 0$<br>   $4 - 2 + m + 1 = 0$<br>   $3 + m = 0 \\Rightarrow m = -3$<br>2. 方程式還原為 $x^2 + x - 2 = 0$<br>3. 因式分解：$(x+2)(x-1) = 0$<br>4. 解得 $x = -2$ 或 $1$，故另一根為 $1$。"
+        },
+        {
+            id: 5,
+            q: "解一元二次方程式 $\\frac{(x+2)(x-6)}{3} = \\frac{x(x-1)}{4}$。",
+            ans: "$x = 16$ 或 $-3$",
+            exp: "1. 交叉相乘：$4(x+2)(x-6) = 3x(x-1)$<br>2. 展開：$4(x^2 - 4x - 12) = 3x^2 - 3x$<br>3. 分配律：$4x^2 - 16x - 48 = 3x^2 - 3x$<br>4. 移項整理：$x^2 - 13x - 48 = 0$<br>5. 十字交乘：$(x-16)(x+3) = 0$<br>6. 解得：$x = 16$ 或 $-3$"
+        },
+        {
+            id: 6,
+            q: "若 $x$ 的一元二次方程式 $ax^2 - bx + 15 = 0$ 的兩個解為 $5$ 和 $3$，則 $a$、$b$ 的值為多少？",
+            ans: "$a = 1$，$b = 8$",
+            exp: "1. 由兩根 $x=5, 3$ 可還原方程式：<br>   $(x-5)(x-3) = 0$<br>2. 展開：$x^2 - 8x + 15 = 0$<br>3. 與題目 $ax^2 - bx + 15 = 0$ 比較係數：<br>   $a = 1$<br>   $-b = -8 \\Rightarrow b = 8$"
+        }
+    ];
+
+    function renderQuestions() {
+        const container = document.getElementById("quiz-container");
+
+        quizData.forEach((item) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            let html = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+                <button class="reveal-btn" onclick="toggleNote('note-${item.id}')">顯示解析與答案</button>
+                <div class="note-box" id="note-${item.id}">
+                    <span class="note-label">答：${item.ans}</span>
+                    <hr style="border:0;border-top:1px dashed #d32f2f;margin:10px 0">
+                    <span class="note-label">解析：</span>
+                    ${item.exp}
+                </div>
+            `;
+
+            block.innerHTML = html;
+            container.appendChild(block);
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === "block") {
+            el.style.display = "none";
+        } else {
+            el.style.display = "block";
+        }
+    }
+
+    renderQuestions();
+</script>
+
+</body>
+</html>
