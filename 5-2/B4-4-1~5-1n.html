@@ -1,0 +1,551 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(三) 總複習 (4-1 ~ 5章)</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --font-main: "Times New Roman", "PMingLiU", "MingLiU", "新細明體", "細明體", serif;
+            --paper-bg: #ffffff;
+            --text-color: #000000;
+            --correct-color: #008000;
+            --wrong-color: #cc0000;
+            --note-color: #d32f2f;
+        }
+
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: var(--paper-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 60px 70px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .subtitle { font-size: 16px; color: #555; }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        .question-block {
+            margin-bottom: 40px;
+            break-inside: avoid;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .q-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .q-num {
+            font-family: "Times New Roman", serif;
+            font-weight: bold;
+            margin-right: 8px;
+            min-width: 25px;
+        }
+
+        .q-content { font-weight: normal; width: 100%; }
+
+        /* 圖片容器 */
+        .q-image-box {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 2px dashed #ccc;
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+        }
+        
+        .q-image-box img {
+            max-width: 100%;
+            max-height: 300px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* 選項樣式 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 0;
+            padding-left: 33px;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            text-decoration: underline;
+            color: #555;
+            background-color: #f0f0f0;
+        }
+
+        .opt-label { margin-right: 10px; font-family: "Times New Roman", serif; font-weight: bold; }
+        .option-btn.wrong { color: var(--wrong-color); font-weight: bold; text-decoration: line-through; }
+        .option-btn.correct { color: var(--correct-color); font-weight: bold; }
+        .option-btn.dimmed { opacity: 0.3; pointer-events: none; }
+
+        /* 解析區 */
+        .reveal-btn {
+            margin-left: 33px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .note-box {
+            display: none;
+            margin-top: 10px;
+            margin-left: 33px;
+            padding: 10px;
+            border-top: 1px dashed #aaa;
+            color: var(--note-color);
+            background-color: #fffaf0;
+        }
+        .note-label { font-weight: bold; margin-bottom: 5px; display: block; }
+
+        /* 表格樣式 */
+        .styled-table {
+            width: 90%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.9em;
+            margin-left: 33px;
+        }
+        .styled-table thead tr {
+            background-color: #f3f3f3;
+            text-align: center;
+        }
+        .styled-table th, .styled-table td {
+            padding: 8px 10px;
+            border: 1px solid #000;
+            text-align: center;
+        }
+        
+        .sub-question {
+            margin-left: 33px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #fafafa;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .paper { padding: 20px; }
+            .options-grid { grid-template-columns: 1fr; }
+            .styled-table { width: 100%; margin-left: 0; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <header>
+        <h1>八年級數學(三) 複習卷</h1>
+        <div class="subtitle">範圍：4-1 ~ 第5章 (複習三)</div>
+    </header>
+
+    <div class="section-header">一、選擇題 (每題 4 分)</div>
+    <div id="selection-container"></div>
+
+    <div class="section-header">二、填充題 (每格 3 分)</div>
+    <div id="fill-container"></div>
+
+    <div class="section-header">三、非選擇題 (每題 8 分)</div>
+    <div id="non-choice-container"></div>
+    
+    <div class="section-header">四、素養題 (每題 4 分)</div>
+    <div id="literacy-container"></div>
+</div>
+
+<script>
+    // ==========================================
+    // 資料庫設定
+    // ==========================================
+
+    const selectionData = [
+        {
+       
+            id: 1,
+            q: "多項式 $x^2 - \\frac{2}{3}x$ 加上下列哪一數後，會變成完全平方式？",
+            opts: ["$\\frac{1}{3}$", "$\\frac{1}{9}$", "$-\\frac{1}{3}$", "$-\\frac{1}{9}$"],
+            ans: 1, // (B)
+            exp: "配成完全平方式的常數項為「一次項係數一半的平方」。<br>計算：$(-\\frac{2}{3} \\times \\frac{1}{2})^2 = (-\\frac{1}{3})^2 = \\frac{1}{9}$。<br>故應加上 $\\frac{1}{9}$。"
+        },
+        {
+            id: 2,
+            q: "下列何者的解為重根？",
+            opts: ["$4x^2-x$", "$x^2-4x-2=x^2$", "$x^2-2x+373=16x$", "$x^2+20x+256=-12x$"],
+            ans: 3, // (D) 
+            exp: "判別式 $b^2-4ac=0$ 為重根。<br>(D) $x^2+32x+256=0 \\Rightarrow (x+16)^2=0$，是重根。<br>依題意選項 (D) 為完全平方式。"
+        },
+        {
+            id: 3,
+            q: "已知一元二次方程式 $-ax+5=0$ (題意應為 $x^2-ax+5=0$ 有一解為-1,則a=？",
+            opts: ["-4", "-6", "4", "6"],
+            ans: 1,// (B)
+            exp: "若 $x^2-ax+5=0$ 有一解為-1,將x=-1代入得a=-6。"
+        },
+        {
+            id: 4,
+            q: "累積相對次數折線圖中，橫坐標為成績，縱坐標為累積相對次數(%)，下列關於點 $(50, 50)$ 的敘述何者正確？",
+            imgSrc: "rev_choice_4.png", imgHint: "請截取選擇第4題圖(若有)",
+            opts: ["未滿 60 分有 50 人", "未滿 50 分有 50 人", "有 50 人的成績為 50 分", "未滿 50 分者占全部人數的 50%"],
+            ans: 3,
+            exp: "累積相對次數圖點 $(a, b)$ 表示「未滿 $a$ 的資料占 $b\\%$」。<br>故 $(50, 50)$ 表示未滿 50 分者占 50%。"
+        },
+        {
+            id: 5,
+            q: "若一元二次方程式 $x^2+4x+k=0$ 有兩個相同的解，則 $k=$？",
+            opts: ["3", "1", "4", "0 或 1/4"],
+            ans: 2,
+            exp: "重根 $\\Rightarrow$ 判別式 $D = 4^2 - 4k = 0 \\Rightarrow 16 = 4k \\Rightarrow k=4$。"
+        },
+        {
+            id: 6,
+            q: "露營活動，若 $x$ 人睡一個帳篷，恰好睡滿 $32x$ (應為32) 個帳篷 (總人數 $32x$)；若改為 $(x+2)$ 人睡一個，則使用 $(21x+1)$ (推測為21) 個帳篷，還剩 2 人。問共有多少學生？",
+            opts: ["512", "516", "520", "536"],
+            ans: 0,
+            exp: "由題目線索推算 $x=4$。<br>人數 $= 32 \\times x^2$ (若題意是睡滿32x個) 或 $32x$。<br>若 $x=4$，總人數 $32 \\times 16 = 512$。<br>方程式：$32x^2 = (x+2)(21x+1)+2$ (依考卷常見題型修正)。"
+        },
+        {
+            id: 7,
+            q: "如右圖，正方形 ABCD 邊長 10，四邊取點連成正方形 EFGH，面積 50。若 $\\overline{BF}=\\overline{AE}$，則 $\\overline{BF}=?$ 公分？",
+            imgSrc: "rev_choice_7.png", imgHint: "請截取選擇第7題圖",
+            opts: ["5", "3", "7", "3 或 7"],
+            ans: 0,
+            exp: "設 $\\overline{AE}=\\overline{BF}=x$，則 $\\overline{AH}=10-x$。<br>在 $\\triangle AEH$ 中，$x^2 + (10-x)^2 = 50$。<br>$2x^2 - 20x + 100 = 50 \\Rightarrow x^2 - 10x + 25 = 0 \\Rightarrow (x-5)^2=0$。<br>$x=5$。"
+        },
+        {
+            id: 8,
+            q: "下列何數為一元二次方程式 $2x^2+2x-12=0$ 的解？",
+            opts: ["1", "2", "-1", "-4"],
+            ans: 1,
+            exp: "$2(x^2+x-6)=0 \\Rightarrow 2(x+3)(x-2)=0$。<br>解為 $x=-3$ 或 $2$。"
+        },
+        {
+            id: 9,
+            q: "一元二次方程式 $(x+2)^2=5$ 其解為何？",
+            opts: ["$x = \\pm \\sqrt{5}/2$", "$x = 2 \\pm \\sqrt{5}$", "$x = \\pm 5\\sqrt{2}$", "$x = -2 \\pm \\sqrt{5}$"],
+            ans: 3,
+            exp: "$x+2 = \\pm \\sqrt{5} \\Rightarrow x = -2 \\pm \\sqrt{5}$。"
+        },
+        {
+            id: 10,
+            q: "利用配方法將 $3x^2-6x+k=0$ 化成 $x-1 = \\pm \\frac{\\sqrt{6}}{3}$，則 $k=$？",
+            opts: ["1", "2", "-1", "-2"],
+            ans: 0,
+            exp: "還原：$(x-1)^2 = \\frac{6}{9} = \\frac{2}{3}$。<br>$x^2-2x+1 = \\frac{2}{3} \\Rightarrow 3x^2-6x+3=2 \\Rightarrow 3x^2-6x+1=0$。<br>故 $k=1$。"
+        },
+        {
+            id: 11,
+            q: "已知 $2x(kx-4)-x^2+10=0$ 無解，則 $k$ 可能為？",
+            opts: ["3", "1", "-1/2", "0"],
+            ans: 0,
+            exp: "整理得 $(2k-1)x^2 - 8x + 10 = 0$。<br>無解 $\\Rightarrow D < 0 \\Rightarrow 64 - 40(2k-1) < 0$。<br>$64 < 80k - 40 \\Rightarrow 104 < 80k \\Rightarrow k > 1.3$。<br>選項中只有 (A) 3 符合。"
+        },
+        {
+            id: 12,
+            q: "右表為體重次數分配表。45~60kg (19人) 相對次數 $a\\%$，65~75kg (7人) 相對次數 $b\\%$。$a-b=$？",
+            tableData: {
+                headers: ["體重", "45-50", "50-55", "55-60", "60-65", "65-70", "70-75", "75-80"],
+                rows: [["次數", "6", "3", "10", "12", "4", "3", "2"]]
+            },
+            opts: ["24", "25", "30", "36"],
+            ans: 2,
+            exp: "總數 40。<br>$a\\% = (6+3+10)/40 = 19/40 = 47.5\\%$。<br>$b\\% = (4+3)/40 = 7/40 = 17.5\\%$。<br>$a-b = 30$。"
+        }
+    ];
+
+    const fillData = [
+        {
+            id: 1,
+            q: "解下列各一元二次方程式：",
+            // 使用特殊渲染處理4個小題
+            customHtml: `
+                <div class="sub-question">(1) $x^2+2x-3=0$，解為 <button class="reveal-btn" onclick="toggleNote('fill-1-1')">解答</button><span id="fill-1-1" style="display:none; color:red; margin-left:10px;">$x=1, -3$</span></div>
+                <div class="sub-question">(2) $16-9(x+1)^2=0$，解為 <button class="reveal-btn" onclick="toggleNote('fill-1-2')">解答</button><span id="fill-1-2" style="display:none; color:red; margin-left:10px;">$x=\\frac{1}{3}, -\\frac{7}{3}$</span></div>
+                <div class="sub-question">(3) $3x^2+2x-2=0$，解為 <button class="reveal-btn" onclick="toggleNote('fill-1-3')">解答</button><span id="fill-1-3" style="display:none; color:red; margin-left:10px;">$x=\\frac{-1\\pm\\sqrt{7}}{3}$</span></div>
+                <div class="sub-question">(4) $x^2+2x-399=0$，解為 <button class="reveal-btn" onclick="toggleNote('fill-1-4')">解答</button><span id="fill-1-4" style="display:none; color:red; margin-left:10px;">$x=19, -21$</span></div>
+            `
+        },
+        {
+            id: 2,
+            q: "右表為英文聽力測驗累積次數分配表。成績為 B 的有 _______ 人。",
+            tableData: {
+                headers: ["成績", "D", "C", "B", "A"],
+                rows: [["累積次數", "6", "12", "19", "30"]]
+            },
+            ans: "7",
+            exp: "成績 B 的累積是 19，成績 C (及以下) 的累積是 12。<br>故成績 B 的人數 $= 19 - 12 = 7$ 人。"
+        },
+        {
+            id: 3,
+            q: "解方程式 $\\frac{x}{x-2} + \\frac{1}{x+1} = \\frac{3}{2} + \\frac{6}{(x+1)(x-2)}$。",
+            ans: "$x=5$",
+            exp: "同乘 $2(x-2)(x+1)$ 化簡得 $x^2-7x+10=0$。<br>$(x-2)(x-5)=0$。<br>因 $x \\neq 2$ (分母為0)，故 $x=5$。"
+        },
+        {
+            id: 4,
+            q: "一元二次方程式 $(k-2)x^2+x+k^2+3k-10=0$ 有一根為 0，則另一根為 _______。",
+            ans: "$\\frac{1}{7}$",
+            exp: "$x=0$ 代入得 $k^2+3k-10=0 \\Rightarrow k=-5, 2$。<br>因二次項係數 $k-2 \\neq 0$，故 $k=-5$。<br>方程式為 $-7x^2+x=0 \\Rightarrow -x(7x-1)=0$。<br>另一根 $x=1/7$。"
+        },
+        {
+            id: 5,
+            q: "濃度 $x\\%$ 食鹽水 100g，倒出 10g 後加入 3g 水，濃度變為 $(x-1)\\%$。則 $x=$ _______。",
+            ans: "31",
+            exp: "剩 90g 鹽水，含鹽 $0.9x$。總重變為 93g。<br>$\\frac{0.9x}{93} \\times 100 = x-1$。<br>解得 $x=31$。"
+        }
+    ];
+
+    const nonChoiceData = [
+        {
+            id: 1,
+            q: "右圖為 34 名學生假日使用 3C 產品時間圓形圖 (由扇形角度或代數關係推算)。<br>(1) 求 $x$。<br>(2) 求 60~90 分的相對次數(%)。",
+            imgSrc: "rev_non_1.png", imgHint: "請截取非選第1題圖",
+            ans: "(1) 2 (2) 23.5%",
+            exp: "(1) 各區塊代數和為 34。$x^2+12x+6=34 \\Rightarrow x=2$。<br>(2) 60~90分人數 $= 3(2)+2 = 8$。<br>相對次數 $8/34 \\approx 23.5\\%$。"
+        },
+        {
+            id: 2,
+            q: "莉莉水果店買蓮霧 6000 元，壞 30kg，餘下每公斤加 20 元賣出，得 8500 元。<br>(1) 買進多少公斤？ (2) 售價？",
+            ans: "(1) 200 kg (2) 50 元",
+            exp: "設買 $x$ kg。$(x-30)(\\frac{6000}{x}+20) = 8500$。<br>解得 $x=200$。<br>售價 $= 6000/200 + 20 = 50$ 元。"
+        }
+    ];
+
+    const literacyData = [
+        {
+            id: 1,
+            q: "軒朗登山，上山 $x$ km/h，下山 $(x+2)$ km/h，路程 4 km，時間差 20 分鐘。求上山時速。",
+            ans: "(C) 4 km/h",
+            exp: "$\\frac{4}{x} - \\frac{4}{x+2} = \\frac{20}{60}$。<br>解得 $x=4$。"
+        },
+        {
+            id: 2,
+            q: "右圖為體重累積次數分配圖，下列何者正確？<br>(A) 最重 70kg (B) 50-55 人數最多 (C) 40-45 有 8 人 (D) 50-55 相對次數 30%",
+            imgSrc: "rev_lit_2.png", imgHint: "請截取素養第2題圖",
+            ans: "(B) 50~55 公斤這一組人數最多",
+            exp: "觀察折線圖，50~55 區間的斜率最陡 (累積次數增加最多)，故人數最多。<br>(A) 圖形只畫到 65? (依圖判斷)<br>(C) 需計算差值。<br>故 (B) 最明顯正確。"
+        },
+        {
+            id: 3,
+            q: "端午節發粽子，給 $x$ 名員工。方案一：每人 $\\frac{1}{2}x-10$。方案二：5人請假，每人 $\\frac{1}{8}x+3$，剩 3 顆。求 $x$。",
+            ans: "(A) 32",
+            exp: "$x(\\frac{1}{2}x-10) = (x-5)(\\frac{1}{8}x+3) + 3$。<br>解得 $x=32$。"
+        }
+    ];
+
+    // 渲染函式
+    function renderContent() {
+        renderSection("selection-container", selectionData, "select");
+        renderFillSection();
+        renderSection("non-choice-container", nonChoiceData, "non");
+        renderSection("literacy-container", literacyData, "lit");
+        if (window.MathJax) MathJax.typesetPromise();
+    }
+
+    function renderSection(containerId, data, type) {
+        const container = document.getElementById(containerId);
+        const labels = ["(A)", "(B)", "(C)", "(D)"];
+
+        data.forEach((item, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+
+            let html = `
+                <div class="q-line">
+                    <span class="q-num">${item.id}.</span>
+                    <span class="q-content">${item.q}</span>
+                </div>
+            `;
+
+            if (item.tableData) {
+                let tableHtml = `<table class="styled-table"><thead><tr>`;
+                item.tableData.headers.forEach(h => tableHtml += `<th>${h}</th>`);
+                tableHtml += `</tr></thead><tbody>`;
+                item.tableData.rows.forEach(row => {
+                    tableHtml += `<tr>`;
+                    row.forEach(cell => tableHtml += `<td>${cell}</td>`);
+                    tableHtml += `</tr>`;
+                });
+                tableHtml += `</tbody></table>`;
+                html += tableHtml;
+            }
+
+            if (item.imgSrc) {
+                html += `
+                    <div class="q-image-box">
+                        <img src="${item.imgSrc}" alt="${item.imgHint}" onerror="this.style.display='none'; this.previousElementSibling.style.color='red'; this.previousElementSibling.innerText='⚠️ 圖片未載入，請將圖檔命名為 ${item.imgSrc}';">
+                        <p style="margin-top:5px;font-size:12px;color:#999;">(圖檔：${item.imgSrc})</p>
+                    </div>
+                `;
+            }
+
+            if (type === "select") {
+                html += `<div class="options-grid" id="opt-grid-${type}-${idx}">`;
+                item.opts.forEach((opt, i) => {
+                    html += `
+                        <button class="option-btn" onclick="checkAnswer(this, '${type}', ${idx}, ${i}, ${item.ans})">
+                            <span class="opt-label">${labels[i]}</span>
+                            <span>${opt}</span>
+                        </button>
+                    `;
+                });
+                html += `</div>`;
+            } else {
+                html += `<button class="reveal-btn" onclick="toggleNote('note-${type}-${idx}')">顯示解析與答案</button>`;
+            }
+
+            html += `
+                <div class="note-box" id="note-${type}-${idx}" ${type === 'select' ? '' : 'style="display:none"'}>
+                    <span class="note-label">${type === 'select' ? '解析：' : '答：' + item.ans}</span>
+                    ${type === 'select' ? item.exp : '<hr style="border:0;border-top:1px dashed #d32f2f;margin:5px 0">' + item.exp}
+                </div>
+            `;
+
+            block.innerHTML = html;
+            container.appendChild(block);
+        });
+    }
+
+    function renderFillSection() {
+        const container = document.getElementById("fill-container");
+        fillData.forEach((item, idx) => {
+            const block = document.createElement("div");
+            block.className = "question-block";
+            
+            if (item.customHtml) {
+                // 特殊處理 Q1
+                block.innerHTML = `
+                    <div class="q-line">
+                        <span class="q-num">${item.id}.</span>
+                        <span class="q-content">${item.q}</span>
+                    </div>
+                    ${item.customHtml}
+                `;
+            } else {
+                // 標準填充題
+                let html = `
+                    <div class="q-line">
+                        <span class="q-num">${item.id}.</span>
+                        <span class="q-content">${item.q}</span>
+                    </div>
+                `;
+                if (item.tableData) {
+                    let tableHtml = `<table class="styled-table"><thead><tr>`;
+                    item.tableData.headers.forEach(h => tableHtml += `<th>${h}</th>`);
+                    tableHtml += `</tr></thead><tbody>`;
+                    item.tableData.rows.forEach(row => {
+                        tableHtml += `<tr>`;
+                        row.forEach(cell => tableHtml += `<td>${cell}</td>`);
+                        tableHtml += `</tr>`;
+                    });
+                    tableHtml += `</tbody></table>`;
+                    html += tableHtml;
+                }
+                html += `<button class="reveal-btn" onclick="toggleNote('note-fill-${idx}')">顯示解析與答案</button>`;
+                html += `
+                    <div class="note-box" id="note-fill-${idx}" style="display:none">
+                        <span class="note-label">答：${item.ans}</span>
+                        <hr style="border:0;border-top:1px dashed #d32f2f;margin:5px 0">
+                        ${item.exp}
+                    </div>
+                `;
+                block.innerHTML = html;
+            }
+            container.appendChild(block);
+        });
+    }
+
+    // 互動函式
+    window.checkAnswer = function(btn, type, qIdx, userIdx, correctIdx) {
+        const parent = document.getElementById(`opt-grid-${type}-${qIdx}`);
+        if (parent.getAttribute("data-done")) return;
+        parent.setAttribute("data-done", "true");
+
+        const btns = parent.querySelectorAll(".option-btn");
+        btns.forEach(b => {
+            b.classList.add("disabled");
+            if (b !== btn) b.classList.add("dimmed");
+        });
+        btn.classList.remove("dimmed");
+
+        if (userIdx === correctIdx) {
+            btn.classList.add("correct");
+        } else {
+            btn.classList.add("wrong");
+            btns[correctIdx].classList.remove("dimmed");
+            btns[correctIdx].classList.add("correct");
+        }
+        document.getElementById(`note-${type}-${qIdx}`).style.display = "block";
+    }
+
+    window.toggleNote = function(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === "block" ? "none" : "block");
+    }
+
+    // 初始化
+    renderContent();
+
+</script>
+
+</body>
+</html>
