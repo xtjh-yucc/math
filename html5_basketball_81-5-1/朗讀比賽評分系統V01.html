@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 朗讀比賽評分系統 - 智能語音分析</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Roboto', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        // Recitation / Academic Theme Colors (Blue/Indigo/Gold)
+                        primary: '#6366F1', // Indigo 500
+                        onPrimary: '#FFFFFF',
+                        primaryContainer: '#312E81',
+                        onPrimaryContainer: '#E0E7FF',
+                        
+                        secondary: '#F59E0B', // Amber 500 (Gold/Excellence)
+                        onSecondary: '#451A03',
+                        secondaryContainer: '#78350F',
+                        onSecondaryContainer: '#FEF3C7',
+                        
+                        tertiary: '#0EA5E9', // Sky 500 (Clarity)
+                        onTertiary: '#FFFFFF',
+                        
+                        // Background: Dark Academic/Stage
+                        background: '#0F172A', // Slate 900
+                        onBackground: '#F1F5F9',
+                        
+                        surface: '#1E293B', // Slate 800
+                        onSurface: '#F1F5F9',
+                        'surface-variant': '#334155',
+                        
+                        outline: '#818CF8',
+                        
+                        error: '#EF4444',
+                        onError: '#450A0A',
+                    },
+                    boxShadow: {
+                        'elevation-1': '0px 1px 3px 1px rgba(0, 0, 0, 0.3), 0px 1px 2px 0px rgba(0, 0, 0, 0.5)',
+                        'elevation-2': '0px 2px 6px 2px rgba(0, 0, 0, 0.3), 0px 1px 2px 0px rgba(0, 0, 0, 0.5)',
+                        'elevation-3': '0px 4px 8px 3px rgba(0, 0, 0, 0.3), 0px 1px 3px 0px rgba(0, 0, 0, 0.5)',
+                        'neon': '0 0 10px #6366F1, 0 0 20px #6366F1',
+                    },
+                    backgroundImage: {
+                        'stage-pattern': "radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 80%)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0F172A;
+            background-image: radial-gradient(circle at 50% 0%, #312e81 0%, #0f172a 100%);
+            background-attachment: fixed;
+            color: #F1F5F9;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1E293B; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4338ca; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366F1; 
+        }
+
+        /* ---- Web UI Markdown Styles (Academic Theme) ---- */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            color: #A5B4FC; /* Light Indigo */
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+        }
+        .markdown-body h2 { border-bottom: 1px solid #4338ca; padding-bottom: 0.3em; }
+        .markdown-body p { margin-bottom: 1em; line-height: 1.7; color: #E2E8F0; }
+        .markdown-body ul, .markdown-body ol { margin-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body li { margin-bottom: 0.5em; }
+        .markdown-body strong { color: #F59E0B; font-weight: 700; } /* Gold for emphasis */
+        .markdown-body blockquote {
+            border-left: 4px solid #6366F1;
+            padding-left: 1em;
+            color: #818CF8;
+            font-style: italic;
+            margin: 1em 0;
+            background: rgba(67, 56, 202, 0.2);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .markdown-body code {
+            background-color: #312E81;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #F59E0B;
+        }
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            background-color: #1E293B;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #4338ca;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid #4338ca;
+            padding: 12px;
+            text-align: left;
+        }
+        .markdown-body th {
+            background-color: #312E81;
+            color: #A5B4FC;
+        }
+        
+        /* Links in markdown */
+        .markdown-body a {
+            color: #F59E0B; /* Gold links */
+            text-decoration: none;
+            border-bottom: 1px dashed #F59E0B;
+            transition: all 0.2s;
+        }
+        .markdown-body a:hover {
+            color: #FDE68A;
+            border-bottom-style: solid;
+            text-shadow: 0 0 8px #F59E0B;
+        }
+
+        /* ---- PDF Export Override Styles ---- */
+        .pdf-export {
+            background-color: #ffffff !important;
+            background-image: none !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: none !important;
+            color: #000000 !important;
+            font-family: 'Noto Sans TC', sans-serif !important;
+            padding: 20px !important;
+            border-radius: 0 !important;
+        }
+
+        .pdf-export h2 {
+            color: #1e3a8a !important; /* Blue-900 */
+            border-bottom-color: #93c5fd !important; /* Blue-300 */
+            text-shadow: none !important;
+        }
+        .pdf-export p {
+            color: #374151 !important; /* Gray-700 */
+        }
+
+        .pdf-export .markdown-body h1,
+        .pdf-export .markdown-body h2,
+        .pdf-export .markdown-body h3,
+        .pdf-export .markdown-body h4 {
+            color: #1e3a8a !important;
+            border-bottom-color: #93c5fd !important;
+            text-shadow: none !important;
+        }
+
+        .pdf-export .markdown-body strong {
+            color: #b45309 !important; /* Amber-700 */
+        }
+
+        .pdf-export .markdown-body blockquote {
+            border-left-color: #2563eb !important;
+            background-color: #eff6ff !important; /* Blue-50 */
+            color: #1e40af !important; /* Blue-800 */
+        }
+
+        .pdf-export .markdown-body code {
+            background-color: #f3f4f6 !important;
+            color: #1d4ed8 !important;
+            border: 1px solid #e5e7eb !important;
+        }
+
+        .pdf-export .markdown-body table {
+            background-color: transparent !important;
+            border-radius: 0 !important;
+            border: 1px solid #e5e7eb !important;
+        }
+
+        .pdf-export .markdown-body th {
+            background-color: #eff6ff !important;
+            color: #1e3a8a !important;
+            border-color: #dbeafe !important;
+        }
+
+        .pdf-export .markdown-body td {
+            border-color: #e5e7eb !important;
+            color: #1f2937 !important;
+        }
+        
+        .pdf-export .markdown-body a {
+            color: #2563eb !important;
+            border-bottom-color: #2563eb !important;
+            text-shadow: none !important;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid rgba(99, 102, 241, 0.1);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border-left-color: #6366F1;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Inline Icon Components ---
+        const Icon = ({ children, className, size = 24, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const MicIcon = (props) => (
+            <Icon {...props}>
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="23" />
+                <line x1="8" x2="16" y1="23" y2="23" />
+            </Icon>
+        );
+
+        const BookIcon = (props) => (
+            <Icon {...props}>
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </Icon>
+        );
+
+        const ClockIcon = (props) => (
+            <Icon {...props}>
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </Icon>
+        );
+
+        const ChevronRight = (props) => (
+            <Icon {...props}><path d="m9 18 6-6-6-6" /></Icon>
+        );
+        const FileVideo = (props) => (
+            <Icon {...props}>
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14 2 14 8 20 8" />
+                <path d="m10 11 5 3-5 3v-6z" />
+            </Icon>
+        );
+        const AlertCircle = (props) => (
+            <Icon {...props}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" x2="12" y1="8" y2="12" />
+                <line x1="12" x2="12.01" y1="16" y2="16" />
+            </Icon>
+        );
+        const Globe = (props) => (
+            <Icon {...props}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" x2="22" y1="12" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </Icon>
+        );
+        const Download = (props) => (
+            <Icon {...props}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" x2="12" y1="15" y2="3" />
+            </Icon>
+        );
+
+        // --- Model Priority List ---
+        const MODEL_PRIORITY_LIST = [
+            'gemini-2.0-flash-exp',
+            'gemini-1.5-pro-002',
+            'gemini-1.5-pro',
+            'gemini-1.5-flash-002',
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-001'
+        ];
+
+        // --- Translations ---
+        const translations = {
+            'zh-TW': {
+                appTitle: "AI 朗讀比賽評分系統",
+                appSubtitle: "專業語音與聲情分析",
+                heroTitle: "展現文字的力量",
+                heroSubtitle: "上傳朗讀影片，AI 評審將針對語音(45%)、聲情(45%)與台風(10%)進行專業評分。",
+                selectSport: "開始評分",
+                uploadAreaTitle: "上傳朗讀影片",
+                uploadAreaSubtitle: "支援 MP4, MOV, AVI 等格式，大檔案自動上傳",
+                analyzing: "AI 評審正在聆聽分析...",
+                analyzingSubtitle: "正在評估咬字清晰度、情感表達與儀態...",
+                uploading: "正在上傳影片到雲端...",
+                processing: "影片處理中...",
+                negotiating: "正在測試最佳 AI 模型...",
+                resultTitle: "朗讀比賽評分表",
+                reanalyze: "評分下一位",
+                downloadPdf: "下載評分表 (PDF)",
+                footer: "© 2025 AI Recitation Judge. Powered by ",
+                apiKeyPlaceholder: "請輸入您的 Google Gemini API Key",
+                apiKeyHelp: "需要 API Key 才能使用 AI 功能。",
+                startAnalysis: "開始評分",
+                timeControlLabel: "⏱️ 時間控制/扣分備註 (選填)",
+                timeControlPlaceholder: "例如：超時 10 秒，請扣總分 1 分",
+            },
+            'en': {
+                appTitle: "AI Recitation Contest Judge",
+                appSubtitle: "Professional Voice & Expression Analysis",
+                heroTitle: "The Power of Words",
+                heroSubtitle: "Upload your recitation video for AI judging on Voice(45%), Emotion(45%), and Stage Presence(10%).",
+                selectSport: "Start Judging",
+                uploadAreaTitle: "Upload Recitation Video",
+                uploadAreaSubtitle: "Supports MP4, MOV, AVI. Large files supported.",
+                analyzing: "AI Judge is listening...",
+                analyzingSubtitle: "Evaluating articulation, emotional expression, and stage presence...",
+                uploading: "Uploading video to cloud...",
+                processing: "Processing video...",
+                negotiating: "Negotiating best AI model...",
+                resultTitle: "Recitation Contest Score Sheet",
+                reanalyze: "Judge Next Candidate",
+                downloadPdf: "Download Score Sheet (PDF)",
+                footer: "© 2025 AI Recitation Judge. Powered by ",
+                apiKeyPlaceholder: "Enter your Google Gemini API Key",
+                apiKeyHelp: "API Key required for AI functionality.",
+                startAnalysis: "Start Judging",
+                timeControlLabel: "⏱️ Time Control / Deduction Note (Optional)",
+                timeControlPlaceholder: "E.g., 10s Overtime, deduct 1 point from total.",
+            }
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh-TW');
+            const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
+            const [selectedSport, setSelectedSport] = useState(null); 
+            const [videoFile, setVideoFile] = useState(null);
+            const [videoUrl, setVideoUrl] = useState(null);
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+            const [statusMessage, setStatusMessage] = useState('');
+            const [result, setResult] = useState(null);
+            const [error, setError] = useState(null);
+            const [activeModel, setActiveModel] = useState(localStorage.getItem('gemini_active_model') || null);
+            
+            // New State for Time Deduction
+            const [timeInput, setTimeInput] = useState('');
+
+            const t = translations[lang];
+
+            useEffect(() => {
+                if (apiKey) {
+                    localStorage.setItem('gemini_api_key', apiKey);
+                }
+            }, [apiKey]);
+
+            // Open links in new tab logic
+            useEffect(() => {
+                if (result) {
+                    const links = document.querySelectorAll('.markdown-body a');
+                    links.forEach(link => {
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noopener noreferrer');
+                    });
+                }
+            }, [result]);
+
+            const toggleLanguage = () => {
+                setLang(prev => prev === 'zh-TW' ? 'en' : 'zh-TW');
+            };
+
+            const handleFileChange = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    setVideoFile(file);
+                    setVideoUrl(URL.createObjectURL(file));
+                    setResult(null);
+                    setError(null);
+                }
+            };
+
+            // File API Upload Helper
+            const uploadFileToGemini = async (file, apiKey) => {
+                const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`;
+                
+                const startResponse = await fetch(uploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-Goog-Upload-Protocol': 'resumable',
+                        'X-Goog-Upload-Command': 'start',
+                        'X-Goog-Upload-Header-Content-Length': file.size,
+                        'X-Goog-Upload-Header-Content-Type': file.type,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ file: { display_name: file.name } })
+                });
+
+                if (!startResponse.ok) throw new Error("Initial upload failed.");
+                
+                const resumableUrl = startResponse.headers.get('x-goog-upload-url');
+                
+                const uploadResponse = await fetch(resumableUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Length': file.size,
+                        'X-Goog-Upload-Offset': '0',
+                        'X-Goog-Upload-Command': 'upload, finalize'
+                    },
+                    body: file
+                });
+
+                if (!uploadResponse.ok) throw new Error("File upload failed.");
+                
+                const fileInfo = await uploadResponse.json();
+                return fileInfo.file;
+            };
+
+            const waitForProcessing = async (fileUri, apiKey) => {
+                let file = null;
+                while (true) {
+                    // Use file name to check status
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileUri}?key=${apiKey}`);
+                    file = await res.json();
+                    
+                    if (file.state === 'ACTIVE') break;
+                    if (file.state === 'FAILED') throw new Error("Video processing failed on server.");
+                    
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+                return file;
+            };
+
+            const tryModel = async (modelName, systemPrompt, inputData, isFileApi = false) => {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: systemPrompt },
+                                isFileApi 
+                                ? { file_data: { mime_type: inputData.mime_type, file_uri: inputData.file_uri } }
+                                : { inline_data: { mime_type: inputData.mime_type, data: inputData.data } }
+                            ]
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Model ${modelName} failed`);
+                }
+                
+                return await response.json();
+            };
+
+            const analyzeVideo = async () => {
+                if (!videoFile) return;
+                if (!apiKey) {
+                    setError(lang === 'zh-TW' ? "請先輸入 API Key" : "Please enter API Key first.");
+                    return;
+                }
+
+                setIsAnalyzing(true);
+                setError(null);
+                
+                try {
+                    let inputData = {};
+                    let isFileApi = false;
+
+                    // Size Threshold: 20MB
+                    if (videoFile.size > 20 * 1024 * 1024) {
+                        isFileApi = true;
+                        setStatusMessage(t.uploading);
+                        
+                        const fileInfo = await uploadFileToGemini(videoFile, apiKey);
+                        
+                        setStatusMessage(t.processing);
+                        await waitForProcessing(fileInfo.name, apiKey);
+                        
+                        inputData = {
+                            mime_type: videoFile.type,
+                            file_uri: fileInfo.uri
+                        };
+                    } else {
+                        setStatusMessage(t.analyzingSubtitle);
+                        const base64Video = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                                const result = reader.result;
+                                const base64Part = result.split(',')[1];
+                                resolve(base64Part);
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(videoFile);
+                        });
+                        inputData = {
+                            mime_type: videoFile.type || "video/mp4",
+                            data: base64Video
+                        };
+                    }
+
+                    // --- Recitation Criteria ---
+                    const specificCriteria = `
+                        You are a Professional Recitation Contest Judge (專業朗讀比賽評審).
+                        Your task is to evaluate the video performance based on the following strict criteria:
+
+                        1. **Voice (語音) 45%**:
+                           - Articulation (咬字清晰): Consonants, vowels, and clarity.
+                           - Tones (聲調準確): Pitch accuracy, distinguishing tones clearly.
+                           - Fluency (口齒流利).
+                        
+                        2. **Expression & Emotion (聲情) 45%**:
+                           - Dynamics: Volume (Loud/Soft), Speed (Fast/Slow), Power (Strong/Weak).
+                           - Emotion: Natural tone, rich feeling, moving the audience.
+                           - Phrasing: Correct pausing and breath control, coherent meaning.
+
+                        3. **Stage Presence (台風) 10%**:
+                           - Appearance: Neat and dignified.
+                           - Attitude: Confident, calm, natural expression matching the text.
+                           - Eye Contact: Engaging with audience or appropriate gaze.
+
+                        4. **Time Control / Deduction**:
+                           - **CRITICAL INSTRUCTION**: The user has provided this note regarding time: "${timeInput || 'No specific time penalty note provided'}".
+                           - If the note says to deduct points, you MUST calculate the Total Score AFTER deducting these points. Mention the deduction explicitly.
+
+                        Provide a constructive, professional, yet encouraging critique.
+                        `;
+                    
+                    const systemPrompt = `
+                        ${specificCriteria}
+                        
+                        Provide the output in Markdown format with the following structure:
+                        
+                        # 📖 Recitation Contest Score Sheet (朗讀比賽評分表)
+                        
+                        ## 🏆 Total Score: [0-100] / 100
+                        (Sum of weighted scores minus any time deductions from the user note: "${timeInput}")
+
+                        ## 📊 Category Breakdown (各項評分)
+                        * **🗣️ Voice (語音 45%)**: [Score/45]
+                          - [Comment on articulation, tones, clarity]
+                        * **🎭 Expression (聲情 45%)**: [Score/45]
+                          - [Comment on emotion, pacing, dynamics]
+                        * **🌟 Stage Presence (台風 10%)**: [Score/10]
+                          - [Comment on demeanor, eye contact]
+                        * **⏱️ Time Penalty (時間扣分)**: [Deduction amount if applicable based on note: "${timeInput}"]
+
+                        ## ✅ Judge's Praise (優點與亮點)
+                        * [Strength 1]
+                        * [Strength 2]
+                        
+                        ## ⚠️ Areas for Improvement (改進建議)
+                        (Provide specific advice. For each point, append a YouTube search link for recitation tutorials).
+                        **Search Strategy**: Use keywords like '朗讀技巧' (Recitation skills), '正音' (Pronunciation), '腹式呼吸' (Diaphragmatic breathing), '斷句' (Phrasing).
+                        
+                        1.  **[Issue 1]**: [Observation]
+                            * **Advice**: [How to fix it]
+                            * **🎥 Training**: [Click to Watch](https://www.youtube.com/results?search_query=朗讀技巧+[Specific_Keyword])
+                        2.  **[Issue 2]**: [Observation]
+                            * **Advice**: [How to fix it]
+                            * **🎥 Training**: [Click to Watch](https://www.youtube.com/results?search_query=朗讀技巧+[Specific_Keyword])
+
+                        ## 💡 Judge's Final Verdict (總評)
+                        [A one-sentence encouraging summary]
+                        
+                        Language: ${lang === 'zh-TW' ? 'Traditional Chinese (zh-TW)' : 'English'}
+                    `;
+
+                    let modelsToTry = [...MODEL_PRIORITY_LIST];
+                    if (activeModel) {
+                        modelsToTry = modelsToTry.filter(m => m !== activeModel);
+                        modelsToTry.unshift(activeModel);
+                    }
+
+                    let finalData = null;
+                    let successModel = null;
+
+                    for (const model of modelsToTry) {
+                        try {
+                            setStatusMessage(`${t.negotiating} (${model})`);
+                            finalData = await tryModel(model, systemPrompt, inputData, isFileApi);
+                            successModel = model;
+                            break; 
+                        } catch (err) {
+                            console.warn(`Failed with model ${model}:`, err);
+                        }
+                    }
+
+                    if (!finalData || !successModel) {
+                        throw new Error("All AI models failed. Please try again later.");
+                    }
+
+                    setActiveModel(successModel);
+                    localStorage.setItem('gemini_active_model', successModel);
+
+                    const text = finalData.candidates[0].content.parts[0].text;
+                    setResult(text);
+
+                } catch (err) {
+                    console.error("Analysis failed:", err);
+                    let errorMessage = err.message;
+                    if (errorMessage.includes("403") || errorMessage.includes("API key")) {
+                        errorMessage = "API Error: 無效的 API Key。請重新輸入。";
+                        setApiKey('');
+                    }
+                    setError(errorMessage);
+                } finally {
+                    setIsAnalyzing(false);
+                }
+            };
+
+            const downloadPDF = () => {
+                const element = document.getElementById('analysis-result-content');
+                if (!element) return;
+
+                const clone = element.cloneNode(true);
+                clone.classList.add('pdf-export');
+                clone.classList.remove('bg-black/40', 'backdrop-blur-md', 'shadow-2xl', 'border', 'border-primary/20');
+                
+                const container = document.createElement('div');
+                container.style.position = 'absolute';
+                container.style.left = '-9999px';
+                container.style.top = '0';
+                container.style.width = '800px';
+                container.appendChild(clone);
+                document.body.appendChild(container);
+
+                const opt = {
+                    margin: 10,
+                    filename: 'recitation-score-sheet.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(clone).save().then(() => {
+                    document.body.removeChild(container);
+                });
+            };
+
+            const renderContent = () => {
+                if (selectedSport === null) {
+                    return (
+                        <div className="space-y-8 animate-fade-in py-10">
+                            <div className="text-center space-y-6">
+                                <div className="inline-block p-6 rounded-full bg-primary/20 mb-4 animate-pulse border border-primary/50 shadow-neon">
+                                    <BookIcon size={80} className="text-primary" />
+                                </div>
+                                <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight drop-shadow-lg">
+                                    {t.heroTitle}
+                                </h2>
+                                <p className="text-lg md:text-xl text-primaryContainer bg-primary/90 inline-block px-4 py-1 rounded-full font-medium">
+                                    {t.heroSubtitle}
+                                </p>
+                            </div>
+                            
+                            <div className="flex justify-center mt-10">
+                                <button
+                                    onClick={() => setSelectedSport('recitation')}
+                                    className="group relative overflow-hidden px-12 py-6 rounded-full bg-gradient-to-r from-primary to-primaryContainer hover:from-primary/80 hover:to-primaryContainer/80 transition-all duration-300 shadow-elevation-3 hover:scale-105 flex items-center gap-4 border border-white/20"
+                                >
+                                    <span className="font-bold text-2xl text-white tracking-wide">{t.selectSport}</span>
+                                    <ChevronRight size={32} className="text-white group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            </div>
+                        </div>
+                    );
+                }
+
+                if (isAnalyzing) {
+                    return (
+                        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8 animate-fade-in">
+                            <div className="relative">
+                                <div className="loader"></div>
+                                <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                                    <MicIcon size={24} className="text-primary animate-pulse" />
+                                </div>
+                            </div>
+                            <div className="text-center space-y-2">
+                                <h3 className="text-2xl font-bold text-white drop-shadow-md">{t.analyzing}</h3>
+                                <p className="text-gray-300">{statusMessage}</p>
+                            </div>
+                        </div>
+                    );
+                }
+
+                if (result) {
+                    return (
+                        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                            <div className="flex justify-between items-center mb-4 no-print">
+                                <button 
+                                    onClick={() => setResult(null)}
+                                    className="flex items-center gap-2 text-primary hover:text-white transition-colors font-bold bg-black/30 px-4 py-2 rounded-full w-fit"
+                                >
+                                    <ChevronRight className="rotate-180" size={20} />
+                                    {t.reanalyze}
+                                </button>
+                                
+                                <button 
+                                    onClick={downloadPDF}
+                                    className="flex items-center gap-2 text-white bg-primary hover:bg-primary/80 transition-colors font-bold px-4 py-2 rounded-full shadow-lg"
+                                >
+                                    <Download size={20} />
+                                    {t.downloadPdf}
+                                </button>
+                            </div>
+
+                            <div id="analysis-result-content" className="bg-black/40 backdrop-blur-md rounded-3xl p-6 md:p-10 border border-primary/20 shadow-2xl">
+                                <div id="pdf-header-container" className="mb-6 text-center border-b border-primary/30 pb-6">
+                                    <div className="flex justify-center mb-4">
+                                        <div className="p-3 bg-primary/20 rounded-full border border-primary/50">
+                                            <BookIcon size={40} className="text-primary" />
+                                        </div>
+                                    </div>
+                                    <h2 id="pdf-header-title" className="text-3xl font-bold text-white">{t.resultTitle}</h2>
+                                    <p id="pdf-header-subtitle" className="text-gray-300 text-sm mt-2">Generated by AI Recitation Judge</p>
+                                </div>
+                                <div className="prose prose-invert max-w-none markdown-body" dangerouslySetInnerHTML={{ __html: marked.parse(result) }} />
+                            </div>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
+                        <button 
+                            onClick={() => setSelectedSport(null)}
+                            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+                        >
+                            <ChevronRight className="rotate-180" size={20} />
+                            Back to Home
+                        </button>
+
+                        <div className="bg-black/30 backdrop-blur-sm border-2 border-dashed border-primary/30 rounded-3xl p-10 text-center hover:border-primary/60 transition-all duration-300 relative group cursor-pointer">
+                            <input 
+                                type="file" 
+                                accept="video/*" 
+                                onChange={handleFileChange}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            <div className="flex flex-col items-center gap-6">
+                                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300 border border-primary/30 shadow-neon">
+                                    <FileVideo size={40} />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold mb-2 text-white">{t.uploadAreaTitle}</h3>
+                                    <p className="text-sm text-gray-300">{t.uploadAreaSubtitle}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {videoUrl && (
+                            <div className="rounded-2xl overflow-hidden border-2 border-primary/20 bg-black shadow-2xl">
+                                <video src={videoUrl} controls className="w-full max-h-[60vh]" />
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="bg-error/20 border border-error/50 p-4 rounded-xl flex items-start gap-3 text-red-200 animate-fade-in backdrop-blur-md">
+                                <AlertCircle size={20} className="mt-0.5 shrink-0 text-error" />
+                                <div className="text-sm font-medium">
+                                    {error}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            {!apiKey && (
+                                <div className="bg-black/40 border border-primary/20 p-6 rounded-2xl flex flex-col gap-3 backdrop-blur-md">
+                                    <div className="flex items-center gap-2 text-primary font-bold">
+                                        <AlertCircle size={20} />
+                                        <span>{t.apiKeyHelp}</span>
+                                    </div>
+                                    <input 
+                                        type="password" 
+                                        placeholder={t.apiKeyPlaceholder}
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value.trim())}
+                                        className="w-full bg-black/50 border border-primary/30 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary focus:outline-none placeholder-gray-500 transition-all"
+                                    />
+                                </div>
+                            )}
+
+                             {/* Time Penalty Input */}
+                            <div className="bg-black/20 border border-primary/20 p-4 rounded-2xl flex flex-col gap-2">
+                                <label className="flex items-center gap-2 text-gray-300 text-sm font-medium">
+                                    <ClockIcon size={16} className="text-secondary" />
+                                    {t.timeControlLabel}
+                                </label>
+                                <input 
+                                    type="text" 
+                                    placeholder={t.timeControlPlaceholder}
+                                    value={timeInput}
+                                    onChange={(e) => setTimeInput(e.target.value)}
+                                    className="w-full bg-black/50 border border-primary/30 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-secondary focus:outline-none placeholder-gray-600 transition-all"
+                                />
+                            </div>
+
+                            <button
+                                onClick={analyzeVideo}
+                                disabled={!videoFile || !apiKey}
+                                className={`w-full py-4 rounded-xl font-bold text-xl flex items-center justify-center gap-3 transition-all duration-300
+                                    ${(!videoFile || !apiKey) 
+                                        ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-gradient-to-r from-primary to-primaryContainer text-white hover:brightness-110 hover:scale-[1.02] shadow-lg'
+                                    }`}
+                            >
+                                <MicIcon size={24} />
+                                {t.startAnalysis}
+                            </button>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen font-sans selection:bg-primary selection:text-white">
+                    <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/5 px-6 py-4">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryContainer flex items-center justify-center text-white shadow-lg ring-2 ring-primary/30">
+                                    <BookIcon size={20} />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight text-white">{t.appTitle}</h1>
+                                    <p className="text-xs text-primary font-medium hidden sm:block">{t.appSubtitle}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                                <button onClick={toggleLanguage} className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-full text-sm font-medium text-gray-300 hover:text-white transition-colors border border-white/5">
+                                    <Globe size={18} />
+                                    <span className={lang === 'zh-TW' ? 'text-primary font-bold' : ''}>繁</span>
+                                    <span className="opacity-30">|</span>
+                                    <span className={lang === 'en' ? 'text-primary font-bold' : ''}>EN</span>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="pt-28 pb-12 px-6 max-w-7xl mx-auto min-h-screen flex flex-col">
+                        {renderContent()}
+                    </main>
+
+                    <footer className="py-8 text-center text-gray-400 text-sm border-t border-white/5 bg-black/20 backdrop-blur-sm">
+                        <p>
+                            {t.footer} {activeModel ? <span className="text-primary font-bold">{activeModel}</span> : "Gemini AI"}
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
