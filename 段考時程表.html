@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>段考全螢幕看板 V18 (版面緊湊微調版)</title>
+    <title>段考時程表全螢幕看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -14,9 +14,9 @@
         #display-view { height: 100vh; width: 100vw; overflow: hidden; }
 
         /* 美化捲動條 */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
@@ -66,10 +66,10 @@
                     
                     <div class="w-5/6 bg-blue-50 border-l-4 border-blue-500 p-2 rounded-r-lg shadow-sm flex flex-col items-start mt-1 flex-1 min-h-0 overflow-hidden">
                         <div class="flex items-center mb-1 text-blue-700 flex-none border-b border-blue-200 w-full pb-0.5">
-                            <span class="text-base mr-1">📢</span>
-                            <span class="text-xs font-bold opacity-70">考場注意事項</span>
+                            <span class="text-xl mr-1">📢</span>
+                            <span class="text-sm font-bold opacity-70">考場注意事項</span>
                         </div>
-                        <div id="sub-prompt-container" class="w-full grid grid-cols-2 gap-x-4 gap-y-1 content-start overflow-y-auto custom-scrollbar">
+                        <div id="sub-prompt-container" class="w-full grid grid-cols-2 gap-x-6 gap-y-2 content-start overflow-y-auto custom-scrollbar">
                             </div>
                     </div>
                 </div>
@@ -121,7 +121,7 @@
     <div id="admin-view" class="h-screen w-screen overflow-y-auto bg-gray-200 p-4 md:p-8">
         <div class="max-w-7xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden min-h-[90vh] flex flex-col">
             <div class="bg-gray-800 text-white p-5 flex justify-between items-center sticky top-0 z-50 shadow-md">
-                <h1 class="text-xl font-bold flex items-center gap-2">⚙️ 監考看板設定 (V18)</h1>
+                <h1 class="text-xl font-bold flex items-center gap-2">⚙️ 監考看板設定</h1>
                 <div class="flex gap-2">
                     <button onclick="saveSettings()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-2 text-sm">
                         💾 儲存設定
@@ -261,14 +261,13 @@
             { seat: "42號", reason: "事假" }
         ];
         
-        // 預設注意事項
         let noticeList = ["避免影響學生專注度，內容採靜態呈現", "請檢查抽屜是否淨空", "手機請關機並放在教室前方", "考試期間請勿交談"];
         
         let currentDayIndex = 0;
 
         // --- 初始化 ---
         window.onload = function() {
-            loadSettings(); // 載入儲存設定
+            loadSettings(); 
             renderAdminSchedule();
             renderAbsentList();
             renderNoticeList();
@@ -277,7 +276,7 @@
             setInterval(checkTimeAndStatus, 1000);
         };
 
-        // --- Local Storage 儲存功能 ---
+        // --- 儲存功能 ---
         function saveSettings() {
             const settings = {
                 schedules: allSchedules,
@@ -292,12 +291,12 @@
                     textBreak: document.getElementById('text-break').value
                 }
             };
-            localStorage.setItem('examMonitorSettings_v18', JSON.stringify(settings));
+            localStorage.setItem('examMonitorSettings_v19', JSON.stringify(settings));
             alert("✅ 設定已儲存！下次開啟時將自動載入。");
         }
 
         function loadSettings() {
-            const savedData = localStorage.getItem('examMonitorSettings_v18');
+            const savedData = localStorage.getItem('examMonitorSettings_v19');
             if (savedData) {
                 try {
                     const settings = JSON.parse(savedData);
@@ -317,7 +316,7 @@
             }
         }
 
-        // --- 注意事項 (藍色字體 + 雙欄) ---
+        // --- 功能: 注意事項 (字體加大 text-2xl) ---
         function renderNoticeList() {
             const listDiv = document.getElementById('admin-notice-list');
             listDiv.innerHTML = '';
@@ -332,7 +331,7 @@
                 listDiv.appendChild(div);
             });
 
-            // 前台
+            // 前台顯示：字體改為 text-2xl
             const container = document.getElementById('sub-prompt-container');
             container.innerHTML = '';
             
@@ -341,8 +340,8 @@
                     const div = document.createElement('div');
                     div.className = "flex items-start mb-1 h-fit";
                     div.innerHTML = `
-                        <span class="text-blue-500 font-bold mr-2 mt-0.5 text-base">◆</span>
-                        <span class="text-lg text-blue-700 font-bold text-left leading-tight break-words flex-1">${notice}</span>
+                        <span class="text-blue-500 font-bold mr-2 mt-0.5 text-2xl">◆</span>
+                        <span class="text-2xl text-blue-700 font-bold text-left leading-tight break-words flex-1">${notice}</span>
                     `;
                     container.appendChild(div);
                 });
@@ -366,7 +365,7 @@
             renderNoticeList();
         }
 
-        // --- 下載/缺席/時程 ---
+        // --- 其他功能 ---
         function downloadExample() {
             const dataDay1 = [["科目", "開始時間", "結束時間"], ...allSchedules[0].map(item => [item.subject, item.start, item.end])];
             const dataDay2 = [["科目", "開始時間", "結束時間"], ...allSchedules[1].map(item => [item.subject, item.start, item.end])];
@@ -393,7 +392,6 @@
                 });
             }
 
-            // 前台雙欄 Grid
             const dispList = document.getElementById('disp-absent-list');
             const dispBadge = document.getElementById('absent-count-badge');
             dispBadge.textContent = absentList.length + "人";
