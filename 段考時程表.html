@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>段考全螢幕看板 V18 (版面緊湊微調版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
+        .hidden { display: none !important; }
+        
+        /* 全局鎖定 */
+        #display-view { height: 100vh; width: 100vw; overflow: hidden; }
+
+        /* 美化捲動條 */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="display-view" class="flex hidden">
+        
+        <div class="w-[30%] bg-white border-r-4 border-gray-300 flex flex-col h-full shadow-2xl z-20 box-border">
+            <div class="p-3 bg-blue-50 border-b-2 border-blue-100 flex-none">
+                <div class="flex justify-between items-center mb-1">
+                    <button onclick="toggleView()" class="text-xs text-blue-500 hover:text-blue-700 font-bold underline">⚙️ 設定</button>
+                    <div class="flex space-x-1 bg-gray-200 p-0.5 rounded">
+                        <button onclick="switchDay(0)" id="btn-day1" class="px-2 py-0.5 text-xs font-bold rounded bg-white shadow text-blue-600">Day 1</button>
+                        <button onclick="switchDay(1)" id="btn-day2" class="px-2 py-0.5 text-xs font-bold rounded text-gray-500 hover:bg-white">Day 2</button>
+                    </div>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-black text-gray-800 border-l-8 border-blue-600 pl-3 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                    今日段考時程表
+                </h2>
+            </div>
+            <div id="schedule-list" class="flex-1 min-h-0 flex flex-col p-2 bg-gray-50 overflow-y-auto custom-scrollbar space-y-2">
+                </div>
+        </div>
+
+        <div class="w-[70%] flex flex-col h-full">
+            
+            <div class="h-[60%] bg-white relative flex flex-col items-center justify-start pt-4 p-2 border-b-4 border-blue-500 overflow-hidden min-h-0">
+                
+                <div id="status-badge" class="absolute top-3 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-base font-bold shadow-md animate-pulse z-10">
+                    考試進行中
+                </div>
+
+                <div class="flex flex-col items-center w-full space-y-1 h-full">
+                    
+                    <div class="text-center w-full">
+                        <div class="inline-block bg-blue-50 border-2 border-blue-200 px-4 py-1 rounded-lg shadow-sm">
+                            <p class="text-blue-500 font-bold text-[10px] mb-0 tracking-widest uppercase">Current Subject</p>
+                            <h1 class="text-3xl md:text-4xl font-black text-blue-700 leading-none tracking-tight">
+                                <span id="current-subject">國文</span>
+                            </h1>
+                        </div>
+                    </div>
+                    
+                    <h2 id="main-prompt" class="font-black text-gray-800 text-center leading-tight w-full px-4" style="font-size: 5vh;">
+                        請誠實作答
+                    </h2>
+                    
+                    <div class="w-5/6 bg-blue-50 border-l-4 border-blue-500 p-2 rounded-r-lg shadow-sm flex flex-col items-start mt-1 flex-1 min-h-0 overflow-hidden">
+                        <div class="flex items-center mb-1 text-blue-700 flex-none border-b border-blue-200 w-full pb-0.5">
+                            <span class="text-base mr-1">📢</span>
+                            <span class="text-xs font-bold opacity-70">考場注意事項</span>
+                        </div>
+                        <div id="sub-prompt-container" class="w-full grid grid-cols-2 gap-x-4 gap-y-1 content-start overflow-y-auto custom-scrollbar">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="h-[40%] bg-gray-100 flex flex-col px-6 py-3 shadow-inner box-border min-h-0">
+                <div class="flex items-center mb-2 flex-none">
+                    <div class="bg-blue-600 w-1.5 h-5 rounded-full mr-2"></div>
+                    <h3 class="text-lg font-bold text-gray-700">班級出缺席狀況</h3>
+                </div>
+
+                <div class="flex-1 flex gap-4 min-h-0 overflow-hidden">
+                    <div class="flex flex-col gap-2 w-1/5 h-full">
+                        <div class="flex-1 bg-white rounded-xl shadow border-b-4 border-gray-300 flex flex-col justify-center items-center">
+                            <span class="text-gray-400 text-xs font-bold">應到</span>
+                            <span id="disp-expected" class="text-3xl md:text-4xl font-black text-gray-800 leading-none">30</span>
+                        </div>
+                        <div class="flex-1 bg-white rounded-xl shadow border-b-4 border-green-500 flex flex-col justify-center items-center relative overflow-hidden">
+                            <span class="text-green-600 text-xs font-bold z-10">實到</span>
+                            <span id="disp-actual" class="text-3xl md:text-4xl font-black text-green-600 leading-none z-10">29</span>
+                            <div class="absolute inset-0 bg-green-50 opacity-40"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 bg-white rounded-xl border-l-8 border-red-400 shadow flex flex-col overflow-hidden">
+                        <div class="bg-red-50 px-3 py-1.5 border-b border-red-100 flex justify-between items-center flex-none">
+                            <span class="text-red-600 font-bold flex items-center gap-2 text-sm">
+                                <span>📋</span> 缺席名單
+                            </span>
+                            <span class="bg-red-200 text-red-800 text-[10px] px-2 py-0.5 rounded-full font-bold" id="absent-count-badge">0人</span>
+                        </div>
+                        <div id="disp-absent-list" class="p-2 grid grid-cols-2 gap-x-4 gap-y-2 content-start bg-white h-full overflow-hidden">
+                            </div>
+                    </div>
+
+                    <div class="w-1/4 bg-white rounded-xl border-l-8 border-blue-400 shadow flex flex-col overflow-hidden">
+                        <div class="bg-blue-50 px-3 py-1.5 border-b border-blue-100 text-blue-600 font-bold flex-none text-sm">
+                            <span>🏫</span> 特殊考場
+                        </div>
+                        <div class="p-2 flex items-center justify-center flex-1">
+                            <span id="disp-special" class="text-lg md:text-xl font-bold text-gray-700 text-center leading-tight break-words">無</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-view" class="h-screen w-screen overflow-y-auto bg-gray-200 p-4 md:p-8">
+        <div class="max-w-7xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden min-h-[90vh] flex flex-col">
+            <div class="bg-gray-800 text-white p-5 flex justify-between items-center sticky top-0 z-50 shadow-md">
+                <h1 class="text-xl font-bold flex items-center gap-2">⚙️ 監考看板設定 (V18)</h1>
+                <div class="flex gap-2">
+                    <button onclick="saveSettings()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-2 text-sm">
+                        💾 儲存設定
+                    </button>
+                    <button onclick="downloadExample()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-2 text-sm">
+                        📥 下載範例 Excel
+                    </button>
+                    <button onclick="toggleView()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow transition transform hover:scale-105 flex items-center gap-2 text-sm">
+                        📺 進入看板
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="font-bold text-gray-700 mb-3 border-b pb-2">📊 人數統計</h3>
+                        <div class="flex gap-4 mb-3">
+                            <div class="w-1/2">
+                                <label class="text-xs font-bold text-gray-500">應到</label>
+                                <input type="number" id="input-expected" value="30" class="w-full border-2 border-gray-200 p-2 rounded-lg text-xl font-bold text-center focus:border-blue-500 outline-none">
+                            </div>
+                            <div class="w-1/2">
+                                <label class="text-xs font-bold text-gray-500">實到</label>
+                                <input type="number" id="input-actual" value="29" class="w-full border-2 border-gray-200 p-2 rounded-lg text-xl font-bold text-center focus:border-blue-500 outline-none">
+                            </div>
+                        </div>
+                        <label class="text-xs font-bold text-gray-500 block mb-1">特殊考場說明</label>
+                        <input type="text" id="input-special" value="40號 (輔導室)" class="w-full border-2 border-gray-200 p-2 rounded-lg text-sm">
+                    </div>
+
+                    <div class="bg-red-50 p-5 rounded-2xl border border-red-100 shadow-sm">
+                        <h3 class="font-bold text-red-700 mb-3 border-b border-red-200 pb-2 flex justify-between">
+                            <span>🚫 缺席名單設定</span>
+                            <span class="text-xs bg-red-200 px-2 py-0.5 rounded-full flex items-center" id="admin-absent-count">0人</span>
+                        </h3>
+                        <div class="flex gap-2 mb-3">
+                            <input type="text" id="new-absent-seat" placeholder="座號" class="w-1/3 border-2 border-white p-2 rounded-lg text-sm focus:border-red-300 outline-none shadow-sm">
+                            <input type="text" id="new-absent-reason" placeholder="原因 (如:病假)" class="flex-1 border-2 border-white p-2 rounded-lg text-sm focus:border-red-300 outline-none shadow-sm">
+                            <button onclick="addAbsentee()" class="bg-red-500 text-white px-3 rounded-lg font-bold hover:bg-red-600 shadow text-sm">新增</button>
+                        </div>
+                        <div class="bg-white rounded-xl border border-red-100 h-32 overflow-y-auto p-2 space-y-1 shadow-inner custom-scrollbar" id="admin-absent-list">
+                            </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100 shadow-sm">
+                        <h3 class="font-bold text-blue-700 mb-3 border-b border-blue-200 pb-2">💬 考試注意事項與提示語</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 block mb-1">下方注意事項 (強制雙欄呈現)</label>
+                                <div class="flex gap-2 mb-2">
+                                    <input type="text" id="new-notice" placeholder="輸入內容..." class="flex-1 border-2 border-white p-2 rounded-lg text-sm focus:border-blue-300 outline-none shadow-sm">
+                                    <button onclick="addNotice()" class="bg-blue-600 text-white px-3 rounded-lg font-bold hover:bg-blue-700 shadow text-sm">新增</button>
+                                </div>
+                                <div class="bg-white rounded-xl border border-blue-100 h-24 overflow-y-auto p-2 space-y-1 shadow-inner custom-scrollbar" id="admin-notice-list">
+                                    </div>
+                            </div>
+                            <hr class="border-blue-200">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500 block mb-1">考試中主標</label>
+                                    <input type="text" id="text-exam" value="請誠實作答" class="w-full border-2 border-white p-1.5 rounded-lg text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500 block mb-1">自習中主標</label>
+                                    <input type="text" id="text-study" value="自習時間，保持安靜" class="w-full border-2 border-white p-1.5 rounded-lg text-sm">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 block mb-1">下課中主標</label>
+                                <input type="text" id="text-break" value="下課休息，保持收心" class="w-full border-2 border-white p-1.5 rounded-lg text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-xl text-gray-800">📅 考程表設定</h3>
+                        <div class="flex bg-gray-100 p-1 rounded-lg">
+                            <button onclick="adminSwitchDay(0)" id="admin-btn-day1" class="px-4 py-1.5 rounded-md bg-white shadow text-blue-600 font-bold text-sm">Day 1</button>
+                            <button onclick="adminSwitchDay(1)" id="admin-btn-day2" class="px-4 py-1.5 rounded-md text-gray-500 font-bold hover:bg-white/50 text-sm">Day 2</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-2 border-dashed border-blue-300 rounded-xl p-4 text-center cursor-pointer relative hover:bg-blue-100 transition mb-4 group">
+                        <input type="file" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileUpload(this)">
+                        <div class="text-3xl mb-1 group-hover:scale-110 transition">📂</div>
+                        <p class="text-blue-700 font-bold">點擊上傳 Excel (覆蓋當前)</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-gray-200 flex-1 flex flex-col overflow-hidden shadow-sm">
+                        <div class="p-2 bg-gray-50 border-b flex gap-2">
+                             <input type="text" id="new-subject" placeholder="科目" class="flex-1 border p-1.5 rounded text-sm">
+                             <input type="time" id="new-start" class="border p-1.5 rounded text-sm">
+                             <input type="time" id="new-end" class="border p-1.5 rounded text-sm">
+                             <button onclick="addScheduleItem()" class="bg-blue-600 text-white px-3 rounded font-bold text-sm">新增</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-0">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-500 text-xs">
+                                    <tr><th class="p-2 pl-4">科目</th><th>時間</th><th class="text-right p-2 pr-4">操作</th></tr>
+                                </thead>
+                                <tbody id="admin-schedule-list" class="divide-y divide-gray-100 text-gray-700 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心資料 ---
+        let allSchedules = [
+            // Day 1
+            [
+                { subject: '自習', start: '08:20', end: '09:05', type: 'study' },
+                { subject: '自然', start: '09:15', end: '10:05', type: 'exam' },
+                { subject: '自習', start: '10:15', end: '11:00', type: 'study' },
+                { subject: '數學', start: '11:10', end: '11:55', type: 'exam' },
+                { subject: '自習', start: '13:10', end: '13:55', type: 'study' },
+                { subject: '英聽', start: '14:05', end: '14:50', type: 'exam' },
+                { subject: '英閱', start: '15:05', end: '15:50', type: 'exam' }
+            ],
+            // Day 2
+            [
+                { subject: '國文', start: '08:20', end: '09:05', type: 'exam' },
+                { subject: '自習', start: '09:15', end: '10:05', type: 'study' },
+                { subject: '公民', start: '10:15', end: '11:00', type: 'exam' },
+                { subject: '社會', start: '11:10', end: '11:55', type: 'exam' }
+            ]
+        ];
+
+        let absentList = [
+            { seat: "41號", reason: "病假" },
+            { seat: "42號", reason: "事假" }
+        ];
+        
+        // 預設注意事項
+        let noticeList = ["避免影響學生專注度，內容採靜態呈現", "請檢查抽屜是否淨空", "手機請關機並放在教室前方", "考試期間請勿交談"];
+        
+        let currentDayIndex = 0;
+
+        // --- 初始化 ---
+        window.onload = function() {
+            loadSettings(); // 載入儲存設定
+            renderAdminSchedule();
+            renderAbsentList();
+            renderNoticeList();
+            updateDashboard();
+            document.getElementById('display-view').classList.add('hidden');
+            setInterval(checkTimeAndStatus, 1000);
+        };
+
+        // --- Local Storage 儲存功能 ---
+        function saveSettings() {
+            const settings = {
+                schedules: allSchedules,
+                absent: absentList,
+                notices: noticeList,
+                inputValues: {
+                    expected: document.getElementById('input-expected').value,
+                    actual: document.getElementById('input-actual').value,
+                    special: document.getElementById('input-special').value,
+                    textExam: document.getElementById('text-exam').value,
+                    textStudy: document.getElementById('text-study').value,
+                    textBreak: document.getElementById('text-break').value
+                }
+            };
+            localStorage.setItem('examMonitorSettings_v18', JSON.stringify(settings));
+            alert("✅ 設定已儲存！下次開啟時將自動載入。");
+        }
+
+        function loadSettings() {
+            const savedData = localStorage.getItem('examMonitorSettings_v18');
+            if (savedData) {
+                try {
+                    const settings = JSON.parse(savedData);
+                    allSchedules = settings.schedules || allSchedules;
+                    absentList = settings.absent || absentList;
+                    noticeList = settings.notices || noticeList;
+                    
+                    if (settings.inputValues) {
+                        document.getElementById('input-expected').value = settings.inputValues.expected || 30;
+                        document.getElementById('input-actual').value = settings.inputValues.actual || 29;
+                        document.getElementById('input-special').value = settings.inputValues.special || '';
+                        document.getElementById('text-exam').value = settings.inputValues.textExam || '請誠實作答';
+                        document.getElementById('text-study').value = settings.inputValues.textStudy || '自習時間，保持安靜';
+                        document.getElementById('text-break').value = settings.inputValues.textBreak || '下課休息，保持收心';
+                    }
+                } catch (e) { console.error("讀取失敗", e); }
+            }
+        }
+
+        // --- 注意事項 (藍色字體 + 雙欄) ---
+        function renderNoticeList() {
+            const listDiv = document.getElementById('admin-notice-list');
+            listDiv.innerHTML = '';
+            
+            noticeList.forEach((notice, index) => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-blue-50 p-2 rounded border border-blue-100 group";
+                div.innerHTML = `
+                    <span class="text-sm text-gray-700 truncate mr-2">📢 ${notice}</span>
+                    <button onclick="removeNotice(${index})" class="text-blue-300 hover:text-red-500 font-bold px-1 transition">✕</button>
+                `;
+                listDiv.appendChild(div);
+            });
+
+            // 前台
+            const container = document.getElementById('sub-prompt-container');
+            container.innerHTML = '';
+            
+            if (noticeList.length > 0) {
+                noticeList.forEach(notice => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-start mb-1 h-fit";
+                    div.innerHTML = `
+                        <span class="text-blue-500 font-bold mr-2 mt-0.5 text-base">◆</span>
+                        <span class="text-lg text-blue-700 font-bold text-left leading-tight break-words flex-1">${notice}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            } else {
+                container.innerHTML = `<span class="text-gray-400 italic text-sm col-span-2">無注意事項</span>`;
+            }
+        }
+
+        function addNotice() {
+            const input = document.getElementById('new-notice');
+            const val = input.value.trim();
+            if (val) {
+                noticeList.push(val);
+                renderNoticeList();
+                input.value = '';
+            }
+        }
+
+        function removeNotice(index) {
+            noticeList.splice(index, 1);
+            renderNoticeList();
+        }
+
+        // --- 下載/缺席/時程 ---
+        function downloadExample() {
+            const dataDay1 = [["科目", "開始時間", "結束時間"], ...allSchedules[0].map(item => [item.subject, item.start, item.end])];
+            const dataDay2 = [["科目", "開始時間", "結束時間"], ...allSchedules[1].map(item => [item.subject, item.start, item.end])];
+            const wb = XLSX.utils.book_new();
+            const ws1 = XLSX.utils.aoa_to_sheet(dataDay1);
+            const ws2 = XLSX.utils.aoa_to_sheet(dataDay2);
+            XLSX.utils.book_append_sheet(wb, ws1, "Day1");
+            XLSX.utils.book_append_sheet(wb, ws2, "Day2");
+            XLSX.writeFile(wb, "段考時程範例檔.xlsx");
+        }
+
+        function renderAbsentList() {
+            const adminList = document.getElementById('admin-absent-list');
+            const adminCount = document.getElementById('admin-absent-count');
+            adminCount.textContent = absentList.length + "人";
+            adminList.innerHTML = '';
+            if (absentList.length === 0) adminList.innerHTML = '<div class="text-center text-gray-400 text-xs mt-6">無缺席資料</div>';
+            else {
+                absentList.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100 hover:bg-red-50 transition";
+                    div.innerHTML = `<div class="flex gap-2 items-center text-sm"><span class="font-bold text-red-600 bg-red-100 px-2 rounded text-xs shadow-sm">${item.seat}</span><span class="text-gray-700 font-medium">${item.reason}</span></div><button onclick="removeAbsentee(${index})" class="text-gray-400 hover:text-red-500 px-2 font-bold">✕</button>`;
+                    adminList.appendChild(div);
+                });
+            }
+
+            // 前台雙欄 Grid
+            const dispList = document.getElementById('disp-absent-list');
+            const dispBadge = document.getElementById('absent-count-badge');
+            dispBadge.textContent = absentList.length + "人";
+            dispList.innerHTML = '';
+            if (absentList.length === 0) {
+                dispList.innerHTML = '<div class="col-span-2 flex items-center text-gray-400 font-bold justify-center h-full text-base bg-gray-50 rounded-lg">全勤 (無缺席)</div>';
+            } else {
+                absentList.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center bg-red-50 p-1.5 rounded border-l-4 border-red-400 w-full overflow-hidden h-fit";
+                    div.innerHTML = `
+                        <span class="text-base font-black text-red-600 w-12 text-center flex-none">${item.seat}</span>
+                        <div class="w-px h-4 bg-red-200 mx-1 flex-none"></div>
+                        <span class="text-sm font-bold text-gray-700 flex-1 truncate">${item.reason}</span>
+                    `;
+                    dispList.appendChild(div);
+                });
+            }
+        }
+
+        function addAbsentee() {
+            const seat = document.getElementById('new-absent-seat').value.trim();
+            const reason = document.getElementById('new-absent-reason').value.trim();
+            if (seat) {
+                absentList.push({ seat: seat, reason: reason || "事假" });
+                renderAbsentList();
+                document.getElementById('new-absent-seat').value = '';
+                document.getElementById('new-absent-reason').value = '';
+            } else { alert("請輸入座號"); }
+        }
+        function removeAbsentee(index) { absentList.splice(index, 1); renderAbsentList(); }
+
+        function toggleView() {
+            const admin = document.getElementById('admin-view');
+            const display = document.getElementById('display-view');
+            if (admin.classList.contains('hidden')) {
+                admin.classList.remove('hidden'); display.classList.add('hidden');
+                updateDayButtons('btn-day', currentDayIndex);
+            } else {
+                updateDashboard(); admin.classList.add('hidden'); display.classList.remove('hidden');
+            }
+        }
+
+        function switchDay(index) { currentDayIndex = index; updateDayButtons('btn-day', index); updateDashboard(); checkTimeAndStatus(); }
+        function adminSwitchDay(index) { currentDayIndex = index; updateDayButtons('admin-btn-day', index); renderAdminSchedule(); }
+        
+        function updateDayButtons(prefix, index) {
+            const btn1 = document.getElementById(prefix + '1'); const btn2 = document.getElementById(prefix + '2');
+            const activeClass = "bg-white shadow text-blue-600 ring-1 ring-blue-200";
+            const inactiveClass = "text-gray-500 hover:bg-white/50";
+            btn1.className = `px-2 py-0.5 text-xs font-bold rounded transition ${prefix.includes('admin') ? 'text-sm px-4 py-1.5' : ''}`;
+            btn2.className = `px-2 py-0.5 text-xs font-bold rounded transition ${prefix.includes('admin') ? 'text-sm px-4 py-1.5' : ''}`;
+            if (index === 0) { btn1.className += ` ${activeClass}`; btn2.className += ` ${inactiveClass}`; } else { btn2.className += ` ${activeClass}`; btn1.className += ` ${inactiveClass}`; }
+        }
+
+        function updateDashboard() {
+            document.getElementById('disp-expected').textContent = document.getElementById('input-expected').value;
+            document.getElementById('disp-actual').textContent = document.getElementById('input-actual').value;
+            document.getElementById('disp-special').textContent = document.getElementById('input-special').value;
+            
+            renderNoticeList(); 
+            document.getElementById('main-prompt').textContent = document.getElementById('text-exam').value;
+            renderAbsentList();
+            
+            const list = document.getElementById('schedule-list');
+            list.innerHTML = '';
+            const schedule = allSchedules[currentDayIndex].sort((a, b) => a.start.localeCompare(b.start));
+            schedule.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "w-full bg-white rounded-lg border-l-4 shadow-sm p-3 flex flex-col justify-center transition flex-none group";
+                div.style.minHeight = "100px"; 
+                div.classList.add(item.type === 'study' ? 'border-yellow-400' : 'border-blue-500');
+                div.innerHTML = `<div class="flex justify-between items-center w-full"><span class="font-black text-gray-800 text-2xl group-hover:text-blue-600 transition">${item.subject}</span>${item.type === 'study' ? '<span class="text-xs font-bold bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">自習</span>' : '<span class="text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">考試</span>'}</div><div class="flex items-center text-gray-500 font-mono text-lg font-bold mt-1"><span class="mr-2">🕒</span> ${item.start} - ${item.end}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function checkTimeAndStatus() {
+            const now = new Date();
+            const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            let status = "break"; let subject = "";
+            for (let item of allSchedules[currentDayIndex]) {
+                if (currentTime >= item.start && currentTime < item.end) {
+                    status = item.type; subject = item.subject; break;
+                }
+            }
+            const badge = document.getElementById('status-badge');
+            const mainTitle = document.getElementById('current-subject');
+            const mainPrompt = document.getElementById('main-prompt');
+
+            if (status === 'exam') {
+                badge.className = "absolute top-3 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-base font-bold shadow-md z-10 animate-pulse";
+                badge.textContent = "考試進行中"; mainTitle.textContent = subject;
+                mainPrompt.textContent = document.getElementById('text-exam').value; mainPrompt.style.color = "#1f2937"; 
+            } else if (status === 'study') {
+                badge.className = "absolute top-3 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-base font-bold shadow-md z-10";
+                badge.textContent = "自習時間"; mainTitle.textContent = subject;
+                mainPrompt.textContent = document.getElementById('text-study').value; mainPrompt.style.color = "#4b5563"; 
+            } else {
+                badge.className = "absolute top-3 right-4 bg-green-600 text-white px-3 py-1 rounded-full text-base font-bold shadow-md z-10";
+                badge.textContent = "下課休息"; mainTitle.textContent = "下課時間";
+                mainPrompt.textContent = document.getElementById('text-break').value; mainPrompt.style.color = "#16a34a"; 
+            }
+        }
+
+        function renderAdminSchedule() {
+            const tbody = document.getElementById('admin-schedule-list'); tbody.innerHTML = '';
+            const schedule = allSchedules[currentDayIndex].sort((a, b) => a.start.localeCompare(b.start));
+            schedule.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                tr.innerHTML = `<td class="p-2 pl-4 font-bold">${item.subject}</td><td class="font-mono text-xs">${item.start} - ${item.end}</td><td class="text-right p-2 pr-4"><button onclick="removeScheduleItem(${index})" class="text-red-400 hover:text-red-600 font-bold px-2">✕</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        function addScheduleItem() {
+            const subj = document.getElementById('new-subject').value; const start = document.getElementById('new-start').value; const end = document.getElementById('new-end').value;
+            if (subj && start && end) {
+                const type = subj.includes('自習') ? 'study' : 'exam';
+                allSchedules[currentDayIndex].push({ subject: subj, start: start, end: end, type: type }); renderAdminSchedule();
+            }
+        }
+        function removeScheduleItem(index) { allSchedules[currentDayIndex].splice(index, 1); renderAdminSchedule(); }
+        
+        function handleFileUpload(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' });
+                    let imported = false;
+                    if (workbook.SheetNames[0]) { const d1 = parseSheet(workbook, 0); if(d1.length) { allSchedules[0] = d1; imported = true; } }
+                    if (workbook.SheetNames[1]) { const d2 = parseSheet(workbook, 1); if(d2.length) { allSchedules[1] = d2; imported = true; } }
+                    if(imported) { alert("匯入成功！"); renderAdminSchedule(); }
+                } catch(e) { console.error(e); alert("格式錯誤"); }
+            }; reader.readAsArrayBuffer(file);
+        }
+        function parseSheet(wb, idx) {
+            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[idx]], { header: 1 }); let res = [];
+            for (let i = 1; i < data.length; i++) {
+                const r = data[i]; if (r[0]) {
+                    let s = typeof r[1] === 'number' ? formatExcelTime(r[1]) : r[1]; let e = typeof r[2] === 'number' ? formatExcelTime(r[2]) : r[2];
+                    res.push({ subject: r[0], start: s, end: e, type: r[0].includes('自習') ? 'study' : 'exam' });
+                }
+            } return res;
+        }
+        function formatExcelTime(val) {
+            const total = Math.round(val * 86400);
+            return `${Math.floor(total/3600).toString().padStart(2,'0')}:${Math.floor((total%3600)/60).toString().padStart(2,'0')}`;
+        }
+    </script>
+</body>
+</html>
