@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學小幫手 - 教學進度管理系統</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 與 Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            overflow-x: hidden;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(37, 99, 235, 0.5); border-radius: 10px; }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <!-- 引入 Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        window.firebaseUtils = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- 核心組件：自定義 SVG 圖示 (確保所有功能圖示語法正確) ---
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const icons = {
+                clock: <path d="M12 6v6l4 2" />,
+                save: <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8" />,
+                list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
+                calendar: (
+                    <>
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </>
+                ),
+                history: (
+                    <>
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                        <path d="M12 7v5l4 2" />
+                    </>
+                ),
+                trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />,
+                left: <path d="M15 18l-6-6 6-6" />,
+                x: <path d="M18 6L6 18M6 6l12 12" />,
+                palette: (
+                    <>
+                        <circle cx="13.5" cy="6.5" r=".5" />
+                        <circle cx="17.5" cy="10.5" r=".5" />
+                        <circle cx="8.5" cy="7.5" r=".5" />
+                        <circle cx="6.5" cy="12.5" r=".5" />
+                        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.39 2.3-1 .6-.6 1-1.45 1-2.4 0-1.5 1.5-2.6 3-2.6.9 0 1.7.35 2.3.9.6.5 1.2.7 1.7.7 1.1 0 2-1.1 2-2.5 0-5.1-4.6-9-10-9z" />
+                    </>
+                ),
+                monitor: (
+                    <>
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" />
+                        <line x1="12" y1="17" x2="12" y2="21" />
+                    </>
+                ),
+                chevronRight: <path d="M9 18l6-6-6-6" />,
+                paperclip: <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />,
+                image: (
+                    <>
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                    </>
+                ),
+                sparkles: (
+                    <>
+                        <path d="M12 3l1.912 3.824L17.736 7.736 13.912 9.648 12 13.472 10.088 9.648 6.264 7.736 10.088 5.824z" />
+                        <path d="M5 13l1.147 2.294L8.441 15.824 6.147 16.97 5 19.264l-1.147-2.294L1.559 15.824 3.853 14.676z" />
+                        <path d="M19 13l1.147 2.294L22.441 15.824 20.147 16.97 19 19.264l-1.147-2.294L15.559 15.824 17.853 14.676z" />
+                    </>
+                ),
+                loader: (
+                    <>
+                        <line x1="12" y1="2" x2="12" y2="6" />
+                        <line x1="12" y1="18" x2="12" y2="22" />
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                        <line x1="2" y1="12" x2="6" y2="12" />
+                        <line x1="18" y1="12" x2="22" y2="12" />
+                    </>
+                ),
+                plus: (
+                    <>
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </>
+                ),
+                fileText: (
+                    <>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </>
+                ),
+                upload: (
+                    <>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </>
+                ),
+                download: (
+                    <>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </>
+                )
+            };
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name] || null}
+                </svg>
+            );
+        };
+
+        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } = window.firebaseUtils;
+
+        const App = () => {
+            // --- 狀態管理 ---
+            const [user, setUser] = useState(null);
+            const [currentTime, setCurrentTime] = useState(new Date());
+            const [view, setView] = useState('home');
+            const [records, setRecords] = useState([]);
+            const [timetable, setTimetable] = useState(Array(8).fill(0).map(() => ({ time: '', days: ['', '', '', '', ''] })));
+            const [timetableMode, setTimetableMode] = useState('table');
+            const [timetableImage, setTimetableImage] = useState(null);
+            const [theme, setTheme] = useState({ id: 'blue', gradient: 'from-blue-400 to-indigo-600' });
+            const [currentNote, setCurrentNote] = useState('');
+            const [attachments, setAttachments] = useState([]);
+            const [message, setMessage] = useState(null);
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [showThemeModal, setShowThemeModal] = useState(false);
+            const [showBackfillModal, setShowBackfillModal] = useState(false);
+            const [backfillDate, setBackfillDate] = useState(new Date().toISOString().split('T')[0]);
+            const [backfillStep, setBackfillStep] = useState(1);
+            const [selectedSlot, setSelectedSlot] = useState(null);
+            const [backfillNote, setBackfillNote] = useState('');
+            const [backfillAttachments, setBackfillAttachments] = useState([]);
+            const [previewFile, setPreviewFile] = useState(null);
+
+            const fileInputRef = useRef(null);
+            const backfillFileInputRef = useRef(null);
+            const scheduleImageInputRef = useRef(null);
+
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'math-helper-pro';
+            const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            const apiKey = ""; 
+
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const themes = [
+                { id: 'blue', name: '天空之城', gradient: 'from-blue-400 to-indigo-600' },
+                { id: 'green', name: '薄荷晨光', gradient: 'from-emerald-300 to-teal-600' },
+                { id: 'orange', name: '夕陽夏日', gradient: 'from-orange-400 to-rose-500' },
+                { id: 'purple', name: '夢幻紫羅蘭', gradient: 'from-purple-400 to-pink-600' },
+                { id: 'yellow', name: '金黃陽光', gradient: 'from-yellow-300 to-orange-500' },
+            ];
+
+            const cardStyle = "bg-white/95 rounded-[2.5rem] border-2 border-slate-100 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] p-8 hover:shadow-2xl transition-all backdrop-blur-sm";
+
+            // --- 資料加載與認證 ---
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        if (initialToken) await signInWithCustomToken(auth, initialToken);
+                        else await signInAnonymously(auth);
+                    } catch (e) { console.error(e); }
+                };
+                initAuth();
+                onAuthStateChanged(auth, (u) => {
+                    setUser(u);
+                    if (u) loadAllData(u.uid);
+                });
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const loadAllData = (uid) => {
+                onSnapshot(collection(db, 'artifacts', appId, 'users', uid, 'records'), (snap) => {
+                    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setRecords(data.sort((a, b) => new Date(b.date + ' ' + (b.realTime || '00:00')) - new Date(a.date + ' ' + (a.realTime || '00:00'))));
+                });
+                getDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'timetable')).then(snap => {
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        if (d.timetable) setTimetable(d.timetable);
+                        if (d.timetableImage) setTimetableImage(d.timetableImage);
+                        if (d.timetableMode) setTimetableMode(d.timetableMode);
+                        if (d.theme) setTheme(d.theme);
+                    }
+                });
+            };
+
+            const saveToCloud = async (type, data, docId = null) => {
+                if (!user) return;
+                try {
+                    if (type === 'record') await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'records'), data);
+                    else if (type === 'delete_record') await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId));
+                    else if (type === 'config') await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'timetable'), data, { merge: true });
+                } catch (e) { console.error(e); }
+            };
+
+            // --- 智慧班級判斷邏輯 (含 10 分鐘緩衝) ---
+            const getCurrentSessionInfo = () => {
+                const now = new Date();
+                const day = now.getDay() - 1;
+                if (day < 0 || day > 4) return { className: "今日非上課日", slot: null, status: "休息" };
+                const nowM = now.getHours() * 60 + now.getMinutes();
+                let buffer = null;
+                for (let i = 0; i < timetable.length; i++) {
+                    const [start, end] = (timetable[i].time || '').split('-');
+                    if (!start || !end) continue;
+                    const [sh, sm] = start.split(':').map(Number);
+                    const [eh, em] = end.split(':').map(Number);
+                    const sM = sh * 60 + sm, eM = eh * 60 + em;
+                    if (nowM >= sM && nowM <= eM) return { className: String(timetable[i].days[day] || "無課"), slot: i + 1, timeRange: timetable[i].time, status: "上課中" };
+                    if (nowM > eM && nowM <= eM + 10) buffer = { className: String(timetable[i].days[day] || "下課"), slot: i + 1, timeRange: timetable[i].time, status: "緩衝" };
+                }
+                return buffer || { className: "目前下課中", slot: null, status: "休息" };
+            };
+
+            const currentSession = getCurrentSessionInfo();
+
+            const latestByClass = useMemo(() => {
+                const map = {};
+                records.forEach(r => { if (!map[r.className]) map[r.className] = r; });
+                return Object.values(map).slice(0, 4);
+            }, [records]);
+
+            // --- 圖片處理與 AI 辨識 ---
+            const handleScheduleUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const data = event.target.result;
+                    setTimetableImage(data);
+                    setTimetableMode('image');
+                    saveToCloud('config', { timetableImage: data, timetableMode: 'image' });
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const clearScheduleImage = async () => {
+                setTimetableImage(null);
+                setTimetableMode('table');
+                await saveToCloud('config', { timetableImage: null, timetableMode: 'table' });
+                setMessage({ text: "已清除存檔並返回文字模式。🗑️" });
+                setTimeout(() => setMessage(null), 3000);
+            };
+
+            const recognizeSchedule = async () => {
+                if (!timetableImage || !user) return;
+                setIsProcessing(true);
+                setMessage({ text: "AI 正在掃描課表圖檔..." });
+                try {
+                    const base64Data = timetableImage.split(',')[1];
+                    const prompt = `辨識課表圖檔。輸出 JSON：{"timetable": [{"time": "08:20-09:05", "days": ["811", "", "", "", ""]}]}。共有 8 節。`;
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: base64Data } }] }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    const result = await response.json();
+                    const parsedData = JSON.parse(result.candidates[0].content.parts[0].text);
+                    if (parsedData.timetable) {
+                        setTimetable(parsedData.timetable);
+                        setTimetableMode('table');
+                        saveToCloud('config', { timetable: parsedData.timetable, timetableMode: 'table' });
+                        setMessage({ text: "辨識完成並已同步表格！✨" });
+                    }
+                } catch (error) { setMessage({ text: "辨識失敗，請再試一次。" }); }
+                finally { setIsProcessing(false); setTimeout(() => setMessage(null), 3000); }
+            };
+
+            // --- 附件與檔案處理 ---
+            const handleFileUpload = (e, context = 'today') => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const newAt = { name: file.name, data: event.target.result, type: file.type.includes('image') ? 'image' : 'file' };
+                    if (context === 'today') setAttachments(prev => [...prev, newAt]);
+                    else setBackfillAttachments(prev => [...prev, newAt]);
+                    e.target.value = '';
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const handlePaste = (e) => {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf("image") !== -1) {
+                        const blob = items[i].getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            const newAt = { name: `截圖_${new Date().getTime()}.jpg`, data: ev.target.result, type: 'image' };
+                            if (showBackfillModal) setBackfillAttachments(prev => [...prev, newAt]);
+                            else setAttachments(prev => [...prev, newAt]);
+                            setMessage({ text: "已貼上截圖附件！📸" });
+                            setTimeout(() => setMessage(null), 3000);
+                        };
+                        reader.readAsDataURL(blob);
+                    }
+                }
+            };
+
+            const AttachmentBadge = ({ file, onRemove }) => (
+                <div onClick={() => setPreviewFile(file)} className="bg-slate-100 px-4 py-2 rounded-2xl border border-slate-200 flex items-center gap-3 text-xs font-bold text-slate-700 cursor-pointer hover:bg-white hover:border-blue-400 transition-all shadow-sm">
+                    {file.type === 'image' ? <Icon name="image" size={16} className="text-blue-500" /> : <Icon name="fileText" size={16} className="text-blue-800" />}
+                    <span className="max-w-[120px] truncate">{String(file.name)}</span>
+                    {onRemove && <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="text-rose-500 ml-1"><Icon name="x" size={16} /></button>}
+                </div>
+            );
+
+            return (
+                <div className={`min-h-screen bg-gradient-to-br ${theme.gradient} p-4 font-sans text-slate-900 transition-all duration-1000 overflow-y-auto`} onPaste={handlePaste}>
+                    
+                    {/* 檔案預覽 Modal */}
+                    {previewFile && (
+                        <div className="fixed inset-0 bg-slate-950/95 z-[1000] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300">
+                            <button onClick={() => setPreviewFile(null)} className="absolute top-8 right-8 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all"><Icon name="x" size={32} /></button>
+                            <div className="max-w-full text-center">
+                                {previewFile.type === 'image' ? (
+                                    <img src={previewFile.data} alt="預覽" className="max-w-full max-h-[80vh] rounded-3xl shadow-2xl border-4 border-white/10 object-contain" />
+                                ) : (
+                                    <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-2xl flex flex-col items-center gap-8">
+                                        <div className="p-8 bg-blue-50 rounded-full text-blue-600"><Icon name="fileText" size={100} /></div>
+                                        <div><p className="text-2xl font-black text-slate-800 mb-2 font-bold">{String(previewFile.name)}</p><p className="text-blue-600 font-bold">Word / PDF 檔案暫不支持直接預覽，請下載</p></div>
+                                        <a href={previewFile.data} download={previewFile.name} className="px-12 py-5 bg-blue-600 rounded-2xl font-black text-white flex items-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-100 uppercase tracking-widest text-lg">確認下載檔案</a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="w-[95%] lg:w-[70%] mx-auto pt-6 pb-16 relative">
+                        
+                        {/* 頂部導覽 */}
+                        <div className="flex justify-between items-center mb-10 px-4">
+                            <button onClick={() => setShowThemeModal(true)} className="bg-white/20 backdrop-blur-xl p-4 rounded-3xl border border-white/30 text-white hover:bg-white/40 transition-all shadow-2xl active:scale-90">
+                                <Icon name="palette" size={24} />
+                            </button>
+                            <div className="bg-white/90 backdrop-blur-2xl px-10 py-4 rounded-[2rem] border border-white shadow-xl flex items-center gap-5 font-mono font-black text-slate-800 scale-110">
+                                <Icon name="clock" size={24} className="text-blue-600 animate-pulse" />
+                                <span className="text-2xl font-bold">{currentTime.toLocaleTimeString([], { hour12: false })}</span>
+                            </div>
+                        </div>
+
+                        {view === 'home' && (
+                            <div className="space-y-8 fade-in">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className={`${cardStyle} md:col-span-2 bg-slate-900 text-white border-transparent shadow-2xl overflow-hidden relative flex flex-col justify-center min-h-[220px]`}>
+                                        <div className="absolute -right-16 -bottom-16 opacity-10 rotate-12"><Icon name="monitor" size={300} /></div>
+                                        <div className="flex items-center gap-10 relative z-10">
+                                            <div className="bg-white/10 p-8 rounded-[2.5rem] backdrop-blur-2xl border border-white/20 text-6xl shadow-inner italic font-bold">🎒</div>
+                                            <div>
+                                                <p className="text-blue-400 font-black text-[12px] uppercase tracking-[0.4em] mb-2 italic font-bold flex items-center gap-2">
+                                                    現在上課班級 {currentSession.status === '緩衝' && <span className="text-rose-400 animate-pulse">(下課緩衝中)</span>}
+                                                </p>
+                                                <p className="text-6xl font-black tracking-tighter uppercase leading-none font-bold">{String(currentSession.className)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={`${cardStyle} flex flex-col justify-center gap-4 bg-white`}>
+                                        <button onClick={() => setShowBackfillModal(true)} className="w-full py-6 bg-blue-600 rounded-[1.5rem] flex items-center justify-center gap-4 text-white font-black hover:bg-blue-700 transition-all shadow-xl active:scale-95 italic text-lg font-bold">
+                                            <Icon name="history" size={24} /> 補登進度
+                                        </button>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <button onClick={() => {
+                                                const backup = { records, timetable, theme, exportDate: new Date().toISOString() };
+                                                const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url; a.download = `備份_${new Date().toLocaleDateString()}.json`; a.click();
+                                            }} className="py-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center gap-2 text-blue-600 font-black hover:bg-white transition-all text-xs font-bold uppercase tracking-widest">導出備份</button>
+                                            <button onClick={() => {
+                                                const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+                                                input.onchange = (e) => {
+                                                    const file = e.target.files[0];
+                                                    const reader = new FileReader();
+                                                    reader.onload = (re) => {
+                                                        try {
+                                                            const d = JSON.parse(re.target.result);
+                                                            if(d.timetable) setTimetable(d.timetable); if(d.theme) setTheme(d.theme);
+                                                            saveToCloud('config', { timetable: d.timetable, theme: d.theme });
+                                                            alert('還原完成！');
+                                                        } catch(e) { alert('檔案格式不正確'); }
+                                                    };
+                                                    reader.readAsText(file);
+                                                };
+                                                input.click();
+                                            }} className="py-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center gap-2 text-blue-600 font-black hover:bg-white transition-all text-xs font-bold uppercase tracking-widest">還原資料</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-10 gap-8">
+                                    <div className={`${cardStyle} md:col-span-4 bg-white flex flex-col min-h-[420px]`}>
+                                        <h2 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.5em] mb-8 border-b border-slate-50 pb-4 italic font-bold">各班進度概覽</h2>
+                                        <div className="space-y-5 flex-1 overflow-y-auto max-h-[380px] custom-scrollbar pr-1">
+                                            {latestByClass.map(r => (
+                                                <div key={r.id} className="p-5 bg-blue-50/50 rounded-[1.5rem] border border-blue-100 hover:bg-white transition-all shadow-sm group">
+                                                    <div className="flex justify-between items-center mb-2 font-bold">
+                                                        <span className="text-[11px] font-black text-blue-700 uppercase italic">班級 {String(r.className)}</span>
+                                                        <span className="text-[9px] text-blue-600 font-mono font-bold">{String(r.date).slice(-5)}</span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-600 font-bold leading-relaxed truncate font-bold">{String(r.content)}</p>
+                                                </div>
+                                            ))}
+                                            {latestByClass.length === 0 && <div className="text-center py-20 text-blue-400 font-bold">尚無資料</div>}
+                                        </div>
+                                    </div>
+
+                                    <div className={`${cardStyle} md:col-span-6 flex flex-col min-h-[420px] shadow-2xl relative`}>
+                                        <div className="flex items-center gap-3 mb-8">
+                                            <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-xl shadow-emerald-200"></div>
+                                            <span className="text-[12px] font-black text-blue-700 uppercase tracking-[0.3em] font-mono italic font-bold">今日教學重點筆記</span>
+                                        </div>
+                                        <textarea 
+                                            className="w-full flex-1 p-0 outline-none resize-none text-slate-900 text-4xl font-black placeholder:text-blue-100 leading-tight bg-transparent font-bold font-bold font-bold"
+                                            placeholder="今天要教什麼重點呢？"
+                                            value={currentNote}
+                                            onChange={(e) => setCurrentNote(e.target.value)}
+                                        />
+                                        
+                                        {/* 今日附件顯示 */}
+                                        {attachments.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-4 p-4 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+                                                {attachments.map((file, idx) => (
+                                                    <AttachmentBadge key={idx} file={file} onRemove={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} />
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-center mt-10 pt-8 border-t border-slate-50 font-bold">
+                                            <button onClick={() => fileInputRef.current.click()} className="p-5 bg-slate-100 rounded-3xl text-blue-500 hover:text-blue-600 border border-slate-100 transition-all shadow-sm active:scale-90 group">
+                                                <Icon name="paperclip" size={28} className="group-hover:rotate-12 transition-transform" />
+                                            </button>
+                                            <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, 'today')} />
+                                            <button onClick={() => {
+                                                if(!currentNote.trim()) return;
+                                                saveToCloud('record', { date: new Date().toLocaleDateString(), realTime: new Date().toLocaleTimeString(), className: currentSession.className, content: currentNote, attachments, createdAt: new Date().toISOString() });
+                                                setCurrentNote(''); setAttachments([]);
+                                                setMessage({ text: "進度已存入雲端！✨" }); setTimeout(() => setMessage(null), 3000);
+                                            }} className="px-20 py-6 bg-slate-900 rounded-[2rem] font-black text-2xl text-white shadow-2xl hover:bg-blue-600 active:scale-95 transition-all italic font-bold uppercase tracking-widest font-bold">儲存雲端同步</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-8 pt-6 pb-12">
+                                    <button onClick={() => setView('history')} className={`${cardStyle} flex items-center gap-10 group hover:translate-y-[-6px] active:scale-[0.98]`}>
+                                        <div className="bg-blue-100 p-7 rounded-[2rem] text-blue-600 group-hover:scale-110 transition-transform duration-700 shadow-inner"><Icon name="list" size={48} /></div>
+                                        <div className="text-left font-bold font-bold">
+                                            <p className="text-[12px] font-black text-blue-400 uppercase tracking-[0.4em] font-mono italic mb-1">Archives</p>
+                                            <p className="text-3xl font-black text-slate-800 font-bold italic">進度歷史清單</p>
+                                        </div>
+                                        <Icon name="chevronRight" className="ml-auto text-blue-400 group-hover:translate-x-4 transition-transform" size={32} />
+                                    </button>
+                                    <button onClick={() => setView('schedule')} className={`${cardStyle} flex items-center gap-10 group hover:translate-y-[-6px] active:scale-[0.98]`}>
+                                        <div className="bg-emerald-100 p-7 rounded-[2rem] text-emerald-600 group-hover:scale-110 transition-transform duration-700 shadow-inner"><Icon name="calendar" size={48} /></div>
+                                        <div className="text-left font-bold font-bold">
+                                            <p className="text-[12px] font-black text-blue-400 uppercase tracking-[0.4em] font-mono italic mb-1">Weekly Config</p>
+                                            <p className="text-3xl font-black text-slate-800 font-bold italic">我的課程表</p>
+                                        </div>
+                                        <Icon name="chevronRight" className="ml-auto text-blue-400 group-hover:translate-x-4 transition-transform" size={32} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'history' && (
+                            <div className="space-y-10 fade-in">
+                                <div className="flex items-center mb-12 px-6 text-white font-bold">
+                                    <button onClick={() => setView('home')} className="p-5 bg-white rounded-[2rem] text-blue-600 shadow-xl active:scale-90 font-bold"><Icon name="left" size={32}/></button>
+                                    <h2 className="text-5xl font-black flex-1 text-center italic tracking-tighter uppercase font-mono drop-shadow-2xl">歷史紀錄回顧</h2>
+                                </div>
+                                <div className="space-y-6 pb-20">
+                                    {records.length === 0 ? <p className="text-center text-white/50 text-2xl font-bold py-20">目前無紀錄</p> : records.map(rec => (
+                                        <div key={rec.id} className={`${cardStyle} bg-white/95 group`}>
+                                            <div className="flex justify-between items-center mb-6">
+                                                <div className="flex items-center gap-4 font-bold">
+                                                    <span className="bg-slate-900 text-white px-5 py-2 rounded-2xl text-[12px] font-bold font-mono tracking-widest italic font-bold">{String(rec.date)}</span>
+                                                    <span className="font-black text-blue-700 text-xl italic bg-blue-50 px-5 py-2 rounded-[1.5rem] border border-blue-100 font-bold">{String(rec.className)}</span>
+                                                </div>
+                                                <button onClick={() => { if(confirm("確定刪除？")) saveToCloud('delete_record', null, rec.id); }} className="text-rose-500 hover:scale-125 transition-transform"><Icon name="trash" size={28} /></button>
+                                            </div>
+                                            <p className="text-2xl text-slate-800 font-bold whitespace-pre-wrap pl-10 border-l-[12px] border-blue-600 italic leading-relaxed font-bold">{String(rec.content)}</p>
+                                            {rec.attachments && rec.attachments.length > 0 && (
+                                                <div className="mt-6 flex flex-wrap gap-2 pl-10">
+                                                    {rec.attachments.map((at, i) => <AttachmentBadge key={i} file={at} />)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'schedule' && (
+                            <div className="space-y-10 fade-in">
+                                <div className="flex items-center mb-12 px-6 text-white font-bold">
+                                    <button onClick={() => setView('home')} className="p-5 bg-white rounded-[2rem] text-blue-600 shadow-xl active:scale-90"><Icon name="left" size={32}/></button>
+                                    <h2 className="text-4xl font-black text-center flex-1 italic tracking-tighter uppercase text-white font-mono drop-shadow-2xl">每週課表配置</h2>
+                                </div>
+
+                                {/* 課表模式切換開關 */}
+                                <div className="flex bg-white/10 backdrop-blur-3xl p-3 rounded-[3rem] border border-white/20 shadow-2xl mb-16 max-w-2xl mx-auto">
+                                    <button onClick={() => setTimetableMode('table')} className={`flex-1 py-6 rounded-[2.5rem] text-lg font-black transition-all ${timetableMode === 'table' ? 'bg-white shadow-2xl text-slate-900 scale-105' : 'text-white/60 hover:text-white'}`}>文字編輯模式</button>
+                                    <button onClick={() => setTimetableMode('image')} className={`flex-1 py-6 rounded-[2.5rem] text-lg font-black transition-all ${timetableMode === 'image' ? 'bg-white shadow-2xl text-slate-900 scale-105' : 'text-white/60 hover:text-white'}`}>圖片存檔模式</button>
+                                </div>
+
+                                {timetableMode === 'table' ? (
+                                    <div className="bg-white rounded-[3.5rem] overflow-hidden shadow-2xl border-[6px] border-slate-900 font-bold">
+                                        <div className="overflow-x-auto custom-scrollbar">
+                                            <table className="w-full border-collapse">
+                                                <thead className="bg-slate-900 text-white font-mono text-[12px] uppercase tracking-widest font-bold">
+                                                    <tr><th className="p-8 border-r-2 border-white/10 italic">時段</th>{['一','二','三','四','五'].map(d => <th key={d} className="p-8 border-r border-white/10">星期{d}</th>)}</tr>
+                                                </thead>
+                                                <tbody className="text-base font-black text-slate-800 font-bold">
+                                                    {timetable.map((row, rIdx) => (
+                                                        <tr key={rIdx} className="border-t-2 border-slate-900 even:bg-slate-50">
+                                                            <td className="p-4 bg-slate-100 text-center border-r-4 border-slate-900 font-bold text-blue-700">{String(row.time)}</td>
+                                                            {row.days.map((cell, cIdx) => (
+                                                                <td key={cIdx} className="p-2 border-r-2 border-slate-200 last:border-r-0 min-w-[160px] font-bold">
+                                                                    <input className="w-full text-center outline-none bg-transparent py-12 rounded-2xl font-black text-slate-900 focus:bg-blue-100 transition-all text-2xl italic font-bold" value={String(cell)} onChange={(e) => {
+                                                                        const nt = [...timetable]; nt[rIdx].days[cIdx] = e.target.value; setTimetable(nt); saveToCloud('config', { timetable: nt });
+                                                                    }} placeholder="-" />
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-16 animate-in zoom-in-95">
+                                        {timetableImage ? (
+                                            <div className="relative group px-10 text-center">
+                                                <img src={timetableImage} alt="課表圖檔" className="w-full h-auto rounded-[6rem] border-[10px] border-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]" />
+                                                <div className="absolute top-12 right-20 flex gap-8 opacity-0 group-hover:opacity-100 transition-all translate-y-5 group-hover:translate-y-0">
+                                                    <button onClick={() => scheduleImageInputRef.current.click()} className="bg-white p-8 rounded-full shadow-2xl text-blue-600 hover:scale-125 border border-slate-50"><Icon name="upload" size={48} /></button>
+                                                    <button onClick={clearScheduleImage} className="bg-white p-8 rounded-full shadow-2xl text-rose-600 hover:scale-125 border border-slate-50"><Icon name="trash" size={48} /></button>
+                                                </div>
+                                                <button onClick={recognizeSchedule} disabled={isProcessing} className="w-full mt-16 py-12 bg-slate-900 rounded-[3rem] font-black text-4xl text-white shadow-2xl shadow-blue-200 hover:bg-black transition-all flex items-center justify-center gap-10 disabled:opacity-50 active:scale-95 font-bold italic">
+                                                    {isProcessing ? <Icon name="loader" size={64} className="animate-spin" /> : <Icon name="sparkles" size={64} />}
+                                                    {isProcessing ? "正在辨識中..." : "啟動 AI 課表辨識"}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div onClick={() => scheduleImageInputRef.current.click()} className="bg-white/10 backdrop-blur-3xl aspect-[21/9] flex flex-col items-center justify-center gap-16 cursor-pointer rounded-[6rem] border-dashed border-[8px] border-white/20 group hover:border-white/50 transition-all shadow-2xl scale-95 hover:scale-100">
+                                                <Icon name="image" size={150} className="text-white/20 group-hover:scale-110 group-hover:text-white/40 transition-all duration-1000" />
+                                                <div className="text-center px-20">
+                                                    <p className="font-black text-white/40 tracking-[1em] uppercase text-5xl font-mono italic font-bold">匯入課表圖檔</p>
+                                                    <p className="text-xl text-white/20 mt-10 font-black italic opacity-60 underline underline-offset-[12px] uppercase tracking-[0.3em]">點擊選擇電腦存檔 (JPG/PNG)</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <input type="file" ref={scheduleImageInputRef} className="hidden" accept="image/*" onChange={handleScheduleUpload} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {showBackfillModal && (
+                            <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
+                                <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg p-10 fade-in border-4 border-blue-100 font-bold">
+                                    <div className="flex justify-between items-center mb-8">
+                                        <h3 className="text-2xl font-black text-blue-700 font-bold font-bold font-bold">補登歷史紀錄</h3>
+                                        <button onClick={() => { setShowBackfillModal(false); setBackfillStep(1); setBackfillAttachments([]); }} className="text-slate-400 hover:text-rose-500 font-bold"><Icon name="x" size={32}/></button>
+                                    </div>
+                                    {backfillStep === 1 && (
+                                        <div className="space-y-6">
+                                            <p className="font-bold text-blue-700 italic">1. 選擇補登日期</p>
+                                            <input type="date" className="w-full p-5 border-2 border-slate-100 rounded-3xl outline-none font-bold text-xl bg-slate-50" value={backfillDate} onChange={(e) => setBackfillDate(e.target.value)} />
+                                            <button onClick={() => setBackfillStep(2)} className="w-full py-5 bg-blue-600 rounded-2xl font-bold text-white text-xl">下一步 ➔</button>
+                                        </div>
+                                    )}
+                                    {backfillStep === 2 && (
+                                        <div className="space-y-6 font-bold">
+                                            <p className="font-bold text-blue-700 italic">2. 選擇當天課堂</p>
+                                            <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {timetable.map((row, idx) => {
+                                                    const dayIdx = new Date(backfillDate).getDay() - 1;
+                                                    const cls = dayIdx >= 0 && dayIdx < 5 ? row.days[dayIdx] : "休假";
+                                                    return (
+                                                        <button key={idx} onClick={() => { setSelectedSlot({ idx, name: cls }); setBackfillStep(3); }} className="p-4 border-2 border-blue-50 rounded-2xl hover:border-blue-400 text-left">
+                                                            <div className="text-[10px] text-blue-700 font-bold mb-1">第 {idx+1} 節</div>
+                                                            <div className="font-black text-slate-800 font-bold">{String(cls || "空白")}</div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {backfillStep === 3 && (
+                                        <div className="space-y-6 font-bold">
+                                            <div className="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100 italic">
+                                                <p className="text-xs text-blue-700 font-bold">{String(backfillDate)}</p>
+                                                <p className="font-black text-slate-800 font-bold">班級：{String(selectedSlot?.name)}</p>
+                                            </div>
+                                            <textarea className="w-full h-40 p-5 border-2 border-slate-100 rounded-3xl outline-none font-bold text-lg bg-slate-50 font-bold" placeholder="內容..." value={backfillNote} onChange={(e) => setBackfillNote(e.target.value)} autoFocus />
+                                            
+                                            {/* 補登附件區 */}
+                                            <div className="flex flex-wrap gap-2 p-3 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200">
+                                                {backfillAttachments.map((file, idx) => (
+                                                    <AttachmentBadge key={idx} file={file} onRemove={() => setBackfillAttachments(prev => prev.filter((_, i) => i !== idx))} />
+                                                ))}
+                                                <button onClick={() => backfillFileInputRef.current.click()} className="p-2 text-blue-500 font-bold"><Icon name="paperclip" size={20} /></button>
+                                                <input type="file" ref={backfillFileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, 'backfill')} />
+                                            </div>
+
+                                            <button onClick={() => {
+                                                if(!backfillNote.trim()) return;
+                                                saveToCloud('record', { date: backfillDate, realTime: new Date().toLocaleTimeString(), className: selectedSlot?.name, content: backfillNote, attachments: backfillAttachments, createdAt: new Date().toISOString() });
+                                                setShowBackfillModal(false); setBackfillStep(1); setBackfillNote(''); setBackfillAttachments([]);
+                                                setMessage({ text: "補登成功！✅" }); setTimeout(() => setMessage(null), 3000);
+                                            }} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-bold text-xl uppercase italic font-bold">確認補登存檔</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {showThemeModal && (
+                            <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-[900] flex items-center justify-center p-4 animate-in zoom-in-95 duration-200">
+                                <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg p-10 border border-slate-50 font-bold font-bold font-bold">
+                                    <div className="flex justify-between items-center mb-10 font-bold font-bold">
+                                        <h3 className="font-black text-3xl flex items-center gap-4 text-slate-800 font-bold font-bold font-bold font-bold font-bold font-bold"><Icon name="palette" size={32} /> 風格設定</h3>
+                                        <button onClick={() => setShowThemeModal(false)} className="text-slate-400 p-2 font-bold font-bold font-bold"><Icon name="x" size={32} /></button>
+                                    </div>
+                                    <div className="space-y-10 font-bold font-bold font-bold font-bold">
+                                        <p className="text-xs font-black text-blue-600 uppercase font-bold italic font-bold font-bold font-bold font-bold">亮麗背景配色選擇</p>
+                                        <div className="grid grid-cols-5 gap-4 font-bold">
+                                            {themes.map(t => (
+                                                <button key={t.id} onClick={() => { setTheme(t); saveToCloud('config', { theme: t }); }}
+                                                    className={`aspect-square rounded-3xl bg-gradient-to-br ${t.gradient} border-[4px] transition-all transform ${theme.id === t.id ? 'border-white scale-110 shadow-2xl ring-4 ring-blue-100' : 'border-slate-50 hover:scale-105'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setShowThemeModal(false)} className="w-full mt-10 py-5 bg-slate-900 rounded-2xl font-black text-white text-xl font-bold italic font-bold font-bold font-bold">完成並套用</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {message && (
+                            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-10 py-5 rounded-3xl shadow-2xl border-4 border-blue-400 font-black animate-bounce z-[2000] italic font-bold font-bold font-bold font-bold font-bold font-bold">
+                                {String(message.text)}
+                            </div>
+                        )}
+                        
+                        <div className="fixed bottom-10 right-14 text-[16px] font-black text-white/30 tracking-[0.8em] pointer-events-none select-none uppercase font-mono italic drop-shadow-2xl font-bold font-bold font-bold font-bold font-bold">Made by Xtjh-yucc</div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
