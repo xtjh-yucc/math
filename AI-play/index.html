@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金馬賀歲 ‧ 3D翻牌抽紅包</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { 
+            --gold: #ffd700; 
+            --red: #b30000; 
+            --paper: #fffaf0; /* 更柔和的紙張色 */
+            --shadow-soft: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background: var(--red) url('https://www.transparenttextures.com/patterns/chinese-lanterns.png'); 
+            color: var(--gold); 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .container { 
+            width: 100%;
+            max-width: 1100px; /* 限制最大寬度防止壓迫 */
+            margin: 0 auto; 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 標題區：增加留白 */
+        .logo-area {
+            padding: 20px 0;
+            text-align: center;
+        }
+        .main-logo {
+            width: clamp(80px, 15vw, 120px); /* 響應式大小 */
+            height: auto;
+            margin-bottom: 15px;
+        }
+        h1 { 
+            font-size: clamp(2rem, 5vw, 3.2rem); 
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.3); 
+            margin: 0; 
+            letter-spacing: 4px;
+        }
+
+        /* 主卡片：增加內距與圓角 */
+        .card-main { 
+            background: var(--paper); 
+            color: #333; 
+            padding: clamp(20px, 5vw, 50px); 
+            border-radius: 40px; 
+            border: 6px solid var(--gold); 
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+        }
+
+        /* 題目顯示：優化行高與間距 */
+        #qText {
+            font-weight: 700;
+            font-size: clamp(1.4rem, 4vw, 2.2rem); 
+            color: var(--red);
+            line-height: 1.6;
+            margin-bottom: 40px;
+            text-align: left;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        #qText::after {
+            content: "";
+            position: absolute;
+            bottom: 0; left: 0; width: 60px; height: 5px;
+            background: var(--gold);
+            border-radius: 10px;
+        }
+
+        /* 選項按鈕：增加間距，弱化邊框厚度 */
+        .option-btn { 
+            background: white; 
+            border: 2px solid #eee; 
+            padding: 22px 30px; 
+            margin-bottom: 15px; 
+            width: 100%; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: clamp(1.1rem, 3vw, 1.4rem); 
+            text-align: left; 
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .option-btn:hover { 
+            border-color: var(--red);
+            background: #fffafa;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(179,0,0,0.1);
+        }
+
+        /* 紅包網格：優化響應式欄位數 */
+        .packet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 30px;
+            margin-top: 10px;
+        }
+
+        .flip-card {
+            height: 260px;
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%; height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
+            border-radius: 24px;
+            border: 3px solid var(--gold);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .flip-card-front {
+            background: linear-gradient(135deg, #d32f2f, #b30000);
+            color: var(--gold);
+            font-size: 4.5rem;
+        }
+        .flip-card-back {
+            background: #fff;
+            color: var(--red);
+            transform: rotateY(180deg);
+            padding: 20px;
+        }
+
+        /* 設定與按鈕 */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: white; color: #333; padding: 40px; border-radius: 30px; width: 90%; max-width: 500px; border: 4px solid var(--gold); }
+        .btn { background: var(--red); color: var(--gold); border: none; padding: 18px; border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.2rem; transition: 0.3s; }
+        
+        #userName { font-size: 1.5rem; border: 2px solid #eee; margin-bottom: 20px; border-radius: 15px; height: 70px; }
+
+        .settings-icon { position: fixed; bottom: 30px; right: 30px; font-size: 24px; cursor: pointer; background: white; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft); z-index: 999; opacity: 0.6; transition: 0.3s; }
+        .settings-icon:hover { opacity: 1; transform: rotate(45deg); }
+
+        @media (max-width: 600px) {
+            .packet-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+            .flip-card { height: 200px; }
+            .flip-card-front { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="logo-area">
+            <img src="https://img.icons8.com/color/144/horse.png" alt="Logo" class="main-logo">
+            <h1>金馬獻吉 ‧ 賀新春</h1>
+        </div>
+
+        <div class="card-main" id="mainCard">
+            <div id="setupArea">
+                <h2 style="color:var(--red); font-size: 1.8rem; margin-bottom: 30px;">請輸入您的尊姓大名</h2>
+                <input type="text" id="userName" placeholder="請輸入姓名..." autocomplete="off">
+                <button class="btn" onclick="startFlow()">確認進入挑戰</button>
+            </div>
+
+            <div id="quizArea" style="display:none;">
+                <p id="qText"></p>
+                <div id="optionsContainer"></div>
+            </div>
+
+            <div id="drawArea" style="display:none;">
+                <h2 style="color:var(--red); font-size: 2rem; margin-bottom: 30px;">🧧 點擊紅包揭曉幸運獎項</h2>
+                <div class="packet-grid" id="packetGrid"></div>
+                <button class="btn" style="background:#666; width: auto; padding: 12px 40px; margin-top: 50px; font-size: 1rem;" onclick="resetToHome()">返回首頁</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="msgModal" class="modal">
+        <div class="modal-content">
+            <h2 id="msgTitle" style="font-size: 2rem;"></h2>
+            <div id="msgBody" style="background:#fffbe6; padding:25px; margin:20px 0; border-radius:20px; text-align:left; font-size: 1.2rem; line-height: 1.6;"></div>
+            <button id="msgBtn" class="btn">下一步</button>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="text-align: left;">
+            <h3 style="text-align:center">⚙️ 系統進階設定</h3>
+            <label>GAS URL:</label>
+            <input type="password" id="gasUrlInput">
+            <label>紅包總數：</label>
+            <input type="number" id="pCount" value="8">
+            <label>紅包內容 (一行一個)：</label>
+            <textarea id="pContent" rows="3">大吉大利&#10;馬到成功&#10;心想事成</textarea>
+            <button class="btn" onclick="saveSettings()">儲存設定並重置</button>
+            <button class="btn" style="background:#666; font-size: 0.9rem; margin-top: 10px;" onclick="toggleModal('settingsModal')">關閉</button>
+        </div>
+    </div>
+
+    <div class="settings-icon" onclick="toggleModal('settingsModal')">⚙️</div>
+
+    <script>
+        // 邏輯核心與之前版本一致，確保功能穩定
+        let currentGasUrl = localStorage.getItem('gas_url') || "";
+        let questions = [];
+        let curQ = null;
+        let isDrawing = false;
+        let openedPackets = JSON.parse(localStorage.getItem('opened_packets')) || [];
+
+        window.onload = () => {
+            document.getElementById('gasUrlInput').value = currentGasUrl;
+            document.getElementById('pCount').value = localStorage.getItem('p_count') || 8;
+            document.getElementById('pContent').value = localStorage.getItem('p_content') || "大吉大利\n馬到成功\n心想事成";
+            fetchData();
+        };
+
+        async function fetchData() {
+            if(!currentGasUrl) return;
+            try {
+                const res = await fetch(currentGasUrl);
+                const data = await res.json();
+                questions = data.questions;
+            } catch(e) { console.error("GAS API 連接失敗"); }
+        }
+
+        function startFlow() {
+            const name = document.getElementById('userName').value;
+            if(!name) return alert("請輸入姓名！");
+            if(questions.length === 0) return alert("題庫讀取中...");
+            curQ = questions[Math.floor(Math.random() * questions.length)];
+            
+            document.getElementById('setupArea').style.display = 'none';
+            document.getElementById('quizArea').style.display = 'block';
+            document.getElementById('drawArea').style.display = 'none';
+            
+            document.getElementById('qText').innerText = curQ.q;
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = "";
+            curQ.options.forEach((opt, idx) => {
+                if(!opt) return;
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = `${idx + 1}. ${opt}`;
+                btn.onclick = () => checkAnswer(idx + 1);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(choice) {
+            const isCorrect = choice.toString() === curQ.answer;
+            const title = isCorrect ? "🎉 答對了！" : "😅 答錯囉！";
+            document.getElementById('msgTitle').innerText = title;
+            document.getElementById('msgTitle').style.color = isCorrect ? "#2e7d32" : "#c62828";
+            document.getElementById('msgBody').innerHTML = `<strong>解析說明：</strong><br>${curQ.info || "好運馬上下載中！"}`;
+            const btn = document.getElementById('msgBtn');
+            btn.innerText = isCorrect ? "領取紅包" : "再試一題";
+            btn.onclick = () => { closeModal('msgModal'); isCorrect ? initDrawArea() : startFlow(); };
+            toggleModal('msgModal');
+        }
+
+        function initDrawArea() {
+            document.getElementById('quizArea').style.display = 'none';
+            document.getElementById('drawArea').style.display = 'block';
+            isDrawing = false;
+            const grid = document.getElementById('packetGrid');
+            grid.innerHTML = "";
+            const count = parseInt(document.getElementById('pCount').value) || 8;
+            const prizes = document.getElementById('pContent').value.split('\n').filter(t => t.trim());
+            for(let i=0; i<count; i++) {
+                const prize = prizes[i % prizes.length];
+                const card = document.createElement('div');
+                card.className = 'flip-card';
+                if (openedPackets.includes(i)) { card.classList.add('is-flipped'); card.style.cursor = 'default'; }
+                card.innerHTML = `<div class="flip-card-inner"><div class="flip-card-front">福</div><div class="flip-card-back"><p style="font-size:1rem;color:#666">中獎獎項</p><p style="font-size:1.4rem;font-weight:bold;">${prize}</p></div></div>`;
+                card.onclick = () => { if (!openedPackets.includes(i) && !isDrawing) flipPacket(card, prize, i); };
+                grid.appendChild(card);
+            }
+        }
+
+        function flipPacket(card, prize, index) {
+            isDrawing = true;
+            card.classList.add('is-flipped');
+            openedPackets.push(index);
+            localStorage.setItem('opened_packets', JSON.stringify(openedPackets));
+            const duration = 3000; const end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff0000', '#ffd700'] });
+                confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff0000', '#ffd700'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+            setTimeout(() => { alert(`🎊 恭喜！中獎內容：${prize}`); resetToHome(); }, 1200);
+        }
+
+        function resetToHome() {
+            document.getElementById('setupArea').style.display = 'block';
+            document.getElementById('quizArea').style.display = 'none';
+            document.getElementById('drawArea').style.display = 'none';
+            document.getElementById('userName').value = "";
+        }
+
+        function saveSettings() {
+            localStorage.setItem('gas_url', document.getElementById('gasUrlInput').value);
+            localStorage.setItem('p_count', document.getElementById('pCount').value);
+            localStorage.setItem('p_content', document.getElementById('pContent').value);
+            localStorage.removeItem('opened_packets');
+            location.reload();
+        }
+
+        function toggleModal(id) { const el = document.getElementById(id); el.style.display = (el.style.display==='flex'?'none':'flex'); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
+</body>
+</html>
