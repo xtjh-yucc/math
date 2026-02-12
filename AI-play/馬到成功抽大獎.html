@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金馬奔騰賀新春 - 2026馬年行大運</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fff7ed;
+        }
+
+        .shake {
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .red-envelope {
+            transition: all 0.3s ease;
+            aspect-ratio: 3/4;
+        }
+
+        .red-envelope:not(.opened):hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 15px -3px rgba(220, 38, 38, 0.3);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #fca5a5;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- 導航欄 -->
+    <nav class="bg-red-600 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-2">
+            <i data-lucide="party-popper" class="text-yellow-300"></i>
+            <h1 class="text-xl font-bold tracking-widest">馬到成功抽大獎 🧧</h1>
+        </div>
+        <button id="toggleAdminBtn" class="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded-full transition-all text-sm font-bold">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>春節配置</span>
+        </button>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-4 md:p-8">
+        <!-- 管理設定區塊 -->
+        <section id="adminSection" class="bg-white rounded-3xl shadow-xl p-6 border-4 border-red-100 hidden">
+            <h2 class="text-2xl font-bold text-red-600 mb-6 flex items-center gap-2">
+                <i data-lucide="settings"></i> 遊戲主控台
+            </h2>
+            <div class="space-y-6">
+                <div>
+                    <label class="block font-bold mb-2 text-gray-700">1. 紅包牆總格數</label>
+                    <input type="number" id="totalCountInput" value="34" class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-xl outline-none focus:border-red-500 transition-colors">
+                </div>
+                <div>
+                    <label class="block font-bold mb-2 text-gray-700">2. 紅包內容 (名稱, 數量)</label>
+                    <textarea id="prizeInput" class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-xl h-24 text-sm focus:border-red-500 outline-none">開心小紅包10元, 20
+學業進步獎20元, 10
+開運大紅包50元, 2
+馬年行大運100元, 2</textarea>
+                </div>
+                <div>
+                    <label class="block font-bold mb-2 text-gray-700">3. 題庫設定 (題目, 答案序號, 選項...)</label>
+                    <textarea id="questionInput" class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-xl h-48 text-sm font-mono focus:border-red-500 outline-none">🐯, 1, Tiger, camel, bee, rabbit
+🐘, 2, Cat, Elephant, rabbit, Lion
+🐵, 4, bear, horse, Tiger, Monkey
+🐼, 3, Tiger, rooster, Panda, snail
+🐨, 4, Lion, horse, Dog, Koala
+🦊, 2, Tiger, Fox, giraffe, Dog
+🐻, 1, Bear, bird, bee, rooster
+🐧, 4, Dog, bear, swan, Penguin
+🐸, 1, Frog, snail, zebra, duck
+🐭, 2, Penguin, mouse, bee, Panda
+🐰, 3, giraffe, horse, rabbit, Penguin
+🧸, 1, bear, lizard, Monkey, chick
+🐷, 1, pig, rooster, butterfly, Frog
+🐦, 2, racehorse, bird, Cat, Panda
+🐥, 3, Bear, bird, chick, pig
+🦓, 2, Elephant, zebra, Tiger, Frog
+🐴, 1, horse, bee, Frog, Cat
+🦒, 1, giraffe, deer, swan, kangaroo
+🦌, 2, Cat, deer, lizard, pig
+🦘, 1, kangaroo, lizard, Cat, Koala
+🐝, 3, deer, snail, bee, lizard
+🦋, 2, duck, butterfly, Frog, snail
+🐌, 4, camel, Bear, bee, snail
+🦎, 2, Frog, lizard, kangaroo, giraffe
+🐠, 4, rabbit, butterfly, bear, fish
+🐓, 4, camel, Dog, horse, rooster
+🐫, 3, horse, bunny, camel, Elephant
+🐎, 2, Koala, racehorse, kangaroo, Lion
+🦆, 1, duck, Tiger, Fox, deer
+🦢, 1, swan, fish, Cat, racehorse
+🐇, 4, Tiger, zebra, horse, bunny</textarea>
+                </div>
+                <button id="startGameBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all text-lg flex justify-center items-center gap-2">
+                    <i data-lucide="play"></i> 開始「馬」上贏遊戲
+                </button>
+            </div>
+        </section>
+
+        <!-- 遊戲主區塊 -->
+        <section id="gameSection">
+            <!-- 答題介面 -->
+            <div id="quizView" class="bg-white rounded-3xl shadow-xl overflow-hidden border-b-8 border-red-500">
+                <div class="bg-red-500 p-4 text-white text-center flex justify-between items-center px-4 md:px-8">
+                    <span class="bg-white/20 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">金馬挑戰</span>
+                    <span id="quizStats" class="font-bold text-sm">載入中...</span>
+                </div>
+                <div class="p-6 md:p-12">
+                    <div class="text-center mb-8 md:mb-12">
+                        <div id="questionEmoji" class="text-8xl md:text-9xl mb-4 transition-transform hover:scale-110 cursor-default">❓</div>
+                        <p class="text-gray-500 font-medium">看圖識動物：這是哪位好朋友？</p>
+                    </div>
+                    <div id="optionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- 選項按鈕由 JS 動態產生 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 答錯介面 -->
+            <div id="wrongView" class="bg-white rounded-3xl shadow-xl p-12 text-center border-t-8 border-red-500 hidden">
+                <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="x-circle" class="text-red-500 w-12 h-12"></i>
+                </div>
+                <h2 class="text-3xl font-black text-red-600 mb-2">哎呀！差一點點</h2>
+                <p class="text-gray-600 mb-8 font-medium">別氣餒，「馬」上再試一次，紅包就在前方！</p>
+                <button id="tryAgainBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold px-12 py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 mx-auto text-xl active:scale-95">
+                    <i data-lucide="refresh-cw"></i> 重新出題 (換一題)
+                </button>
+            </div>
+
+            <!-- 抽獎介面 -->
+            <div id="drawView" class="text-center hidden">
+                <div class="mb-8">
+                    <h2 class="text-4xl font-black text-red-600 mb-2 flex justify-center items-center gap-2">
+                        <i data-lucide="trophy" class="text-yellow-500"></i> 馬到成功！
+                    </h2>
+                    <p class="text-xl text-orange-700 font-bold">答對了！點擊紅包牆揭開好運！</p>
+                </div>
+                <div id="envelopeGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
+                    <!-- 紅包按鈕由 JS 動態產生 -->
+                </div>
+            </div>
+
+            <!-- 通關介面 -->
+            <div id="finishedView" class="bg-white rounded-3xl shadow-xl p-12 text-center border-4 border-dashed border-red-200 hidden">
+                <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="party-popper" class="text-red-600 w-12 h-12"></i>
+                </div>
+                <h2 class="text-3xl font-black text-gray-800 mb-4">萬事如意，挑戰達成！</h2>
+                <p class="text-gray-500 mb-8 leading-relaxed">恭喜您答完了所有動物謎題！<br>祝您在 2026 馬年平安健康、龍馬精神、大吉大利！</p>
+                <button id="restartGameBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold px-10 py-4 rounded-2xl shadow-lg transition-all active:scale-95">
+                    重新開始遊戲
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 中獎彈窗 -->
+    <div id="resultModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center border-t-8 border-yellow-400">
+            <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="gift" class="text-red-600 w-10 h-10 animate-bounce"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-400 mb-1">新年大吉！</h3>
+            <p class="text-sm text-gray-400 mb-2">幸運降臨，抽中了：</p>
+            <div id="winPrizeName" class="text-3xl font-black text-red-600 mb-8 tracking-tighter">???</div>
+            <button id="nextRoundBtn" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 group active:scale-95">
+                繼續挑戰贏紅包 <i data-lucide="chevron-right" class="group-hover:translate-x-1 transition-transform"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 狀態資訊條 -->
+    <div id="statsBar" class="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-30">
+        <div class="bg-white/95 backdrop-blur rounded-full px-6 py-2.5 shadow-xl border border-orange-100 flex justify-between items-center text-[11px] font-bold text-orange-800">
+            <span class="flex items-center gap-1"><i data-lucide="book-open" class="w-3 h-3"></i> 待挑戰：<span id="remainQs">0</span> 題</span>
+            <span class="w-1.5 h-1.5 bg-orange-200 rounded-full"></span>
+            <span class="flex items-center gap-1"><i data-lucide="gift" class="w-3 h-3"></i> 已入袋：<span id="drawnCount">0</span>/<span id="totalCaps">0</span></span>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心狀態 ---
+        let questions = [];
+        let assignedPrizes = [];
+        let openedIndices = new Set();
+        let currentQIndex = 0;
+        let totalCount = 34;
+
+        // --- DOM 元素 ---
+        const views = {
+            admin: document.getElementById('adminSection'),
+            quiz: document.getElementById('quizView'),
+            wrong: document.getElementById('wrongView'),
+            draw: document.getElementById('drawView'),
+            finished: document.getElementById('finishedView'),
+            modal: document.getElementById('resultModal')
+        };
+
+        // --- 初始化 Lucide 圖標 ---
+        function refreshIcons() {
+            lucide.createIcons();
+        }
+
+        // --- 切換視圖 ---
+        function showView(viewName) {
+            Object.keys(views).forEach(key => views[key].classList.add('hidden'));
+            if (viewName === 'admin') {
+                views.admin.classList.remove('hidden');
+            } else if (viewName === 'quiz') {
+                views.quiz.classList.remove('hidden');
+            } else if (viewName === 'wrong') {
+                views.wrong.classList.remove('hidden');
+            } else if (viewName === 'draw') {
+                views.draw.classList.remove('hidden');
+            } else if (viewName === 'finished') {
+                views.finished.classList.remove('hidden');
+            }
+            refreshIcons();
+        }
+
+        // --- 邏輯功能 ---
+        function setupGame() {
+            const qInput = document.getElementById('questionInput').value;
+            const pInput = document.getElementById('prizeInput').value;
+            totalCount = parseInt(document.getElementById('totalCountInput').value) || 34;
+
+            // 解析題目
+            questions = qInput.split('\n')
+                .filter(l => l.trim())
+                .map(line => {
+                    let parts = line.includes('、') ? line.split('、') : line.split(',');
+                    parts = parts.map(p => p.trim());
+                    const [q, ans, ...opts] = parts;
+                    return { question: q, answer: parseInt(ans), options: opts.filter(o => o).slice(0, 4) };
+                })
+                .filter(item => item.question && !isNaN(item.answer) && item.options.length > 0);
+
+            // 打亂題目
+            questions = questions.sort(() => Math.random() - 0.5);
+
+            // 解析獎項
+            const pLines = pInput.split('\n').filter(l => l.includes(','));
+            let basePrizes = [];
+            pLines.forEach(line => {
+                const [name, count] = line.split(',');
+                const c = parseInt(count.trim());
+                if (!isNaN(c)) for(let i=0; i<c; i++) basePrizes.push(name.trim());
+            });
+
+            // 分配獎項
+            assignedPrizes = [];
+            for (let i = 0; i < totalCount; i++) {
+                assignedPrizes.push(basePrizes[i % basePrizes.length]);
+            }
+            assignedPrizes = assignedPrizes.sort(() => Math.random() - 0.5);
+
+            // 重置遊戲狀態
+            openedIndices.clear();
+            currentQIndex = 0;
+            renderQuiz();
+            renderEnvelopes();
+            updateStats();
+            showView('quiz');
+            document.getElementById('statsBar').classList.remove('hidden');
+        }
+
+        function updateStats() {
+            document.getElementById('quizStats').textContent = `剩餘挑戰：${questions.length} 題`;
+            document.getElementById('remainQs').textContent = questions.length;
+            document.getElementById('drawnCount').textContent = openedIndices.size;
+            document.getElementById('totalCaps').textContent = totalCount;
+        }
+
+        function renderQuiz() {
+            const q = questions[currentQIndex];
+            if (!q) {
+                showView('finished');
+                return;
+            }
+
+            document.getElementById('questionEmoji').textContent = q.question;
+            const grid = document.getElementById('optionsGrid');
+            grid.innerHTML = '';
+
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = "p-6 rounded-2xl border-2 font-bold text-xl transition-all transform active:scale-95 text-left bg-orange-50 border-orange-200 hover:border-red-400 text-orange-800 shadow-sm flex items-center";
+                btn.innerHTML = `<span class="inline-block w-8 h-8 bg-red-100 text-red-600 rounded-full text-center leading-8 mr-3 text-sm">${i + 1}</span> <span>${opt}</span>`;
+                btn.onclick = () => checkAnswer(i);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(idx) {
+            const correct = questions[currentQIndex].answer === (idx + 1);
+            if (correct) {
+                setTimeout(() => showView('draw'), 300);
+            } else {
+                setTimeout(() => showView('wrong'), 300);
+            }
+        }
+
+        function handleTryAgain() {
+            // 將答錯的這題放到隊伍最後面，實現隨機換題
+            const [currentQ] = questions.splice(currentQIndex, 1);
+            questions.push(currentQ);
+            
+            renderQuiz();
+            showView('quiz');
+        }
+
+        function renderEnvelopes() {
+            const grid = document.getElementById('envelopeGrid');
+            grid.innerHTML = '';
+            assignedPrizes.forEach((prize, idx) => {
+                const isOpened = openedIndices.has(idx);
+                const btn = document.createElement('button');
+                btn.disabled = isOpened;
+                btn.className = `red-envelope rounded-xl flex items-center justify-center transition-all duration-300 transform ${isOpened ? 'bg-yellow-100 border-2 border-yellow-300 opacity-60 scale-95' : 'bg-gradient-to-br from-red-500 to-red-600 shadow-md cursor-pointer'}`;
+                
+                if (isOpened) {
+                    btn.innerHTML = `<p class="text-[10px] font-bold text-red-700 leading-tight p-1">${prize}</p>`;
+                } else {
+                    btn.innerHTML = `<span class="text-yellow-300 text-3xl font-serif select-none">福</span>`;
+                    btn.onclick = () => drawPrize(idx);
+                }
+                grid.appendChild(btn);
+            });
+        }
+
+        function drawPrize(idx) {
+            const prize = assignedPrizes[idx];
+            openedIndices.add(idx);
+            document.getElementById('winPrizeName').textContent = prize;
+            views.modal.classList.remove('hidden');
+            
+            // 紙花特效
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ef4444', '#facc15', '#ffffff']
+            });
+
+            renderEnvelopes();
+            updateStats();
+        }
+
+        function nextRound() {
+            views.modal.classList.add('hidden');
+            // 移除答對的那一題
+            questions.splice(currentQIndex, 1);
+            
+            if (questions.length > 0) {
+                renderQuiz();
+                showView('quiz');
+            } else {
+                showView('finished');
+            }
+            updateStats();
+        }
+
+        // --- 事件綁定 ---
+        document.getElementById('toggleAdminBtn').onclick = () => {
+            if (views.admin.classList.contains('hidden')) {
+                showView('admin');
+                document.getElementById('statsBar').classList.add('hidden');
+            } else {
+                showView('quiz');
+                document.getElementById('statsBar').classList.remove('hidden');
+            }
+        };
+
+        document.getElementById('startGameBtn').onclick = setupGame;
+        document.getElementById('tryAgainBtn').onclick = handleTryAgain;
+        document.getElementById('nextRoundBtn').onclick = nextRound;
+        document.getElementById('restartGameBtn').onclick = () => showView('admin');
+
+        // 初始化
+        window.onload = () => {
+            refreshIcons();
+            setupGame(); // 使用預設值初始化一次
+            showView('quiz'); // 預設直接進入遊戲
+        };
+    </script>
+</body>
+</html>
