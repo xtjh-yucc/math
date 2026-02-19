@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1-2 等差級數 學習夥伴</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- MathJax for LaTeX Rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+        .math-text {
+            font-family: 'Noto Serif TC', serif;
+        }
+        .textbook-card {
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+        mjx-container {
+            outline: none !important;
+            font-size: 1.1em !important;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        .animate-fall {
+            position: absolute;
+            animation-name: fall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect, useRef } = React;
+
+        // --- 簡易圖標組件 ---
+        const Icon = ({ name, className }) => {
+            const icons = {
+                chevronLeft: <path d="m15 18-6-6 6-6"/>,
+                chevronRight: <path d="m9 18 6-6-6-6"/>,
+                lightbulb: (
+                    <>
+                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/>
+                        <path d="M9 18h6"/>
+                        <path d="M10 22h4"/>
+                    </>
+                ),
+                sparkles: (
+                    <>
+                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                        <path d="M5 3v4"/>
+                        <path d="M19 17v4"/>
+                        <path d="M3 5h4"/>
+                        <path d="M17 19h4"/>
+                    </>
+                ),
+                check: (
+                    <>
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </>
+                ),
+                calculator: (
+                    <>
+                        <rect width="16" height="20" x="4" y="2" rx="2"/>
+                        <line x1="8" x2="16" y1="6" y2="6"/>
+                        <line x1="16" x2="16" y1="14" y2="18"/>
+                        <path d="M16 10h.01"/>
+                        <path d="M12 10h.01"/>
+                        <path d="M8 10h.01"/>
+                        <path d="M12 14h.01"/>
+                        <path d="M8 14h.01"/>
+                        <path d="M12 18h.01"/>
+                        <path d="M8 18h.01"/>
+                    </>
+                ),
+                trophy: (
+                    <>
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                        <path d="M4 22h16"/>
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+                    </>
+                ),
+                refresh: (
+                    <>
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                        <path d="M16 16h5v5"/>
+                    </>
+                ),
+                book: (
+                    <>
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                        <path d="M8 6h10"/>
+                        <path d="M8 10h10"/>
+                        <path d="M8 14h10"/>
+                    </>
+                ),
+                alert: (
+                    <>
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" x2="12" y1="8" y2="12"/>
+                        <line x1="12" x2="12.01" y1="16" y2="16"/>
+                    </>
+                ),
+                party: (
+                    <>
+                        <path d="M20 21a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/>
+                        <path d="M2 7h20"/>
+                        <path d="M5 11v8"/>
+                        <path d="M9 11v8"/>
+                        <path d="M13 11v8"/>
+                        <path d="M17 11v8"/>
+                    </>
+                ),
+                printer: (
+                    <>
+                        <polyline points="6 9 6 2 18 2 18 9" />
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                        <rect x="6" y="14" width="12" height="8" />
+                    </>
+                )
+            };
+            return (
+                <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        // --- 核心邏輯輔助 ---
+        function shuffleArray(array) {
+            const newArr = [...array];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        }
+
+        const ConfettiEffect = () => {
+            const pieces = useMemo(() => Array.from({ length: 60 }).map((_, i) => ({
+                id: i, left: Math.random() * 100, delay: Math.random() * 2, duration: 3 + Math.random() * 2,
+                size: 15 + Math.random() * 25, emoji: ['🌸', '✨', '🎉', '🎊', '⭐', '🎈'][Math.floor(Math.random() * 6)]
+            })), []);
+            return (
+                <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+                    {pieces.map(p => (
+                        <div key={p.id} className="animate-fall" style={{ left: `${p.left}%`, top: `-50px`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s`, fontSize: `${p.size}px` }}>
+                            {p.emoji}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // --- 堆疊渲染組件 ---
+        const StackingPattern = ({ layers, type }) => {
+            const items = [];
+            const radius = 10;
+            const gap = 4;
+            for (let l = 1; l <= Math.min(layers, 5); l++) {
+                const count = l === 1 ? 1 : 1 + (l - 1) * (type === 'glasses' ? 2 : 1);
+                for (let i = 0; i < count; i++) {
+                    const x = 100 - (count * (radius + gap)) / 2 + i * (radius + gap);
+                    const y = l * (radius + gap + 2);
+                    items.push(
+                        <circle key={`${l}-${i}`} cx={x} cy={y} r={radius/2} fill="none" stroke="#6366f1" strokeWidth="2" />
+                    );
+                }
+            }
+            return (
+                <div className="flex flex-col items-center p-4 bg-white rounded-xl border border-indigo-50 shadow-sm mt-4">
+                    <span className="text-[10px] font-black text-indigo-300 uppercase mb-2">示意圖 (前幾層)</span>
+                    <svg width="200" height="100" viewBox="0 0 200 100" className="max-w-full h-24">{items}</svg>
+                </div>
+            );
+        };
+
+        // --- 1-2 等差級數 題庫定義 ---
+        const STAGES = [
+            {
+                id: 0, title: "單元1 等差級數求值", description: "計算等差級數的總和 (Sum of Arithmetic Series)", targetCorrect: 5,
+                problems: [
+                    { text: "求等差級數 $11+13+15+17+19+21+23+25$ 的和。", hint: "$a_1=11, a_n=25, n=8$。", answers: ["$144$"], distractors: ["$120$", "$156$", "$132$"], 
+                      analysis: "步驟一：找出首項 $a_1 = 11$，末項 $a_n = 25$。\n步驟二：計算項數 $n$。級數共有 $8$ 項。\n步驟三：帶入求和公式 $S_n = \\frac{n(a_1 + a_n)}{2}$。\n步驟四：$S_8 = \\frac{8(11 + 25)}{2} = 4 \\times 36 = 144$。\n最終答案為 144。" },
+                    { text: "求等差級數 $2+7+12+\\dots+42$ 的和。", hint: "先求項數 $n$。", answers: ["$198$"], distractors: ["$180$", "$210$", "$220$"], 
+                      analysis: "步驟一：找出 $a_1 = 2, d = 5, a_n = 42$。\n步驟二：求項數 $n$。$42 = 2 + (n-1) \\times 5 \\to 40 = 5(n-1) \\to 8 = n-1 \\to n = 9$。\n步驟三：帶入求和公式 $S_9 = \\frac{9(2 + 42)}{2} = \\frac{9 \\times 44}{2} = 9 \\times 22 = 198$。\n最終答案為 198。" },
+                    { text: "已知等差級數前 $10$ 項：$(-3)+(-1)+1+\\dots$，求和為多少？", hint: "$a_1=-3, d=2, n=10$。", answers: ["$60$"], distractors: ["$50$", "$70$", "$100$"], 
+                      analysis: "步驟一：找出 $a_1 = -3, d = (-1) - (-3) = 2, n = 10$。\n步驟二：利用公式 $S_n = \\frac{n[2a_1 + (n-1)d]}{2}$。\n步驟三：$S_{10} = \\frac{10[2(-3) + 9 \\times 2]}{2} = 5 \\times (-6 + 18) = 5 \\times 12 = 60$。\n最終答案為 60。" },
+                    { text: "已知等差級數 $6+3+0+\\dots$，求前 $9$ 項的和。", hint: "$d=-3$。", answers: ["$-54$"], distractors: ["$-45$", "$-63$", "$0$"], 
+                      analysis: "步驟一：找出 $a_1 = 6, d = -3, n = 9$。\n步驟二：$S_9 = \\frac{9[2(6) + 8(-3)]}{2} = \\frac{9(12 - 24)}{2} = \\frac{9(-12)}{2} = 9 \\times (-6) = -54$。\n最終答案為 -54。" },
+                    { text: "求級數 $29+27+25+\\dots+15$ 的和。", hint: "$a_1=29, a_n=15, d=-2$。", answers: ["$176$"], distractors: ["$160$", "$180$", "$150$"], 
+                      analysis: "步驟一：$a_1=29, d=-2, a_n=15$。求 $n$：$15 = 29 + (n-1)(-2) \\to -14 = -2(n-1) \\to 7 = n-1 \\to n=8$。\n步驟二：$S_8 = \\frac{8(29+15)}{2} = 4 \\times 44 = 176$。\n最終答案為 176。" }
+                ]
+            },
+            {
+                id: 1, title: "單元2 數量問題", description: "計算堆疊物品的總量 (物品堆疊模型)", targetCorrect: 5,
+                problems: [
+                    { text: "高腳杯堆疊，最上層 1 個，每層比上層多 2 個。若最底層有 17 個，共有幾個杯子？", hint: "$a_1=1, d=2, a_n=17$。", answers: ["$81$ 個"], distractors: ["$64$ 個", "$100$ 個", "$72$ 個"], type: "glasses", 
+                      analysis: "步驟一：找出首項 $a_1 = 1$，末項 $a_n = 17$，公差 $d = 2$。\n步驟二：求層數 $n$：$17 = 1 + (n-1) \\times 2 \\to 16 = 2(n-1) \\to 8 = n-1 \\to n = 9$。\n步驟三：求總和：$S_9 = \\frac{9(1 + 17)}{2} = 9 \\times 9 = 81$。\n最終答案為 81 個。" },
+                    { text: "鮪魚罐頭堆疊，第一層 1 罐，之後每層多 1 罐。若最底層 10 罐，共有幾罐？", hint: "連續整數 1 到 10 之和。", answers: ["$55$ 罐"], distractors: ["$45$ 罐", "$60$ 罐", "$50$ 罐"], type: "cans", 
+                      analysis: "步驟一：這是一個 $a_1 = 1, a_n = 10, n = 10$ 的數列。\n步驟二：$S_{10} = \\frac{10(1 + 10)}{2} = 5 \\times 11 = 55$。\n最終答案為 55 罐。" },
+                    { text: "麥片罐堆疊，最上層 3 罐，每層多 2 罐。若底層 17 罐，共有幾罐？", hint: "$a_1=3, d=2, a_n=17$。", answers: ["$80$ 罐"], distractors: ["$75$ 罐", "$85$ 罐", "$90$ 罐"], type: "cans", 
+                      analysis: "步驟一：求層數 $n$：$17 = 3 + (n-1)2 \\to 14 = 2(n-1) \\to n=8$。\n步驟二：計算總和 $S_8 = \\frac{8(3 + 17)}{2} = 4 \\times 20 = 80$。\n最終答案為 80 罐。" },
+                    { text: "疊盒裝餅乾，第一層 5 盒，之後每層多 3 盒。共疊了 10 層，共有幾盒？", hint: "$a_1=5, d=3, n=10$。", answers: ["$185$ 盒"], distractors: ["$150$ 盒", "$200$ 盒", "$175$ 盒"], type: "box", 
+                      analysis: "步驟一：使用公式 $S_n = \\frac{n[2a_1 + (n-1)d]}{2}$。\n步驟二：$S_{10} = \\frac{10[2(5) + 9 \\times 3]}{2} = 5 \\times (10 + 27) = 5 \\times 37 = 185$。\n最終答案為 185 盒。" }
+                ]
+            },
+            {
+                id: 2, title: "單元3 座位問題", description: "劇院、演奏會等座位安排計算", targetCorrect: 5,
+                problems: [
+                    { text: "戶外電影院共有 10 排座位，每一排比前一排多 3 個座位。若總共有 335 個位子，則第一排有幾個位子？", hint: "$S_{10}=335, d=3, n=10$。求 $a_1$。", answers: ["$20$ 個"], distractors: ["$15$ 個", "$25$ 個", "$18$ 個"], 
+                      analysis: "步驟一：帶入總和公式 $335 = \\frac{10[2a_1 + 9 \\times 3]}{2}$。\n步驟二：$335 = 5(2a_1 + 27)$。\n步驟三：$67 = 2a_1 + 27 \\to 40 = 2a_1 \\to a_1 = 20$。\n最終答案為 20 個。" },
+                    { text: "鋼琴演奏會有 16 排，每排比後一排少 4 個位子。最後一排有 68 個位子，總座位數為多少？", hint: "$a_{16}=68, d=4, n=16$。求 $S_{16}$。", answers: ["$608$ 個"], distractors: ["$580$ 個", "$620$ 個", "$500$ 個"], 
+                      analysis: "步驟一：倒過來看，第一排（最後一排）$a_{16} = 68$，每往前一排少 $4$（即公差 $d = -4$）。\n步驟二：先求第一排 $a_1$：$68 = a_1 + 15 \\times 4 \\to 68 = a_1 + 60 \\to a_1 = 8$。\n步驟三：求總和：$S_{16} = \\frac{16(8 + 68)}{2} = 8 \\times 76 = 608$。\n最終答案為 608 個。" },
+                    { text: "座談會有 7 排，每排比後排少 2 位子。若總位子 140 個，最後一排有幾位子？", hint: "求 $a_7$。", answers: ["$26$ 個"], distractors: ["$24$ 個", "$28$ 個", "$30$ 個"], 
+                      analysis: "步驟一：$140 = \\frac{7(a_1 + a_7)}{2} \\to 280 = 7(a_1 + a_7) \\to 40 = a_1 + a_7$。\n步驟二：已知 $a_7 = a_1 + 6d = a_1 + 12 \\to a_1 = a_7 - 12$。\n步驟三：代入 $(a_7 - 12) + a_7 = 40 \\to 2a_7 = 52 \\to a_7 = 26$。\n最終答案為 26 個。" }
+                ]
+            },
+            {
+                id: 3, title: "單元4 計數問題", description: "累積數量的比較與達標計算 (Counting Problems)", targetCorrect: 5,
+                problems: [
+                    { text: "小豪每天做 15 下仰臥起坐連續 6 天。小彤第一天做 5 下，之後每天多 4 下。小彤要做幾天，總數才會與小豪相同？", hint: "小豪總數：$15 \\times 6 = 90$。解小彤的 $n$。", answers: ["$6$ 天"], distractors: ["$5$ 天", "$7$ 天", "$8$ 天"], 
+                      analysis: "步驟一：計算小豪總數。$15 \\times 6 = 90$ 下。\n步驟二：列出小彤的總和公式。$90 = \\frac{n[2(5) + (n-1)4]}{2} = \\frac{n(10 + 4n - 4)}{2} = \\frac{n(4n + 6)}{2} = n(2n + 3)$。\n步驟三：解方程式 $2n^2 + 3n - 90 = 0$。用十字交乘法：$(2n+15)(n-6)=0$。\n步驟四：天數為正數，故 $n=6$。\n最終答案為 6 天。" },
+                    { text: "小宇每天跳遠 10 次連續 9 天。小琪第一天跳 2 次，之後每天比前一天多 1 次。幾天後兩人總數相同？", hint: "小宇總數 90。解 $90 = \\frac{n(2 \\times 2 + (n-1)1)}{2}$。", answers: ["$12$ 天"], distractors: ["$10$ 天", "$11$ 天", "$13$ 天"], 
+                      analysis: "步驟一：小宇總共 $90$ 次。\n步驟二：小琪公式：$90 = \\frac{n[4 + n - 1]}{2} = \\frac{n(n+3)}{2} \\to 180 = n^2 + 3n$。\n步驟三：$n^2 + 3n - 180 = 0 \\to (n+15)(n-12) = 0$。\n最終答案為 12 天。" }
+                ]
+            }
+        ];
+
+        // --- 主程式組件 ---
+        const App = () => {
+            const [view, setView] = useState('stageSelect');
+            const [completedStages, setCompletedStages] = useState(new Set());
+            const [currentStage, setCurrentStage] = useState(null);
+
+            const handleStageSelect = (stage) => {
+                setCurrentStage(stage);
+                setView('tutor');
+            };
+
+            const handleNextStageChallenge = () => {
+                const currentIndex = STAGES.findIndex(s => s.id === currentStage.id);
+                if (currentIndex !== -1 && currentIndex + 1 < STAGES.length) {
+                    handleStageSelect(STAGES[currentIndex + 1]);
+                } else {
+                    setView('stageSelect');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 flex items-center justify-center">
+                    <div className="w-full max-w-4xl bg-white rounded-3xl textbook-card overflow-hidden">
+                        {view === 'stageSelect' ? (
+                            <StageSelect stages={STAGES} completedStages={completedStages} onSelect={handleStageSelect} />
+                        ) : (
+                            <TutorView 
+                                stage={currentStage} 
+                                onComplete={() => setCompletedStages(prev => new Set(prev).add(currentStage.id))} 
+                                onBack={() => setView('stageSelect')}
+                                onNextStage={handleNextStageChallenge}
+                                hasNextStage={STAGES.findIndex(s => s.id === currentStage.id) < STAGES.length - 1}
+                            />
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const StageSelect = ({ stages, onSelect, completedStages }) => (
+            <div className="p-10 space-y-12 ui-text">
+                <header className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-black tracking-widest uppercase border border-indigo-100 shadow-sm">
+                        <Icon name="book" className="w-4 h-4" /> 1-2 等差級數 學習夥伴
+                    </div>
+                    <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight text-center">國中數學數位教材</h1>
+                    <div className="h-1 w-24 bg-indigo-500 mx-auto rounded-full" />
+                </header>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {stages.map((stage) => {
+                        const isDone = completedStages.has(stage.id);
+                        return (
+                            <button key={stage.id} onClick={() => onSelect(stage)}
+                                className={`group p-6 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden flex flex-col justify-between h-52 ${
+                                    isDone ? 'border-emerald-100 bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-indigo-300 hover:shadow-2xl hover:-translate-y-1'
+                                }`}
+                            >
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <div className={`p-2 rounded-xl ${isDone ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500'}`}><Icon name="calculator" className="w-5 h-5" /></div>
+                                        {isDone && <Icon name="check" className="w-6 h-6 text-emerald-600" />}
+                                    </div>
+                                    <div><h3 className="text-lg font-black text-slate-800 mb-1 group-hover:text-indigo-700 leading-tight">{stage.title}</h3><p className="text-slate-500 leading-tight text-xs font-medium">{stage.description}</p></div>
+                                </div>
+                                <div className="text-[10px] font-black uppercase text-slate-300 tracking-widest">目標：答對 {stage.targetCorrect} 題</div>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
+        const TutorView = ({ stage, onComplete, onBack, onNextStage, hasNextStage }) => {
+            const [shuffledProblems, setShuffledProblems] = useState([]);
+            const [idx, setIdx] = useState(0);
+            const [score, setScore] = useState(0);
+            const [options, setOptions] = useState([]);
+            const [selected, setSelected] = useState(null);
+            const [isSolved, setIsSolved] = useState(false);
+            const [showHint, setShowHint] = useState(false);
+            const [aiRes, setAiRes] = useState("");
+            const [isUnitFinished, setIsUnitFinished] = useState(false);
+            const [celebrated, setCelebrated] = useState(false);
+            const containerRef = useRef(null);
+
+            const currentProb = shuffledProblems[idx];
+
+            const triggerTypeset = () => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    requestAnimationFrame(() => { window.MathJax.typesetPromise([containerRef.current]).catch(err => console.log(err)); });
+                }
+            };
+
+            useEffect(() => { triggerTypeset(); }, [currentProb, aiRes, showHint, isSolved, isUnitFinished]);
+
+            const initStage = () => {
+                setShuffledProblems(shuffleArray(stage.problems));
+                setIdx(0); setScore(0); setIsUnitFinished(false); setSelected(null); setIsSolved(false); setShowHint(false); setAiRes(""); setCelebrated(false);
+            };
+
+            useEffect(() => { if (stage) initStage(); }, [stage]);
+
+            useEffect(() => {
+                if (currentProb) {
+                    setSelected(null); setIsSolved(false); setShowHint(false); setAiRes("");
+                    const correct = { text: currentProb.answers[0], isCorrect: true };
+                    const dists = currentProb.distractors.map(d => ({ text: d, isCorrect: false }));
+                    setOptions(shuffleArray([correct, ...dists]));
+                }
+            }, [currentProb]);
+
+            const handleNextQuestion = () => {
+                if (idx + 1 < shuffledProblems.length) { setIdx(idx + 1); } 
+                else if (score < stage.targetCorrect) { setShuffledProblems(shuffleArray(stage.problems)); setIdx(0); } 
+                else { setIsUnitFinished(true); onComplete(); }
+            };
+
+            const onOptionClick = (opt) => {
+                setSelected(opt); setIsSolved(true);
+                if (opt.isCorrect) {
+                    const newScore = score + 1; setScore(newScore);
+                    if (newScore === stage.targetCorrect) setCelebrated(true);
+                }
+            };
+
+            if (isUnitFinished) {
+                const passed = score >= stage.targetCorrect;
+                return (
+                    <div className="relative p-16 text-center space-y-8 overflow-hidden ui-text">
+                        {passed && <ConfettiEffect />}
+                        <div className={`p-8 rounded-full inline-block animate-bounce shadow-2xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}><Icon name="trophy" className="w-24 h-24" /></div>
+                        <div className="space-y-3"><h2 className="text-5xl font-black text-slate-800 tracking-tight">{passed ? "🌸 恭喜過關！ 🌸" : "尚未達標"}</h2></div>
+                        <p className="text-slate-600 text-xl font-medium">你在本單元答對了 <span className="text-indigo-600 font-black text-4xl mx-1">{score}</span> 題 (目標：{stage.targetCorrect} 題)</p>
+                        <div className="flex flex-col md:flex-row justify-center gap-4 pt-12 relative z-10">
+                            <button onClick={initStage} className="px-10 py-5 bg-white border-2 border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition flex items-center justify-center gap-2 group font-sans"><Icon name="refresh" className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" /> 重新練習</button>
+                            {passed && hasNextStage ? (<button onClick={onNextStage} className="px-10 py-5 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition flex items-center justify-center gap-2 animate-pulse font-sans">挑戰下一關 <Icon name="chevronRight" className="w-6 h-6" /></button>) : (<button onClick={onBack} className="px-10 py-5 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition font-sans">返回選單</button>)}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!currentProb) return <div className="p-20 text-center font-black text-slate-300 ui-text">LOADING...</div>;
+
+            return (
+                <div className="flex flex-col min-h-[700px] bg-white" ref={containerRef}>
+                    {celebrated && <ConfettiEffect />}
+                    <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 ui-text">
+                        <button onClick={onBack} className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition font-bold font-sans"><Icon name="chevronLeft" className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 返回目錄</button>
+                        <div className="flex-1 flex flex-col items-center px-12 text-center">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stage.title}</span>
+                            <div className="flex items-center gap-3">
+                                <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${Math.min(100, (score / stage.targetCorrect) * 100)}%` }} />
+                                </div>
+                                <span className={`text-xs font-bold ${score >= stage.targetCorrect ? 'text-emerald-600 animate-pulse' : 'text-slate-600'}`}>已達標：{score} / {stage.targetCorrect}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg font-sans"><Icon name="printer" className="w-4 h-4" /> 數位課本</div>
+                    </div>
+
+                    <div className="flex-1 p-10 md:p-14 space-y-12">
+                        <div className="space-y-8">
+                            <div className="flex items-center gap-4 ui-text"><span className="bg-slate-800 text-white text-[10px] font-black px-2 py-1 rounded tracking-widest uppercase">題目 {idx + 1}</span><div className="h-px flex-1 bg-slate-100" /></div>
+                            <h2 className="text-4xl font-bold text-slate-900 leading-relaxed math-text pl-4 border-l-4 border-indigo-500 bg-slate-50/50 py-3 rounded-r-xl">{currentProb.text}</h2>
+                            {currentProb.type && (<StackingPattern layers={10} type={currentProb.type} />)}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-medium ui-text">
+                            {options.map((opt, i) => (
+                                <button key={i} disabled={isSolved} onClick={() => onOptionClick(opt)}
+                                    className={`group p-8 text-2xl border-2 rounded-2xl text-left transition-all flex items-center justify-between font-sans ${
+                                        isSolved ? opt.isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm ring-4 ring-emerald-50' : selected?.text === opt.text ? 'border-rose-400 bg-rose-50 text-rose-700 ring-4 ring-rose-50' : 'border-slate-50 text-slate-300 opacity-50' : 'border-slate-100 bg-white hover:border-indigo-300 hover:shadow-xl hover:-translate-y-0.5'
+                                    }`}
+                                >
+                                    <span className="math-text">{opt.text}</span>
+                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSolved && opt.isCorrect ? 'bg-emerald-500 border-emerald-500 scale-110 shadow-lg' : 'border-slate-200'}`}>{isSolved && opt.isCorrect && <Icon name="check" className="w-5 h-5 text-white" />}</div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="pt-10 border-t border-slate-100 space-y-8 ui-text">
+                            <div className="flex flex-wrap gap-4">
+                                <button onClick={() => setShowHint(!showHint)} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition border-2 font-sans ${showHint ? 'bg-amber-500 border-amber-500 text-white shadow-lg' : 'bg-white border-amber-200 text-amber-700 hover:bg-amber-50'}`}><Icon name="lightbulb" className="w-4 h-4" /> 解題小提點</button>
+                                <button onClick={() => setAiRes(currentProb.analysis)} disabled={!isSolved} className={`flex items-center gap-2 px-6 py-3 text-sm font-black text-white rounded-xl transition shadow-xl active:scale-95 font-sans ${isSolved ? 'bg-slate-900 hover:bg-indigo-900 shadow-indigo-100' : 'bg-slate-200 cursor-not-allowed opacity-50'}`}><Icon name="sparkles" className="w-4 h-4" /> AI 詳細解析</button>
+                                {!isSolved && <span className="text-xs text-slate-400 self-center font-bold tracking-tight font-sans">💡 答題後即可觀看詳細解析</span>}
+                            </div>
+                            {showHint && (<div className="p-8 bg-amber-50/60 rounded-2xl border-l-[8px] border-amber-400 animate-in slide-in-from-left-2 duration-300 shadow-sm"><div className="flex items-center gap-2 text-amber-800 font-black mb-3 text-xs uppercase tracking-widest"><Icon name="alert" className="w-5 h-5" /> 老師提示</div><p className="text-amber-900 leading-relaxed font-bold text-xl math-text">{currentProb.hint}</p></div>)}
+                            {aiRes && (
+                                <div className="p-10 bg-[#0f172a] rounded-3xl text-slate-300 space-y-6 shadow-2xl border border-slate-800">
+                                    <div className="flex items-center justify-between border-b border-slate-800 pb-5">
+                                        <div className="flex items-center gap-3 text-indigo-400 font-black text-xs tracking-widest uppercase font-sans">
+                                            <Icon name="sparkles" className="w-4 h-4" /> 精細解析 (Step-by-Step)
+                                        </div>
+                                    </div>
+                                    <div className="text-xl leading-[2.2] whitespace-pre-wrap math-text text-slate-100 font-medium">{aiRes}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex flex-wrap justify-end items-center gap-6 ui-text">
+                        {isSolved && (
+                            <div className="flex gap-4">
+                                {score >= stage.targetCorrect && hasNextStage && (
+                                    <button onClick={onNextStage} className="group flex items-center gap-4 px-14 py-6 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-2xl shadow-emerald-200 transition-all hover:-translate-y-1 active:scale-95 font-sans">
+                                        <Icon name="party" className="w-7 h-7" />
+                                        <span className="text-xl tracking-tight">挑戰下一關</span>
+                                        <Icon name="chevronRight" className="w-7 h-7 group-hover:translate-x-1.5 transition-transform" />
+                                    </button>
+                                )}
+                                <button onClick={handleNextQuestion} className="group flex items-center gap-4 px-14 py-6 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all hover:-translate-y-1 active:scale-95 font-sans">
+                                    <span className="text-xl tracking-tight">繼續挑戰下一題</span>
+                                    <Icon name="chevronRight" className="w-7 h-7 group-hover:translate-x-1.5 transition-transform" />
+                                </button>
+                            </div>
+                        )}
+                        {!isSolved && (<div className="text-slate-300 text-sm font-bold italic tracking-widest uppercase font-sans">Waiting for selection...</div>)}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

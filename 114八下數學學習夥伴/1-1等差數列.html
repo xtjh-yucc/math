@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1-1 等差數列 學習夥伴</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- MathJax for LaTeX Rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+        .math-text {
+            font-family: 'Noto Serif TC', serif;
+        }
+        .textbook-card {
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+        mjx-container {
+            outline: none !important;
+            font-size: 1.1em !important;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        .animate-fall {
+            position: absolute;
+            animation-name: fall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect, useRef } = React;
+
+        // --- 簡易圖標組件 ---
+        const Icon = ({ name, className }) => {
+            const icons = {
+                chevronLeft: <path d="m15 18-6-6 6-6"/>,
+                chevronRight: <path d="m9 18 6-6-6-6"/>,
+                lightbulb: (
+                    <>
+                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/>
+                        <path d="M9 18h6"/>
+                        <path d="M10 22h4"/>
+                    </>
+                ),
+                sparkles: (
+                    <>
+                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                        <path d="M5 3v4"/>
+                        <path d="M19 17v4"/>
+                        <path d="M3 5h4"/>
+                        <path d="M17 19h4"/>
+                    </>
+                ),
+                check: (
+                    <>
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </>
+                ),
+                calculator: (
+                    <>
+                        <rect width="16" height="20" x="4" y="2" rx="2"/>
+                        <line x1="8" x2="16" y1="6" y2="6"/>
+                        <line x1="16" x2="16" y1="14" y2="18"/>
+                        <path d="M16 10h.01"/>
+                        <path d="M12 10h.01"/>
+                        <path d="M8 10h.01"/>
+                        <path d="M12 14h.01"/>
+                        <path d="M8 14h.01"/>
+                        <path d="M12 18h.01"/>
+                        <path d="M8 18h.01"/>
+                    </>
+                ),
+                trophy: (
+                    <>
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                        <path d="M4 22h16"/>
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+                    </>
+                ),
+                refresh: (
+                    <>
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                        <path d="M16 16h5v5"/>
+                    </>
+                ),
+                book: (
+                    <>
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                        <path d="M8 6h10"/>
+                        <path d="M8 10h10"/>
+                        <path d="M8 14h10"/>
+                    </>
+                ),
+                star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+                alert: (
+                    <>
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" x2="12" y1="8" y2="12"/>
+                        <line x1="12" x2="12.01" y1="16" y2="16"/>
+                    </>
+                ),
+                party: (
+                    <>
+                        <path d="M20 21a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/>
+                        <path d="M2 7h20"/>
+                        <path d="M5 11v8"/>
+                        <path d="M9 11v8"/>
+                        <path d="M13 11v8"/>
+                        <path d="M17 11v8"/>
+                    </>
+                ),
+                printer: (
+                    <>
+                        <polyline points="6 9 6 2 18 2 18 9" />
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                        <rect x="6" y="14" width="12" height="8" />
+                    </>
+                )
+            };
+            return (
+                <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        // --- 核心邏輯輔助 ---
+        function shuffleArray(array) {
+            const newArr = [...array];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        }
+
+        const ConfettiEffect = () => {
+            const pieces = useMemo(() => Array.from({ length: 60 }).map((_, i) => ({
+                id: i, left: Math.random() * 100, delay: Math.random() * 2, duration: 3 + Math.random() * 2,
+                size: 15 + Math.random() * 25, emoji: ['🌸', '✨', '🎉', '🎊', '⭐', '🎈'][Math.floor(Math.random() * 6)]
+            })), []);
+            return (
+                <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+                    {pieces.map(p => (
+                        <div key={p.id} className="animate-fall" style={{ left: `${p.left}%`, top: `-50px`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s`, fontSize: `${p.size}px` }}>
+                            {p.emoji}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const GeometricPattern = ({ type, count }) => {
+            const s = 25; const padding = 20;
+            if (type !== 'triangle' && type !== 'square') return null;
+            const renderShapes = () => {
+                let shapes = [];
+                if (type === 'triangle') {
+                    for (let i = 0; i < count; i++) {
+                        const x = padding + i * (s / 2); const h = s * 0.866;
+                        const pts = (i % 2 === 0) ? `${x},${padding + h} ${x + s / 2},${padding} ${x + s},${padding + h}` : `${x},${padding} ${x + s / 2},${padding + h} ${x + s},${padding}`;
+                        shapes.push(<polygon key={i} points={pts} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinejoin="round" />);
+                    }
+                } else if (type === 'square') {
+                    for (let i = 0; i < count; i++) {
+                        shapes.push(<rect key={i} x={padding + i * s} y={padding} width={s} height={s} fill="none" stroke="#6366f1" strokeWidth="2.5" />);
+                    }
+                }
+                return shapes;
+            };
+            return (
+                <div className="flex flex-col items-center gap-1 p-3 bg-indigo-50/30 rounded-xl border border-indigo-100 shadow-sm">
+                    <span className="text-[9px] font-black text-indigo-400">圖 {count}</span>
+                    <svg width={padding * 2 + count * s} height={padding * 2 + s * 1.5} className="max-w-full h-16">{renderShapes()}</svg>
+                </div>
+            );
+        };
+
+        // --- 題庫定義 (更新：詳細步驟解析) ---
+        const STAGES = [
+            {
+                id: 0, title: "單元1 找出數列的規律", description: "觀察數列的演變規則並填入適當的數", targetCorrect: 5,
+                problems: [
+                    { text: "觀察規律：$-3, -6, -9, \\_\\_\\_, -15$。", hint: "後項減前項的差是多少？", answers: ["$-12$"], distractors: ["$-10$", "$-11$", "$-13$"], 
+                      analysis: "步驟一：計算相鄰兩項之差。$-6 - (-3) = -3$，$ -9 - (-6) = -3$。\n步驟二：確認此數列的公差 $d = -3$。\n步驟三：計算空格處的數值。前一項為 $-9$，故空格處為 $-9 + (-3) = -12$。\n步驟四：驗算下一項。$-12 + (-3) = -15$，完全符合題目規律。\n最終答案為 $-12$。" },
+                    { text: "觀察規律：$2, 4, 8, \\_\\_\\_, 32, 64$。", hint: "檢查倍數關係。", answers: ["$16$"], distractors: ["$10$", "$12$", "$14$"], 
+                      analysis: "步驟一：觀察各項之間的增長模式。$4 \\div 2 = 2$，$8 \\div 4 = 2$。\n步驟二：這不是等差數列，而是一個公比為 $2$ 的等比數列。\n步驟三：計算空格項。空格前一項為 $8$，故 $8 \\times 2 = 16$。\n步驟四：驗算後項。$16 \\times 2 = 32$，符合題目要求。\n最終答案為 $16$。" },
+                    { text: "觀察規律：$7, 4, 1, \\_\\_\\_, -5$。", hint: "公差為 $-3$。", answers: ["$-2$"], distractors: ["$-3$", "$-1$", "$0$"], 
+                      analysis: "步驟一：計算相鄰兩項之差。$4 - 7 = -3$，$1 - 4 = -3$。\n步驟二：確認規律為每次減少 $3$，即公差 $d = -3$。\n步驟三：計算空格處。空格前一項為 $1$，故 $1 + (-3) = -2$。\n最終答案為 $-2$。" },
+                    { text: "觀察規律：$6, 8, 10, \\_\\_\\_, 14$。", hint: "每次加 2。", answers: ["$12$"], distractors: ["$11$", "$13$", "$15$"], 
+                      analysis: "步驟一：計算差值。$8 - 6 = 2$，$10 - 8 = 2$。\n步驟二：確認公差 $d = 2$。\n步驟三：計算空格項。$10 + 2 = 12$。\n最終答案為 $12$。" },
+                    { text: "觀察規律：$4, \\_\\_\\_, 64, 256$。", hint: "這是等比規律。", answers: ["$16$"], distractors: ["$8$", "$32$", "$20$"], 
+                      analysis: "步驟一：觀察已知項。$256 \\div 64 = 4$。\n步驟二：假設這是一個公比為 $4$ 的數列。\n步驟三：計算空格處。$4 \\times 4 = 16$。\n步驟四：驗算下一項。$16 \\times 4 = 64$，驗證成功。\n最終答案為 $16$。" },
+                    { text: "觀察規律：$3, 3, 3, \\_\\_\\_, 3$。", hint: "每一項都相同。", answers: ["$3$"], distractors: ["$0$", "$-3$", "$6$"], 
+                      analysis: "步驟一：觀察數列中各項的關係。\n步驟二：發現所有給出的數值都是 $3$。\n步驟三：這是一個公差為 $0$ 的常數數列。\n最終答案為 $3$。" },
+                    { text: "觀察規律：$1, 3, 5, 7, \\_\\_\\_$。", hint: "奇數數列。", answers: ["$9$"], distractors: ["$8$", "$10$", "$11$"], 
+                      analysis: "步驟一：計算差值。$3 - 1 = 2$，$5 - 3 = 2$。\n步驟二：這是一個首項為 $1$，公差為 $2$ 的等差數列。\n步驟三：計算下一項。$7 + 2 = 9$。\n最終答案為 $9$。" },
+                    { text: "觀察規律：$10, 5, 0, \\_\\_\\_, -10$。", hint: "公差為 -5。", answers: ["$-5$"], distractors: ["$-1$", "$1$", "$5$"], 
+                      analysis: "步驟一：計算相鄰項之差。$5 - 10 = -5$，$0 - 5 = -5$。\n步驟二：確認公差 $d = -5$。\n步驟三：計算空格項。前一項為 $0$，故 $0 + (-5) = -5$。\n最終答案為 $-5$。" },
+                    { text: "觀察規律：$-1, 2, 5, \\_\\_\\_, 11$。", hint: "每次加 3。", answers: ["$8$"], distractors: ["$7$", "$9$", "$6$"], 
+                      analysis: "步驟一：計算相鄰項之差。$2 - (-1) = 3$，$5 - 2 = 3$。\n步驟二：確認公差 $d = 3$。\n步驟三：計算空格項。$5 + 3 = 8$。\n最終答案為 $8$。" },
+                    { text: "觀察規律：$1, 2, 4, 7, \\_\\_\\_$。", hint: "增加幅度 1, 2, 3...", answers: ["$11$"], distractors: ["$9$", "$10$", "$12$"], 
+                      analysis: "步驟一：檢查差值。$2 - 1 = 1$，$4 - 2 = 2$，$7 - 4 = 3$。\n步驟二：發現差值呈遞增規律（1, 2, 3...）。\n步驟三：預測下一個差值應為 $4$。\n步驟四：計算下一項。$7 + 4 = 11$。\n最終答案為 $11$。" }
+                ]
+            },
+            {
+                id: 1, title: "單元2 等差數列的判別", description: "判斷數列是否具備固定的公差", targetCorrect: 5,
+                problems: [
+                    { text: "數列 $1, 1, 2, 3, 5, 8$ 是等差數列嗎？", hint: "檢查公差是否固定。", answers: ["不是"], distractors: ["是，公差 $0$", "是，公差 $1$", "是，公差 $2$"], 
+                      analysis: "步驟一：計算各項之間的差。$1 - 1 = 0$，$2 - 1 = 1$，$3 - 2 = 1$，$5 - 3 = 2$。\n步驟二：比較得到的差值（0, 1, 1, 2...）。\n步驟三：因為各項間的差不固定，故不是等差數列。\n結論：這不是等差數列。" },
+                    { text: "數列 $5, 5, 5, 5, 5$ 是等差數列嗎？", hint: "公差可以為 0。", answers: ["是，公差為 $0$"], distractors: ["不是", "是，公差為 $5$", "是，公差為 $1$"], 
+                      analysis: "步驟一：計算相鄰項之差。$5 - 5 = 0$，$5 - 5 = 0$。\n步驟二：檢查每一對相鄰項的差是否都相等。\n步驟三：因為差值恆為 $0$，符合等差數列定義。\n結論：這是等差數列，公差 $d = 0$。" },
+                    { text: "數列 $5, 10, 15, 20, 25$ 是等差數列嗎？", hint: "每次加 5。", answers: ["是，公差為 $5$"], distractors: ["不是", "是，公差為 $10$", "是，公差為 $1$"], 
+                      analysis: "步驟一：計算相鄰項之差。$10 - 5 = 5$，$15 - 10 = 5$，$20 - 15 = 5$。\n步驟二：差值皆為 $5$，表示每次增加量相同。\n結論：這是等差數列，公差 $d = 5$。" },
+                    { text: "數列 $11, 13, 15, 17, 19$ 是等差數列嗎？", hint: "公差為 2。", answers: ["是，公差為 $2$"], distractors: ["不是", "是，公差為 $1$", "是，公差為 $3$"], 
+                      analysis: "步驟一：計算差值。$13 - 11 = 2$，$15 - 13 = 2$，$17 - 15 = 2$。\n步驟二：確認差值固定為 $2$。\n結論：這是等差數列，公差 $d = 2$。" },
+                    { text: "數列 $3, 9, 27, 81$ 是等差數列嗎？", hint: "檢查相減的結果。", answers: ["不是"], distractors: ["是，公差 $3$", "是，公差 $6$", "是，公差 $9$"], 
+                      analysis: "步驟一：計算差值。$9 - 3 = 6$，$27 - 9 = 18$。\n步驟二：比較差值 $6$ 與 $18$。\n步驟三：因為差不相等，這不是等差數列（而是公比為 $3$ 的等比數列）。" },
+                    { text: "數列 $6, 3, 0, -3, -6$ 是等差嗎？", hint: "公差為負數。", answers: ["是，公差為 $-3$"], distractors: ["不是", "是，公差為 $3$", "是，公差為 $0$"], 
+                      analysis: "步驟一：計算差值。$3 - 6 = -3$，$0 - 3 = -3$，$(-3) - 0 = -3$。\n步驟二：差值固定為 $-3$。\n結論：這是等差數列，公差 $d = -3$。" },
+                    { text: "數列 $0.2, 0.4, 0.6, 0.8$ 是等差嗎？", hint: "小數運算。", answers: ["是，公差為 $0.2$"], distractors: ["不是", "是，公差為 $2$", "是，公差為 $0.1$"], 
+                      analysis: "步驟一：計算差值。$0.4 - 0.2 = 0.2$，$0.6 - 0.4 = 0.2$。\n步驟二：差值固定為 $0.2$。\n結論：這是等差數列。" },
+                    { text: "數列 $\\sqrt{2}, 2\\sqrt{2}, 3\\sqrt{2}$ 是等差嗎？", hint: "根號相減。", answers: ["是，公差為 $\\sqrt{2}$"], distractors: ["不是", "是，公差為 $2$", "是，公差為 $0$"], 
+                      analysis: "步驟一：計算差值。$2\\sqrt{2} - \\sqrt{2} = \\sqrt{2}$，$3\\sqrt{2} - 2\\sqrt{2} = \\sqrt{2}$。\n步驟二：各項之間的差固定為 $\\sqrt{2}$。\n結論：這是等差數列。" },
+                    { text: "數列 $1, 2, 4, 8$ 是等差嗎？", hint: "檢查差值。", answers: ["不是"], distractors: ["是，公差為 $1$", "是，公差為 $2$", "是，公差為 $4$"], 
+                      analysis: "步驟一：計算差值。$2 - 1 = 1$，$4 - 2 = 2$。\n步驟二：差值改變，故不是等差數列。" },
+                    { text: "數列 $-10, -5, 0, 5, 10$ 是等差嗎？", hint: "每次加 5。", answers: ["是，公差為 $5$"], distractors: ["不是", "是，公差為 $-5$", "是，公差為 $10$"], 
+                      analysis: "步驟一：計算差值。$-5 - (-10) = 5$，$0 - (-5) = 5$。\n步驟二：公差固定為 $5$。\n結論：這是等差數列。" }
+                ]
+            },
+            {
+                id: 2, title: "單元3 列出等差數列", description: "根據首項與公差寫出數列各項", targetCorrect: 5,
+                problems: [
+                    { text: "首項 $3$，公差 $6$，前三項為？", hint: "$a_1=3, a_2=3+6$。", answers: ["$3, 9, 15$"], distractors: ["$3, 6, 9$", "$3, 18, 108$", "$0, 6, 12$"], 
+                      analysis: "步驟一：已知第一項 $a_1 = 3$。\n步驟二：計算第二項 $a_2 = a_1 + d = 3 + 6 = 9$。\n步驟三：計算第三項 $a_3 = a_2 + d = 9 + 6 = 15$。\n最終答案為 $3, 9, 15$。" },
+                    { text: "首項 $23$，公差 $-5$，求第 8 項。", hint: "$a_8 = a_1 + 7d$。", answers: ["$-12$"], distractors: ["$-17$", "$18$", "$-7$"], 
+                      analysis: "步驟一：利用一般項公式 $a_n = a_1 + (n-1)d$。\n步驟二：代入已知數值。$a_8 = 23 + (8-1) \\times (-5)$。\n步驟三：計算括號內項。$a_8 = 23 + 7 \\times (-5)$。\n步驟四：計算乘法。$a_8 = 23 - 35 = -12$。\n最終答案為 $-12$。" },
+                    { text: "首項 $-1$，公差 $4$，前三項為？", hint: "$-1 + 4 = 3$。", answers: ["$-1, 3, 7$"], distractors: ["$-1, 4, 8$", "$-1, -5, -9$", "$1, 5, 9$"], 
+                      analysis: "步驟一：第一項為 $-1$。\n步驟二：第二項為 $-1 + 4 = 3$。\n步驟三：第三項為 $3 + 4 = 7$。\n最終答案為 $-1, 3, 7$。" },
+                    { text: "首項 $a$，公差 3，前三項為？", hint: "代數式運算。", answers: ["$a, a+3, a+6$"], distractors: ["$a, a+3, a+3$", "$a, 3a, 9a$", "$a, a-3, a-6$"], 
+                      analysis: "步驟一：第一項為 $a$。\n步驟二：第二項為第一項加公差，即 $a + 3$。\n步驟三：第三項為第二項加公差，即 $(a + 3) + 3 = a + 6$。\n最終答案為 $a, a+3, a+6$。" },
+                    { text: "首項 100, 公差 -10, 前三項為？", hint: "遞減數列。", answers: ["$100, 90, 80$"], distractors: ["$100, 110, 120$", "$100, 90, 70$", "$90, 80, 70$"], 
+                      analysis: "步驟一：第一項為 $100$。\n步驟二：第二項為 $100 - 10 = 90$。\n步驟三：第三項為 $90 - 10 = 80$。\n最終答案為 $100, 90, 80$。" },
+                    { text: "首項 $a-5d$, 公差 $2d$, 下一項為？", hint: "$(a-5d) + 2d$。", answers: ["$a-3d$"], distractors: ["$a-7d$", "$a+d$", "$a-5d$"], 
+                      analysis: "步驟一：首項為 $a - 5d$。\n步驟二：將首項加上公差 $2d$。\n步驟三：進行同類項合併。$(a - 5d) + 2d = a - 3d$。\n最終答案為 $a-3d$。" },
+                    { text: "首項 $6\\sqrt{5}$, 公差 $3\\sqrt{5}$, 求第二項。", hint: "$a_1 + d$。", answers: ["$9\\sqrt{5}$"], distractors: ["$3\\sqrt{5}$", "$12\\sqrt{5}$", "$6\\sqrt{10}$"], 
+                      analysis: "步驟一：第二項等於首項加上公差。\n步驟二：$6\\sqrt{5} + 3\\sqrt{5} = 9\\sqrt{5}$。\n最終答案為 $9\\sqrt{5}$。" },
+                    { text: "首項 0.5, 公差 0.5, 前三項為？", hint: "每次加 0.5。", answers: ["$0.5, 1, 1.5$"], distractors: ["$0.5, 1, 2$", "$0.5, 0.5, 0.5$", "$1, 1.5, 2$"], 
+                      analysis: "步驟一：第一項為 $0.5$。\n步驟二：第二項為 $0.5 + 0.5 = 1.0$。\n步驟三：第三項為 $1.0 + 0.5 = 1.5$。\n最終答案為 $0.5, 1, 1.5$。" },
+                    { text: "首項 12, 公差 0, 前三項為？", hint: "無變化。", answers: ["$12, 12, 12$"], distractors: ["$12, 0, 0$", "$0, 12, 24$", "$12, 11, 10$"], 
+                      analysis: "步驟一：公差為 $0$，表示每一項都不會改變。\n步驟二：數列為 $12, 12, 12...$。\n最終答案為 $12, 12, 12$。" },
+                    { text: "在空格填數：$0, 3, 6, 9, \\_\\_\\_$。", hint: "每次加 3。", answers: ["$12$"], distractors: ["$10$", "$11$", "$15$"], 
+                      analysis: "步驟一：計算公差。$3 - 0 = 3$。\n步驟二：確認規律。$6 - 3 = 3$，$9 - 6 = 3$。\n步驟三：將前一項加公差。$9 + 3 = 12$。\n最終答案為 $12$。" }
+                ]
+            },
+            {
+                id: 3, title: "單元4 等差數列求值", description: "求出特定項的值或總項數", targetCorrect: 5,
+                problems: [
+                    { text: "首項 $5$，公差 $6$，求第 10 項。", hint: "$a_{10} = a_1 + 9d$。", answers: ["$59$"], distractors: ["$60$", "$54$", "$65$"], 
+                      analysis: "步驟一：代入公式 $a_n = a_1 + (n-1)d$。\n步驟二：代入數值。$a_{10} = 5 + (10 - 1) \\times 6$。\n步驟三：$a_{10} = 5 + 9 \\times 6 = 5 + 54 = 59$。\n最終答案為 $59$。" },
+                    { text: "首項 $12$，公差 $-2$，求第 16 項。", hint: "$a_{16} = 12 + 15(-2)$。", answers: ["$-18$"], distractors: ["$-30$", "$-20$", "$-14$"], 
+                      analysis: "步驟一：利用一般項公式 $a_{16} = a_1 + 15d$。\n步驟二：代入數值。$12 + 15 \\times (-2)$。\n步驟三：$12 - 30 = -18$。\n最終答案為 $-18$。" },
+                    { text: "已知 $3, 8, 13, \\dots, 73$ 為等差，共幾項？", hint: "$73 = 3 + (n-1)5$。", answers: ["$15$ 項"], distractors: ["$14$ 項", "$16$ 項", "$13$ 項"], 
+                      analysis: "步驟一：代入公式 $73 = 3 + (n-1) \\times 5$。\n步驟二：移項。$70 = (n-1) \\times 5$。\n步驟三：除以 $5$。$14 = n-1$。\n步驟四：解出 $n = 15$。\n最終答案為 $15$ 項。" },
+                    { text: "首項 10, 公差 3, 求第 12 項。", hint: "$10 + 11 \\times 3$。", answers: ["$43$"], distractors: ["$46$", "$40$", "$33$"], 
+                      analysis: "步驟一：利用公式 $a_{12} = a_1 + 11d$。\n步驟二：代入 $10 + 11 \\times 3$。\n步驟三：$10 + 33 = 43$。\n最終答案為 $43$。" },
+                    { text: "已知 $7, 11, \\dots, 67$。共幾項？", hint: "$d=4$。", answers: ["$16$ 項"], distractors: ["$15$ 項", "$17$ 項", "$14$ 項"], 
+                      analysis: "步驟一：計算公差 $d = 11 - 7 = 4$。\n步驟二：代入末項公式 $67 = 7 + (n-1) \\times 4$。\n步驟三：$60 = (n-1) \\times 4 \\to 15 = n-1 \\to n = 16$。\n最終答案為 $16$ 項。" },
+                    { text: "已知 $6, 13, \\dots, 174$。共幾項？", hint: "$d=7$。", answers: ["$25$ 項"], distractors: ["$24$ 項", "$26$ 項", "$23$ 項"], 
+                      analysis: "步驟一：公差 $d = 13 - 6 = 7$。\n步驟二：代入公式 $174 = 6 + (n-1) \\times 7$。\n步驟三：$168 = (n-1) \\times 7 \\to 24 = n-1 \\to n = 25$。\n最終答案為 $25$ 項。" },
+                    { text: "已知 $-33, -24, \\dots, 84$。共幾項？", hint: "$d=9$。", answers: ["$14$ 項"], distractors: ["$13$ 項", "$15$ 項", "$12$ 項"], 
+                      analysis: "步驟一：計算公差 $d = -24 - (-33) = 9$。\n步驟二：代入公式 $84 = -33 + (n-1) \\times 9$。\n步驟三：$117 = (n-1) \\times 9 \\to 13 = n-1 \\to n = 14$。\n最終答案為 $14$ 項。" },
+                    { text: "首項 -7, 公差 -3, 求第 15 項。", hint: "$-7 + 14(-3)$。", answers: ["$-49$"], distractors: ["$-52$", "$-46$", "$-42$"], 
+                      analysis: "步驟一：$a_{15} = a_1 + 14d = -7 + 14 \\times (-3)$。\n步驟二：$-7 - 42 = -49$。\n最終答案為 $-49$。" },
+                    { text: "首項 1, 公差 8, 求第 13 項。", hint: "$1 + 12 \\times 8$。", answers: ["$97$"], distractors: ["$96$", "$105$", "$89$"], 
+                      analysis: "步驟一：$a_{13} = 1 + 12 \\times 8 = 1 + 96 = 97$。\n最終答案為 $97$。" },
+                    { text: "已知 $-4, -8, \\dots, -104$。共幾項？", hint: "$d=-4$。", answers: ["$26$ 項"], distractors: ["$25$ 項", "$27$ 項", "$24$ 項"], 
+                      analysis: "步驟一：公差 $d = -4$。\n步驟二：$-104 = -4 + (n-1) \\times (-4)$。\n步驟三：$-100 = (n-1) \\times (-4) \\to 25 = n-1 \\to n = 26$。\n最終答案為 $26$ 項。" }
+                ]
+            },
+            {
+                id: 4, title: "單元5 等差數列的應用", description: "觀察幾何規律並計算數量", targetCorrect: 5,
+                problems: [
+                    { text: "排三角形：圖1需3根，圖2需5根。圖 11 需幾根？", hint: "首項 3，公差 2。", answers: ["$23$ 根"], distractors: ["$21$ 根", "$25$ 根", "$22$ 根"], patternType: "triangle", 
+                      analysis: "步驟一：觀察吸管增加規律。圖 1 需 $3$ 根，圖 2 需 $5$ 根，表示每增加一個三角形，只需要再加 $2$ 根（共用一邊）。\n步驟二：這是一個首項 $a_1 = 3$，公差 $d = 2$ 的等差數列。\n步驟三：利用公式求圖 11 的數量。$a_{11} = 3 + (11-1) \\times 2$。\n步驟四：計算得到 $3 + 20 = 23$ 根。\n最終答案為 23 根。" },
+                    { text: "排正方形：圖1需4根，圖2需7根。圖 13 需幾根？", hint: "首項 4，公差 3。", answers: ["$40$ 根"], distractors: ["$37$ 根", "$43$ 根", "$39$ 根"], patternType: "square", 
+                      analysis: "步驟一：觀察規律。圖 1 有 $4$ 根，圖 2 有 $7$ 根，公差 $d = 3$。\n步驟二：這是一個 $a_1 = 4$，$d = 3$ 的數列。\n步驟三：求 $a_{13} = 4 + (13-1) \\times 3 = 4 + 36 = 40$ 根。\n最終答案為 40 根。" },
+                    { text: "排正方形：用 65 根牙籤可排圖幾？", hint: "$65 = 4 + (n-1)3$。", answers: ["無解"], distractors: ["$21$", "$20$", "$22$"], patternType: "square", 
+                      analysis: "步驟一：代入公式 $65 = 4 + (n-1) \\times 3$。\n步驟二：$61 = (n-1) \\times 3$。\n步驟三：計算 $61 \\div 3$，發現無法整除。\n步驟四：因為項數 $n$ 必須為正整數，故此題無解。" },
+                    { text: "排六邊形：圖1需6根，圖2需11根。圖 13 需要幾根？", hint: "每多一個增加 5 根。", answers: ["$66$ 根"], distractors: ["$61$ 根", "$71$ 根", "$65$ 根"], patternDescription: "規律：圖1由6根組成，之後圖2共用一邊，增加5根。首項 6，公差 5。", 
+                      analysis: "步驟一：首項 $a_1 = 6$，公差 $d = 5$。\n步驟二：求 $a_{13} = 6 + (13-1) \\times 5$。\n步驟三：$6 + 60 = 66$ 根。\n最終答案為 66 根。" },
+                    { text: "排五邊形：圖1需5根，圖2需9根。圖 14 需要幾根？", hint: "每多一個增加 4 根。", answers: ["$57$ 根"], distractors: ["$53$ 根", "$61$ 根", "$56$ 根"], patternDescription: "規律：圖1為5根，圖2與其共用一邊，增加4根。首項 5，公差 4。", 
+                      analysis: "步驟一：首項 $a_1 = 5$，公差 $d = 4$。\n步驟二：求 $a_{14} = 5 + (14-1) \\times 4$。\n步驟三：$5 + 52 = 57$ 根。\n最終答案為 57 根。" },
+                    { text: "排六邊形：圖 $n$ 需 81 根，則 $n=?$", hint: "$81 = 6 + (n-1)5$。", answers: ["$16$"], distractors: ["$15$", "$17$", "$20$"], patternDescription: "首項 6，公差 5。", 
+                      analysis: "步驟一：代入公式 $81 = 6 + (n-1) \\times 5$。\n步驟二：移項得 $75 = (n-1) \\times 5$。\n步驟三：除以 5 得 $15 = n-1 \\to n = 16$。\n最終答案為 16。" },
+                    { text: "排五邊形：用 29 根牙籤可排圖幾？", hint: "$29 = 5 + (n-1)4$。", answers: ["$7$"], distractors: ["$6$", "$8$", "無解"], patternDescription: "首項 5，公差 4。", 
+                      analysis: "步驟一：代入公式 $29 = 5 + (n-1) \\times 4$。\n步驟二：$24 = (n-1) \\times 4 \\to 6 = n-1 \\to n = 7$。\n最終答案為 7。" },
+                    { text: "排正方形：圖 20 需幾根牙籤？", hint: "$4 + 19 \\times 3$。", answers: ["$61$ 根"], distractors: ["$64$ 根", "$60$ 根", "$58$ 根"], patternType: "square", 
+                      analysis: "步驟一：$a_1 = 4, d = 3$。\n步驟二：$a_{20} = 4 + 19 \\times 3 = 4 + 57 = 61$ 根。\n最終答案為 61。" },
+                    { text: "排三角形：共 67 根吸管，可排幾個完整的圖？", hint: "$67 = 3 + (n-1)2$。", answers: ["$33$"], distractors: ["$32$", "$34$", "$31$"], patternType: "triangle", 
+                      analysis: "步驟一：$67 = 3 + (n-1) \\times 2$。\n步驟二：$64 = (n-1) \\times 2 \\to 32 = n-1 \\to n = 33$。\n最終答案為 33。" },
+                    { text: "排五邊形：圖 10 需幾根？", hint: "$a_1=5, d=4$。", answers: ["$41$ 根"], distractors: ["$45$ 根", "$37$ 根", "$40$ 根"], patternDescription: "首項 5，公差 4。", 
+                      analysis: "步驟一：$a_{10} = 5 + 9 \\times 4 = 5 + 36 = 41$ 根。\n最終答案為 41。" }
+                ]
+            },
+            {
+                id: 5, title: "單元6 等差中項求值", description: "求兩個數之間的等差中項", targetCorrect: 5,
+                problems: [
+                    { text: "已知 $3, p, 9$ 成等差，求 $p$。", hint: "平均數。", answers: ["$6$"], distractors: ["$5$", "$7$", "$12$"], 
+                      analysis: "步驟一：根據等差中項原理，中項是前後兩項的平均數。\n步驟二：代入公式 $p = \\frac{3 + 9}{2}$。\n步驟三：計算得到 $p = \\frac{12}{2} = 6$。\n最終答案為 $6$。" },
+                    { text: "已知 $-12, p, -4$ 成等差，求 $p$。", hint: "注意負號。", answers: ["$-8$"], distractors: ["$-6$", "$-10$", "$-16$"], 
+                      analysis: "步驟一：計算平均值。$p = \\frac{-12 + (-4)}{2}$。\n步驟二：計算分子。$-12 - 4 = -16$。\n步驟三：$-16 \\div 2 = -8$。\n最終答案為 $-8$。" },
+                    { text: "已知 $4, p, 15$ 成等差，求 $p$。", hint: "相加除以 2。", answers: ["$\\frac{19}{2}$"], distractors: ["$9$", "$10$", "$11$"], 
+                      analysis: "步驟一：利用公式 $p = \\frac{4 + 15}{2}$。\n步驟二：計算結果為 $19/2$（或 $9.5$）。\n最終答案為 $19/2$。" },
+                    { text: "已知 $-10, p, -5$ 成等差，求 $p$。", hint: "計算平均。", answers: ["$-\\frac{15}{2}$"], distractors: ["$-7.5$", "$-8$", "$-7$"], 
+                      analysis: "步驟一：$p = \\frac{-10 + (-5)}{2} = -15/2$。\n最終答案為 $-15/2$。" },
+                    { text: "已知 $1, p, 7$ 成等差，求 $p$。", hint: "平均數。", answers: ["$4$"], distractors: ["$3$", "$5$", "$6$"], 
+                      analysis: "步驟一：$p = \\frac{1 + 7}{2} = 4$。\n最終答案為 4。" },
+                    { text: "已知 $5, p, 9$ 成等差，求 $p$。", hint: "平均數。", answers: ["$7$"], distractors: ["$6$", "$8$", "$10$"], 
+                      analysis: "步驟一：$p = \\frac{5 + 9}{2} = 7$。\n最終答案為 7。" },
+                    { text: "已知 $-6, p, 4$ 成等差，求 $p$。", hint: "平均數。", answers: ["$-1$"], distractors: ["$-2$", "$1$", "$0$"], 
+                      analysis: "步驟一：$p = \\frac{-6 + 4}{2} = -2/2 = -1$。\n最終答案為 -1。" },
+                    { text: "已知 $-18, p, -4$ 成等差，求 $p$。", hint: "平均數。", answers: ["$-11$"], distractors: ["$-10$", "$-12$", "$-22$"], 
+                      analysis: "步驟一：$p = \\frac{-18 - 4}{2} = -22/2 = -11$。\n最終答案為 -11。" },
+                    { text: "已知 $-3, p, 12$ 成等差，求 $p$。", hint: "平均數。", answers: ["$\\frac{9}{2}$"], distractors: ["$4$", "$5$", "$6$"], 
+                      analysis: "步驟一：$p = \\frac{-3 + 12}{2} = 9/2 = 4.5$。\n最終答案為 4.5。" },
+                    { text: "已知 $x+1, p, x+5$ 成等差，求 $p$。", hint: "平均數。", answers: ["$x+3$"], distractors: ["$x+4$", "$x+2$", "$2x+6$"], 
+                      analysis: "步驟一：中項 $p = \\frac{(x+1) + (x+5)}{2}$。\n步驟二：展開並合併。$p = \\frac{2x + 6}{2}$。\n步驟三：除以 2 得 $p = x + 3$。\n最終答案為 $x+3$。" }
+                ]
+            }
+        ];
+
+        // --- 主程式組件 ---
+        const App = () => {
+            const [view, setView] = useState('stageSelect');
+            const [completedStages, setCompletedStages] = useState(new Set());
+            const [currentStage, setCurrentStage] = useState(null);
+
+            const handleStageSelect = (stage) => {
+                setCurrentStage(stage);
+                setView('tutor');
+            };
+
+            const handleNextStageChallenge = () => {
+                const currentIndex = STAGES.findIndex(s => s.id === currentStage.id);
+                if (currentIndex !== -1 && currentIndex + 1 < STAGES.length) {
+                    handleStageSelect(STAGES[currentIndex + 1]);
+                } else {
+                    setView('stageSelect');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 flex items-center justify-center">
+                    <div className="w-full max-w-4xl bg-white rounded-3xl textbook-card overflow-hidden">
+                        {view === 'stageSelect' ? (
+                            <StageSelect stages={STAGES} completedStages={completedStages} onSelect={handleStageSelect} />
+                        ) : (
+                            <TutorView 
+                                stage={currentStage} 
+                                onComplete={() => setCompletedStages(prev => new Set(prev).add(currentStage.id))} 
+                                onBack={() => setView('stageSelect')}
+                                onNextStage={handleNextStageChallenge}
+                                hasNextStage={STAGES.findIndex(s => s.id === currentStage.id) < STAGES.length - 1}
+                            />
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const StageSelect = ({ stages, onSelect, completedStages }) => (
+            <div className="p-10 space-y-12 ui-text">
+                <header className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-black tracking-widest uppercase border border-indigo-100 shadow-sm">
+                        <Icon name="book" className="w-4 h-4" /> 1-1 等差數列 學習夥伴
+                    </div>
+                    <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight text-center">國中數學數位教材</h1>
+                    <div className="h-1 w-24 bg-indigo-500 mx-auto rounded-full" />
+                </header>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {stages.map((stage) => {
+                        const isDone = completedStages.has(stage.id);
+                        return (
+                            <button key={stage.id} onClick={() => onSelect(stage)}
+                                className={`group p-6 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden flex flex-col justify-between h-52 ${
+                                    isDone ? 'border-emerald-100 bg-emerald-50/20 shadow-sm' : 'border-slate-100 bg-white hover:border-indigo-300 hover:shadow-2xl hover:-translate-y-1'
+                                }`}
+                            >
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <div className={`p-2 rounded-xl ${isDone ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500'}`}><Icon name="calculator" className="w-5 h-5" /></div>
+                                        {isDone && <Icon name="check" className="w-6 h-6 text-emerald-600" />}
+                                    </div>
+                                    <div><h3 className="text-lg font-black text-slate-800 mb-1 group-hover:text-indigo-700 leading-tight">{stage.title}</h3><p className="text-slate-500 leading-tight text-xs font-medium">{stage.description}</p></div>
+                                </div>
+                                <div className="text-[10px] font-black uppercase text-slate-300 tracking-widest">目標：答對 {stage.targetCorrect} 題</div>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
+        const TutorView = ({ stage, onComplete, onBack, onNextStage, hasNextStage }) => {
+            const [shuffledProblems, setShuffledProblems] = useState([]);
+            const [idx, setIdx] = useState(0);
+            const [score, setScore] = useState(0);
+            const [options, setOptions] = useState([]);
+            const [selected, setSelected] = useState(null);
+            const [isSolved, setIsSolved] = useState(false);
+            const [showHint, setShowHint] = useState(false);
+            const [aiRes, setAiRes] = useState("");
+            const [isUnitFinished, setIsUnitFinished] = useState(false);
+            const [celebrated, setCelebrated] = useState(false);
+            const containerRef = useRef(null);
+
+            const currentProb = shuffledProblems[idx];
+
+            const triggerTypeset = () => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    requestAnimationFrame(() => { window.MathJax.typesetPromise([containerRef.current]).catch(err => console.log(err)); });
+                }
+            };
+
+            useEffect(() => { triggerTypeset(); }, [currentProb, aiRes, showHint, isSolved, isUnitFinished]);
+
+            const initStage = () => {
+                setShuffledProblems(shuffleArray(stage.problems));
+                setIdx(0); setScore(0); setIsUnitFinished(false); setSelected(null); setIsSolved(false); setShowHint(false); setAiRes(""); setCelebrated(false);
+            };
+
+            useEffect(() => { if (stage) initStage(); }, [stage]);
+
+            useEffect(() => {
+                if (currentProb) {
+                    setSelected(null); setIsSolved(false); setShowHint(false); setAiRes("");
+                    const correct = { text: currentProb.answers[0], isCorrect: true };
+                    const dists = currentProb.distractors.map(d => ({ text: d, isCorrect: false }));
+                    setOptions(shuffleArray([correct, ...dists]));
+                }
+            }, [currentProb]);
+
+            const handleNextQuestion = () => {
+                if (idx + 1 < shuffledProblems.length) { setIdx(idx + 1); } 
+                else if (score < stage.targetCorrect) { setShuffledProblems(shuffleArray(stage.problems)); setIdx(0); } 
+                else { setIsUnitFinished(true); onComplete(); }
+            };
+
+            const onOptionClick = (opt) => {
+                setSelected(opt); setIsSolved(true);
+                if (opt.isCorrect) {
+                    const newScore = score + 1; setScore(newScore);
+                    if (newScore === stage.targetCorrect) setCelebrated(true);
+                }
+            };
+
+            if (isUnitFinished) {
+                const passed = score >= stage.targetCorrect;
+                return (
+                    <div className="relative p-16 text-center space-y-8 overflow-hidden ui-text">
+                        {passed && <ConfettiEffect />}
+                        <div className={`p-8 rounded-full inline-block animate-bounce shadow-2xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}><Icon name="trophy" className="w-24 h-24" /></div>
+                        <div className="space-y-3"><h2 className="text-5xl font-black text-slate-800 tracking-tight">{passed ? "🌸 恭喜過關！ 🌸" : "尚未達標"}</h2></div>
+                        <p className="text-slate-600 text-xl font-medium">你在本單元答對了 <span className="text-indigo-600 font-black text-4xl mx-1">{score}</span> 題 (目標：{stage.targetCorrect} 題)</p>
+                        <div className="flex flex-col md:flex-row justify-center gap-4 pt-12 relative z-10">
+                            <button onClick={initStage} className="px-10 py-5 bg-white border-2 border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition flex items-center justify-center gap-2 group font-sans"><Icon name="refresh" className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" /> 重新練習</button>
+                            {passed && hasNextStage ? (<button onClick={onNextStage} className="px-10 py-5 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition flex items-center justify-center gap-2 animate-pulse font-sans">挑戰下一關 <Icon name="chevronRight" className="w-6 h-6" /></button>) : (<button onClick={onBack} className="px-10 py-5 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition font-sans">返回選單</button>)}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!currentProb) return <div className="p-20 text-center font-black text-slate-300 ui-text">LOADING...</div>;
+
+            return (
+                <div className="flex flex-col min-h-[700px] bg-white" ref={containerRef}>
+                    {celebrated && <ConfettiEffect />}
+                    <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 ui-text">
+                        <button onClick={onBack} className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition font-bold font-sans"><Icon name="chevronLeft" className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 返回目錄</button>
+                        <div className="flex-1 flex flex-col items-center px-12 text-center">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stage.title}</span>
+                            <div className="flex items-center gap-3">
+                                <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${Math.min(100, (score / stage.targetCorrect) * 100)}%` }} />
+                                </div>
+                                <span className={`text-xs font-bold ${score >= stage.targetCorrect ? 'text-emerald-600 animate-pulse' : 'text-slate-600'}`}>已達標：{score} / {stage.targetCorrect}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg font-sans"><Icon name="printer" className="w-4 h-4" /> 數位課本</div>
+                    </div>
+
+                    <div className="flex-1 p-10 md:p-14 space-y-12">
+                        <div className="space-y-8">
+                            <div className="flex items-center gap-4 ui-text"><span className="bg-slate-800 text-white text-[10px] font-black px-2 py-1 rounded tracking-widest uppercase">題目 {idx + 1}</span><div className="h-px flex-1 bg-slate-100" /></div>
+                            <h2 className="text-4xl font-bold text-slate-900 leading-relaxed math-text pl-4 border-l-4 border-indigo-500 bg-slate-50/50 py-3 rounded-r-xl">{currentProb.text}</h2>
+                            {currentProb.patternType && (<div className="flex justify-center gap-6 py-4"><GeometricPattern type={currentProb.patternType} count={1} /><GeometricPattern type={currentProb.patternType} count={2} /><GeometricPattern type={currentProb.patternType} count={3} /></div>)}
+                            {currentProb.patternDescription && (
+                                <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-start gap-4 shadow-sm ui-text">
+                                    <div className="p-3 bg-indigo-600 rounded-xl text-white shadow-lg"><Icon name="book" className="w-6 h-6" /></div>
+                                    <div className="space-y-1"><span className="text-xs font-black uppercase tracking-widest text-indigo-400">圖案規規律說明</span><p className="text-indigo-900 text-lg font-medium leading-relaxed">{currentProb.patternDescription}</p></div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-medium ui-text">
+                            {options.map((opt, i) => (
+                                <button key={i} disabled={isSolved} onClick={() => onOptionClick(opt)}
+                                    className={`group p-8 text-2xl border-2 rounded-2xl text-left transition-all flex items-center justify-between font-sans ${
+                                        isSolved ? opt.isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm ring-4 ring-emerald-50' : selected?.text === opt.text ? 'border-rose-400 bg-rose-50 text-rose-700 ring-4 ring-rose-50' : 'border-slate-50 text-slate-300 opacity-50' : 'border-slate-100 bg-white hover:border-indigo-300 hover:shadow-xl hover:-translate-y-0.5'
+                                    }`}
+                                >
+                                    <span className="math-text">{opt.text}</span>
+                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSolved && opt.isCorrect ? 'bg-emerald-500 border-emerald-500 scale-110 shadow-lg' : 'border-slate-200'}`}>{isSolved && opt.isCorrect && <Icon name="check" className="w-5 h-5 text-white" />}</div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="pt-10 border-t border-slate-100 space-y-8 ui-text">
+                            <div className="flex flex-wrap gap-4">
+                                <button onClick={() => setShowHint(!showHint)} className={`flex items-center gap-2 px-6 py-3 text-sm font-black rounded-xl transition border-2 font-sans ${showHint ? 'bg-amber-500 border-amber-500 text-white shadow-lg' : 'bg-white border-amber-200 text-amber-700 hover:bg-amber-50'}`}><Icon name="lightbulb" className="w-4 h-4" /> 解題小提點</button>
+                                <button onClick={() => setAiRes(currentProb.analysis)} disabled={!isSolved} className={`flex items-center gap-2 px-6 py-3 text-sm font-black text-white rounded-xl transition shadow-xl active:scale-95 font-sans ${isSolved ? 'bg-slate-900 hover:bg-indigo-900 shadow-indigo-100' : 'bg-slate-200 cursor-not-allowed opacity-50'}`}><Icon name="sparkles" className="w-4 h-4" /> AI 詳細解析</button>
+                                {!isSolved && <span className="text-xs text-slate-400 self-center font-bold tracking-tight font-sans">💡 答題後即可觀看詳細解析</span>}
+                            </div>
+                            {showHint && (<div className="p-8 bg-amber-50/60 rounded-2xl border-l-[8px] border-amber-400 animate-in slide-in-from-left-2 duration-300 shadow-sm"><div className="flex items-center gap-2 text-amber-800 font-black mb-3 text-xs uppercase tracking-widest"><Icon name="alert" className="w-5 h-5" /> 老師提示</div><p className="text-amber-900 leading-relaxed font-bold text-xl math-text">{currentProb.hint}</p></div>)}
+                            {aiRes && (
+                                <div className="p-10 bg-[#0f172a] rounded-3xl text-slate-300 space-y-6 shadow-2xl border border-slate-800">
+                                    <div className="flex items-center justify-between border-b border-slate-800 pb-5">
+                                        <div className="flex items-center gap-3 text-indigo-400 font-black text-xs tracking-widest uppercase font-sans">
+                                            <Icon name="sparkles" className="w-4 h-4" /> 精細解析 (Step-by-Step)
+                                        </div>
+                                    </div>
+                                    <div className="text-xl leading-[2.2] whitespace-pre-wrap math-text text-slate-100 font-medium">{aiRes}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex flex-wrap justify-end items-center gap-6 ui-text">
+                        {isSolved && (
+                            <div className="flex gap-4">
+                                {score >= stage.targetCorrect && hasNextStage && (
+                                    <button onClick={onNextStage} className="group flex items-center gap-4 px-14 py-6 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-2xl shadow-emerald-200 transition-all hover:-translate-y-1 active:scale-95 font-sans">
+                                        <Icon name="party" className="w-7 h-7" />
+                                        <span className="text-xl tracking-tight">挑戰下一關</span>
+                                        <Icon name="chevronRight" className="w-7 h-7 group-hover:translate-x-1.5 transition-transform" />
+                                    </button>
+                                )}
+                                <button onClick={handleNextQuestion} className="group flex items-center gap-4 px-14 py-6 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all hover:-translate-y-1 active:scale-95 font-sans">
+                                    <span className="text-xl tracking-tight">繼續挑戰下一題</span>
+                                    <Icon name="chevronRight" className="w-7 h-7 group-hover:translate-x-1.5 transition-transform" />
+                                </button>
+                            </div>
+                        )}
+                        {!isSolved && (<div className="text-slate-300 text-sm font-bold italic tracking-widest uppercase font-sans">Waiting for selection...</div>)}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
