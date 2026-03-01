@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元宵挑戰 - 49題完整版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --gold: #D4AF37; --deep-red: #8B0000; --dark-red: #4A0000; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: radial-gradient(circle, var(--deep-red) 0%, var(--dark-red) 100%); color: #fff; min-height: 100vh; margin: 0; }
+        .chinese-border { border: 3px solid var(--gold); position: relative; }
+        .glass-card { background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(15px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 24px; }
+        
+        .envelope { 
+            width: 100%; max-width: 110px; height: 150px; background: #e63946; border-radius: 12px; 
+            position: relative; cursor: pointer; border: 2px solid var(--gold); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4); margin: 0 auto;
+        }
+        .envelope::before {
+            content: "獎"; font-family: 'Noto Serif TC', serif; font-size: 28px; color: var(--gold);
+            border: 2px solid var(--gold); border-radius: 50%; width: 50px; height: 50px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .envelope.opened { background: #3d0000; border-color: #666; cursor: default; filter: grayscale(0.5); transform: scale(0.95); }
+        .envelope.opened::before { display: none; }
+        .envelope .prize-label { display: none; font-size: 14px; color: var(--gold); font-weight: bold; text-align: center; padding: 10px; line-height: 1.4; word-break: break-all; }
+        .envelope.opened .prize-label { display: block; }
+
+        .shake { animation: shake 0.8s infinite; }
+        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+        .hidden { display: none !important; }
+        input, textarea { color: black !important; background: white !important; font-weight: bold; }
+    </style>
+</head>
+<body class="flex flex-col items-center p-4 sm:p-8">
+
+    <div id="admin-panel" class="hidden fixed inset-0 z-50 bg-black/95 overflow-y-auto p-6 text-white">
+        <div class="max-w-3xl mx-auto space-y-6">
+            <div class="flex justify-between items-center border-b border-gold pb-4">
+                <h2 class="text-2xl font-bold text-yellow-400">管理中心</h2>
+                <button onclick="toggleAdmin()" class="bg-red-600 px-8 py-2 rounded-full font-bold">儲存並返回</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <section class="p-5 glass-card">
+                    <h3 class="font-bold text-yellow-500 mb-4">🧧 獎項庫存 (紅包牆)</h3>
+                    <div id="prize-editor" class="space-y-3 max-h-60 overflow-y-auto"></div>
+                    <button onclick="addNewPrizeRow()" class="mt-4 text-xs bg-green-700 px-3 py-1 rounded">+ 新增</button>
+                    <button onclick="resetEnvelopes()" class="mt-4 w-full text-xs bg-red-800 py-2 rounded">重置抽獎紀錄</button>
+                </section>
+                <section class="p-5 glass-card">
+                    <h3 class="font-bold text-yellow-500 mb-4">📚 題庫資訊</h3>
+                    <p class="text-sm mb-4">目前題庫總數：<span id="quiz-count" class="text-xl text-white">0</span> 題</p>
+                    <div class="mb-4">
+                        <label class="text-xs block mb-1">單場隨機抽題數：</label>
+                        <input type="number" id="game-limit-input" class="w-full p-2 rounded text-center">
+                    </div>
+                    <textarea id="csv-input" class="w-full h-24 mb-3 p-2 text-xs text-black" placeholder="追加題目格式：題目,選1,選2,選3,選4,答案索引"></textarea>
+                    <button onclick="importCSV('add')" class="w-full bg-orange-600 py-2 rounded text-sm">追加匯入題目</button>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-[#D4AF37]" style="font-family: 'Noto Serif TC';">元宵快手抽紅包</h1>
+        <p id="total-stats" class="text-sm text-yellow-500/80 mt-2 italic">剩餘紅包：-- / --</p>
+    </header>
+
+    <main id="main-stage" class="w-full max-w-4xl glass-card p-6 md:p-10 text-center chinese-border shadow-2xl">
+        <div id="start-screen">
+            <div class="py-10">
+                <p class="text-xl mb-10">答對挑戰題，即可在大螢幕紅包牆挑選獎項！</p>
+                <button onclick="startGame()" class="bg-[#D4AF37] text-[#4A0000] font-bold py-5 px-16 rounded-full text-2xl shadow-lg hover:scale-105 active:scale-95 transition">開始挑戰</button>
+            </div>
+            <button onclick="toggleAdmin()" class="mt-20 text-xs opacity-20 hover:opacity-100 transition">⚙️ 管理設定</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden max-w-2xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <span id="timer" class="text-2xl font-mono text-red-500 bg-black/30 px-4 py-1 rounded-full border border-red-500/50">15s</span>
+                <span id="progress-text" class="text-lg text-yellow-400 font-bold">第 1 題</span>
+            </div>
+            <div id="feedback-text" class="h-8 text-lg mb-4 font-bold"></div>
+            <div id="question" class="text-2xl md:text-3xl mb-10 min-h-[120px] flex items-center justify-center font-bold px-4"></div>
+            <div id="options" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div id="action-area" class="hidden mt-10 pt-6 border-t border-white/20">
+                <button onclick="showRedWall()" class="w-full bg-red-600 py-5 rounded-2xl font-bold text-2xl border-2 border-yellow-400 animate-bounce">答對了！點我抽獎 🏮</button>
+            </div>
+        </div>
+
+        <div id="red-wall-screen" class="hidden">
+            <h2 class="text-2xl font-bold text-yellow-400 mb-8 border-b border-yellow-400/30 pb-4">請在牆上挑選一個幸運紅包</h2>
+            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 p-2" id="wall-container"></div>
+        </div>
+
+        <div id="prize-screen" class="hidden py-10">
+            <div class="text-xl text-white/70 mb-4">🎉 恭喜抽中 🎉</div>
+            <div class="text-5xl font-bold text-yellow-400 my-10" id="prize-result-name">---</div>
+            <button onclick="softReset()" class="w-full max-w-sm bg-[#D4AF37] text-[#4A0000] font-bold py-5 rounded-2xl text-xl shadow-lg">下一位挑戰者</button>
+        </div>
+    </main>
+
+    <script>
+        // 預設 49 題題庫
+        const fullRiddles = [
+            {q:"只騙中年人", a:["老少咸宜","童叟無欺","欺上瞞下","誘拐孩童"], ans:"老少咸宜"},
+            {q:"一二五六", a:["七零八落","丟三落四","接二連三","顛三倒四"], ans:"丟三落四"},
+            {q:"少了一本書", a:["缺一不可","書香門第","兩手空空","虛有實表"], ans:"缺一不可"},
+            {q:"沒有郵筒", a:["信以為真","互通有無","不可置信","查無此人"], ans:"不可置信"},
+            {q:"一個巴掌拍不響", a:["孤掌難鳴","手下留情","拍手叫好","左右為難"], ans:"孤掌難鳴"},
+            {q:"一隻熊朝你走過來", a:["熊心壯志","有備而來","迎刃而解","迫在眉睫"], ans:"有備而來"},
+            {q:"缺少力量", a:["劣","夯","功","劫"], ans:"劣"},
+            {q:"兔子少一點", a:["逸","冤","免","兔"], ans:"免"},
+            {q:"兩隻狗在對話", a:["哭","獄","狀","默"], ans:"獄"},
+            {q:"有弟弟姊姊妹妹", a:["歌","兄弟","家族","戚"], ans:"歌"},
+            {q:"我不騎羊羊卻騎我", a:["義","祥","羞","養"], ans:"義"},
+            {q:"裹腳", a:["踢","踏","跑","走"], ans:"跑"},
+            {q:"雙火雙水", a:["炎淡","淼炎","淡水","澎湖"], ans:"淡水"},
+            {q:"四分五裂", a:["七拼八湊","支離破碎","九份","瑞芳"], ans:"支離破碎"},
+            {q:"飯桌少雙筷", a:["飢餓","基隆","盤子","台南"], ans:"基隆"},
+            {q:"雨後春筍", a:["新竹","芽","竹林","豐原"], ans:"新竹"},
+            {q:"表揚善行", a:["嘉義","褒揚","善導寺","行義"], ans:"嘉義"},
+            {q:"二小姐", a:["姿","妮","姣","妹"], ans:"姿"},
+            {q:"十元買早餐八元買豆漿", a:["沒事","剩兩塊","好飽","找錢"], ans:"剩兩塊"},
+            {q:"哪種動物最愛貼在牆壁上", a:["海豹","壁虎","蜘蛛","蟑螂"], ans:"海豹"},
+            {q:"哪種動物最容易被收買", a:["狗","螞蟻","貓","狐狸"], ans:"螞蟻"},
+            {q:"什麼人不能去銀行上班", a:["超人","一般人","盲人","壞人"], ans:"超人"},
+            {q:"有一隻狼走過來", a:["楊桃","草莓","楊梅","西瓜"], ans:"楊桃"},
+            {q:"又有一隻狼走過來", a:["楊桃","草莓","楊梅","西瓜"], ans:"楊梅"},
+            {q:"狼來了羊在吃草", a:["楊桃","草莓","楊梅","西瓜"], ans:"草莓"},
+            {q:"狼又走過來了", a:["楊桃","草莓","楊梅","西瓜"], ans:"西瓜"},
+            {q:"哪個字母最懶惰", a:["L","I","Z","C"], ans:"I"},
+            {q:"哪個字母最會噴水", a:["P","W","S","O"], ans:"S"},
+            {q:"什麼水不能喝", a:["薪水","雨水","海水","汽水"], ans:"薪水"},
+            {q:"什麼東西破了才有用", a:["雞蛋","碗盤","杯子","玻璃"], ans:"雞蛋"},
+            {q:"什麼東西洗了不能吃", a:["衣服","蔬菜","水果","金錢"], ans:"衣服"},
+            {q:"什麼人每天都在換衣服", a:["模特兒","曬衣架","演員","名媛"], ans:"曬衣架"},
+            {q:"什麼東西能裝下所有東西", a:["口袋","眼睛","嘴巴","袋子"], ans:"眼睛"},
+            {q:"哪種動物最愛問為什麼", a:["貓","狗","老鼠","豬"], ans:"豬"},
+            {q:"身分證掉了怎麼辦", a:["重辦","撿起來","去警察局","哭泣"], ans:"撿起來"},
+            {q:"為什麼企鵝只有半身是白的", a:["天生","手短摸不到背","洗澡洗一半","好看"], ans:"手短摸不到背"},
+            {q:"哪一種水果會讓人生病", a:["榴槤","蘋果","感冒","梨子"], ans:"感冒"},
+            {q:"哪種布最不能剪", a:["瀑布","棉布","絲布","帆布"], ans:"瀑布"},
+            {q:"哪種花不能澆水", a:["爆米花","梅花","蘭花","菊花"], ans:"爆米花"},
+            {q:"什麼鳥最愛遲到", a:["鴕鳥","蜂鳥","麻雀","鴿子"], ans:"鴿子"},
+            {q:"什麼人最不怕冷", a:["年輕人","厚臉皮的人","強壯的人","雪人"], ans:"雪人"},
+            {q:"哪種車最長", a:["火車","塞車","公車","救護車"], ans:"塞車"},
+            {q:"哪種水果最害羞", a:["草莓","西瓜","蘋果","梨子"], ans:"草莓"},
+            {q:"什麼東西明明是你的，別人卻用得比你多", a:["錢","名字","時間","房子"], ans:"名字"},
+            {q:"什麼人一輩子都不會結婚", a:["男人","女人","出家人","沒人愛的人"], ans:"出家人"},
+            {q:"什麼路最難走", a:["山路","馬路","門路","小路"], ans:"門路"},
+            {q:"哪種瓜不能吃", a:["傻瓜","西瓜","冬瓜","南瓜"], ans:"傻瓜"},
+            {q:"什麼人跑得最快", a:["選手","曹操","運動員","小孩"], ans:"曹操"},
+            {q:"哪種數字最聽話", a:["1","0","100","5"], ans:"100"}
+        ];
+
+        let riddles = JSON.parse(localStorage.getItem('v5_riddles')) || fullRiddles;
+        let prizes = JSON.parse(localStorage.getItem('v5_prizes')) || [
+            { name: "888元紅包", total: 1 },
+            { name: "100元禮券", total: 4 },
+            { name: "精美小禮物", total: 5 },
+            { name: "恭喜發財", total: 5 }
+        ];
+        let envelopeStatus = JSON.parse(localStorage.getItem('v5_env_status')) || [];
+        let gameLimit = parseInt(localStorage.getItem('v5_limit')) || 5;
+        let timer, timeLeft, currentSet, currentIdx, hasQualified = false;
+
+        function initEnvelopes() {
+            if (envelopeStatus.length === 0) {
+                let pool = [];
+                prizes.forEach(p => { for(let i=0; i<p.total; i++) pool.push({ prizeName: p.name, isOpened: false }); });
+                envelopeStatus = pool.sort(() => Math.random() - 0.5);
+                saveData();
+            }
+            updateStats();
+        }
+
+        function saveData() {
+            localStorage.setItem('v5_prizes', JSON.stringify(prizes));
+            localStorage.setItem('v5_riddles', JSON.stringify(riddles));
+            localStorage.setItem('v5_env_status', JSON.stringify(envelopeStatus));
+            localStorage.setItem('v5_limit', gameLimit);
+            updateStats();
+        }
+
+        function updateStats() {
+            const opened = envelopeStatus.filter(e => e.isOpened).length;
+            document.getElementById('total-stats').innerText = `紅包剩餘：${envelopeStatus.length - opened} / ${envelopeStatus.length}`;
+            document.getElementById('quiz-count').innerText = riddles.length;
+        }
+
+        function toggleAdmin() {
+            const panel = document.getElementById('admin-panel');
+            if(panel.classList.contains('hidden')) { renderAdmin(); panel.classList.remove('hidden'); }
+            else { saveAdminChanges(); panel.classList.add('hidden'); }
+        }
+
+        function renderAdmin() {
+            document.getElementById('game-limit-input').value = gameLimit;
+            const editor = document.getElementById('prize-editor');
+            editor.innerHTML = prizes.map((p, i) => `
+                <div class="flex gap-2 items-center bg-black/20 p-2 rounded mb-2">
+                    <input type="text" value="${p.name}" id="p-name-${i}" class="flex-1 p-1 rounded text-sm">
+                    <input type="number" value="${p.total}" id="p-total-${i}" class="w-16 p-1 rounded text-center">
+                </div>
+            `).join('');
+        }
+
+        function saveAdminChanges() {
+            prizes = prizes.map((p, i) => ({
+                name: document.getElementById(`p-name-${i}`).value,
+                total: parseInt(document.getElementById(`p-total-${i}`).value) || 0
+            }));
+            gameLimit = parseInt(document.getElementById('game-limit-input').value) || 5;
+            let openedOnes = envelopeStatus.filter(e => e.isOpened);
+            let openedCounts = {};
+            openedOnes.forEach(e => openedCounts[e.prizeName] = (openedCounts[e.prizeName] || 0) + 1);
+            let newRemaining = [];
+            prizes.forEach(p => {
+                let diff = p.total - (openedCounts[p.name] || 0);
+                for(let i=0; i < Math.max(0, diff); i++) newRemaining.push({ prizeName: p.name, isOpened: false });
+            });
+            envelopeStatus = openedOnes.concat(newRemaining.sort(() => Math.random() - 0.5));
+            saveData();
+        }
+
+        function resetEnvelopes() {
+            if(confirm("確定要重置所有紅包紀錄嗎？")) { envelopeStatus = []; initEnvelopes(); renderAdmin(); }
+        }
+
+        function importCSV(mode) {
+            const text = document.getElementById('csv-input').value;
+            try {
+                const rows = text.trim().split('\n');
+                const news = rows.map(r => {
+                    const c = r.split(',');
+                    return { q:c[0], a:[c[1],c[2],c[3],c[4]], ans:c[parseInt(c[5])+1].trim() };
+                });
+                riddles = riddles.concat(news);
+                saveData();
+                alert(`匯入成功！目前共 ${riddles.length} 題。`);
+            } catch(e) { alert('格式錯誤！'); }
+        }
+
+        function startGame() {
+            if(envelopeStatus.filter(e => !e.isOpened).length === 0) return alert("紅包已抽完！");
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('action-area').classList.add('hidden');
+            hasQualified = false; currentIdx = 0; timeLeft = 15;
+            currentSet = [...riddles].sort(() => Math.random() - 0.5).slice(0, Math.min(gameLimit, riddles.length));
+            renderQuiz();
+            if(timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').innerText = `${timeLeft}s`;
+                if(timeLeft <= 0) { clearInterval(timer); if(hasQualified) showRedWall(); else softReset(); }
+            }, 1000);
+        }
+
+        function renderQuiz() {
+            const r = currentSet[currentIdx];
+            document.getElementById('progress-text').innerText = `第 ${currentIdx+1} / ${currentSet.length} 題`;
+            document.getElementById('question').innerText = r.q;
+            document.getElementById('feedback-text').innerText = "";
+            const optDiv = document.getElementById('options');
+            optDiv.innerHTML = '';
+            [...r.a].sort(() => Math.random() - 0.5).forEach(txt => {
+                const b = document.createElement('button');
+                b.className = "w-full py-5 bg-white/5 border border-white/20 rounded-2xl font-bold text-lg active:scale-95 transition-all";
+                b.innerText = txt;
+                b.onclick = () => {
+                    if(txt === r.ans) {
+                        hasQualified = true; confetti({ particleCount: 150, spread: 80, origin: { y: 0.7 } });
+                        document.getElementById('feedback-text').innerText = "✅ 正確！";
+                        document.getElementById('feedback-text').style.color = "#4ade80";
+                        document.getElementById('action-area').classList.remove('hidden');
+                    } else {
+                        document.getElementById('feedback-text').innerText = `❌ 錯誤！正確答案：${r.ans}`;
+                        document.getElementById('feedback-text').style.color = "#f87171";
+                        setTimeout(() => { if(currentIdx < currentSet.length - 1) { currentIdx++; renderQuiz(); } else { if(hasQualified) showRedWall(); else softReset(); } }, 1200);
+                    }
+                };
+                optDiv.appendChild(b);
+            });
+        }
+
+        function showRedWall() {
+            clearInterval(timer);
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('red-wall-screen').classList.remove('hidden');
+            const container = document.getElementById('wall-container');
+            container.innerHTML = '';
+            envelopeStatus.forEach((env, idx) => {
+                const d = document.createElement('div');
+                d.className = `envelope ${env.isOpened ? 'opened' : 'shake'}`;
+                d.innerHTML = `<div class="prize-label">${env.prizeName}</div>`;
+                if(!env.isOpened) d.onclick = () => pickPrize(idx);
+                container.appendChild(d);
+            });
+        }
+
+        function pickPrize(idx) {
+            envelopeStatus[idx].isOpened = true; saveData();
+            document.getElementById('red-wall-screen').classList.add('hidden');
+            document.getElementById('prize-screen').classList.remove('hidden');
+            document.getElementById('prize-result-name').innerText = envelopeStatus[idx].prizeName;
+            confetti({ particleCount: 300, spread: 120, origin: { y: 0.6 } });
+        }
+
+        function softReset() {
+            clearInterval(timer);
+            document.querySelectorAll('main > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function addNewPrizeRow() { prizes.push({name: "新獎項", total: 0}); renderAdmin(); }
+
+        initEnvelopes();
+    </script>
+</body>
+</html>
