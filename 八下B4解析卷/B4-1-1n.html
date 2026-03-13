@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級 數學(四) 第1次練習 - 等差數列</title>
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady();
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        /* 整體背景：模擬桌面 */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 試卷外觀：B4 寬度，紙張質感 */
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px; /* B4 寬度限制 */
+            padding: 40px 50px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            font-family: "Times New Roman", "PMingLiU", "新細明體", serif;
+            color: #333;
+            line-height: 1.6;
+            box-sizing: border-box;
+        }
+
+        /* 標題區 */
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            letter-spacing: 2px;
+        }
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+        }
+
+        /* 題型區塊 */
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        /* 單一題目容器 */
+        .question-container {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .question-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .question-image {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            display: block;
+        }
+
+        /* 選擇題選項按鈕 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .option-btn {
+            background-color: #f9f9f9;
+            border: 1px solid #bbb;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-btn:hover {
+            background-color: #eee;
+        }
+        .option-btn:disabled {
+            cursor: default;
+        }
+        /* 選對或公佈正確答案的樣式 */
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            font-weight: bold;
+        }
+        /* 選錯的樣式 */
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        /* 顯示解析按鈕 */
+        .toggle-exp-btn {
+            background-color: #607d8b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .toggle-exp-btn:hover {
+            background-color: #455a64;
+        }
+
+        /* 解析區塊 (手寫筆記風格) */
+        .explanation {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #fff9f9;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "標楷體", serif;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+        .explanation strong {
+            color: #b71c1c;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="header">
+        <h1>八年級 數學(四) 第1次練習</h1>
+        <div class="header-info">
+            <span>範圍：1-1 等差數列</span>
+            <span>姓名：__________________</span>
+        </div>
+    </div>
+
+    <div id="quiz-content"></div>
+</div>
+
+<script>
+    // 試題資料庫 (資料與視圖分離)
+    const quizData = [
+        {
+            section: "一、選擇題（每題 4 分，共 48 分）",
+            questions: [
+                {
+                    type: "choice",
+                    text: "1. 觀察下列各數的規律：$-1, 3, -5, 7, \\square, 11, \\dots$，則 $\\square$ 應填入何數？",
+                    options: ["9", "-9", "$\\pm 9$", "$\\pm\\sqrt{9}$"],
+                    answer: 1,
+                    explanation: "觀察數字的絕對值為 $1, 3, 5, 7, 9, 11$，呈現奇數遞增；而正負號的規律為「一負一正」交替（-, +, -, +, -, +）。因此第五項的數字絕對值為 9，且應為負數，故 $\\square = -9$。<br><strong>【答案】(B)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "2. 一數列為 $-43, -37, -31, -25, -19, -13$，則下列敘述何者正確？",
+                    options: ["首項為 43", "公差為 -6", "此數列第七項為 -6", "此數列為等差數列"],
+                    answer: 3,
+                    explanation: "將後項減前項可得公差 $d = -37 - (-43) = 6$。因為每項的差皆固定為 6，所以此數列為等差數列。首項為 $-43$，公差為 $6$。<br><strong>【答案】(D)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "3. 觀察下列數列，並利用其中所隱含的規律判別數列中 $\\square$ 為何？<br>$3, 3, 6, 9, 15, 24, \\square, 63, \\dots$",
+                    options: ["34", "39", "42", "44"],
+                    answer: 1,
+                    explanation: "觀察規律發現，相鄰兩項的「和」即為下一項（例如 $3+3=6, 3+6=9, 6+9=15$）。因此 $\\square = 15 + 24 = 39$。<br><strong>【答案】(B)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "4. 若有一數列，其一般式為 $-\\frac{1}{2n}$，請問此數的第 5 項為下列何數？",
+                    options: ["$-\\frac{1}{2}$", "$-\\frac{1}{5}$", "$-\\frac{1}{10}$", "$-\\frac{1}{32}$"],
+                    answer: 2,
+                    explanation: "將 $n = 5$ 代入一般式，可得 $a_5 = -\\frac{1}{2 \\times 5} = -\\frac{1}{10}$。<br><strong>【答案】(C)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "5. 已知 $3a-b, 9, a+2b, 21, 27 \\dots$ 為等差數列，則 $2a-3b = ?$ ",
+                    options: ["-12", "-4", "6", "15"],
+                    answer: 0,
+                    explanation: "由相鄰兩項 $21, 27$ 可知公差 $d = 27 - 21 = 6$。<br>1. 往前推算，$a+2b = 21 - 6 = 15$。<br>2. 再往前推算，$9$ 的前一項 $3a-b = 9 - 6 = 3$。<br>解聯立方程式：$a+2b = 15$ 且 $3a-b = 3$。<br>由式二得 $b = 3a - 3$，代入式一：$a + 2(3a-3) = 15 \\Rightarrow 7a - 6 = 15 \\Rightarrow a = 3$。<br>將 $a=3$ 代回得 $b = 3(3) - 3 = 6$。<br>最後求 $2a - 3b = 2(3) - 3(6) = 6 - 18 = -12$。<br><strong>【答案】(A)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "6. 如圖芯盈利用等長的火柴棒依序排列的圖形，她排列第 20 個圖形時，則此圖形共用多少根火柴棒？",
+                    image: "B4-1-1q6_img.png",
+                    options: ["57", "59", "61", "63"],
+                    answer: 2,
+                    explanation: "觀察圖形可得火柴棒數列為：4, 7, 10...<br>首項 $a_1 = 4$，公差 $d = 7 - 4 = 3$。<br>求第 20 項：$a_{20} = a_1 + (20-1)d = 4 + 19 \\times 3 = 4 + 57 = 61$。<br><strong>【答案】(C)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "7. 梓瑜從 $1 \\sim 100$ 之間的正整數中選出 7 的倍數之數字後，依序由小到大排列，則下列敘述何者正確？",
+                    options: ["首項為 1", "末項為 91", "此數列第 4 項為 49", "此數列共有 14 項"],
+                    answer: 3,
+                    explanation: "此數列為 $7, 14, 21 \\dots$。首項為 7，公差為 7。<br>計算項數：$100 \\div 7 = 14 \\dots 2$，共有 14 項。<br>最後一項（末項）為 $14 \\times 7 = 98$。<br><strong>【答案】(D)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "8. 一數列為 $\\frac{1}{2}, \\frac{1}{6}, \\frac{1}{12}, \\frac{1}{20} \\dots$，則下列敘述何者正確？",
+                    options: ["第八項為 $\\frac{1}{72}$", "公差為 $-\\frac{1}{3}$", "此數列為等差數列", "此數列沒有規律性"],
+                    answer: 0,
+                    explanation: "將分母拆解觀察規律：$a_1 = \\frac{1}{1 \\times 2}, a_2 = \\frac{1}{2 \\times 3}, a_3 = \\frac{1}{3 \\times 4} \\dots$<br>依此類推，第 8 項 $a_8 = \\frac{1}{8 \\times 9} = \\frac{1}{72}$。<br><strong>【答案】(A)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "9. 已知有一個等差數列 $33, 31, 29, 27, \\dots, -11$，則下列敘述何者正確？",
+                    options: ["公差為 2", "此數列第 17 項為 -1", "7 是此數列第 14 項", "此數列共有 22 項"],
+                    answer: 2,
+                    explanation: "首項 $a_1 = 33$，公差 $d = 31 - 33 = -2$。<br>檢查(C) 7 是第幾項：$7 = 33 + (m-1)(-2) \\Rightarrow -26 = -2(m-1) \\Rightarrow m = 14$，敘述正確。<br>設 $-11$ 為第 $n$ 項求總項數：$-11 = 33 + (n-1)(-2) \\Rightarrow -44 = -2(n-1) \\Rightarrow n = 23$（共 23 項）。<br><strong>【答案】(C)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "10. 自從過年前調漲後計程車的起跳價就變成 90 元了，每次跳表加 5 元，阿嘉上車後便閉目養神，直到目的地共聽到 12 次跳表的聲音，則阿嘉應付多少元的車資？",
+                    options: ["140", "145", "150", "155"],
+                    answer: 2,
+                    explanation: "車資 = 起跳價 + (跳表次數 $\\times$ 每次加價) = $90 + 12 \\times 5 = 90 + 60 = 150$。<br><strong>【答案】(C)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "11. 若 $a, b, -14 \\dots$ 為等差數列，且 $3a+b$ 與 $a+3b$ 的等差中項為 $-2$，求 $a+2b$ 的值為何？",
+                    options: ["-6", "-3", "3", "6"],
+                    answer: 0,
+                    explanation: "1. 根據等差中項性質：$\\frac{(3a+b) + (a+3b)}{2} = -2 \\Rightarrow \\frac{4a+4b}{2} = -2 \\Rightarrow 2a+2b = -2 \\Rightarrow a+b = -1$。<br>2. $a, b, -14$ 成等差數列，中間項兩倍等於前後和：$2b = a + (-14) \\Rightarrow a - 2b = 14$。<br>解聯立方程式：$a+b=-1$ 與 $a-2b=14$<br>兩式相減：$3b = -15 \\Rightarrow b = -5$，代回得 $a = 4$。<br>所求 $a+2b = 4 + 2(-5) = -6$。<br><strong>【答案】(A)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "12. 若在 $-3$ 和 $17$ 之間插入 14 個數，使其形成一等差數列，則此數列中第 13 項為何？",
+                    options: ["12", "13", "14", "15"],
+                    answer: 1,
+                    explanation: "包含首尾，此數列共有 $14 + 2 = 16$ 項。首項 $a_1 = -3$，第 16 項 $a_{16} = 17$。<br>求公差：$17 = -3 + (16-1)d \\Rightarrow 20 = 15d \\Rightarrow d = \\frac{4}{3}$。<br>求第 13 項：$a_{13} = a_1 + 12d = -3 + 12 \\times \\frac{4}{3} = -3 + 16 = 13$。<br><strong>【答案】(B)</strong>"
+                }
+            ]
+        },
+        {
+            section: "二、填充題（每格 3 分，共 24 分）",
+            questions: [
+                {
+                    type: "fill",
+                    text: "1. 請在空格中填入適當的數使各數列成為等差數列：<br>(1) $4\\frac{1}{2}, 4, 3\\frac{1}{2}, 3$，則公差 $d =$ _____<br>(2) $11, 7, 3, \\square$，則 $\\square =$ _____<br>(3) $-5, -3, \\square, 1$，則 $\\square =$ _____<br>(4) $6, 13, 20, \\square$，則 $\\square =$ _____",
+                    explanation: "(1) $d = 4 - 4\\frac{1}{2} = -\\frac{1}{2}$。<br>(2) $d = 7 - 11 = -4$，$\\square = 3 + (-4) = -1$。<br>(3) $d = -3 - (-5) = 2$，$\\square = -3 + 2 = -1$。<br>(4) $d = 13 - 6 = 7$，$\\square = 20 + 7 = 27$。<br><strong>【答案】(1) $-\\frac{1}{2}$ &nbsp; (2) $-1$ &nbsp; (3) $-1$ &nbsp; (4) $27$</strong>"
+                },
+                {
+                    type: "fill",
+                    text: "2. 傅鈞將 $\\frac{2}{7}$ 化成小數時，他發現該小數依循著規律不斷重複，則 $\\frac{2}{7}$ 小數點第 2020 個數字為 _____。",
+                    explanation: "$\\frac{2}{7} = 0.\\overline{285714}$，以 `2, 8, 5, 7, 1, 4` 共 6 個數字為一個循環。<br>$2020 \\div 6 = 336 \\dots 4$（餘 4），表示循環結束後落在第 4 個數字，即為 7。<br><strong>【答案】$7$</strong>"
+                },
+                {
+                    type: "fill",
+                    text: "3. 如圖直角 $\\triangle ABC$ 中，$a+b+c=24$，且 $a, b, c$ 三數成等差數列，其中 $b < a < c$，且 $c=10$，則此直角 $\\triangle ABC$ 斜邊上的高為 _____。",
+                    image: "B4-1-1q_fill_3_img.png",
+                    explanation: "設三邊長為 $10-2d, 10-d, 10$。<br>周長 $= (10-2d) + (10-d) + 10 = 24 \\Rightarrow 30 - 3d = 24 \\Rightarrow d = 2$。<br>可得三股長為 $6, 8, 10$。面積 $= \\frac{6 \\times 8}{2} = 24$。<br>斜邊上的高 $= \\frac{\\text{兩股乘積}}{\\text{斜邊}} = \\frac{6 \\times 8}{10} = \\frac{48}{10} = \\frac{24}{5}$。<br><strong>【答案】$\\frac{24}{5}$</strong>"
+                },
+                {
+                    type: "fill",
+                    text: "4. THO 生物實驗室發現某一病毒株的生長分裂依循費式數列規則，記錄成數列如下：$1, 1, 2, 3, 5, 8, 13, 21, 34, 55, a_{11}$，則 $a_{11} =$ _____。",
+                    explanation: "費式數列的規律為前兩項相加等於第三項。<br>$a_{11} = a_9 + a_{10} = 34 + 55 = 89$。<br><strong>【答案】$89$</strong>"
+                },
+                {
+                    type: "fill",
+                    text: "5. 如右圖，1 個星形圖案上有 10 個圓點，2 個星形圖案連接共有 18 個圓點，依其規律 13 個星形圖案連接共有 _____ 個圓點。",
+                    image: "B4-1-1q_fill_5_img.png",
+                    explanation: "首項 $a_1 = 10$，公差 $d = 18 - 10 = 8$。<br>求第 13 項：$a_{13} = 10 + (13-1) \\times 8 = 10 + 96 = 106$。<br><strong>【答案】$106$</strong>"
+                }
+            ]
+        },
+        {
+            section: "三、非選擇題（每題 8 分，共 16 分）",
+            questions: [
+                {
+                    type: "calc",
+                    text: "1. 有一張「萬年老歌聽不膩」的 CD，裡頭收藏的歌曲長度(秒)恰好成等差數列，若第一首歌曲長度為 2 分 32 秒，第四首歌曲長度為 3 分 8 秒，則第十首歌曲長度為幾分幾秒？",
+                    explanation: "先將時間統一換算為秒：<br>第 1 首 $a_1 = 152$ 秒；第 4 首 $a_4 = 188$ 秒。<br>由公式 $a_4 = a_1 + 3d \\Rightarrow 188 = 152 + 3d \\Rightarrow 3d = 36 \\Rightarrow d = 12$（秒）。<br>求第 10 首：$a_{10} = a_1 + 9d = 152 + 9 \\times 12 = 152 + 108 = 260$ 秒。<br>260 秒換算回分秒為 4 分 20 秒。<br><strong>【答案】$4\\text{ 分 } 20\\text{ 秒}$</strong>"
+                },
+                {
+                    type: "calc",
+                    text: "2. 奧運每四年會舉辦一次，其中最引人注目的 200 公尺冠軍賽中，第一名到第九名的速度恰好形成一個等差數列，若第一名到達終點時，最後一名離終點還有 10 公尺，則此時第四名的選手共跑多少公尺？",
+                    explanation: "各名次在同一時間內「跑的距離」也成等差數列。<br>設第 1 名到第 9 名的距離為 $a_1 \\dots a_9$。<br>第 1 名跑完：$a_1 = 200$。第 9 名距終點 10 公尺，代表跑了：$a_9 = 200 - 10 = 190$。<br>$a_9 = a_1 + 8d \\Rightarrow 190 = 200 + 8d \\Rightarrow 8d = -10 \\Rightarrow d = -\\frac{5}{4}$。<br>第 4 名跑的距離為 $a_4 = a_1 + 3d = 200 + 3 \\times (-\\frac{5}{4}) = 200 - \\frac{15}{4} = \\frac{785}{4} = 196.25$ 公尺。<br><strong>【答案】$196.25\\text{ 公尺}$</strong>"
+                }
+            ]
+        },
+        {
+            section: "四、素養題（每題 4 分，共 12 分）",
+            questions: [
+                {
+                    type: "choice",
+                    text: "1. 報告導師，第一次段考國文、英文、數學三科成績的平均數為等差數列。麻煩請你在黑板上畫出國、英、數三科平均數的折線圖。根據圖中所述，下列哪一個圖形不可能為國、英、數三科成績平均數之折線圖？",
+                    image: "B4-1-1q_lit_1_img.png",
+                    options: ["(A)", "(B)", "(C)", "(D)"],
+                    answer: 2,
+                    explanation: "由於數值呈等差數列，代表相鄰兩點間的高度差固定不變。反映在座標平面上時，這三點的斜率會相同，因此會構成一條直線（三點共線）。只有選項 (C) 的圖形轉折，三點不在同一直線上，故不可能。<br><strong>【答案】(C)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "2. 阿嘉買了一輛休旅車，總價 85 萬，第 1 個月付了 35 萬，剩下 50 萬是以每個月還款 8500 元方式分期付款，則幾個月後可還清貸款？",
+                    options: ["50", "55", "59", "60"],
+                    answer: 3,
+                    explanation: "設第 $n$ 個月還清，單位化為「萬」。第 1 個月已付 35 萬，從第 2 個月開始每月付 0.85 萬。<br>總付款金額：$35 + 0.85 \\times (n-1) \\ge 85$<br>移項：$0.85 \\times (n-1) \\ge 50$<br>$n-1 \\ge \\frac{50}{0.85} \\Rightarrow n-1 \\ge 58\\frac{14}{17} \\Rightarrow n \\ge 59\\frac{14}{17}$。<br>取最小整數，故 $n=60$ 個月。<br><strong>【答案】(D)</strong>"
+                },
+                {
+                    type: "choice",
+                    text: "3. 如圖為光影電影院座位簡示圖，每排座位數依序成等差數列，已知第 23 排有 87 個座位，第 22 排有 84 個座位，則第 1 排有多少個座位？",
+                    image: "B4-1-1q_lit_3_img.png",
+                    options: ["18", "21", "24", "25"],
+                    answer: 1,
+                    explanation: "第 23 排 $a_{23} = 87$，第 22 排 $a_{22} = 84$。可推得公差 $d = 87 - 84 = 3$。<br>帶入公式求首項：$a_{23} = a_1 + 22d \\Rightarrow 87 = a_1 + 22 \\times 3 \\Rightarrow 87 = a_1 + 66 \\Rightarrow a_1 = 21$。<br><strong>【答案】(B)</strong>"
+                }
+            ]
+        }
+    ];
+
+    const quizContent = document.getElementById('quiz-content');
+
+    // 渲染題目
+    quizData.forEach((sectionData, sIdx) => {
+        // 標題區塊
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'section-title';
+        sectionTitle.innerText = sectionData.section;
+        quizContent.appendChild(sectionTitle);
+
+        // 題目迴圈
+        sectionData.questions.forEach((q, qIdx) => {
+            const qDiv = document.createElement('div');
+            qDiv.className = 'question-container';
+
+            // 1. 題目文字
+            const qText = document.createElement('div');
+            qText.className = 'question-text';
+            qText.innerHTML = q.text;
+            qDiv.appendChild(qText);
+
+            // 2. 圖片 (如果有)
+            if (q.image) {
+                const img = document.createElement('img');
+                img.src = q.image;
+                img.alt = "附圖";
+                img.className = 'question-image';
+                qDiv.appendChild(img);
+            }
+
+            // 3. 選擇題選項
+            if (q.type === 'choice' && q.options) {
+                const optionsGrid = document.createElement('div');
+                optionsGrid.className = 'options-grid';
+                
+                q.options.forEach((optText, optIdx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    const optionLabel = String.fromCharCode(65 + optIdx); // A, B, C, D
+                    btn.innerHTML = `(${optionLabel}) ${optText}`;
+                    
+                    // 點擊事件處理
+                    btn.onclick = () => {
+                        // 禁用同題所有按鈕
+                        const allBtns = optionsGrid.querySelectorAll('button');
+                        allBtns.forEach(b => b.disabled = true);
+
+                        // 判斷對錯
+                        if (optIdx === q.answer) {
+                            btn.classList.add('correct');
+                        } else {
+                            btn.classList.add('wrong');
+                            allBtns[q.answer].classList.add('correct'); // 顯示正確答案
+                        }
+                    };
+                    optionsGrid.appendChild(btn);
+                });
+                qDiv.appendChild(optionsGrid);
+            }
+
+            // 4. 顯示解析按鈕
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-exp-btn';
+            toggleBtn.innerText = '顯示解析與答案';
+            
+            // 5. 解析區塊
+            const expDiv = document.createElement('div');
+            expDiv.className = 'explanation';
+            expDiv.innerHTML = "<strong>【解析】</strong><br>" + q.explanation;
+
+            toggleBtn.onclick = () => {
+                if (expDiv.style.display === 'none' || expDiv.style.display === '') {
+                    expDiv.style.display = 'block';
+                    toggleBtn.innerText = '隱藏解析';
+                } else {
+                    expDiv.style.display = 'none';
+                    toggleBtn.innerText = '顯示解析與答案';
+                }
+            };
+
+            qDiv.appendChild(toggleBtn);
+            qDiv.appendChild(expDiv);
+
+            quizContent.appendChild(qDiv);
+        });
+    });
+
+</script>
+</body>
+</html>
