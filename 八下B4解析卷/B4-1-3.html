@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級 數學(四) 第3次練習 - 等比數列</title>
+    <!-- 載入 MathJax 渲染數學公式 -->
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <style>
+        /* 整體背景：深灰色模擬桌面 */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Times New Roman', '新細明體', serif;
+        }
+
+        /* 試卷外觀：白色背景、B4寬度限制、紙張陰影 */
+        .paper {
+            background-color: #fff;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+        }
+
+        /* 標題區排版 */
+        .header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .header h1 {
+            text-align: center;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            text-align: left;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .score-box {
+            position: absolute;
+            top: 0;
+            right: 0;
+            text-align: right;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        .score-box span {
+            display: inline-block;
+            border-bottom: 1px solid #000;
+            width: 50px;
+            margin: 0 5px;
+        }
+
+        /* 題目區塊 */
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .question-block {
+            margin-bottom: 25px;
+            line-height: 1.6;
+            font-size: 17px;
+        }
+        .question-text {
+            margin-bottom: 10px;
+        }
+        .question-img {
+            max-width: 80%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+            border: 1px dashed #ccc; /* 提示圖片位置 */
+            padding: 5px;
+        }
+
+        /* 選擇題互動按鈕 */
+        .options-list {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 10px 0;
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background-color: #fff;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-btn:hover:not(:disabled) {
+            background-color: #f0f0f0;
+        }
+        .option-btn:disabled {
+            cursor: default;
+        }
+        
+        /* 選擇題對錯樣式 */
+        .btn-correct {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724 !important;
+            font-weight: bold;
+        }
+        .btn-wrong {
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24 !important;
+            text-decoration: line-through;
+        }
+
+        /* 顯示解析按鈕 */
+        .toggle-btn {
+            background-color: #e0e0e0;
+            border: 1px solid #999;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .toggle-btn:hover {
+            background-color: #ccc;
+        }
+
+        /* 解析區塊：手寫筆記風格 */
+        .explanation {
+            display: none;
+            margin-top: 10px;
+            padding: 15px;
+            background-color: #fff8f8;
+            border-left: 4px solid #d32f2f;
+            color: #d32f2f;
+            /* 手寫風格字體 */
+            font-family: 'DFKai-SB', 'BiauKai', '標楷體', cursive;
+            font-size: 18px;
+            line-height: 1.8;
+            border-radius: 0 4px 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <!-- 標題區 -->
+    <div class="header">
+        <h1>八年級 數學(四) 第3次練習</h1>
+        <div class="subtitle">範圍：1-3 等比數列</div>
+        <div class="score-box">
+            年<span></span>班<span></span>號<br>
+            姓名<span></span><br>
+            得分<span></span>
+        </div>
+    </div>
+
+    <!-- 動態生成題目容器 -->
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // 資料與視圖分離：將所有題目資料建置於陣列中
+    const quizData = [
+        {
+            section: "一、選擇題（每題 4 分，共 48 分）",
+            items: [
+                {
+                    type: "choice",
+                    question: "1. 判斷下列何者不是等比數列？",
+                    options: [
+                        "(A) $3, 0.3, 0.03, 0.003, 0.0003$",
+                        "(B) $\\frac{2}{3}, \\frac{2}{3}, \\frac{2}{3}, \\frac{2}{3}, \\frac{2}{3}$",
+                        "(C) $3, -3, 3, -3, 3$",
+                        "(D) $1, 4, 9, 16, 25$"
+                    ],
+                    answerIndex: 3,
+                    explanation: "解析：<br>(A) 後項除以前項的公比固定為 $0.1$，是等比數列。<br>(B) 公比為 $1$，是等比數列。<br>(C) 公比為 $-1$，是等比數列。<br>(D) 相鄰兩項的比值不同（例如 $\\frac{4}{1} \\neq \\frac{9}{4}$），不是等比數列。<br><b>答案：(D)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "2. 若等比數列首項 $-\\frac{1}{6}$，公比為 $-3$，則等比數列的第7項為何？",
+                    options: [
+                        "(A) $-\\frac{243}{2}$",
+                        "(B) $-\\frac{81}{2}$",
+                        "(C) $\\frac{243}{2}$",
+                        "(D) $\\frac{81}{2}$"
+                    ],
+                    answerIndex: 0,
+                    explanation: "解析：利用等比數列公式 $a_n = a_1 \\times r^{n-1}$。<br>第7項 $a_7 = (-\\frac{1}{6}) \\times (-3)^{7-1} = (-\\frac{1}{6}) \\times (-3)^6 = (-\\frac{1}{6}) \\times 729 = -\\frac{243}{2}$。<br><b>答案：(A)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "3. 已知 $x, 3a, 2a \\dots$ ($a \\neq 0$) 成等比數列，則 $x$ 為下列何者？",
+                    options: [
+                        "(A) $\\frac{9}{2}$",
+                        "(B) $\\frac{3}{2}$",
+                        "(C) $\\frac{9}{2}a$",
+                        "(D) $\\frac{3}{2}a$"
+                    ],
+                    answerIndex: 2,
+                    explanation: "解析：先求公比 $r = \\frac{2a}{3a} = \\frac{2}{3}$。<br>因為 $x$ 乘以公比會等於第二項，所以 $x \\times \\frac{2}{3} = 3a$，解得 $x = 3a \\times \\frac{3}{2} = \\frac{9}{2}a$。<br><b>答案：(C)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "4. 已知 $a_1, a_2, a_3, a_4, a_5$ 為一等比數列，若其公比為 $r$ ($r \\neq 0$)：<br>甲說：數列 $a_5, a_4, a_3, a_2, a_1$ 也會是等比數列，公比為 $\\frac{1}{r}$<br>乙說：數列 $a_1, a_3, a_5$ 也會是等比數列，公比為 $r^2$<br>則下列敘述何者正確？",
+                    options: [
+                        "(A) 甲正確，乙錯誤",
+                        "(B) 甲錯誤，乙正確",
+                        "(C) 甲、乙皆正確",
+                        "(D) 甲、乙皆錯誤"
+                    ],
+                    answerIndex: 2,
+                    explanation: "解析：<br>甲說：將數列反轉，其後項除以前項的比值會變成原本的倒數，即公比為 $\\frac{1}{r}$，甲正確。<br>乙說：取奇數項相當於每次跳過一項，公比會變成原本的平方 $r^2$，乙正確。<br><b>答案：(C)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "5. 有一等比數列 $2, 20, 200 \\dots$，則此等比數列的第8項為何？",
+                    options: [
+                        "(A) $2 \\times 10^8$",
+                        "(B) $2 \\times 10^7$",
+                        "(C) $2 \\times 10^6$",
+                        "(D) $2 \\times 10^9$"
+                    ],
+                    answerIndex: 1,
+                    explanation: "解析：首項 $a_1 = 2$，公比 $r = 10$。<br>第8項 $a_8 = a_1 \\times r^{8-1} = a_1 \\times r^7 = 2 \\times 10^7$。<br><b>答案：(B)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "6. 已知 $4, a, 9$ 成等比數列，又 $\\frac{1}{4}, b, \\frac{1}{9}$ 也是等比數列，且 $a, b$ 皆為正數，則下列敘述何者正確？",
+                    options: [
+                        "(A) $a = 6b$",
+                        "(B) $a = b^2$",
+                        "(C) $a \\times b = 1$",
+                        "(D) $4a = 9b$"
+                    ],
+                    answerIndex: 2,
+                    explanation: "解析：<br>由等比中項性質可知，$a^2 = 4 \\times 9 = 36$，因 $a > 0$，故 $a = 6$。<br>同理，$b^2 = \\frac{1}{4} \\times \\frac{1}{9} = \\frac{1}{36}$，因 $b > 0$，故 $b = \\frac{1}{6}$。<br>計算兩者乘積：$a \\times b = 6 \\times \\frac{1}{6} = 1$。<br><b>答案：(C)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "7. 有三數成等比數列，已知等比中項為 $-5$，則此三數的乘積為何？",
+                    options: [
+                        "(A) $5^3$",
+                        "(B) $(-5)^3$",
+                        "(C) $5^4$",
+                        "(D) $(-5)^4$"
+                    ],
+                    answerIndex: 1,
+                    explanation: "解析：設此三數為 $x, -5, y$。<br>由等比中項性質可知 $x \\times y = (-5)^2$。<br>此三數的乘積為 $x \\times (-5) \\times y = (-5) \\times (x \\times y) = (-5) \\times (-5)^2 = (-5)^3 = -125$。<br><b>答案：(B)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "8. 一數列為 $1, -1, 1, -1, 1, -1, 1, -1$，則下列敘述何者正確？",
+                    options: [
+                        "(A) 此數列為等比數列",
+                        "(B) 此數列為等差數列",
+                        "(C) 此數列公比為 $1$",
+                        "(D) 此數列公差為 $1$"
+                    ],
+                    answerIndex: 0,
+                    explanation: "解析：檢查相鄰兩項比值，$\\frac{-1}{1} = \\frac{1}{-1} = -1$，比值固定，故此為公比 $r = -1$ 的等比數列。<br><b>答案：(A)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "9. 有一等比數列為 $2, 8, 32, \\square, 512$，則下列敘述何者正確？",
+                    options: [
+                        "(A) 公比 $= 2$",
+                        "(B) 公比 $= 2^2$",
+                        "(C) $\\square = 64$",
+                        "(D) $\\square = 96$"
+                    ],
+                    answerIndex: 1,
+                    explanation: "解析：公比 $r = \\frac{8}{2} = 4 = 2^2$。<br>空格 $\\square$ 為第4項，值為 $32 \\times 4 = 128$。核對選項，僅有 (B) 敘述的公比等於 $2^2$ 正確。<br><b>答案：(B)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "10. 已知一等比數列的首項 $a_1 = 7$，公比 $r = -2$，則有關 $1792$ 此數與此等比數列之間的敘述何者正確？",
+                    options: [
+                        "(A) $1792 = 7^9$",
+                        "(B) $1792 = (-2)^9$",
+                        "(C) $1792$ 是此等比數列第9項",
+                        "(D) $1792$ 不是此等比數列中的一數"
+                    ],
+                    answerIndex: 2,
+                    explanation: "解析：代入公式 $a_n = 7 \\times (-2)^{n-1} = 1792$。<br>推導出 $(-2)^{n-1} = \\frac{1792}{7} = 256$。<br>因為 $(-2)^8 = 256$，所以 $n - 1 = 8$，解得 $n = 9$。<br><b>答案：(C)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "11. 已知一等比數列 $4, -12, 36, -108, 324 \\dots$，則下列有關此等比數列的敘述何者正確？",
+                    options: [
+                        "(A) 公比 $= -3$",
+                        "(B) $a_n = 4 \\times (-3)^{n-1}$",
+                        "(C) 第33項 $< 0$",
+                        "(D) $2a_1 = a_2 + a_3$"
+                    ],
+                    answerIndex: 1,
+                    explanation: "解析：首項 $a_1 = 4$，公比 $r = \\frac{-12}{4} = -3$。<br>一般項公式為 $a_n = 4 \\times (-3)^{n-1}$，故選項 (B) 正確。<br>選項 (C) 第33項 $a_{33} = 4 \\times (-3)^{32}$，因負數的偶次方為正，故大於 $0$。<br><b>答案：(B)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "12. 已知 $a-b, 7, 3a+2b+1$ 為等差數列，且 $\\frac{3a+2b}{2} = 8$。若 $a, b, c$ 為等比數列，則 $c = ?$",
+                    options: [
+                        "(A) $\\frac{25}{2}$",
+                        "(B) $\\frac{25}{4}$",
+                        "(C) $\\frac{16}{3}$",
+                        "(D) $\\frac{16}{5}$"
+                    ],
+                    answerIndex: 0,
+                    explanation: "解析：<br>1. 由 $\\frac{3a+2b}{2} = 8 \\implies 3a+2b = 16$。<br>2. 等差數列第三項 $3a+2b+1 = 16+1 = 17$。<br>3. $7$ 是等差中項 $\\implies \\frac{(a-b) + 17}{2} = 7 \\implies a-b = -3$。<br>4. 解聯立：$a-b = -3$ 與 $3a+2b = 16$，可得 $a=2, b=5$。<br>5. $(a, b, c)$ 即 $(2, 5, c)$ 成等比數列，公比為 $\\frac{5}{2}$，因此 $c = 5 \\times \\frac{5}{2} = \\frac{25}{2}$。<br><b>答案：(A)</b>"
+                }
+            ]
+        },
+        {
+            section: "二、填充題（每格 3 分，共 24 分）",
+            items: [
+                {
+                    type: "fill",
+                    question: "1. (1) $-16, 24, -36, 54$，則公比 $r = ?$ <br> (2) $6, 2, \\frac{2}{3}, \\square$，則 $\\square = ?$",
+                    explanation: "解析：<br>(1) $r = \\frac{24}{-16} = -\\frac{3}{2}$。<br>(2) $r = \\frac{2}{6} = \\frac{1}{3}$，$\\square = \\frac{2}{3} \\times \\frac{1}{3} = \\frac{2}{9}$。<br><b>答案：(1) $-\\frac{3}{2}$ (2) $\\frac{2}{9}$</b>"
+                },
+                {
+                    type: "fill",
+                    question: "2. 已知 $x, -2, 8, y$ 成等比數列，則 $2x + y$ 之值為？",
+                    explanation: "解析：公比 $r = \\frac{8}{-2} = -4$。<br>因此 $x = \\frac{-2}{-4} = \\frac{1}{2}$，$y = 8 \\times (-4) = -32$。<br>計算 $2x + y = 2(\\frac{1}{2}) + (-32) = 1 - 32 = -31$。<br><b>答案：$-31$</b>"
+                },
+                {
+                    type: "fill",
+                    question: "3. 若一等比數列的第5項為 $16$，第6項為 $4$，則此等比數列的公比為？",
+                    explanation: "解析：公比 $r = \\frac{a_6}{a_5} = \\frac{4}{16} = \\frac{1}{4}$。<br><b>答案：$\\frac{1}{4}$</b>"
+                },
+                {
+                    type: "fill",
+                    question: "4. 若一等比數列的第4項為 $1$，第5項為 $-2$，則此等比數列的首項為？",
+                    explanation: "解析：公比 $r = \\frac{-2}{1} = -2$。<br>$a_4 = a_1 \\times r^3 \\implies 1 = a_1 \\times (-2)^3 \\implies 1 = -8a_1 \\implies a_1 = -\\frac{1}{8}$。<br><b>答案：$-\\frac{1}{8}$</b>"
+                },
+                {
+                    type: "fill",
+                    question: "5. 已知 $x-3, x+3, x+12$ 三數成等比數列，則 $x$ 之值為？",
+                    explanation: "解析：利用等比中項展開：$(x+3)^2 = (x-3)(x+12)$。<br>即 $x^2 + 6x + 9 = x^2 + 9x - 36$。<br>移項整理得到 $3x = 45$，解得 $x = 15$。<br><b>答案：$15$</b>"
+                },
+                {
+                    type: "fill",
+                    question: "6. 已知 $a, 9, b, 25, c$ 是一個等比數列，則 $a \\times b \\times c$ 的值為？",
+                    explanation: "解析：$9, b, 25$ 為相鄰三項，故 $b^2 = 9 \\times 25 = 225$，得出 $b = \\pm 15$。<br>在等比數列中，首末兩項乘積等於等比中項的平方，即 $a \\times c = b^2 = 225$。<br>所求 $a \\times b \\times c = (a \\times c) \\times b = 225 \\times (\\pm 15) = \\pm 3375$。<br><b>答案：$\\pm 3375$</b>"
+                },
+                {
+                    type: "fill",
+                    question: "7. 已知 $a < b$，若 $a, b$ 兩數的乘積為 $48$，且 $a, b$ 兩數與等差中項的和為 $21$。若 $b$ 為 $a, c$ 的等比中項，則 $c = ?$",
+                    explanation: "解析：$a, b$ 的等差中項為 $\\frac{a+b}{2}$。<br>依題意 $a + b + \\frac{a+b}{2} = 21 \\implies \\frac{3}{2}(a+b) = 21 \\implies a+b = 14$。<br>解 $a+b=14$ 及 $ab=48$，可得二次方程式 $x^2 - 14x + 48 = 0$，解得 $6$ 與 $8$。<br>因 $a < b$，故 $a=6, b=8$。<br>又 $b$ 為 $a, c$ 等比中項，故 $b^2 = ac \\implies 8^2 = 6c \\implies 64 = 6c \\implies c = \\frac{64}{6} = \\frac{32}{3}$。<br><b>答案：$\\frac{32}{3}$</b>"
+                }
+            ]
+        },
+        {
+            section: "三、非選擇題（每題 8 分，共 16 分）",
+            items: [
+                {
+                    type: "nonchoice",
+                    question: "1. 瑋豪為了消除鮪魚肚，訂立了每日運動計畫。仰臥起坐天數與次數表格如下：<br>(1) 若依瑋豪的運動計畫，則第幾天起當日仰臥起坐可達每天 $100$ 下以上（含）？<br>(2) 傑森看到瑋豪的計畫後也一同加入，但他每天次數為前一天的 $2$ 倍，則傑森第幾天起仰臥起坐可達每天 $100$ 下以上（含）？",
+                    image: "B4-1-3q_nonchoice_1_img.png",
+                    explanation: "解析：<br><b>(1) 瑋豪計畫（等差數列）：</b><br>首項 $a_1 = 5$，公差 $d = 5$。<br>一般項 $a_n = 5 + (n-1) \\times 5 \\geq 100 \\implies 5n \\geq 100 \\implies n \\geq 20$。<b>第20天</b><br><br><b>(2) 傑森計畫（等比數列）：</b><br>首項 $b_1 = 5$，公比 $r = 2$。<br>一般項 $b_n = 5 \\times 2^{n-1} \\geq 100 \\implies 2^{n-1} \\geq 20$。<br>因 $2^4=16, 2^5=32$，故 $n-1 \\geq 5 \\implies n \\geq 6$。<b>第6天</b>"
+                },
+                {
+                    type: "nonchoice",
+                    question: "2. 證明題：三人年齡對話。<br>逸群說：「我們三人年齡成等差數列。」<br>信瑋說：「好巧！我們三人年齡也成等比數列。」<br>劭軒說：「哈！原來我們三人的年齡一樣啊！」<br>請問劭軒所言是否正確？請詳細說明之。",
+                    image: "B4-1-3q_nonchoice_2_img.png",
+                    explanation: "解析：設三人年齡分別為 $a, b, c$。<br>1. 成等差數列：$2b = a + c \\dots$①<br>2. 成等比數列：$b^2 = ac \\dots$②<br>將①式改寫為 $b = \\frac{a+c}{2}$ 代入②式中：<br>$(\\frac{a+c}{2})^2 = ac \\implies \\frac{a^2+2ac+c^2}{4} = ac \\implies a^2+2ac+c^2 = 4ac $<br>$\\implies a^2-2ac+c^2 = 0 \\implies (a-c)^2 = 0 \\implies a = c \\dots$③。<br>將③式代回①式：$2b = a+a = 2a \\implies b = a \\dots$④。<br>綜合③④可得 $a=b=c$，代表三人年齡皆一樣。<br><b>答案：劭軒所言正確（故得證）。</b>"
+                }
+            ]
+        },
+        {
+            section: "四、素養題（每題 4 分，共 12 分）",
+            items: [
+                {
+                    type: "choice",
+                    question: "1. 網球反彈高度問題：如圖，欣怡將一顆網球自 $256$ 公分高處自由落下，已知每次落地後彈跳的高度為原來高度的 $\\frac{3}{4}$ 倍，則此球第5次彈跳的高度為多少公分？",
+                    image: "B4-1-3q_literacy_1_img.png",
+                    options: [
+                        "(A) $\\frac{243}{4}$",
+                        "(B) $\\frac{255}{4}$",
+                        "(C) $\\frac{262}{4}$",
+                        "(D) $\\frac{266}{4}$"
+                    ],
+                    answerIndex: 0,
+                    explanation: "解析：初始高度 $256$ 公分，每次彈起為原來的 $\\frac{3}{4}$。<br>第5次彈跳高度等於 $256 \\times (\\frac{3}{4})^5 = 256 \\times \\frac{243}{1024} = 2^8 \\times \\frac{243}{2^{10}} = \\frac{243}{2^2} = \\frac{243}{4}$ 公分。<br><b>答案：(A)</b>"
+                },
+                {
+                    type: "choice",
+                    question: "2. 《孫子算經》中，有道題目：「今有出門望見九隄，隄有九木，木有九枝，枝有九葉，葉有九華，華有九實，實有九禽，禽有九毛，毛有九色，問各有幾何？」這是一道首項為 $9$，公比也為 $9$ 的等比數列問題，請以 $9$ 的乘方表示「毛」共有多少？",
+                    options: [
+                        "(A) $9^6$",
+                        "(B) $9^7$",
+                        "(C) $9^8$",
+                        "(D) $9^9$"
+                    ],
+                    answerIndex: 1,
+                    explanation: "解析：依層遞關係列出數量：<br>木：$9^1$<br>枝：$9 \\times 9 = 9^2$<br>葉：$9^2 \\times 9 = 9^3$<br>華(花)：$9^3 \\times 9 = 9^4$<br>實：$9^4 \\times 9 = 9^5$<br>禽：$9^5 \\times 9 = 9^6$<br>毛：$9^6 \\times 9 = 9^7$<br><b>答案：(B) $9^7$</b>"
+                },
+                {
+                    type: "choice",
+                    question: "3. 研究員紅芯發現某種新元素，其特性相當不穩定，每 $10$ 天為一個半衰期。也就是說，每經過 $10$ 天，數量變為原來的一半。若原有 $50$ 萬顆此元素原子，則最少幾天後將剩下不到 $1000$ 顆？",
+                    options: [
+                        "(A) 100",
+                        "(B) 90",
+                        "(C) 50",
+                        "(D) 10"
+                    ],
+                    answerIndex: 1,
+                    explanation: "解析：每 $10$ 天數量變為原來的一半（公比 $r = \\frac{1}{2}$）。<br>設過了 $n$ 個半衰期，數量 $a_n = 500000 \\times (\\frac{1}{2})^n < 1000$。<br>化簡得 $(\\frac{1}{2})^n < \\frac{1000}{500000} = \\frac{1}{500}$，即 $2^n > 500$。<br>因 $2^8 = 256, 2^9 = 512$，故最小整數 $n = 9$。<br>經過 $9$ 個半衰期，也就是 $9 \\times 10 = 90$ 天。<br><b>答案：(B) 90</b>"
+                }
+            ]
+        }
+    ];
+
+    const container = document.getElementById('quiz-container');
+
+    // 渲染所有題目
+    quizData.forEach((sectionData, sectionIndex) => {
+        // 加入大題標題
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'section-title';
+        sectionTitle.innerHTML = sectionData.section;
+        container.appendChild(sectionTitle);
+
+        // 遍歷該大題的每一小題
+        sectionData.items.forEach((item, itemIndex) => {
+            const block = document.createElement('div');
+            block.className = 'question-block';
+
+            // 1. 題目文字
+            const qText = document.createElement('div');
+            qText.className = 'question-text';
+            qText.innerHTML = item.question;
+            block.appendChild(qText);
+
+            // 2. 圖片預留位 (如果有)
+            if (item.image) {
+                const img = document.createElement('img');
+                img.src = item.image;
+                img.alt = `請在此放置圖片：${item.image}`;
+                img.className = 'question-img';
+                block.appendChild(img);
+            }
+
+            // 3. 互動選項 (如果是選擇題)
+            if (item.type === 'choice' && item.options) {
+                const ul = document.createElement('ul');
+                ul.className = 'options-list';
+                
+                item.options.forEach((optStr, optIdx) => {
+                    const li = document.createElement('li');
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerHTML = optStr;
+                    
+                    // 點擊選項邏輯
+                    btn.onclick = function() {
+                        // 鎖定所有選項
+                        const allBtns = ul.querySelectorAll('.option-btn');
+                        allBtns.forEach(b => b.disabled = true);
+                        
+                        // 判斷對錯
+                        if (optIdx === item.answerIndex) {
+                            btn.classList.add('btn-correct');
+                        } else {
+                            btn.classList.add('btn-wrong');
+                            // 標示出正確答案
+                            allBtns[item.answerIndex].classList.add('btn-correct');
+                        }
+                    };
+                    
+                    li.appendChild(btn);
+                    ul.appendChild(li);
+                });
+                block.appendChild(ul);
+            }
+
+            // 4. 解析按鈕與區塊
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-btn';
+            toggleBtn.innerText = '📝 顯示解析與答案';
+            
+            const expDiv = document.createElement('div');
+            expDiv.className = 'explanation';
+            expDiv.innerHTML = item.explanation;
+            
+            toggleBtn.onclick = function() {
+                if (expDiv.style.display === 'block') {
+                    expDiv.style.display = 'none';
+                    toggleBtn.innerText = '📝 顯示解析與答案';
+                } else {
+                    expDiv.style.display = 'block';
+                    toggleBtn.innerText = '隱藏解析';
+                }
+            };
+            
+            block.appendChild(toggleBtn);
+            block.appendChild(expDiv);
+
+            container.appendChild(block);
+        });
+    });
+
+    // 呼叫 MathJax 渲染剛動態生成的 LaTeX 公式
+    window.onload = function() {
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    };
+</script>
+</body>
+</html>
