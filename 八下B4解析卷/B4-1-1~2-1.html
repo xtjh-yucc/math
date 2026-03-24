@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級 數學(四) 第5次練習</title>
+    <!-- 引入 MathJax 渲染 LaTeX 數學公式 -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady();
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        /* 整體背景：深灰色，模擬桌面 */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Times New Roman', 'PMingLiU', '新細明體', serif;
+        }
+
+        /* 試卷外觀 */
+        .paper {
+            background-color: #fff;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            color: #000;
+        }
+
+        /* 標題區 */
+        .header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            letter-spacing: 2px;
+        }
+        .header p {
+            margin: 0;
+            font-size: 16px;
+        }
+        .score-box {
+            position: absolute;
+            top: 0;
+            right: 0;
+            border: 2px solid #000;
+            width: 100px;
+            height: 50px;
+            display: flex;
+            align-items: flex-start;
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        /* 題目區塊 */
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .question-block {
+            margin-bottom: 35px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        .question-text {
+            margin-bottom: 10px;
+        }
+        .q-img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+            border: 1px dashed #ccc;
+            padding: 5px;
+            background-color: #f9f9f9;
+        }
+        .q-img::before {
+            content: attr(alt);
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* 選擇題按鈕選項 */
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-left: 20px;
+        }
+        .option-btn {
+            text-align: left;
+            background-color: #fcfcfc;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .option-btn:hover:not(:disabled) {
+            background-color: #e9e9e9;
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+        /* 互動回饋樣式 */
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            font-weight: bold;
+        }
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        /* 解析與按鈕 */
+        .toggle-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .toggle-btn:hover {
+            background-color: #45a049;
+        }
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #fdf5f5;
+            border-left: 4px solid #d32f2f;
+            /* 老師手寫筆記風格 */
+            font-family: 'KaiTi', 'BiauKai', '標楷體', serif;
+            color: #d32f2f;
+            font-size: 18px;
+            display: none;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="header">
+        <h1>八年級 數學(四) 第5次練習</h1>
+        <p>範圍：複習一 (1-1 ~ 2-1)</p>
+        <div class="score-box">得分：</div>
+    </div>
+
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // 資料與視圖分離：題庫資料
+    const quizData = [
+        // ＝＝＝ 一、選擇題 ＝＝＝
+        {
+            section: "一、選擇題（每題 4 分，共 48 分）",
+            type: "choice",
+            question: "觀察此數列 $-10000, 1000, -100, 10, -1, a_n$，請問 $a_n$ 應為下列何數？",
+            options: [
+                "$-\\frac{1}{10}$",
+                "$-\\frac{1}{100}$",
+                "$\\frac{1}{10}$",
+                "$\\frac{1}{100}$"
+            ],
+            correct: 2, // (C)
+            explanation: "觀察數列相鄰兩項的倍數關係，可以發現後項除以前項的公比為 $-\\frac{1}{10}$（例如 $1000 \\div (-10000) = -\\frac{1}{10}$），這是一個**等比數列**。<br>因此，第六項 $a_6 = -1 \\times (-\\frac{1}{10}) = \\frac{1}{10}$。"
+        },
+        {
+            type: "choice",
+            question: "若一等差數列的首項為 $17$，第十三項為 $-1$，則此等差數列的公差為下列何數？",
+            options: [
+                "$-\\frac{3}{2}$",
+                "$-\\frac{5}{4}$",
+                "$\\frac{2}{3}$",
+                "$\\frac{3}{4}$"
+            ],
+            correct: 0, // (A)
+            explanation: "根據等差數列公式 $a_n = a_1 + (n-1)d$。<br>代入首項 $a_1 = 17$ 與 $a_{13} = -1$，可得 $-1 = 17 + 12d$。<br>解得 $12d = -18$，公差 $d = -\\frac{3}{2}$。"
+        },
+        {
+            type: "choice",
+            question: "庭安十月份有 500 元零用錢，每天都用去 60 元，$x$ 天後剩下 $y$ 元，且 $y > 0$，則 $x、y$ 的關係式為下列何式？",
+            options: [
+                "$x = 500 + 60y$",
+                "$x = 600 - 6y$",
+                "$y = 500 + 60x$",
+                "$y + 60x = 500$"
+            ],
+            correct: 3, // (D)
+            explanation: "總金額為 500 元，花費了 $60x$ 元，剩下的錢 $y = 500 - 60x$。<br>將方程式移項可得：**$y + 60x = 500$**。"
+        },
+        {
+            type: "choice",
+            question: "已知某線型函數當 $x = -7$ 時 $y = -7$，且當 $x = -700$ 時 $y = -7$，則此函數當 $x = \\frac{1}{7}$ 時，$y$ 的值為何？",
+            options: [
+                "$\\frac{1}{7}$",
+                "$-\\frac{1}{7}$",
+                "$-7$",
+                "$7$"
+            ],
+            correct: 2, // (C)
+            explanation: "不同的 $x$ 值對應的 $y$ 值都是 $-7$，代表這是一個**常數函數 $y = -7$**。<br>因此不論 $x$ 帶入多少，$y$ 的值永遠都是 $-7$。"
+        },
+        {
+            type: "choice",
+            question: "計算等差級數 $5 + 8 + 11 + \\dots + 65$ 之和為何？",
+            options: [
+                "724",
+                "735",
+                "742",
+                "753"
+            ],
+            correct: 1, // (B)
+            explanation: "此為等差級數，首項 $a_1 = 5$，公差 $d = 3$，末項 $a_n = 65$。<br>先求項數 $n$：$65 = 5 + (n-1) \\times 3 \\Rightarrow 60 = 3(n-1) \\Rightarrow n = 21$。<br>接著代入梯形面積的級數求和公式：$S_{21} = \\frac{21 \\times (5 + 65)}{2} = \\frac{21 \\times 70}{2} = 735$。"
+        },
+        {
+            type: "choice",
+            question: "已知一等比數列的首項 $a_1$ 為 $16$，公比為 $-\\frac{3}{2}$，則下列敘述何者正確？",
+            options: [
+                "第二項為正數",
+                "第三項小於 1",
+                "81 是第 5 項",
+                "96 是第 7 項"
+            ],
+            correct: 2, // (C)
+            explanation: "依序將數列各項列出：<br>$a_1 = 16$<br>$a_2 = 16 \\times (-\\frac{3}{2}) = -24$<br>$a_3 = -24 \\times (-\\frac{3}{2}) = 36$<br>$a_4 = 36 \\times (-\\frac{3}{2}) = -54$<br>**$a_5 = -54 \\times (-\\frac{3}{2}) = 81$**<br>比對選項，只有 (C)「81是第5項」正確。"
+        },
+        {
+            type: "choice",
+            question: "已知函數 $y = 3x - 1$ 與函數 $y = -4x + 6$ 在 $x = a$ 時兩個函數值相等，則 $a = $ ？",
+            options: [
+                "3",
+                "1",
+                "-2",
+                "-4"
+            ],
+            correct: 1, // (B)
+            explanation: "將 $x = a$ 代入兩個函數並令其相等：<br>$3a - 1 = -4a + 6$<br>移項化簡得 $7a = 7 \\Rightarrow a = 1$。"
+        },
+        {
+            type: "choice",
+            question: "已知某函數圖形通過原點與 $(-4, 3)$，則下列敘述何者正確？",
+            options: [
+                "當 $x=10$ 時，此函數值為 $-6$",
+                "此函數圖形交 $y$ 軸於 $(0, -\\frac{3}{4})$",
+                "此函數圖形通過第一、二、四象限",
+                "此函數圖形與 $y = -3$ 圖形相交於 $(4, -3)$"
+            ],
+            correct: 3, // (D)
+            explanation: "通過原點 $(0,0)$ 的線型函數必為正比例函數，設 $y = ax$。<br>代入 $(-4, 3)$ 得 $3 = -4a \\Rightarrow a = -\\frac{3}{4}$，故函數為 **$y = -\\frac{3}{4}x$**。<br>檢驗選項 (D)：當 $y = -3$ 時，$-3 = -\\frac{3}{4}x \\Rightarrow x = 4$，即交點為 **$(4, -3)$**，此選項正確。"
+        },
+        {
+            type: "choice",
+            question: "已知一等差級數首項為 $100$，第 12 項為 $67$，則此等差級數和最大值為多少？",
+            options: [
+                "1717",
+                "1724",
+                "1732",
+                "1735"
+            ],
+            correct: 0, // (A)
+            explanation: "先求公差：$a_{12} = 100 + 11d = 67 \\Rightarrow 11d = -33 \\Rightarrow d = -3$。<br>級數和要最大，代表只能加「正數」或「零」的項。<br>找出哪些項是正的：$a_n = 100 + (n-1)(-3) \\ge 0 \\Rightarrow 103 \\ge 3n \\Rightarrow n \\le 34.33\\dots$<br>表示**前 34 項均為正**。<br>前 34 項總和為 $S_{34} = \\frac{34}{2} \\times [2(100) + 33(-3)] = 17 \\times (200 - 99) = 17 \\times 101 = 1717$。"
+        },
+        {
+            type: "choice",
+            question: "右圖為某兩個函數圖形的情形，請問下列哪組可能為此兩函數？",
+            image: "c10_img.png",
+            options: [
+                "$y = x - 1 ,\\; y = 2x + 1$",
+                "$y = x + 1 ,\\; y = 2x + 1$",
+                "$y = x + 1 ,\\; y = -2x + 1$",
+                "$y = -x - 1 ,\\; y = -2x + 1$"
+            ],
+            correct: 0, // (A)
+            explanation: "觀察圖形，兩直線都是由左下往右上延伸，代表它們的**斜率均為正數**。<br>再觀察圖上的交點標示為 $(-2, -3)$，將其代入各選項檢驗：<br>代入 (A) 選項：$-3 = -2 - 1$ (符合)；$-3 = 2(-2) + 1$ (符合)，且兩者斜率 (1, 2) 皆為正，符合圖形特徵。"
+        },
+        {
+            type: "choice",
+            question: "某液體的體積為 $x$ 立方公分時，質量是 $y$ 克，而 $x、y$ 的關係圖如右圖所示，則下列敘述何者正確？",
+            image: "c11_img.png",
+            options: [
+                "$x$ 與 $y$ 為反比關係",
+                "$x$ 與 $y$ 不是函數關係",
+                "$x$ 與 $y$ 關係式為 $y = 25x + 30$",
+                "當體積為 108 立方公分時，此液體質量為 90 克"
+            ],
+            correct: 3, // (D)
+            explanation: "觀察圖表，直線通過原點 $(0,0)$ 以及 $(30, 25)$。<br>代入 $y = ax$ 可得 $25 = 30a \\Rightarrow a = \\frac{5}{6}$，即**函數為 $y = \\frac{5}{6}x$**。<br>將 $x=108$ 代入可得 $y = \\frac{5}{6} \\times 108 = 90$ 克，故選項 (D) 正確。"
+        },
+        {
+            type: "choice",
+            question: "依據圖中所示，請問兩數列中第 20 個共同的數為下列何數？<br>正順：$2, 5, 8, 11, 14, 17, 20, \\dots$<br>正皓：$3, 7, 11, 15, 19, 23, \\dots$",
+            image: "c12_img.png",
+            options: [
+                "224",
+                "228",
+                "239",
+                "243"
+            ],
+            correct: 2, // (C)
+            explanation: "正順數列：公差 $d_1 = 3$<br>正皓數列：公差 $d_2 = 4$<br>兩個數列的**首個共同項為 11**。共同數列的公差為原本兩數列公差的最小公倍數，即 $\\text{LCM}(3, 4) = 12$。<br>要求第 20 個共同項 $a_{20} = 11 + 19 \\times 12 = 11 + 228 = 239$。"
+        },
+        
+        // ＝＝＝ 二、填充題 ＝＝＝
+        {
+            section: "二、填充題（每格 3 分，共 24 分）",
+            type: "fill",
+            question: "根據圖形規律回答問題：<br>(1) 圖一與圖二相差 \_\_\_\_\_ 點。<br>(2) 圖三共有 \_\_\_\_\_ 點。<br>(3) 若排成 15 個六邊形會有 \_\_\_\_\_ 點。<br>(4) 若排出的圖形有 196 個點，則共排出 \_\_\_\_\_ 個六邊形。",
+            image: "f1_img.png",
+            answer: "(1) 5&nbsp;&nbsp;&nbsp;(2) 16&nbsp;&nbsp;&nbsp;(3) 76&nbsp;&nbsp;&nbsp;(4) 39",
+            explanation: "觀察圖形的點數：<br>圖一 (1個六邊形)：6 個點<br>圖二 (2個六邊形)：相鄰的六邊形**共用一個頂點**，因此多出 5 個點，總數為 11 個點。<br>圖三 (3個六邊形)：總數為 $11 + 5 = 16$ 個點。<br>故這是一個首項 $a_1 = 6$，公差 $d = 5$ 的等差數列。<br>(1) 圖一與圖二相差 $11 - 6 = 5$ 點。<br>(2) 圖三共有 16 點。<br>(3) 15 個六邊形共有 $a_{15} = 6 + 14 \\times 5 = 76$ 點。<br>(4) 點數為 196，則 $196 = 6 + (n-1) \\times 5 \\Rightarrow 190 = 5(n-1) \\Rightarrow n = 39$ 個六邊形。"
+        },
+        {
+            type: "fill",
+            question: "已知兩函數分別為 $x - \\frac{1}{4}y = \\frac{1}{4}$ 和 $\\frac{1}{4}x - y = 1$，若此兩函數圖形相交於 $A(a, b)$，則 $a + b =$ \_\_\_\_\_？",
+            answer: "-1",
+            explanation: "將兩式同乘 4 化為整數方程式解聯立：<br>$\\begin{cases} 4x - y = 1 \\dots (1) \\\\ x - 4y = 4 \\dots (2) \\end{cases}$<br>由 (2) 得 $x = 4y + 4$，代入 (1) 得 $4(4y + 4) - y = 1 \\Rightarrow 15y = -15 \\Rightarrow y = -1$。<br>將 $y = -1$ 代回得 $x = 0$。<br>因此交點 $A(a,b) = (0, -1)$，**$a+b = 0 + (-1) = -1$**。"
+        },
+        {
+            type: "fill",
+            question: "右圖為一次函數 $y = 3x + 3$ 的圖形，若一常數函數 $y = k$ 的圖形會與 $y = 3x + 3$ 圖形相交於第二象限，則 $k$ 的範圍為 \_\_\_\_\_？",
+            image: "f3_img.png",
+            answer: "$0 < k < 3$",
+            explanation: "$y = 3x + 3$ 通過 $(-1, 0)$ 和 $(0, 3)$ 兩點。<br>第二象限的範圍是 $x < 0$ 且 $y > 0$。<br>觀察此線段在第二象限的 $y$ 座標範圍，皆介於 $0$ 與 $3$ 之間。<br>因此水平線 $y = k$ 若要與之相交，必須滿足 **$0 < k < 3$**。"
+        },
+        {
+            type: "fill",
+            question: "已知一次函數 $y = -12x + 15$，若 $x = 29$ 時其函數值為 $a$，$x = 4$ 時函數值為 $b$，則 $\\frac{a-b}{29-4} =$ \_\_\_\_\_？",
+            answer: "-12",
+            explanation: "算式 $\\frac{a-b}{29-4} = \\frac{f(29) - f(4)}{29 - 4}$ 正是這個一次函數的**斜率 (變化率)**。<br>由於函數為 $y = -12x + 15$，其斜率恆為 **-12**。"
+        },
+        {
+            type: "fill",
+            question: "阿東老師準備了 200 顆糖分送給數學成績優異的同學，最高分 45 顆，次之 40 顆，接著 35 顆，依此類推直到數量不足為止。倘若班上無人同分，則最後一位可得 \_\_\_\_\_ 顆。",
+            answer: "20",
+            explanation: "分發的糖果數為等差數列 $a_1 = 45, d = -5$。發放總和 $S_n$ 必須 $\\le 200$。<br>$S_n = \\frac{n[2(45) + (n-1)(-5)]}{2} \\le 200 \\Rightarrow n(95 - 5n) \\le 400 \\Rightarrow n^2 - 19n + 80 \\ge 0$。<br>經過計算與代入測試：發給 6 個人時，$S_6 = \\frac{6 \\times (45 + 20)}{2} = 195$ 顆糖果。<br>若要發給第 7 人需要 15 顆，但只剩下 5 顆 (數量不足)。<br>因此「最後一位得到糖果」的學生是第 6 位，他得到的糖果數為 $a_6 = 45 + 5 \\times (-5) =$ **20** 顆。"
+        },
+
+        // ＝＝＝ 三、非選擇題 ＝＝＝
+        {
+            section: "三、非選擇題（每題 8 分，共 16 分）",
+            type: "calc",
+            question: "已知一次函數 $y = \\frac{3}{4}x - 3$，則：<br>(1) 試畫出圖形。<br>(2) 此函數圖形通過第幾象限？<br>(3) 若 $-3 \\le x \\le 2$，則此函數圖形不會通過第幾象限？",
+            image: "nc1_img.png",
+            answer: "(1) 圖形略，截距為 $(0,-3)$ 與 $(4,0)$<br>(2) 第一、三、四象限<br>(3) 第一、二象限",
+            explanation: "(1) 找兩截距點，令 $x=0, y=-3$ 得 $(0, -3)$；令 $y=0, x=4$ 得 $(4, 0)$。在座標平面上描出此兩點並連線即可。<br>(2) 根據所畫圖形，線條通過**第一、三、四象限**。<br>(3) 將範圍端點代入：$x = -3 \\Rightarrow y = -\\frac{21}{4}$；$x = 2 \\Rightarrow y = -\\frac{3}{2}$。<br>可發現在此定義域區間內 $y$ 的值恆為負，因此線段僅位於第三、四象限以及 $y$ 軸上，**不通過第一、二象限**。"
+        },
+        {
+            type: "calc",
+            question: "設一元二次方程式 $x^2 - 9x - 36 = 0$ 的兩根為 $a、b$，且 $a > b$，若在 $a、b$ 間插入 $m、n$ 兩數，可使 $a, m, n, b$ 成等差數列，則以 $m、n$ 為兩根，且二次項係數為 1 的方程式為何？",
+            answer: "$x^2 - 9x + 14 = 0$",
+            explanation: "1. 先解方程式：$(x - 12)(x + 3) = 0 \\Rightarrow x = 12$ 或 $-3$。因 $a > b$，得 $a = 12, b = -3$。<br>2. 將數列排開：$12, m, n, -3$。此為首項為 12、第 4 項為 -3 的等差數列。<br>3. 求公差：$-3 = 12 + 3d \\Rightarrow 3d = -15 \\Rightarrow d = -5$。<br>4. 計算 $m, n$：$m = 12 - 5 = 7$，$n = 7 - 5 = 2$。<br>5. 建立新方程式：兩根為 7 與 2，方程式為 $(x - 7)(x - 2) = 0$，展開後為 **$x^2 - 9x + 14 = 0$**。"
+        },
+
+        // ＝＝＝ 四、素養題 ＝＝＝
+        {
+            section: "四、素養題（每題 4 分，共 12 分）",
+            type: "choice",
+            question: "高雄市計畫開闢一條全長 420 公尺的綠色隧道，並在道路兩側每 15 公尺種植一棵樹，且頭尾皆種，則道路工程包商共需準備幾棵樹苗？(以數列概念解題)",
+            options: [
+                "29",
+                "58",
+                "64",
+                "66"
+            ],
+            correct: 1, // (B)
+            explanation: "單側種樹的間隔數為 $420 \\div 15 = 28$ 個間隔。<br>由於「頭尾皆種」，單側的樹木數量為 $28 + 1 = 29$ 棵。<br>(數列概念：$a_n = 0 + (n-1) \\times 15 = 420 \\Rightarrow n=29$)。<br>因為道路有「兩側」，故總數為 $29 \\times 2 =$ **58** 棵。"
+        },
+        {
+            type: "choice",
+            question: "若姐姐的年齡為弟弟的 3 倍，且爸爸的年齡與姐弟成等比數列，已知姐弟的年齡乘積為 48，則爸爸的年齡為何？",
+            options: [
+                "36",
+                "40",
+                "48",
+                "56"
+            ],
+            correct: 0, // (A)
+            explanation: "設弟弟年齡為 $r$，姊姊年齡為 $3r$。<br>相乘得 $r \\times 3r = 3r^2 = 48 \\Rightarrow r^2 = 16 \\Rightarrow r = 4$ (年齡為正)。<br>所以弟弟 4 歲，姊姊 12 歲。這三個年齡構成等比數列「弟弟(4), 姊姊(12), 爸爸」，可見公比為 $12 \\div 4 = 3$。<br>因此爸爸年齡為 $12 \\times 3 =$ **36** 歲。"
+        },
+        {
+            type: "choice",
+            question: "「航空交通管制塔」又稱為塔臺，負責監控飛機起降。右圖為塔臺記錄某班機降落時，高度與時間的關係圖，則該班機將於何時成功降落至地面？",
+            image: "a3_img.png",
+            options: [
+                "08:56",
+                "08:50",
+                "08:46",
+                "08:42"
+            ],
+            correct: 3, // (D)
+            explanation: "將時間轉換為相對 $x$ 座標。令 08:30 時為 $x=0$。<br>觀察圖形點位對應，飛機在 08:34 ($x=4$) 時高度為 6400 呎；在 08:39 ($x=9$) 時高度為 2400 呎。<br>代入線型函數 $y = ax + b$：<br>$\\begin{cases} 6400 = 4a + b \\\\ 2400 = 9a + b \\end{cases}$<br>兩式相減解得 $a = -800, b = 9600$。關係式為 $y = -800x + 9600$。<br>成功降落至地面表示高度 $y = 0$，代入得 $0 = -800x + 9600 \\Rightarrow 800x = 9600 \\Rightarrow x = 12$。<br>表示在 08:30 後過 12 分鐘降落，即 **08:42** 成功著陸。"
+        }
+    ];
+
+    const quizContainer = document.getElementById('quiz-container');
+
+    function renderQuiz() {
+        let html = '';
+        quizData.forEach((q, index) => {
+            // Section 標題
+            if (q.section) {
+                html += `<div class="section-title">${q.section}</div>`;
+            }
+
+            html += `<div class="question-block">`;
+            
+            // 題號與題目文字
+            // 計算真正的題號 (重置邏輯，此處採簡單依序或接續題號，這裡直接用 index + 1 展示)
+            let displayNum = (q.section) ? 1 : ""; // 簡單區分，若要嚴格重置題號可以再做變數，這裡統一處理為顯示。
+            html += `<div class="question-text"><strong>${index + 1}.</strong> ${q.question}</div>`;
+            
+            // 圖片預留
+            if (q.image) {
+                html += `<img src="${q.image}" alt="（請將對應圖形截圖命名為 ${q.image} 並放置於同一資料夾）" class="q-img">`;
+            }
+
+            // 選擇題選項
+            if (q.type === 'choice') {
+                html += `<div class="options" id="options-${index}">`;
+                q.options.forEach((opt, optIndex) => {
+                    const letter = String.fromCharCode(65 + optIndex); // A, B, C, D
+                    html += `<button class="option-btn" onclick="checkAnswer(${index}, ${optIndex}, this)">(${letter}) ${opt}</button>`;
+                });
+                html += `</div>`;
+            }
+
+            // 解析切換按鈕
+            html += `<button class="toggle-btn" onclick="toggleExplanation(${index})">顯示解析與答案</button>`;
+            
+            // 解析區塊
+            html += `<div class="explanation" id="exp-${index}">`;
+            if (q.type !== 'choice') {
+                html += `<strong>解答：</strong> ${q.answer}<br><br>`;
+            }
+            html += `<strong>📝 解析：</strong><br>${q.explanation}`;
+            html += `</div>`;
+
+            html += `</div>`;
+        });
+        
+        quizContainer.innerHTML = html;
+        // 通知 MathJax 重新渲染新加入的公式
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
+    }
+
+    // 選擇題檢查邏輯
+    function checkAnswer(qIndex, selectedOptIndex, btnElement) {
+        const question = quizData[qIndex];
+        const optionsContainer = document.getElementById(`options-${qIndex}`);
+        const buttons = optionsContainer.getElementsByTagName('button');
+
+        // 鎖定所有按鈕，防止重複作答
+        for (let btn of buttons) {
+            btn.disabled = true;
+        }
+
+        // 判斷對錯並給予樣式回饋
+        if (selectedOptIndex === question.correct) {
+            btnElement.classList.add('correct');
+        } else {
+            btnElement.classList.add('wrong');
+            // 標示出正確答案
+            buttons[question.correct].classList.add('correct');
+        }
+        
+        // 答題後自動展開解析
+        document.getElementById(`exp-${qIndex}`).style.display = 'block';
+    }
+
+    // 展開/隱藏解析
+    function toggleExplanation(index) {
+        const expDiv = document.getElementById(`exp-${index}`);
+        if (expDiv.style.display === 'none' || expDiv.style.display === '') {
+            expDiv.style.display = 'block';
+        } else {
+            expDiv.style.display = 'none';
+        }
+    }
+
+    // 初始化渲染
+    window.onload = renderQuiz;
+
+</script>
+</body>
+</html>
