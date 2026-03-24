@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八年級數學(四) 第4次練習 - 互動試卷</title>
+    
+    <!-- 引入 MathJax 渲染數學公式 -->
+    <script>
+        window.MathJax = {
+            tex: { 
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        /* 整體背景模擬桌面 */
+        body {
+            background-color: #525659;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* 試卷外觀設定 - 國中教科書/考卷印刷格式 */
+        .paper {
+            background-color: #fff;
+            max-width: 900px; /* B4 寬度限制 */
+            margin: 0 auto;
+            padding: 50px 60px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            /* 教科書與考卷標準字體：英文/數字用 Times New Roman，中文用標楷體 */
+            font-family: 'Times New Roman', 'DFKai-SB', 'BiauKai', '標楷體', serif;
+            color: #000;
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        /* 標題區塊排版 */
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+        .header p {
+            font-size: 18px;
+            margin: 0;
+        }
+        .student-info {
+            position: absolute;
+            right: 0;
+            bottom: 15px;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        /* 題型分類標題 */
+        .section-title {
+            font-weight: bold;
+            font-size: 1.25em;
+            margin-top: 40px;
+            margin-bottom: 15px;
+        }
+
+        /* 題目區塊 */
+        .question-block {
+            margin-bottom: 35px;
+            padding-bottom: 15px;
+        }
+        .question-text {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+
+        /* 圖片預留區 */
+        .img-placeholder {
+            border: 1px dashed #777;
+            background-color: #fafafa;
+            padding: 20px;
+            text-align: center;
+            color: #555;
+            font-size: 0.9em;
+            margin: 10px 0 15px 0;
+        }
+        .img-placeholder img {
+            max-width: 100%;
+            margin-top: 10px;
+        }
+
+        /* 選擇題按鈕選項 */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        .option-btn {
+            text-align: left;
+            padding: 8px 15px;
+            border: 1px solid #aaa;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1em;
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            background: #f0f0f0;
+        }
+        /* 答對與答錯樣式 */
+        .option-btn.correct {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724 !important;
+            font-weight: bold;
+        }
+        .option-btn.wrong {
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24 !important;
+            text-decoration: line-through;
+        }
+        .option-btn:disabled {
+            cursor: default;
+        }
+
+        /* 解析與按鈕設定 */
+        .btn-explain {
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            font-size: 0.9em;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .btn-explain:hover {
+            background-color: #e2e8f0;
+        }
+        
+        /* 手寫筆記風格解析文字 */
+        .explanation {
+            display: none;
+            margin-top: 15px;
+            padding: 15px 20px;
+            /* 紅筆批改風格 */
+            color: #d32f2f;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="header">
+        <h1>八年級 數學(四) 第 4 次練習</h1>
+        <p>範圍：2-1 函數與函數圖形</p>
+        <div class="student-info">
+            年____班____號<br>
+            姓名：____________
+        </div>
+    </div>
+
+    <!-- 動態產生題目的容器 -->
+    <div id="quiz-container"></div>
+</div>
+
+<script>
+    // 題目資料設定
+    const quizData = [
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "1. 下列有關 $x$、$y$ 之間的對應關係，哪一組的 $y$ 不是 $x$ 的函數？",
+            img: "q1_img.png",
+            options: ["(A) 見附圖", "(B) 見附圖", "(C) 見附圖", "(D) 見附圖"],
+            answer: 2,
+            explanation: "【解析】函數的定義為「給定一個 $x$ 值，最多只能對應到一個 $y$ 值」（即一對一或多對一）。在選項 (C) 圖表中，$x=0$ 同時對應到了 $y=1, 2, 3, 4$，這屬於「一對多」的關係，因此 $y$ 不是 $x$ 的函數。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "2. 下列敘述中，何者符合 $y$ 是 $x$ 的函數？",
+            options: [
+                "(A) 英文成績為 $x$ 分，座號為 $y$ 號的學生。",
+                "(B) $x$ 表示出生年分，$y$ 表示對應生肖。",
+                "(C) $x$ 表示價格，$y$ 表示商品名稱。",
+                "(D) $x$ 表示國文老師的名字，$y$ 表示授課的班級。"
+            ],
+            answer: 1,
+            explanation: "【解析】判斷函數請把握「一個 $x$ 只能對應一個 $y$」的原則：<br>(A) 同一個分數可能有多個學生（一對多），不是函數。<br>(B) 同一個出生年分只會有一個對應的生肖（多對一或一對一），符合函數定義。<br>(C) 同一個價格可能有多種商品（一對多），不是函數。<br>(D) 同一個老師可能教多個班級（一對多），不是函數。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "3. 冠盛使用計算機操作如下：輸入 $5 \\rightarrow$ 乘以 $2 \\rightarrow$ 加 $10 \\rightarrow$ 減 $4 \\rightarrow$ 輸出，則輸出的數字為何？",
+            options: ["(A) 16", "(B) $-4$", "(C) 10", "(D) $-8$"],
+            answer: 0,
+            explanation: "【解析】依照順序計算：$5 \\times 2 + 10 - 4 = 10 + 10 - 4 = 16$。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "4. 已知一次函數 $y = 3x - 1$，若 $x = -1$，則 $y$ 之值＝？",
+            options: ["(A) 2", "(B) $-2$", "(C) 4", "(D) $-4$"],
+            answer: 3,
+            explanation: "【解析】將 $x = -1$ 代入函數中：$y = 3 \\times (-1) - 1 = -3 - 1 = -4$。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "5. 晏安將一杯水溫為 $100^{\\circ}\\text{C}$ 的熱水置入冷水中，冷卻時水溫每分鐘會下降 $6^{\\circ}\\text{C}$，設冷卻 $x$ 分鐘後水溫為 $y^{\\circ}\\text{C}$。則 $x, y$ 的關係式為下列何者？",
+            options: ["(A) $x = 100 - 6y$", "(B) $y = 6x - 100$", "(C) $x = 6y$", "(D) $y = 100 - 6x$"],
+            answer: 3,
+            explanation: "【解析】初始溫度為 100，每經過 1 分鐘減少 6，所以經過 $x$ 分鐘會減少 $6x$。關係式為 $y = 100 - 6x$。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "6. 已知一函數 $y = a$ 且 $a$ 為常數，則 $x=3$ 時與 $x=-1$ 時其函數值和為多少？",
+            options: ["(A) 2", "(B) $2a$", "(C) $-3$", "(D) $-3a$"],
+            answer: 1,
+            explanation: "【解析】常數函數代表不論 $x$ 輸入多少，$y$ 的值永遠都是常數 $a$。所以當 $x=3$ 時，函數值為 $a$；當 $x=-1$ 時，函數值也為 $a$。兩者之和為 $a + a = 2a$。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "7. 一次函數 $y = ax + b$，則下列何者可能為其圖形？",
+            img: "q7_img.png",
+            options: ["(A) 見附圖(斜直線)", "(B) 見附圖(拋物線)", "(C) 見附圖(鉛垂線)", "(D) 見附圖(曲線)"],
+            answer: 0,
+            explanation: "【解析】一次函數的圖形必定是一條直線（且非鉛垂線）。選項 (A) 為斜直線；(B) 是二次函數拋物線；(C) 是一條鉛垂線（方程式為 $x=k$，這不是函數）；(D) 是非直線圖形。故選 (A)。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "8. 右圖為函數 $y = ax + b$ 的圖形，則下列敘述何者正確？",
+            img: "q8_img.png",
+            options: ["(A) $a \\neq 0$ , $b = 0$", "(B) $a = 0$ , $b \\neq 0$", "(C) $a = 0$ , $b = 0$", "(D) $a \\neq 0$ , $b \\neq 0$"],
+            answer: 1,
+            explanation: "【解析】圖中為一條水平線，代表其為常數函數 $y = b$（所以斜率 $a = 0$）。又因為此水平線位於 $x$ 軸上方，與 $y$ 軸正向相交，所以 $b > 0$ （即 $b \\neq 0$）。綜合得出 $a = 0, b \\neq 0$。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "9. 若一次函數 $y = -2x + k$ 的圖形通過 $(-1, 3)$，則 $k$ 之值？",
+            options: ["(A) 1", "(B) $-1$", "(C) 2", "(D) $-2$"],
+            answer: 0,
+            explanation: "【解析】將座標 $x = -1, y = 3$ 代入直線方程式：<br>$3 = -2 \\times (-1) + k \\Rightarrow 3 = 2 + k \\Rightarrow k = 1$。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "10. 若一次函數 $y = \\frac{5}{4}x - 5$ 的圖形分別交 $x$、$y$ 軸於 $A$、$B$ 兩點，則此函數圖形與兩軸所圍成的 $\\triangle AOB$ 面積為多少平方單位？",
+            img: "q10_img.png",
+            options: ["(A) 12", "(B) 10", "(C) 9", "(D) 5"],
+            answer: 1,
+            explanation: "【解析】找 $y$ 軸交點（令 $x=0$）：$y = -5$，得點 $B(0, -5)$。<br>找 $x$ 軸交點（令 $y=0$）：$0 = \\frac{5}{4}x - 5 \\Rightarrow \\frac{5}{4}x = 5 \\Rightarrow x = 4$，得點 $A(4, 0)$。<br>三角形底為 4，高為 5，面積 $= \\frac{1}{2} \\times 4 \\times 5 = 10$ 平方單位。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "11. 已知一次函數 $y = ax + b$ 的圖形通過 $A(1, 7)$、$B(-2, -2)$ 兩點，請問當 $x = -5$ 時，此函數值為多少？",
+            img: "q11_img.png",
+            options: ["(A) $-11$", "(B) $-13$", "(C) $-8$", "(D) $-6$"],
+            answer: 0,
+            explanation: "【解析】將兩點代入解聯立方程式：<br>$\\begin{cases} 7 = a + b \\dots (1) \\\\ -2 = -2a + b \\dots (2) \\end{cases}$<br>兩式相減 (1)-(2) 得 $9 = 3a \\Rightarrow a = 3$。<br>代回 (1) 得 $7 = 3 + b \\Rightarrow b = 4$。<br>函數為 $y = 3x + 4$。將 $x = -5$ 代入得 $y = 3 \\times (-5) + 4 = -15 + 4 = -11$。"
+        },
+        {
+            section: "一、選擇題 (每題 4 分，共 48 分)",
+            type: "mcq",
+            question: "12. 正標將函數 $y = 5x + 2$ 與函數 $y = -3$ 的圖形畫在同一坐標平面上，發現兩圖形相交於 $P(a, b)$，則 $a^2 - b^2 = ?$",
+            options: ["(A) 4", "(B) 6", "(C) $-6$", "(D) $-8$"],
+            answer: 3,
+            explanation: "【解析】求交點即解聯立。將 $y = -3$ 代入 $y = 5x + 2 \\Rightarrow -3 = 5x + 2 \\Rightarrow 5x = -5 \\Rightarrow x = -1$。<br>交點 $P(a, b)$ 為 $(-1, -3)$，即 $a = -1, b = -3$。<br>所求 $a^2 - b^2 = (-1)^2 - (-3)^2 = 1 - 9 = -8$。"
+        },
+        {
+            section: "二、填充題 (每格 3 分，共 24 分)",
+            type: "fill",
+            question: "1. 已知 $y = 2x - 1$，求表中 $a, b, c, d$ 的值。(當 $x=4$ 時 $y=a$；當 $x=-\\frac{1}{2}$ 時 $y=b$；當 $y=9$ 時 $x=c$；當 $y=-11$ 時 $x=d$)",
+            explanation: "【解析】<br>$x=4$ 代入：$a = 2(4) - 1 = 7$。<br>$x=-\\frac{1}{2}$ 代入：$b = 2(-\\frac{1}{2}) - 1 = -1 - 1 = -2$。<br>$y=9$ 代入：$9 = 2c - 1 \\Rightarrow 2c = 10 \\Rightarrow c = 5$。<br>$y=-11$ 代入：$-11 = 2d - 1 \\Rightarrow 2d = -10 \\Rightarrow d = -5$。<br><br><b>答案：</b> $a = 7$, $b = -2$, $c = 5$, $d = -5$"
+        },
+        {
+            section: "二、填充題 (每格 3 分，共 24 分)",
+            type: "fill",
+            question: "2. 某函數在 $x=0, 1, 2, 3, 4$ 時，其函數值皆相等且總和為 $-35$。若 $x=100$ 時函數值為 $k$，則 $(-100, k)$ 在第幾象限？",
+            explanation: "【解析】函數值皆相等代表此為「常數函數」 $y = k$。<br>5個相等的函數值總和為 $-35$，所以 $5k = -35 \\Rightarrow k = -7$（即函數為 $y = -7$）。<br>當 $x = 100$ 時，函數值 $k$ 依然是 $-7$。<br>座標點為 $(-100, -7)$，$x$ 與 $y$ 皆為負值，位於<b>第三象限</b>。"
+        },
+        {
+            section: "二、填充題 (每格 3 分，共 24 分)",
+            type: "fill",
+            question: "3. 若甲函數 $y = ax + 2$ 與乙函數 $y = -3x - 6$ 的圖形交點在 $x$ 軸，則 $a = ?$",
+            explanation: "【解析】交點在 $x$ 軸表示其 $y$ 座標為 $0$。<br>先代入已知的乙函數：$0 = -3x - 6 \\Rightarrow 3x = -6 \\Rightarrow x = -2$。得知交點為 $(-2, 0)$。<br>將此交點 $(-2, 0)$ 代入甲函數：$0 = -2a + 2 \\Rightarrow 2a = 2 \\Rightarrow a = 1$。<br><br><b>答案：</b> $a = 1$"
+        },
+        {
+            section: "二、填充題 (每格 3 分，共 24 分)",
+            type: "fill",
+            question: "4. 函數 $y = ax + b$ 的圖形垂直 $y$ 軸且通過 $(0, 8)$，則 $a - b = ?$",
+            explanation: "【解析】直線「垂直 $y$ 軸」代表它是一條水平線（平行 $x$ 軸），此為常數函數。因為通過 $(0, 8)$，所以此函數方程式就是 $y = 8$。<br>對照 $y = ax + b$，表示 $a = 0, b = 8$。<br>所求 $a - b = 0 - 8 = -8$。<br><br><b>答案：</b> $-8$"
+        },
+        {
+            section: "二、填充題 (每格 3 分，共 24 分)",
+            type: "fill",
+
+            question: "5. 如圖為某國總統候選人川培、強恩兩人民調，皆為一次函數。若民調開始第 5 天時，川培比強恩民調高 $2.5\\%$，在第 10 天產生死亡交叉，兩人皆為 $40\\%$，請問第 18 天時，強恩民調會高於川培多少 %？",
+img: "q_fill_5_img.png",
+            explanation: "【解析】兩人民調差距呈線型函數變化。從第 5 天到第 10 天（經過 5 天），川培的領先幅度從 $+2.5\\%$ 變成 $0\\%$，這表示川培每天相對於強恩會下降 $\\frac{2.5\\%}{5} = 0.5\\%$（強恩每天追上 $0.5\\%$）。<br>從第 10 天平手開始算，到第 18 天經過了 8 天，強恩會反超 $8 \\times 0.5\\% = 4\\%$。<br><br><b>答案：</b> $4\\%$"
+        },
+        {
+            section: "三、非選擇題 (每題 8 分，共 16 分)",
+            type: "calc",
+            question: "1. 右表為本公司百貨企業 2020 年一整年的營業額折線分配圖。若 $x$ 代表月份，$y$ 代表營業額，則：<br>(1) $x$ 是 $y$ 的函數，是否正確？請說明之。(2分)<br>(2) $y$ 是 $x$ 的函數，是否正確？請說明之。(2分)<br>(3) 6月～9月的 $y$ 與 $x$ 關係式為何？(4分)",
+            img: "calc1_img.png",
+            explanation: "【解析】<br>(1) <b>不正確。</b> 因為同一個營業額可能對應多個月份（例如：營業額 250 萬對應到 1 月與 10 月），這是一對多的關係，不符合函數定義。<br>(2) <b>正確。</b> 因為每一個月份（$x$）都只有對應到一個確定的營業額（$y$），屬於多對一或一對一，符合函數定義。<br>(3) 觀察圖表，6 到 9 月的營業額皆維持在 50 萬，為水平線常數函數。關係式為 <b>$y = 50$</b>。"
+        },
+        {
+            section: "三、非選擇題 (每題 8 分，共 16 分)",
+            type: "calc",
+            question: "2. 右圖為覺青電信公司的優惠方案DM，試問：<br>(1) 若未加網路費時，其費用為通話 700 秒 170 元，通話 1000 秒 200 元。已知通話時間與費用為一次函數關係，則其基本費為多少元？(4分)<br>(2) 若估瑄十月分通話時間為 1200 秒，加上網路費 299 吃到飽，估瑄十月分帳單應為多少元？(4分)",
+            img: "calc2_img.png",
+            explanation: "【解析】<br>(1) 設費用函數為 $y = ax + b$（$a$ 為每秒費率，$b$ 為基本費）。<br>將點 $(700, 170)$ 與 $(1000, 200)$ 代入：<br>$\\begin{cases} 170 = 700a + b \\\\ 200 = 1000a + b \\end{cases}$<br>兩式相減得 $300a = 30 \\Rightarrow a = 0.1$。<br>代回求 $b$：$170 = 700(0.1) + b \\Rightarrow b = 170 - 70 = 100$。<br><b>答：基本費為 100 元。</b><br><br>(2) 先算純通話費：$y = 0.1 \\times 1200 + 100 = 120 + 100 = 220$ 元。<br>加上網路費：$220 + 299 = 519$ 元。<br><b>答：519 元。</b>"
+        },
+        {
+            section: "四、素養題 (每題 4 分，共 12 分)",
+            type: "mcq",
+            question: "1. 如圖，晏安、佳漢、冠丞三人上週的業績皆為一次函數圖形，則下列敘述何者正確？",
+            img: "lit1_img.png",
+            options: [
+                "(A) 冠丞的業績蒸蒸日上。",
+                "(B) 星期二時晏安與佳漢業績相同。",
+                "(C) 星期三時晏安業績比冠丞好。",
+                "(D) 星期四時佳漢業績最好。"
+            ],
+            answer: 1,
+            explanation: "【解析】觀察折線圖標示，由圖形交點來判斷：<br>在第 2 星期（橫軸座標為 2）時，晏安與佳漢的折線相交於一點，代表兩人在第二星期的業績相同，故選項 (B) 正確。"
+        },
+        {
+            section: "四、素養題 (每題 4 分，共 12 分)",
+            type: "mcq",
+            question: "2. 小德到黃昏市場買了數根地瓜，秤重時連同籃子共重 15 斤，價格為 250 元。若再加購 0.5 斤，則價格為 260 元，試求籃子淨重多少斤？",
+            options: ["(A) 2.5", "(B) 3", "(C) 4", "(D) 4.5"],
+            answer: 0,
+            explanation: "【解析】<br>1. 增加 0.5 斤地瓜，價格增加了 $260 - 250 = 10$ 元。這表示地瓜的單價為每斤 $10 \\div 0.5 = 20$ 元。<br>2. 原先付了 250 元，代表買了 $250 \\div 20 = 12.5$ 斤的地瓜。<br>3. 總重量 15 斤扣掉地瓜實重 12.5 斤，剩下的即為籃子重量：$15 - 12.5 = 2.5$ 斤。"
+        },
+        {
+            section: "四、素養題 (每題 4 分，共 12 分)",
+            type: "mcq",
+            question: "3. 嘉宏到文昌廟祈求考試順利，香點燃之後，在 $x$ 分鐘後剩下 $y$ 公分，如圖，請問下列何者為 $y$ 與 $x$ 的關係式？",
+            img: "lit3_img.png",
+            options: ["(A) $y = -4x + 5$", "(B) $y = -3x + 20$", "(C) $y = -2x + 15$", "(D) $y = -x + 20$"],
+            answer: 2,
+            explanation: "【解析】圖形為一斜直線，設函數為 $y = ax + b$。<br>將圖上兩點 $(2, 11)$ 與 $(5, 5)$ 代入：<br>$\\begin{cases} 2a + b = 11 \\dots (1) \\\\ 5a + b = 5 \\dots (2) \\end{cases}$<br>(2)-(1) 相減得 $3a = -6 \\Rightarrow a = -2$。<br>代回 (1) 得 $-4 + b = 11 \\Rightarrow b = 15$。<br>因此關係式為 $y = -2x + 15$。"
+        }
+    ];
+
+    // 初始化渲染試卷
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let currentSection = '';
+
+        quizData.forEach((item, index) => {
+            // 處理標題分類
+            if (item.section !== currentSection) {
+                currentSection = item.section;
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'section-title';
+                sectionTitle.innerHTML = currentSection;
+                container.appendChild(sectionTitle);
+            }
+
+            const qBlock = document.createElement('div');
+            qBlock.className = 'question-block';
+
+            // 題幹文字
+            let html = `<div class="question-text">${item.question}</div>`;
+
+            // 圖片預留區塊
+            if (item.img) {
+                html += `<div class="img-placeholder">
+                            [圖片放置區：${item.img}]<br>
+                            <img src="${item.img}" alt="尚未放置圖片" onerror="this.style.display='none';">
+                         </div>`;
+            }
+
+            // 選擇題互動按鈕
+            if (item.type === 'mcq') {
+                html += `<div class="options-container" id="options-${index}">`;
+                item.options.forEach((opt, optIdx) => {
+                    html += `<button class="option-btn" onclick="checkAnswer(${index}, ${optIdx}, this)">${opt}</button>`;
+                });
+                html += `</div>`;
+            }
+
+            // 顯示解析按鈕與解析區塊
+            html += `<button class="btn-explain" onclick="toggleExplain(${index})">顯示解答與解析</button>`;
+            html += `<div class="explanation" id="explain-${index}">${item.explanation}</div>`;
+
+            qBlock.innerHTML = html;
+            container.appendChild(qBlock);
+        });
+    }
+
+    // 檢查答案邏輯 (選擇題)
+    function checkAnswer(qIdx, optIdx, btn) {
+        const item = quizData[qIdx];
+        const container = document.getElementById(`options-${qIdx}`);
+        const buttons = container.querySelectorAll('.option-btn');
+
+        // 點擊後禁用所有按鈕
+        buttons.forEach(b => b.disabled = true);
+
+        if (optIdx === item.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            // 自動標示正確答案
+            buttons[item.answer].classList.add('correct');
+        }
+    }
+
+    // 切換顯示/隱藏解析
+    function toggleExplain(qIdx) {
+        const exp = document.getElementById(`explain-${qIdx}`);
+        const btn = exp.previousElementSibling;
+        if (exp.style.display === 'block') {
+            exp.style.display = 'none';
+            btn.innerText = '顯示解答與解析';
+        } else {
+            exp.style.display = 'block';
+            btn.innerText = '隱藏解答與解析';
+        }
+    }
+
+    // 網頁載入後執行渲染與數學公式解析
+    window.onload = function() {
+        renderQuiz();
+        // 強制 MathJax 重新掃描動態生成的 HTML，將 $ 符號轉換為精美數學式
+        if (window.MathJax) {
+            MathJax.typesetPromise().catch(function (err) {
+                console.error('MathJax 渲染失敗: ' + err.message);
+            });
+        }
+    };
+</script>
+
+</body>
+</html>
