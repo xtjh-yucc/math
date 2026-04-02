@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學第一次段考解析 - 自動解題系統</title>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid #ccc; /* 淺灰邊框增加質感 */
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 8px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 2px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>新北市立新泰國民中學 114學年度第二學期 第一次段考</h1>
+        <p>科目：數學 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    const quizData = [
+        // ================= 一、選擇題 (共20題) =================
+        {
+            type: 'choice',
+            text: "1. 下列各選項中，哪一個是等差數列？",
+            options: ["1, -1, 1, -1, 1", "1, 2, 3, 5, 8", "1, 2, 4, 6, 8", "1, 3, 5, 7, 9"],
+            answer: 3,
+            solution: "檢查選項(D) 1, 3, 5, 7, 9，每一項的後項減前項皆固定為 2。\n公差 d = 2，故為等差數列。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "2. 下列各選項中，哪一個是等比數列？",
+            options: ["1, -1, 1, -1, 1", "1, 2, 3, 5, 8", "1, 2, 4, 6, 8", "1, 3, 5, 7, 9"],
+            answer: 0,
+            solution: "選項(A) 1, -1, 1, -1, 1，每一項的後項除以前項皆固定為 -1。\n公比 r = -1，故為等比數列。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "3. 求等差級數 20 + 17 + 14 + 11 + 8 + 5 + 2 + (-1) + (-4) 的和。",
+            options: ["77", "75", "72", "69"],
+            answer: 2,
+            solution: "方法一：首項 a₁ = 20，末項 a₉ = -4，共有 9 項。\n總和 S₉ = \\( \\frac{9 \\times (20 + (-4))}{2} \\) = \\( \\frac{9 \\times 16}{2} \\) = 72。\n方法二：取最中間的一項(第 5 項) a₅ = 8。\n總和 = 8 × 9 = 72。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "4. 若等差級數的首項為 3，前 9 項的和為 171，則公差為多少？",
+            options: ["3", "4", "5", "6"],
+            answer: 1,
+            solution: "利用等差級數和公式：S₉ = \\( \\frac{(a_1 + a_9) \\times 9}{2} \\) = 171。\n代入 a₁ = 3，解得 3 + a₉ = 38，所以第 9 項 a₉ = 35。\n接著求公差 d = \\( \\frac{35 - 3}{9 - 1} \\) = 4。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "5. 若等比數列的首項為 3，公比為 2，求此等比數列的第 7 項。",
+            options: ["48", "96", "192", "384"],
+            answer: 2,
+            solution: "利用等比數列一般項公式：aₙ = a₁ × rⁿ⁻¹。\n代入數值：a₇ = 3 × 2⁶\na₇ = 3 × 64 = 192。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "6. 下表列出兩變數 x、y 之間的對應關係，則哪一組的 y 不是 x 的函數？",
+            options: ["x:2,4,6,8 對應 y:1,1,1,1", "x:1,1,1,1 對應 y:1,3,5,7", "x:1,2,3,4 對應 y:2,4,6,8", "x:1,2,3,4 對應 y:8,6,4,2"],
+            answer: 1,
+            solution: "函數的定義為：每一個 x 值（輸入）只能對應到唯一的一個 y 值（輸出）。\n觀察選項 (B)，x = 1 同時對應到了 1, 3, 5, 7 四個不同的 y 值（一對多），違反函數定義，因此 y 不是 x 的函數。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "7. 若一次函數 y = 2x + 13 與一次函數 y = 7x - 2 在 x = a 時的函數值相等，則 a 為多少？",
+            options: ["0", "1", "2", "3"],
+            answer: 3,
+            solution: "將 x = a 代入兩個函數並令其相等：\n2a + 13 = 7a - 2\n移項整理得到：5a = 15\n解得 a = 3。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "8. 自 50 到 500 的正整數中，6 的倍數有幾個？",
+            options: ["73", "74", "75", "76"],
+            answer: 2,
+            solution: "找出範圍內的頭尾倍數：\n50 ÷ 6 = 8 ...餘 2，所以從第 9 個倍數開始（6 × 9 = 54）。\n500 ÷ 6 = 83 ...餘 2，所以最大是第 83 個倍數（6 × 83 = 498）。\n數量計算：83 - 9 + 1 = 75 個。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "9. 若 x+1, x+5, x+11 三數成等比數列，則公比為多少？",
+            options: ["\\( \\frac{3}{2} \\)", "\\( \\frac{5}{2} \\)", "5", "7"],
+            answer: 0,
+            solution: "利用等比中項性質：(x+5)² = (x+1)(x+11)。\n展開方程式：x² + 10x + 25 = x² + 12x + 11。\n移項得：2x = 14，解得 x = 7。\n將 x = 7 代回原數列，三數為 8, 12, 18。\n公比 r = 12 ÷ 8 = \\( \\frac{3}{2} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "10. 用火柴棒排成正方形，排法如附圖。若有 100 根火柴棒，剛好可以排成多少個正方形？",
+            image: "q10_img.png", // 預留圖片位置
+            options: ["32", "33", "34", "35"],
+            answer: 1,
+            solution: "觀察規律：排 1 個正方形需 4 根火柴，之後每增加 1 個正方形只需多加 3 根。\n這是一個首項 a₁ = 4，公差 d = 3 的等差數列。\n設可以排 x 個正方形，方程式為：4 + (x - 1) × 3 = 100。\n(x - 1) × 3 = 96\nx - 1 = 32\n解得 x = 33 個。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "11. 已知三兄弟的年齡正好成等差數列，若老二今年 21 歲，且老大歲數的 2 倍比老三歲數的 3 倍少 6 歲，試求老大與老三今年的歲數差？",
+            options: ["6", "8", "10", "12"],
+            answer: 0,
+            solution: "設老大 x 歲，老三 y 歲。\n因為老二是等差中項，故 x + y = 21 × 2 = 42 ......(第1式)\n依照題意，2x = 3y - 6 ......(第2式)\n將(1)式同乘 2：2x + 2y = 84\n代入(2)式：(3y - 6) + 2y = 84\n5y = 90，解得 y = 18 (老三)。\n代回求得 x = 42 - 18 = 24 (老大)。\n老大與老三歲數差為 24 - 18 = 6。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "12. 佳佳為準備月考，第一天做了 5 題數學，之後每一天都比前一天多做 3 題，第一天到第十天他共做了多少題數學？",
+            options: ["160", "165", "175", "185"],
+            answer: 3,
+            solution: "這是一個等差級數求和的問題。\n首項 a₁ = 5，公差 d = 3。\n先算第十天做的題數：a₁₀ = 5 + 9 × 3 = 32。\n十天總和 S₁₀ = \\( \\frac{(a_1 + a_{10}) \\times 10}{2} \\)\nS₁₀ = \\( \\frac{(5 + 32) \\times 10}{2} \\) = 37 × 5 = 185 題。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "13. 某組長打算第一天背 5 個單字，第二天 10 個，第三天 20 個... 依此類推。若從 11 月 1 日開始，到 11 月幾日當天要背的單字會「超過」 500 個？",
+            image: "q13_img.png", // 預留圖片位置
+            options: ["7", "8", "9", "10"],
+            answer: 1,
+            solution: "此為等比數列，首項 a₁ = 5，公比 r = 10 ÷ 5 = 2。\n要找第 n 天背的單字數大於 500：\n5 × 2ⁿ⁻¹ > 500\n兩邊同除以 5，得到 2ⁿ⁻¹ > 100。\n我們知道 2⁶ = 64，2⁷ = 128 > 100。\n所以 n - 1 = 7，得 n = 8。\n即為 11 月 8 日。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "14. 已知航空公司托運行李費用與行李重量的關係為線型函數。圖表顯示 50 公斤收 450 元，60 公斤收 750 元。每人可以免費托運的行李為幾公斤？",
+            image: "q14_img.png", // 預留圖片位置
+            options: ["25", "30", "35", "40"],
+            answer: 2,
+            solution: "設費用函數為 y = ax + b，x 為重量，y 為費用。\n代入兩點 (50, 450) 與 (60, 750)：\n450 = 50a + b ......(1)\n750 = 60a + b ......(2)\n(2) - (1) 得：300 = 10a，解得 a = 30。\n將 a = 30 代回 (1)：450 = 1500 + b，解得 b = -1050。\n函數關係為 y = 30x - 1050。\n免費表示費用 y = 0，代入解得 0 = 30x - 1050，x = 35 公斤。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "15. 學務主任數正整數 1, (1, 2), (1, 2, 3), (1, 2, 3, 4) ... 一直數到 (1, 2, 3 ... 30) 為止，請問他總共數了多少個數？",
+            options: ["415", "435", "465", "495"],
+            answer: 2,
+            solution: "將每個括號內數字的個數寫出來，分別是：1, 2, 3, 4 ... 30 個。\n這是一個等差級數求和：1 + 2 + 3 + ... + 30。\n總和 = \\( \\frac{(1 + 30) \\times 30}{2} \\) = 15 × 31 = 465 個數字。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "16. 計算 1 + 2 + 3 - 4 + 5 + 6 + 7 - 8 + 9 + 10 + 11 - 12 + ... + 997 + 998 + 999 - 1000 + 1001 的和為何？",
+            options: ["240001", "240501", "250001", "250501"],
+            answer: 3,
+            solution: "步驟 1：將四個數字分為一組\n原式可寫為：\n(1 + 2 + 3 - 4) + (5 + 6 + 7 - 8) + ... + (997 + 998 + 999 - 1000) + 1001\n計算每一組的值：\n第一組：1 + 2 + 3 - 4 = 2\n第二組：5 + 6 + 7 - 8 = 10\n第三組：9 + 10 + 11 - 12 = 18\n...這些和形成首項 a₁ = 2，公差 d = 8 的等差數列。\n\n步驟 2：求組數與等差數列和\n共有 1000 個數字被分組，故有 1000 ÷ 4 = 250 組。\n第 250 組的值為：a₂₅₀ = 2 + 249 × 8 = 1994。\n這 250 組的總和 S₂₅₀ = \\( \\frac{(2 + 1994) \\times 250}{2} \\) = 998 × 250 = 249500。\n\n步驟 3：加上最後的數字\n最後還要加上未分組的 1001：\n249500 + 1001 = 250501。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "17. 今有甲、乙、丙、丁四家公司，其 1-4 月的盈虧走勢如附圖。請問哪幾家公司 1-4 月的盈虧成等比數列？<br>甲：1, 2, 4, 8<br>乙：12, 8, 4, 2<br>丙：8, -4, 2, -1<br>丁：4, -4, 4, -4",
+            image: "q17_img.png", // 預留圖片位置
+            options: ["僅甲、丙、丁", "僅丙、丁", "僅甲、丙", "僅甲、乙"],
+            answer: 0,
+            solution: "等比數列的定義為：相鄰兩項的「後項除以前項」必須是固定的常數（公比）。\n甲：2/1=2，4/2=2，8/4=2 (公比 r = 2，是等比)\n乙：8/12=2/3，4/8=1/2 (比例不固定，不是等比)\n丙：-4/8=-1/2，2/-4=-1/2，-1/2=-1/2 (公比 r = -1/2，是等比)\n丁：-4/4=-1，4/-4=-1，-4/4=-1 (公比 r = -1，是等比)\n因此，符合等比數列的公司有：甲、丙、丁。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "18. 碗粿、肉圓、發糕三人分別拿了若干張數字卡，且各人卡片上的數字成等差數列：<br>碗粿：2, 11, 20, 29, 38 ...<br>肉圓：5, 14, 23, 32, 41 ...<br>發糕：8, 17, 26, 35, 44 ...<br>若三人依序取牌直到拿到最大的數字是 158 為止，則發糕共有幾張數字卡？",
+            options: ["16", "17", "18", "19"],
+            answer: 1,
+            solution: "觀察發糕的數列：首項 a₁ = 8，公差 d = 17 - 8 = 9。\n設 158 是發糕的第 n 張卡片：\n158 = 8 + (n - 1) × 9\n150 = (n - 1) × 9，解得 n - 1 = 16.66...\n這表示 158 不在發糕的數列中！\n檢查發糕不大於 158 的最大項：(n - 1) ≤ 16.66，所以 n 最大為 17。\n發糕的第 17 項為 8 + 16 × 9 = 152。\n因為 158 是出現在肉圓的數列裡（5 + 17 × 9 = 158，剛好是第 18 項），此時發糕只能拿到他自己的第 17 張牌（152）。\n故發糕共有 17 張數字卡。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "19. 已知 a₁, a₂, a₃ ... 為一等差數列，公差不為 0，且 a₅ 為 a₁ 與 a₁₃ 的等比中項，則下列何者正確？",
+            options: ["a₅ = 2a₁", "a₆ = 2a₂", "a₄ = 2a₃", "a₁ + a₄ = a₂ + a₅"],
+            answer: 0,
+            solution: "因為 a₅ 是 a₁ 與 a₁₃ 的等比中項，可列式：\n(a₅)² = a₁ × a₁₃\n將 a₅ = a₁ + 4d, a₁₃ = a₁ + 12d 代入方程式：\n(a₁ + 4d)² = a₁ × (a₁ + 12d)\n展開：a₁² + 8a₁d + 16d² = a₁² + 12a₁d\n移項整理：16d² = 4a₁d\n因為公差 d ≠ 0，兩邊同除以 4d，得到 4d = a₁。\n\n檢查選項 (A)：\n左邊 a₅ = a₁ + 4d = 4d + 4d = 8d\n右邊 2a₁ = 2(4d) = 8d\n兩者相等，故選項 (A) 正確。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "20. 已知某教練的手機通話費計費方式為：每個月固定月租費 b 元，贈送免費通話 20 分鐘，超過時間與金額成線型函數關係。<br>上個月通話 45 分鐘，通話費 658 元；這個月通話 33 分鐘，通話費 622 元。求 b 的值為何？",
+            image: "q20_img.png", // 預留圖片位置
+            options: ["523", "543", "563", "583"],
+            answer: 3,
+            solution: "超過 20 分鐘後，總通話時間與費用成線型函數 y = ax + C。\n依照題意，線型函數通過兩點 (45, 658) 與 (33, 622)：\n658 = 45a + C ......(1)\n622 = 33a + C ......(2)\n(1) - (2) 得：36 = 12a，解得 a = 3 (每超過1分鐘收費 3 元)。\n代回求 C：622 = 99 + C，得 C = 523。\n所以函數為：費用 = 3 × 總時間 + 523。\n當通話時間剛好為 20 分鐘時，費用即為基本月租費 b：\nb = 3 × 20 + 523 = 60 + 523 = 583。\n答：選 (D)。"
+        },
+
+        // ================= 二、計算題 (共2題) =================
+        {
+            type: 'fill',
+            text: "1. 設 a, b, c, d 成等比數列，且 a + c = 15，b + d = 30。求 a, b, c, d 各是多少？",
+            solution: "設等比數列的公比為 r。\n將 b, c, d 用 a 與 r 表示：\nb = ar\nc = ar²\nd = ar³\n\n代入已知條件：\n(1) a + ar² = 15  => a(1 + r²) = 15\n(2) ar + ar³ = 30 => ar(1 + r²) = 30\n\n將 (2) 式除以 (1) 式：\n\\( \\frac{ar(1 + r^2)}{a(1 + r^2)} \\) = \\( \\frac{30}{15} \\)\n解得公比 r = 2。\n\n將 r = 2 代回 (1) 式：\na(1 + 2²) = 15\na(1 + 4) = 15\n5a = 15，解得 a = 3。\n\n接著求出其他三數：\nb = 3 × 2 = 6\nc = 3 × 4 = 12\nd = 3 × 8 = 24\n\n答：a=3, b=6, c=12, d=24。"
+        },
+        {
+            type: 'fill',
+            text: "2. 下圖為一次函數 y = 2x + 6 與 y = -x + 3 在坐標平面上的圖形，兩直線相交於 P 點，並分別交 x 軸於 A、C 點，交 y 軸於 B 點。求 △AOB 面積與 △PAC 面積的比為何？",
+            image: "calc2_img.png", // 預留圖片位置
+            solution: "步驟 1：求各頂點坐標\n對於 y = 2x + 6：\n交 x 軸 (令 y=0)，解得 x = -3，得 A(-3, 0)。\n交 y 軸 (令 x=0)，解得 y = 6，得 B(0, 6)。\n\n對於 y = -x + 3：\n交 x 軸 (令 y=0)，解得 x = 3，得 C(3, 0)。\n\n求交點 P，解聯立方程式：\n2x + 6 = -x + 3\n3x = -3 => x = -1\n代入求得 y = 4，故 P(-1, 4)。\n\n步驟 2：計算面積與比例\n△AOB 面積 = \\( \\frac{1}{2} \\times \\overline{AO} \\times \\overline{OB} \\) = \\( \\frac{1}{2} \\times 3 \\times 6 \\) = 9。\n\n△PAC 的底為 \\( \\overline{AC} \\)，長度為 3 - (-3) = 6。\n△PAC 的高為 P 點的 y 坐標，即 4。\n△PAC 面積 = \\( \\frac{1}{2} \\times 6 \\times 4 \\) = 12。\n\n面積比 = △AOB : △PAC = 9 : 12 = 3 : 4。\n\n答：面積比為 3 : 4。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 20 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、計算題（共 2 題）</div>`;
+            }
+
+            // 判斷是否包含圖片
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.type === 'choice') {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${item.text}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = htmlContent;
+        // 渲染 MathJax
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise();
+        }
+    }
+
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+            // 嘗試動態渲染展開後可能出現的數學公式
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([solBox]);
+            }
+        }
+    };
+
+    // 啟動渲染
+    renderQuiz();
+
+</script>
+
+</body>
+</html>
