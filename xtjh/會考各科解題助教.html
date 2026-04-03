@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會考各科解題助教 GEM 110~114</title>
+    <style>
+        :root {
+            /* 預設背景：淡綠漸層 */
+            --bg-gradient: linear-gradient(135deg, #f0f9f0 0%, #d5eddb 100%);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        h1 {
+            margin-top: 60px;
+            color: #2d5a27;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* 漸層顏色切換按鈕區 */
+        .theme-panel {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 12px 20px;
+            border-radius: 50px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .theme-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: transform 0.2s;
+        }
+
+        .theme-dot:hover {
+            transform: scale(1.2);
+        }
+
+        /* 主按鈕容器 */
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+            max-width: 900px;
+            padding: 20px;
+        }
+
+        /* 按鈕樣式 */
+        .subject-btn {
+            width: 160px;
+            height: 110px;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .subject-btn:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+            filter: brightness(1.1);
+        }
+
+        /* 各科顏色定義 */
+        .chi { background: linear-gradient(145deg, #ff5252, #d32f2f); }
+        .eng { background: linear-gradient(145deg, #448aff, #1976d2); }
+        .mat { background: linear-gradient(145deg, #ffa726, #f57c00); }
+        .sci { background: linear-gradient(145deg, #66bb6a, #388e3c); }
+        .soc { background: linear-gradient(145deg, #ab47bc, #7b1fa2); }
+        
+        /* 五科 GAS 按鈕 */
+        .all { 
+            background: linear-gradient(145deg, #78909c, #455a64); 
+            width: 345px; /* 寬度加長 */
+        }
+
+        .gas-tag {
+            font-size: 0.85rem;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 480px) {
+            .all { width: 160px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>會考各科解題助教 GEM 110~114</h1>
+
+    <div class="theme-panel">
+        <div class="theme-dot" style="background: linear-gradient(135deg, #f0f9f0, #d5eddb);" onclick="changeBg('linear-gradient(135deg, #f0f9f0 0%, #d5eddb 100%)')"></div>
+        <div class="theme-dot" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb);" onclick="changeBg('linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)')"></div>
+        <div class="theme-dot" style="background: linear-gradient(135deg, #fffde7, #fff9c4);" onclick="changeBg('linear-gradient(135deg, #fffde7 0%, #fff9c4 100%)')"></div>
+        <div class="theme-dot" style="background: linear-gradient(135deg, #f3e5f5, #e1bee7);" onclick="changeBg('linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)')"></div>
+        <div class="theme-dot" style="background: linear-gradient(135deg, #eceff1, #cfd8dc);" onclick="changeBg('linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%)')"></div>
+    </div>
+
+    <div class="container">
+        <a href="https://gemini.google.com/gem/1mZeZyAiqOJ86rtnDjMbPZ9duWjva69KS?usp=sharing" target="_blank" class="subject-btn chi">國文</a>
+        <a href="https://gemini.google.com/gem/1DJk7NXsCap3h2BM_c6CJyyfMVRVQkW8d?usp=sharing" target="_blank" class="subject-btn eng">英文</a>
+        <a href="https://gemini.google.com/gem/1gMmIvyEegkGHbWDV1y75nNOepiZZzDG2?usp=sharing" target="_blank" class="subject-btn mat">數學</a>
+        <a href="https://gemini.google.com/gem/1IkwHbC7u6gABdabln0alzgY8Zs87M0ek?usp=sharing" target="_blank" class="subject-btn sci">自然</a>
+        <a href="https://gemini.google.com/gem/127k3HCHZzJ5tRi-l_Q43zU5ngwEUb7vo?usp=sharing" target="_blank" class="subject-btn soc">社會</a>
+        
+        <a href="https://script.google.com/macros/s/AKfycbxMBAdewlqyINtydSFsmOT5_H_43tAAYIPRwaGRBL5-00D8T7Aj92f4qsLTOoPEyi5v/exec" target="_blank" class="subject-btn all">
+            <span>五科</span>
+            <span class="gas-tag">(GAS-速度較慢)</span>
+        </a>
+    </div>
+
+    <script>
+        function changeBg(gradient) {
+            document.body.style.background = gradient;
+            document.body.style.backgroundAttachment = "fixed";
+        }
+    </script>
+
+</body>
+</html>
