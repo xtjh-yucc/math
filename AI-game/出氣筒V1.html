@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>出氣筒 - 數學小幫手特製版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #1a1a2e;
+      touch-action: none; /* 防止手機滑動時螢幕跟著滾動 */
+    }
+    #game-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      cursor: crosshair; /* 更改鼠標樣式為準心 */
+    }
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* 讓點擊穿透 UI 層到 Canvas */
+    }
+    .interactive {
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body class="font-sans text-stone-100">
+
+  <!-- 遊戲畫布 -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- UI 介面層 -->
+  <div class="ui-layer flex flex-col justify-between p-4 sm:p-6">
+    <!-- 頂部資訊列 -->
+    <div class="flex justify-between items-start">
+      <div class="bg-stone-900/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-stone-700">
+        <p class="text-stone-400 text-xs sm:text-sm font-bold mb-1">分數 SCORE</p>
+        <p id="score-display" class="text-3xl sm:text-4xl font-black text-amber-400 font-mono">0</p>
+      </div>
+      
+      <!-- 倒數計時器 -->
+      <div class="bg-stone-900/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-stone-700 text-center">
+        <p class="text-stone-400 text-xs sm:text-sm font-bold mb-1">剩餘時間</p>
+        <p id="timer-display" class="text-3xl sm:text-4xl font-black text-red-400 font-mono">20s</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 開始畫面 -->
+  <div id="start-screen" class="ui-layer interactive flex items-center justify-center bg-stone-900/80 backdrop-blur-sm z-50 transition-opacity duration-300">
+    <div class="bg-stone-800 p-8 rounded-3xl border border-stone-700 text-center max-w-sm w-full mx-4 shadow-2xl">
+      <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500 mb-2">
+        🥊 出氣筒
+      </h1>
+      <p class="text-stone-400 mb-6">數學小幫手的極限 20 秒點擊挑戰</p>
+      
+      <!-- 暱稱輸入 -->
+      <div class="flex items-center gap-2 bg-stone-900 py-2 px-4 rounded-xl border border-stone-700 mb-6">
+        <span class="text-stone-400">👤</span>
+        <input type="text" id="nickname-input" value="數學小幫手" placeholder="輸入您的暱稱" maxlength="10" 
+               class="bg-transparent border-none outline-none text-stone-100 font-bold w-full placeholder-stone-600">
+      </div>
+
+      <div class="text-left bg-stone-900 rounded-xl p-4 mb-8 text-sm text-stone-300">
+        <ul class="space-y-2">
+          <li>👆 點擊螢幕來擊打上方掉落的目標</li>
+          <li>⏱️ 限時 20 秒，盡可能爭取高分</li>
+          <li>💣 小心炸彈！點到直接扣 3 秒鐘</li>
+        </ul>
+      </div>
+
+      <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-400 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 text-lg">
+        開始挑戰
+      </button>
+    </div>
+  </div>
+
+  <!-- 結算畫面 -->
+  <div id="game-over-screen" class="ui-layer interactive hidden items-center justify-center bg-stone-900/90 backdrop-blur-md z-50 transition-opacity duration-300">
+    <div class="bg-stone-800 p-6 sm:p-8 rounded-3xl border border-stone-600 text-center max-w-sm w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="text-5xl mb-4">⏱️</div>
+      <h2 class="text-3xl font-black text-amber-400 mb-2">時間到！</h2>
+      <p class="text-stone-400 mb-6">來看看您的成績吧！</p>
+      
+      <div class="bg-stone-900 rounded-2xl p-4 mb-6 text-left">
+        <div class="flex justify-between mb-2">
+          <span class="text-stone-400">最終分數：</span>
+          <span id="final-score" class="font-bold text-amber-400 font-mono text-xl">0</span>
+        </div>
+        <div class="flex justify-between mb-2">
+          <span class="text-stone-400">擊中數量：</span>
+          <span id="hit-count" class="font-bold text-stone-100">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-stone-400">打擊準確率：</span>
+          <span id="accuracy-stat" class="font-bold text-blue-400">0%</span>
+        </div>
+      </div>
+
+      <!-- 英雄榜區塊 -->
+      <div id="leaderboard-section" class="bg-stone-900 border border-stone-700 rounded-2xl p-4 mb-6 text-left hidden">
+        <h3 class="font-bold text-amber-400 mb-3 flex items-center justify-center gap-2 text-sm sm:text-base">
+          🏆 英雄榜 (Top 10)
+        </h3>
+        <div id="leaderboard-list" class="space-y-2">
+          <!-- 榜單項目動態生成 -->
+        </div>
+      </div>
+
+      <button onclick="startGame()" class="w-full py-4 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-lg">
+        再玩一次
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // ⚠️ 請將下方的 URL 替換成您部署的 Google Apps Script 網址
+    // ==========================================
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwjQIMuU981VW3Tk8NalqlIA584u847_heO2IsqsR1cIC8pwMfcHpHKLMW6fjeZ0HqG/exec';
+    
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 載入自訂圖片
+    const targetImg = new Image();
+    targetImg.src = 'yu01.jpg';
+    
+    // UI 元素
+    const scoreDisplay = document.getElementById('score-display');
+    const timerDisplay = document.getElementById('timer-display');
+    const startScreen = document.getElementById('start-screen');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const nicknameInput = document.getElementById('nickname-input');
+
+    // 遊戲常數與設定
+    const BOMB = { emoji: '💣', type: 'bomb' };
+    
+    let w, h;
+    let score = 0;
+    let timeLeft = 20;
+    let timerInterval = null;
+    let gameLoopId;
+    let isPlaying = false;
+    
+    // 英雄榜資料
+    let leaderboard = JSON.parse(localStorage.getItem('punchBagLeaderboard')) || [];
+    
+    // 統計數據
+    let totalClicks = 0;
+    let hitTargetsCount = 0;
+
+    // 遊戲物件陣列
+    let targets = [];
+    let particles = [];
+
+    // 將成績發送到 Google Sheets
+    function submitScoreToSheet(nickname, score, accuracy) {
+      if (GOOGLE_SCRIPT_URL === '請替換為您的Apps Script Web App網址') {
+        console.log("尚未設定 Google Apps Script 網址，成績僅儲存於本地。");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('nickname', nickname);
+      formData.append('score', score);
+      formData.append('accuracy', accuracy);
+      formData.append('date', new Date().toLocaleString());
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors' // 避免 CORS 問題
+      }).then(() => {
+        console.log("成績已成功發送至 Google Sheets");
+      }).catch(err => {
+        console.error("傳送成績失敗", err);
+      });
+    }
+
+    // 調整畫布大小
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // 倒數計時器邏輯
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 20;
+      timerDisplay.innerText = `${timeLeft}s`;
+      timerDisplay.classList.remove('text-red-500', 'animate-pulse');
+      timerDisplay.classList.add('text-red-400');
+      
+      timerInterval = setInterval(() => {
+        if (!isPlaying) return;
+        timeLeft--;
+        if (timeLeft <= 5) {
+          timerDisplay.classList.add('text-red-500', 'animate-pulse');
+          timerDisplay.classList.remove('text-red-400');
+        }
+        timerDisplay.innerText = `${timeLeft}s`;
+        
+        if (timeLeft <= 0) {
+          gameOver();
+        }
+      }, 1000);
+    }
+
+    // 懲罰邏輯 (點到炸彈)
+    function penalty() {
+      timeLeft -= 3;
+      if (timeLeft < 0) timeLeft = 0;
+      timerDisplay.innerText = `${timeLeft}s`;
+      
+      // 畫面震動效果
+      document.body.style.transform = "translateX(15px) translateY(15px)";
+      setTimeout(() => document.body.style.transform = "translateX(-15px) translateY(-15px)", 50);
+      setTimeout(() => document.body.style.transform = "translateX(0) translateY(0)", 100);
+      
+      if (timeLeft <= 0) {
+        gameOver();
+      }
+    }
+
+    // --- 遊戲邏輯與物件 ---
+
+    class Target {
+      constructor() {
+        this.radius = Math.min(w, h) * 0.1; // 大小調整
+        if (this.radius < 40) this.radius = 40;
+        if (this.radius > 80) this.radius = 80;
+
+        this.x = Math.random() * (w - this.radius * 2) + this.radius;
+        this.y = -this.radius; // 從畫面上方掉落
+        
+        // 物理參數 (向下掉落)
+        this.vx = (Math.random() - 0.5) * 4; // 水平飄移速度 (-2 到 2)
+        this.vy = Math.random() * 3 + 2; // 初始向下速度
+        
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+        
+        this.isHit = false;
+        
+        // 15% 機率是炸彈
+        this.isBomb = Math.random() < 0.15;
+        
+        if (this.isBomb) {
+          this.data = BOMB;
+        } else {
+          this.data = { isImage: true, score: 10 }; // 自訂圖片
+        }
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.15; // 向下重力
+        this.rotation += this.rotationSpeed;
+
+        // 如果掉出畫面底部，直接移除 (時間模式不扣分)
+        if (this.y > h + this.radius + 50) {
+          return false;
+        }
+        return true;
+      }
+
+      draw(ctx) {
+        if (this.isHit) return;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        
+        if (this.isBomb) {
+          ctx.font = `${this.radius * 1.5}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('💣', 0, 0);
+        } else {
+          // 繪製圓形裁切的圖片
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+          ctx.clip();
+          if (targetImg.complete && targetImg.naturalWidth !== 0) {
+            ctx.drawImage(targetImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+          } else {
+            // 如果圖片還沒載入完成的備用顯示
+            ctx.fillStyle = '#3b82f6';
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = `${this.radius * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('目標', 0, 0);
+          }
+        }
+        ctx.restore();
+      }
+    }
+
+    class Particle {
+      constructor(x, y, color, emoji, isHalf, vx, vy, isImage, radius) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx || (Math.random() - 0.5) * 15;
+        this.vy = vy || (Math.random() - 0.5) * 15;
+        this.life = 1;
+        this.decay = Math.random() * 0.02 + 0.015;
+        this.color = color || '#ef4444'; // 預設紅色飛濺物
+        this.emoji = emoji;
+        this.isHalf = isHalf;
+        this.isImage = isImage;
+        this.radius = radius || 50;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.5;
+        this.size = Math.random() * 10 + 5;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.5; // 重力
+        this.life -= this.decay;
+        this.rotation += this.rotationSpeed;
+        return this.life > 0;
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        
+        if (this.isHalf && this.isImage) {
+          // 畫半個圖片 (用 clip 剪裁，營造破裂感)
+          ctx.beginPath();
+          if (this.vx < 0) {
+            ctx.rect(-this.radius, -this.radius, this.radius, this.radius * 2);
+          } else {
+            ctx.rect(0, -this.radius, this.radius, this.radius * 2);
+          }
+          ctx.clip();
+          if (targetImg.complete && targetImg.naturalWidth !== 0) {
+            ctx.drawImage(targetImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+          } else {
+             ctx.fillStyle = '#ef4444';
+             ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+             ctx.fill();
+          }
+        } else {
+          // 畫飛濺 (圓形)
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // --- 遊戲核心機制 ---
+
+    function spawnTarget() {
+      if (!isPlaying) return;
+      targets.push(new Target());
+      
+      // 隨機下次生成時間 (200ms ~ 800ms，加快節奏)
+      const nextSpawn = Math.random() * 600 + 200;
+      setTimeout(spawnTarget, nextSpawn);
+    }
+
+    function createHitEffect(target) {
+      if (target.isBomb) return;
+      
+      // 破裂的圖片
+      particles.push(new Particle(target.x, target.y, null, null, true, -6, target.vy - 2, true, target.radius));
+      particles.push(new Particle(target.x, target.y, null, null, true, 6, target.vy - 2, true, target.radius));
+      
+      // 打擊飛濺物 (紅色/白色特效)
+      for (let i = 0; i < 15; i++) {
+        particles.push(new Particle(target.x, target.y, '#ef4444', null, false));
+        particles.push(new Particle(target.x, target.y, '#ffffff', null, false));
+        particles.push(new Particle(target.x, target.y, '#fb923c', null, false));
+      }
+    }
+
+    // 處理點擊/觸控輸入
+    function handleInput(x, y) {
+      if (!isPlaying) return;
+      
+      totalClicks++; // 紀錄總點擊次數 (用來算準確率)
+      
+      // 反向迴圈，優先判定最上層(最新生成)的目標
+      for (let i = targets.length - 1; i >= 0; i--) {
+        let t = targets[i];
+        if (t.isHit) continue;
+
+        // 計算點擊位置到目標中心的距離
+        let dist = Math.hypot(t.x - x, t.y - y);
+        
+        // 如果距離小於半徑，代表擊中
+        if (dist <= t.radius) {
+          t.isHit = true;
+          
+          if (t.isBomb) {
+            penalty();
+            // 炸彈爆炸特效
+            for (let j = 0; j < 30; j++) particles.push(new Particle(t.x, t.y, '#ffffff', null, false));
+            for (let j = 0; j < 30; j++) particles.push(new Particle(t.x, t.y, '#ef4444', null, false));
+            for (let j = 0; j < 20; j++) particles.push(new Particle(t.x, t.y, '#f59e0b', null, false));
+          } else {
+            // 擊中一般目標
+            score += t.data.score;
+            hitTargetsCount++;
+            scoreDisplay.innerText = score;
+            createHitEffect(t);
+          }
+          break; // 一次點擊只擊中一個目標
+        }
+      }
+    }
+
+    // --- 繪圖循環 ---
+
+    function loop() {
+      if (!isPlaying) return;
+
+      // 清除畫布
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, w, h);
+
+      // 更新與繪製目標
+      targets = targets.filter(t => t.update());
+      targets.forEach(t => t.draw(ctx));
+
+      // 更新與繪製粒子
+      particles = particles.filter(p => p.update());
+      particles.forEach(p => p.draw(ctx));
+
+      gameLoopId = requestAnimationFrame(loop);
+    }
+
+    // --- 遊戲狀態管理 ---
+
+    function startGame() {
+      score = 0;
+      totalClicks = 0;
+      hitTargetsCount = 0;
+      targets = [];
+      particles = [];
+      
+      scoreDisplay.innerText = score;
+      
+      startScreen.classList.add('hidden');
+      startScreen.classList.remove('flex');
+      gameOverScreen.classList.add('hidden');
+      gameOverScreen.classList.remove('flex');
+      
+      isPlaying = true;
+      startTimer();
+      spawnTarget();
+      loop();
+    }
+
+    function renderLeaderboard() {
+      const lbSection = document.getElementById('leaderboard-section');
+      const lbList = document.getElementById('leaderboard-list');
+
+      if (leaderboard.length > 0) {
+        lbSection.classList.remove('hidden');
+        lbList.innerHTML = leaderboard.map((record, idx) => `
+          <div class="flex justify-between items-center text-sm py-2 border-b border-stone-700 last:border-0 ${idx === 0 ? 'font-bold text-amber-400' : 'text-stone-300'}">
+            <div class="flex items-center gap-2 overflow-hidden mr-2">
+              <span class="w-4 sm:w-5 inline-block text-stone-500 flex-shrink-0">#${idx + 1}</span>
+              <span class="truncate max-w-[100px] sm:max-w-[150px]" title="${record.nickname}">${record.nickname}</span>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="font-mono bg-stone-800 text-amber-400 px-2 py-0.5 rounded text-xs border border-stone-600">${record.score} 分</span>
+              <span class="text-xs text-stone-400 hidden sm:inline-block">
+                ${record.accuracy}% 準度
+              </span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        lbSection.classList.add('hidden');
+      }
+    }
+
+    function gameOver() {
+      if (!isPlaying) return; // 避免重複執行
+      isPlaying = false;
+      clearInterval(timerInterval);
+      cancelAnimationFrame(gameLoopId);
+      
+      const accuracy = totalClicks === 0 ? 0 : Math.min(100, Math.round((hitTargetsCount / totalClicks) * 100));
+
+      document.getElementById('final-score').innerText = score;
+      document.getElementById('hit-count').innerText = hitTargetsCount + ' 個';
+      document.getElementById('accuracy-stat').innerText = accuracy + '%';
+      
+      const nickname = nicknameInput ? nicknameInput.value.trim() || '數學小幫手' : '數學小幫手';
+      
+      // 新增紀錄到本機英雄榜
+      leaderboard.push({
+        nickname: nickname,
+        score: score,
+        accuracy: accuracy,
+        date: new Date().getTime()
+      });
+      
+      // 排行榜排序：先比分數(高到低)，再比準確率(高到低)
+      leaderboard.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.accuracy - a.accuracy;
+      });
+      
+      // 只保留前 10 名
+      leaderboard = leaderboard.slice(0, 10);
+      localStorage.setItem('punchBagLeaderboard', JSON.stringify(leaderboard));
+      
+      // 發送成績至 Google Sheets
+      submitScoreToSheet(nickname, score, accuracy);
+
+      renderLeaderboard();
+
+      gameOverScreen.classList.remove('hidden');
+      gameOverScreen.classList.add('flex');
+    }
+
+    // --- 事件監聽 (點擊擊打) ---
+
+    // 電腦滑鼠點擊
+    window.addEventListener('mousedown', (e) => {
+      // 確保不是點到 UI 元件
+      if (e.target === canvas) {
+         handleInput(e.clientX, e.clientY);
+      }
+    });
+
+    // 手機觸控點擊
+    window.addEventListener('touchstart', (e) => {
+      if (e.target !== canvas) return;
+      e.preventDefault(); // 防止螢幕滾動或縮放
+      
+      // 支援多點觸控，同時點擊多個目標
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        handleInput(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+      }
+    }, { passive: false });
+
+  </script>
+</body>
+</html>
