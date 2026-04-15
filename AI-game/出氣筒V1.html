@@ -124,7 +124,7 @@
     // ==========================================
     // ⚠️ 請將下方的 URL 替換成您部署的 Google Apps Script 網址
     // ==========================================
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyT8cPmR02pTV_3_Lljb6ga1R-thjQrOI13hPA2MLzTbmMf9zLgozD3nb_ph_gPjqSm/exec';
+    const GOOGLE_SCRIPT_URL = '請替換為您的Apps Script Web App網址';
     
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
@@ -163,7 +163,7 @@
 
     // 新增：從 Google Sheets 讀取最新的英雄榜資料
     function fetchLeaderboard() {
-      if (GOOGLE_SCRIPT_URL === '請替換為您的Apps Script Web App網址') return;
+      if (GOOGLE_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbyT8cPmR02pTV_3_Lljb6ga1R-thjQrOI13hPA2MLzTbmMf9zLgozD3nb_ph_gPjqSm/exec') return;
 
       fetch(GOOGLE_SCRIPT_URL)
         .then(response => response.json())
@@ -437,8 +437,12 @@
         // 計算點擊位置到目標中心的距離
         let dist = Math.hypot(t.x - x, t.y - y);
         
-        // 如果距離小於半徑，代表擊中
-        if (dist <= t.radius) {
+        // 【優化】放寬觸控點擊的判定範圍 (Hitbox)
+        // 將判定半徑增加 50px，這樣即使手指稍微偏離圖片邊緣也能成功擊中，大幅提升 iPad 手感
+        let hitRadius = t.radius + 50; 
+        
+        // 如果距離小於放寬後的半徑，代表擊中
+        if (dist <= hitRadius) {
           t.isHit = true;
           
           if (t.isBomb) {
