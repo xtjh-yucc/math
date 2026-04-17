@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 桌球大師 - 體感對戰</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            background-color: #020617;
+            color: white;
+            overflow: hidden;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            aspect-ratio: 4 / 3;
+            margin: 0 auto;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(14, 165, 233, 0.4);
+            background: #1e3a8a; /* 桌球檯深藍色底色 */
+        }
+        #input_video {
+            display: none;
+        }
+        #output_canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .leaderboard-scroll {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        /* 隱藏捲軸美化 */
+        .leaderboard-scroll::-webkit-scrollbar { width: 4px; }
+        .leaderboard-scroll::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 10px; }
+
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        .btn-diff:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
+        .btn-diff:active { transform: translateY(1px); }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- 訊息提示 -->
+    <div id="toast" class="hidden bg-sky-600 text-white px-6 py-2 rounded-full shadow-2xl z-[100] flex items-center gap-3">
+        <span id="toastMsg">訊息內容</span>
+    </div>
+
+    <!-- 頂部資訊 -->
+    <div class="w-full max-w-2xl flex justify-between items-end mb-4 px-2">
+        <div>
+            <h1 class="text-3xl font-black tracking-tighter text-sky-400 italic">PING PONG <span class="text-white text-lg font-normal not-italic ml-2">AI 體感桌球</span></h1>
+            <p class="text-xs text-slate-400 mt-1">舉起手掌【左右平移】控制紅色球拍，擊敗電腦！</p>
+        </div>
+        <div class="flex gap-4">
+            <div class="text-right">
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase">High Score</p>
+                <p id="highScore" class="text-2xl font-mono font-bold text-white">0</p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase text-red-400">Lives</p>
+                <p id="livesDisplay" class="text-2xl font-mono font-bold text-red-400">❤️❤️❤️</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲區 -->
+    <div class="canvas-container border-4 border-slate-800">
+        <video id="input_video" playsinline muted></video>
+        <canvas id="output_canvas" width="640" height="480"></canvas>
+
+        <!-- 覆蓋層容器 -->
+        <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 z-50 text-center p-8 backdrop-blur-sm transition-all duration-300">
+            
+            <!-- 1. 初始化攝影機 -->
+            <div id="setupScreen" class="space-y-6">
+                <div class="text-7xl mb-2">🏓</div>
+                <h2 class="text-2xl font-bold">啟動 AI 體感鏡頭</h2>
+                <button onclick="requestCamera()" class="bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-12 rounded-2xl text-lg shadow-[0_0_20px_rgba(14,165,233,0.4)] active:scale-95 transition-all">
+                    允許權限並準備
+                </button>
+            </div>
+
+            <!-- 2. 選擇難度並開始 -->
+            <div id="startScreen" class="hidden space-y-4 w-full max-w-sm">
+                <div class="bg-slate-800/80 border border-sky-500/50 p-4 rounded-xl mb-2 backdrop-blur-md">
+                    <p class="text-sm text-sky-400 font-bold mb-1">【感應測試中】</p>
+                    <p class="text-xs text-slate-300">請在背景確認是否能看到您的手掌藍點跟隨<br><strong class="text-white text-base">左右平移</strong> 控制紅色球拍</p>
+                </div>
+                <h2 class="text-2xl font-black text-white mb-2">選擇對手難度</h2>
+                <div class="flex flex-col gap-3">
+                    <button onclick="startGame('easy')" class="btn-diff bg-emerald-500 text-white font-bold py-3 rounded-xl text-xl">
+                        🟢 初階 (慢速球)
+                    </button>
+                    <button onclick="startGame('normal')" class="btn-diff bg-yellow-500 text-white font-bold py-3 rounded-xl text-xl">
+                        🟡 進階 (標準球速)
+                    </button>
+                    <button onclick="startGame('hard')" class="btn-diff bg-red-500 text-white font-bold py-3 rounded-xl text-xl">
+                        🔴 高手 (極速挑戰)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. 結算與輸入 -->
+            <div id="resultScreen" class="hidden space-y-4 w-full max-w-sm mx-auto">
+                <h2 class="text-4xl font-black text-red-400 tracking-widest">GAME OVER</h2>
+                <p class="text-6xl font-black text-white" id="finalScore">0</p>
+                
+                <div class="bg-slate-800 p-4 rounded-xl border border-white/10 space-y-3">
+                    <input type="text" id="playerName" placeholder="請輸入姓名登錄榜單" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-center text-white focus:outline-none focus:border-sky-500">
+                    <button id="submitBtn" onclick="submitScore()" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded-lg transition-all shadow-md">
+                        同步成績至試算表
+                    </button>
+                </div>
+                <button onclick="showLeaderboard()" class="text-slate-400 text-sm underline hover:text-white transition-colors">查看試算表榮譽榜</button>
+            </div>
+
+            <!-- 4. 榮譽榜 -->
+            <div id="leaderboardScreen" class="hidden space-y-4 w-full max-w-sm mx-auto">
+                <h2 class="text-2xl font-black text-sky-400 italic">🏆 TOP 10 榮譽榜</h2>
+                <div id="leaderboardList" class="leaderboard-scroll bg-slate-800/50 rounded-xl border border-white/5 p-2 space-y-1 min-h-[100px] text-left">
+                    <p class="text-slate-500 text-xs py-4 italic text-center">正在讀取試算表資料...</p>
+                </div>
+                <button onclick="resetGame()" class="bg-white text-slate-900 font-bold py-3 px-10 rounded-xl text-lg hover:bg-sky-400 hover:text-white transition-all w-full shadow-lg">
+                    再次挑戰
+                </button>
+            </div>
+        </div>
+
+        <!-- 當前分數顯示 -->
+        <div class="absolute bottom-6 left-6 bg-slate-900/80 border border-white/10 px-6 py-2 rounded-2xl backdrop-blur-md">
+            <span class="text-slate-400 text-xs font-bold uppercase tracking-widest block">Score</span>
+            <span id="currentScore" class="text-4xl font-mono font-bold text-white tracking-tighter">0</span>
+        </div>
+    </div>
+
+    <script type="module">
+        // === 試算表 GAS 網址 ===
+        const GAS_URL = "https://script.google.com/macros/s/AKfycby7eN-QkEGSY8qjnKLJSu6A4plD05L7WO2_Nb5r7jZTFvXq5BFnaOinCTUtn6t_Q7s/exec"; 
+
+        window.requestCamera = requestCamera;
+        window.startGame = startGame;
+        window.submitScore = submitScore;
+        window.showLeaderboard = showLeaderboard;
+        window.resetGame = resetGame;
+
+        // === 遊戲全域變數 ===
+        let score = 0;
+        let lives = 3;
+        let isPlaying = false;
+        let highScore = localStorage.getItem('table_tennis_high_score') || 0;
+        document.getElementById('highScore').innerText = highScore;
+
+        let animationFrameId;
+        let currentHandLandmarks = null; 
+        let targetPlayerX = 320; 
+
+        // 遊戲物理物件 (改為桌球風格)
+        const gameInfo = {
+            ball: { x: 320, y: 240, vx: 0, vy: 0, r: 6, baseSpeed: 5 }, // 桌球較小
+            player: { x: 270, y: 440, w: 80, h: 16, color: '#ef4444' }, // 紅色球拍，稍短稍厚
+            ai: { x: 270, y: 30, w: 80, h: 16, speed: 3, color: '#1e293b' }, // 黑色/深灰球拍
+            difficulty: 'normal'
+        };
+
+        // === MediaPipe 初始化 ===
+        let hands;
+        try {
+            hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+            hands.setOptions({
+                maxNumHands: 1, 
+                modelComplexity: 1, 
+                minDetectionConfidence: 0.5, 
+                minTrackingConfidence: 0.5
+            });
+            hands.onResults(onResults);
+        } catch (e) { console.error("Hands init failed", e); }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        }
+
+        // === 攝影機請求 ===
+        async function requestCamera() {
+            try {
+                const video = document.getElementById('input_video');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480, facingMode: "user" } 
+                });
+                video.srcObject = stream;
+                
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve);
+                    };
+                });
+                
+                detectLoop();
+                
+                if (!animationFrameId) {
+                    gameLoop();
+                }
+
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('startScreen').classList.remove('hidden');
+            } catch (err) {
+                alert("攝影機啟動失敗，請檢查權限：" + err.message);
+            }
+        }
+
+        async function detectLoop() {
+            const video = document.getElementById('input_video');
+            if (!video.paused && !video.ended && hands) {
+                await hands.send({ image: video });
+            }
+            requestAnimationFrame(detectLoop);
+        }
+
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                currentHandLandmarks = results.multiHandLandmarks[0];
+                const handX = (currentHandLandmarks[0].x + currentHandLandmarks[9].x) / 2; 
+                targetPlayerX = (1 - handX) * 640 - (gameInfo.player.w / 2);
+            } else {
+                currentHandLandmarks = null;
+            }
+        }
+
+        // === 遊戲啟動 ===
+        function startGame(diff) {
+            gameInfo.difficulty = diff;
+            
+            if (diff === 'easy') {
+                gameInfo.ball.baseSpeed = 5;
+                gameInfo.ai.speed = 2.5;
+            } else if (diff === 'normal') {
+                gameInfo.ball.baseSpeed = 7;
+                gameInfo.ai.speed = 5;
+            } else if (diff === 'hard') {
+                gameInfo.ball.baseSpeed = 10;
+                gameInfo.ai.speed = 8;
+            }
+
+            score = 0; 
+            lives = 3; 
+            isPlaying = true;
+            updateUI();
+            
+            document.getElementById('overlay').classList.add('hidden');
+            resetBall(1); 
+        }
+
+        function resetBall(direction) {
+            gameInfo.ball.x = 320;
+            gameInfo.ball.y = 240;
+            const angle = (Math.random() * Math.PI / 4) - (Math.PI / 8); 
+            const speed = gameInfo.ball.baseSpeed;
+            gameInfo.ball.vx = Math.sin(angle) * speed;
+            gameInfo.ball.vy = Math.cos(angle) * speed * direction;
+        }
+
+        function updateUI() {
+            document.getElementById('currentScore').innerText = score;
+            document.getElementById('livesDisplay').innerText = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+        }
+
+        // === 遊戲與渲染主迴圈 ===
+        function gameLoop() {
+            const canvas = document.getElementById('output_canvas');
+            const ctx = canvas.getContext('2d');
+            const { ball, player, ai } = gameInfo;
+
+            if (isPlaying) {
+                player.x += (targetPlayerX - player.x) * 0.3; 
+                
+                if (player.x < 0) player.x = 0;
+                if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+
+                const aiCenter = ai.x + ai.w / 2;
+                if (aiCenter < ball.x - 10) {
+                    ai.x += ai.speed;
+                } else if (aiCenter > ball.x + 10) {
+                    ai.x -= ai.speed;
+                }
+                if (ai.x < 0) ai.x = 0;
+                if (ai.x + ai.w > canvas.width) ai.x = canvas.width - ai.w;
+
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                if (ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) {
+                    ball.vx *= -1;
+                    ball.x = ball.x - ball.r < 0 ? ball.r : canvas.width - ball.r;
+                }
+
+                if (ball.vy > 0 && ball.y + ball.r >= player.y && ball.y - ball.r <= player.y + player.h) {
+                    if (ball.x > player.x && ball.x < player.x + player.w) {
+                        ball.vy *= -1.05; 
+                        const hitPoint = (ball.x - (player.x + player.w/2)) / (player.w/2);
+                        ball.vx = hitPoint * gameInfo.ball.baseSpeed * 1.2;
+                        ball.y = player.y - ball.r; 
+                        if (navigator.vibrate) navigator.vibrate(20);
+                    }
+                }
+
+                if (ball.vy < 0 && ball.y - ball.r <= ai.y + ai.h && ball.y + ball.r >= ai.y) {
+                    if (ball.x > ai.x && ball.x < ai.x + ai.w) {
+                        ball.vy *= -1;
+                        const hitPoint = (ball.x - (ai.x + ai.w/2)) / (ai.w/2);
+                        ball.vx = hitPoint * gameInfo.ball.baseSpeed;
+                        ball.y = ai.y + ai.h + ball.r;
+                    }
+                }
+
+                if (ball.y > canvas.height) {
+                    lives--;
+                    updateUI();
+                    if (navigator.vibrate) navigator.vibrate(100);
+                    if (lives <= 0) {
+                        gameOver();
+                    } else {
+                        resetBall(1); 
+                    }
+                } else if (ball.y < 0) {
+                    score++;
+                    updateUI();
+                    if (score % 2 === 0) gameInfo.ai.speed += 0.5; 
+                    resetBall(-1); 
+                }
+            } else {
+                player.x += (targetPlayerX - player.x) * 0.3; 
+                if (player.x < 0) player.x = 0;
+                if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+            }
+
+            drawScene(ctx, canvas);
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function drawScene(ctx, canvas) {
+            const { ball, player, ai } = gameInfo;
+            const video = document.getElementById('input_video');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 繪製攝影機影像背景 (鏡像)
+            if (video && video.readyState >= 2) {
+                ctx.save();
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            }
+
+            // 2. 藍色桌球檯濾鏡 (深藍色半透明)
+            ctx.fillStyle = 'rgba(30, 58, 138, 0.85)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 3. 繪製桌球檯白線
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 4;
+            
+            // 桌球檯外框
+            const margin = 20;
+            ctx.strokeRect(margin, margin, canvas.width - margin * 2, canvas.height - margin * 2);
+            
+            // 中央縱線
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, margin);
+            ctx.lineTo(canvas.width / 2, canvas.height - margin);
+            ctx.stroke();
+
+            // 球網 (橫向，稍微粗一點的灰色)
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(10, canvas.height / 2);
+            ctx.lineTo(canvas.width - 10, canvas.height / 2);
+            ctx.stroke();
+            // 網子的白色頂緣
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(10, canvas.height / 2 - 3);
+            ctx.lineTo(canvas.width - 10, canvas.height / 2 - 3);
+            ctx.stroke();
+
+            // 4. 繪製手部關節追蹤點
+            if (currentHandLandmarks) {
+                ctx.fillStyle = '#38bdf8';
+                for (const pt of currentHandLandmarks) {
+                    ctx.beginPath();
+                    ctx.arc((1 - pt.x) * canvas.width, pt.y * canvas.height, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+
+            // 5. 繪製 AI 球拍 (黑色)
+            ctx.fillStyle = ai.color;
+            ctx.beginPath();
+            ctx.roundRect(ai.x, ai.y, ai.w, ai.h, 8);
+            ctx.fill();
+
+            // 6. 繪製 玩家球拍 (紅色)
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.roundRect(player.x, player.y, player.w, player.h, 8);
+            ctx.fill();
+
+            // 手掌圖示 (調整對比度使其更清楚)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🖐️', player.x + player.w / 2, player.y + 30);
+
+            // 7. 繪製桌球 (白色小球)
+            ctx.fillStyle = '#ffffff'; 
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        // === 試算表資料上傳與讀取 ===
+        async function submitScore() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            if (!name) { showToast("請輸入姓名！"); return; }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "正在寫入試算表...";
+
+            const payload = { name, score, difficulty: gameInfo.difficulty };
+
+            if (GAS_URL && GAS_URL.startsWith("https")) {
+                try {
+                    await fetch(GAS_URL, {
+                        method: "POST", 
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    showToast("成績已送出！");
+                    
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('table_tennis_high_score', highScore);
+                        document.getElementById('highScore').innerText = highScore;
+                    }
+                    
+                    setTimeout(() => {
+                        showLeaderboard();
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "同步成績至試算表";
+                    }, 1500);
+                } catch (e) { 
+                    showToast("試算表寫入失敗"); 
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "重試";
+                }
+            }
+        }
+
+        async function showLeaderboard() {
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '<p class="text-xs py-4 italic text-slate-400 text-center">正在讀取試算表資料...</p>';
+
+            try {
+                const response = await fetch(GAS_URL);
+                if (!response.ok) throw new Error("網路連線失敗");
+                
+                const top10 = await response.json();
+                
+                if (!top10 || top10.length === 0) {
+                    list.innerHTML = '<p class="text-xs py-4 italic text-slate-400 text-center">目前尚無紀錄</p>';
+                    return;
+                }
+
+                list.innerHTML = top10.map((e, i) => `
+                    <div class="flex justify-between items-center px-4 py-3 ${i<3?'bg-sky-500/20':'bg-white/5'} rounded-lg mb-2 border border-white/5 text-sm">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono font-bold ${i===0?'text-yellow-400':i===1?'text-slate-300':i===2?'text-orange-400':'text-slate-500'}">
+                                ${i+1}.
+                            </span>
+                            <span class="font-bold truncate max-w-[150px]">${e.name}</span>
+                        </div>
+                        <span class="font-bold text-sky-400">${e.score} 分</span>
+                    </div>
+                `).join('');
+            } catch (e) { 
+                console.error("Leaderboard Error:", e);
+                list.innerHTML = `<p class="text-red-400 text-xs py-4 font-bold text-center">讀取失敗</p><p class="text-[10px] text-slate-500 text-center">請確認 GAS 佈署正確</p>`; 
+            }
+        }
+
+        function resetGame() {
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('playerName').value = "";
+        }
+    </script>
+</body>
+</html>
