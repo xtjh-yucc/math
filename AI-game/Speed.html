@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>極速揮手挑戰 SPEED</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            background-color: #020617;
+            color: white;
+            overflow: hidden;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            aspect-ratio: 4 / 3;
+            margin: 0 auto;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(56, 189, 248, 0.3);
+            background: #1e293b;
+        }
+        #output_canvas {
+            transform: scaleX(-1);
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .score-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: rgba(56, 189, 248, 0.4);
+            top: 50%;
+            left: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .score-line.flash {
+            background: #facc15;
+            box-shadow: 0 0 40px #facc15;
+            height: 8px;
+        }
+        .hand-indicator {
+            position: absolute;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            background: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 0 25px #38bdf8;
+            z-index: 20;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            transition: top 0.02s linear; 
+        }
+        .score-pop { animation: pop 0.1s ease-out; }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.8); color: #facc15; }
+            100% { transform: scale(1); }
+        }
+        .leaderboard-scroll {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- 訊息提示 -->
+    <div id="toast" class="hidden bg-sky-600 text-white px-6 py-2 rounded-full shadow-2xl z-[100] flex items-center gap-3">
+        <span id="toastMsg">訊息內容</span>
+    </div>
+
+    <!-- 頂部資訊 -->
+    <div class="w-full max-w-2xl flex justify-between items-end mb-4 px-2">
+        <div>
+            <h1 class="text-3xl font-black tracking-tighter text-sky-400 italic">SPEED <span class="text-white text-lg font-normal not-italic ml-2">試算表同步版</span></h1>
+            <p class="text-xs text-slate-500 mt-1">手掌快速越過中線即可得分，成績將同步至試算表</p>
+        </div>
+        <div class="flex gap-4">
+            <div class="text-right">
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase">High Score</p>
+                <p id="highScore" class="text-2xl font-mono font-bold">0</p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase">Timer</p>
+                <p id="timer" class="text-4xl font-mono font-bold text-yellow-400">20</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲區 -->
+    <div class="canvas-container border-4 border-slate-800">
+        <video id="input_video" class="hidden" playsinline muted></video>
+        <canvas id="output_canvas"></canvas>
+        <div id="scoreLine" class="score-line"></div>
+        <div id="handPos" class="hand-indicator" style="top: 50%;">🖐️</div>
+
+        <!-- 覆蓋層容器 -->
+        <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 z-50 text-center p-8">
+            
+            <!-- 1. 初始化攝影機 -->
+            <div id="setupScreen" class="space-y-6">
+                <div class="text-7xl mb-2">📸</div>
+                <h2 class="text-2xl font-bold">啟動 AI 鏡頭感應</h2>
+                <button onclick="requestCamera()" class="bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-12 rounded-2xl text-lg shadow-lg active:scale-95 transition-all">
+                    允許權限並開始
+                </button>
+            </div>
+
+            <!-- 2. 準備開始 -->
+            <div id="startScreen" class="hidden space-y-6">
+                <div class="text-7xl animate-pulse">⚡</div>
+                <h2 class="text-3xl font-black italic tracking-widest">READY?</h2>
+                <button onclick="startGame()" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-16 rounded-2xl text-2xl shadow-lg transform hover:scale-105 transition-all">
+                    GO!
+                </button>
+            </div>
+
+            <!-- 3. 結算與輸入 -->
+            <div id="resultScreen" class="hidden space-y-4 w-full max-w-sm mx-auto">
+                <h2 class="text-4xl font-black text-yellow-400 tracking-widest">TIME UP!</h2>
+                <p class="text-6xl font-black text-white" id="finalScore">0</p>
+                
+                <div class="bg-slate-800 p-4 rounded-xl border border-white/10 space-y-3">
+                    <input type="text" id="playerName" placeholder="請輸入姓名" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-center text-white focus:outline-none focus:border-sky-500">
+                    <button id="submitBtn" onclick="submitScore()" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded-lg transition-all shadow-md">
+                        同步成績至試算表
+                    </button>
+                </div>
+                <button onclick="showLeaderboard()" class="text-slate-400 text-sm underline hover:text-white transition-colors">查看試算表榮譽榜</button>
+            </div>
+
+            <!-- 4. 榮譽榜 -->
+            <div id="leaderboardScreen" class="hidden space-y-4 w-full max-w-sm mx-auto">
+                <h2 class="text-2xl font-black text-sky-400 italic">🏆 TOP 10 榮譽榜</h2>
+                <div id="leaderboardList" class="leaderboard-scroll bg-slate-800/50 rounded-xl border border-white/5 p-2 space-y-1 min-h-[100px] flex flex-col justify-center">
+                    <p class="text-slate-500 text-xs py-4 italic">正在讀取試算表資料...</p>
+                </div>
+                <button onclick="resetGame()" class="bg-white text-slate-900 font-bold py-3 px-10 rounded-xl text-lg hover:bg-sky-400 hover:text-white transition-all w-full shadow-lg">
+                    再次挑戰
+                </button>
+            </div>
+        </div>
+
+        <div class="absolute bottom-6 left-6 bg-slate-900/80 border border-white/10 px-6 py-2 rounded-2xl">
+            <span id="currentScore" class="text-4xl font-mono font-bold text-white tracking-tighter">0</span>
+        </div>
+    </div>
+
+    <script type="module">
+        // 更新為您提供的最新 GAS 網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwDDkYQp-JJfTLiREYxoRnPs5zM37iOqEK-OfDLvUpVkFeobI6s4ExE0kevFNPZicw3/exec"; 
+
+        // 掛載控制函式
+        window.requestCamera = requestCamera;
+        window.startGame = startGame;
+        window.submitScore = submitScore;
+        window.showLeaderboard = showLeaderboard;
+        window.resetGame = resetGame;
+
+        // 遊戲變數
+        let score = 0, timeLeft = 20, isPlaying = false, timerId = null;
+        let isHandAbove = false;
+        let highScore = localStorage.getItem('speed_high_score') || 0;
+        document.getElementById('highScore').innerText = highScore;
+
+        // MediaPipe 初始化
+        let hands;
+        try {
+            hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+            hands.setOptions({
+                maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.25, minTrackingConfidence: 0.25
+            });
+            hands.onResults(onResults);
+        } catch (e) { console.error("Hands init failed", e); }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        }
+
+        async function requestCamera() {
+            try {
+                const video = document.getElementById('input_video');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480, frameRate: { ideal: 60 } } 
+                });
+                video.srcObject = stream;
+                await video.play();
+                const canvas = document.getElementById('output_canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                detectLoop();
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('startScreen').classList.remove('hidden');
+            } catch (err) {
+                alert("攝影機啟動失敗：" + err.message);
+            }
+        }
+
+        async function detectLoop() {
+            const video = document.getElementById('input_video');
+            if (!video || video.paused || video.ended) return;
+            if (hands) await hands.send({ image: video });
+            requestAnimationFrame(detectLoop);
+        }
+
+        function onResults(results) {
+            const canvas = document.getElementById('output_canvas');
+            const ctx = canvas.getContext('2d');
+            const scoreLine = document.getElementById('scoreLine');
+            const handPosIndicator = document.getElementById('handPos');
+            const scoreEl = document.getElementById('currentScore');
+
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+            ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const hand = results.multiHandLandmarks[0];
+                const handY = (hand[0].y + hand[9].y) / 2; 
+                handPosIndicator.style.top = (handY * 100) + '%';
+
+                if (isPlaying) {
+                    const currentAbove = handY < 0.5;
+                    if (currentAbove !== isHandAbove) {
+                        score++;
+                        scoreEl.innerText = score;
+                        scoreEl.classList.remove('score-pop');
+                        void scoreEl.offsetWidth; 
+                        scoreEl.classList.add('score-pop');
+                        isHandAbove = currentAbove;
+                        scoreLine.classList.add('flash');
+                        setTimeout(() => scoreLine.classList.remove('flash'), 50);
+                    }
+                }
+                
+                ctx.fillStyle = '#38bdf8';
+                for (const pt of hand) {
+                    ctx.beginPath();
+                    ctx.arc((1 - pt.x) * canvas.width, pt.y * canvas.height, 2, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        function startGame() {
+            score = 0; timeLeft = 20; isPlaying = true;
+            document.getElementById('currentScore').innerText = '0';
+            document.getElementById('overlay').classList.add('hidden');
+            if (timerId) clearInterval(timerId);
+            timerId = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').innerText = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            isPlaying = false; clearInterval(timerId);
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+        }
+
+        async function submitScore() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            if (!name) { showToast("請輸入姓名！"); return; }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "正在寫入試算表...";
+
+            const payload = { name, score };
+
+            if (GAS_URL && GAS_URL.startsWith("https")) {
+                try {
+                    await fetch(GAS_URL, {
+                        method: "POST", 
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    showToast("成績已送出！");
+                    
+                    // 等待一秒讓試算表處理，然後切換到排行榜
+                    setTimeout(() => {
+                        showLeaderboard();
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "同步成績至試算表";
+                    }, 1500);
+                } catch (e) { 
+                    showToast("試算表寫入失敗"); 
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "重試";
+                }
+            }
+        }
+
+        async function showLeaderboard() {
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '<p class="text-xs py-4 italic text-slate-400">正在讀取試算表資料...</p>';
+
+            try {
+                // 直接讀取 GAS 網址抓取 JSON 資料
+                const response = await fetch(GAS_URL);
+                if (!response.ok) throw new Error("網路連線失敗");
+                
+                const top10 = await response.json();
+                
+                if (!top10 || top10.length === 0) {
+                    list.innerHTML = '<p class="text-xs py-4 italic text-slate-400">目前尚無紀錄</p>';
+                    return;
+                }
+
+                list.innerHTML = top10.map((e, i) => `
+                    <div class="flex justify-between px-4 py-2 ${i<3?'bg-sky-500/20':'bg-white/5'} rounded-lg mb-1 border border-white/5 text-sm">
+                        <span>${i+1}. ${e.name}</span>
+                        <span class="font-bold text-sky-400">${e.score} 次</span>
+                    </div>
+                `).join('');
+            } catch (e) { 
+                console.error("Leaderboard Error:", e);
+                list.innerHTML = `<p class="text-red-400 text-xs py-4 font-bold">讀取失敗</p><p class="text-[10px] text-slate-500">請確認 GAS 已更新並佈署為新版本</p>`; 
+            }
+        }
+
+        function resetGame() {
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('playerName').value = "";
+        }
+    </script>
+</body>
+</html>
