@@ -3,76 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Ping Pong - Firebase Edition</title>
+  <title>AI Ping Pong - Google Sheets Edition</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js"></script>
   
-  <!-- Firebase SDKs -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    // Firebase Configuration from environment
-    const firebaseConfig = JSON.parse(__firebase_config);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-ping-pong-app';
-    
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Global references for the game to use
-    window.db = db;
-    window.auth = auth;
-    window.appId = appId;
-    window.firebaseUtils = { addDoc, collection, onSnapshot, query };
-
-    // Authentication Logic
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (err) {
-        console.error("Firebase Auth Error:", err);
-      }
-    };
-
-    initAuth();
-
-    // Listen for Auth and Data
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.dataSdkReady = true;
-        // Listen to scores collection
-        const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-        onSnapshot(scoresRef, (snapshot) => {
-          const data = [];
-          snapshot.forEach(doc => data.push(doc.data()));
-          window.allRecords = data;
-          
-          if (data.length > 0) {
-            window.highScore = Math.max(...data.map(r => r.score || 0));
-            const hsDisplay = document.getElementById('high-score-display');
-            if(hsDisplay) hsDisplay.textContent = '🏆 ' + window.highScore;
-          }
-
-          // 即時更新排行榜 UI
-          if (typeof window.renderLeaderboard === 'function') {
-            window.renderLeaderboard();
-          }
-        }, (error) => {
-          console.error("Firestore Listen Error:", error);
-        });
-      }
-    });
-  </script>
-
   <style>
     body { font-family: 'DM Sans', sans-serif; margin: 0; }
     .game-wrap { position: relative; display: inline-block; }
@@ -80,9 +16,8 @@
     .overlay.hidden { display: none; }
     #toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #facc15; color: #1a1a2e; padding: 8px 20px; border-radius: 20px; font-weight: 700; z-index: 99; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     #toast.show { opacity: 1; }
-    canvas#game { border-radius: 8px; display: block; }
+    canvas#game { border-radius: 8px; display: block; background: #000; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
   <script src="/_sdk/resizing_sdk.js" type="text/javascript"></script>
 </head>
 
@@ -104,14 +39,14 @@
       <video id="webcam" autoplay playsinline style="display:none"></video>
       <canvas id="game" width="640" height="480"></canvas>
       
-      <!-- Setup -->
+      <!-- 啟動鏡頭面 -->
       <div id="screen-setup" class="overlay">
         <div class="text-6xl mb-4">🏓</div>
         <h2 class="canva-text text-2xl font-bold mb-4" style="color: rgb(255, 255, 255); font-weight: 700; font-size: 26px;">啟動 AI 體感鏡頭</h2>
         <button id="btn-camera" class="canva-button px-6 py-3 rounded-lg font-bold text-lg cursor-pointer transition hover:scale-105" onclick="openCamera()" style="background: rgb(250, 204, 21); color: rgb(26, 26, 46); font-weight: 700; font-size: 18px;">📷 開啟鏡頭</button>
       </div>
 
-      <!-- Difficulty -->
+      <!-- 難度選擇 -->
       <div id="screen-start" class="overlay hidden">
         <h2 class="canva-text text-2xl font-bold mb-6" style="color: rgb(255, 255, 255); font-weight: 700; font-size: 26px;">選擇難度</h2>
         <div class="flex gap-3">
@@ -121,7 +56,7 @@
         </div>
       </div>
 
-      <!-- Game Over -->
+      <!-- 結算介面 -->
       <div id="screen-gameover" class="overlay hidden">
         <h2 class="canva-text text-3xl font-bold mb-2" style="color: rgb(239, 68, 68); font-weight: 700; font-size: 32px;">遊戲結束</h2>
         <p id="final-score" class="text-yellow-300 text-5xl font-bold mb-4">0</p>
@@ -138,6 +73,9 @@
   <div id="toast"></div>
 
   <script>
+    // --- Google 試算表 (GAS) 設定 ---
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby7eN-QkEGSY8qjnKLJSu6A4plD05L7WO2_Nb5r7jZTFvXq5BFnaOinCTUtn6t_Q7s/exec";
+
     const cvs = document.getElementById('game');
     const ctx = cvs.getContext('2d');
     const W = 640, H = 480;
@@ -174,46 +112,118 @@
         document.getElementById('score-display').textContent = '得分: ' + score;
     }
 
-    // MediaPipe Hands
-    let hands, camera;
-    
-    async function openCamera() {
-        if (cameraReady) return;
+    // --- 試算表資料互動邏輯 ---
+    async function loadLeaderboard() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-            const video = document.getElementById('webcam');
-            video.srcObject = stream;
-
-            hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}` });
-            hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
-            hands.onResults(r => {
-                if (r.multiHandLandmarks && r.multiHandLandmarks[0]) {
-                    const lm = r.multiHandLandmarks[0][9];
-                    handX = (1 - lm.x) * W; 
-                    handLandmarks = r.multiHandLandmarks[0].map(lm => ({
-                        x: (1 - lm.x) * W,
-                        y: lm.y * H
-                    }));
-                } else {
-                    handLandmarks = [];
-                }
-            });
-
-            camera = new Camera(video, {
-                onFrame: async () => { await hands.send({ image: video }); },
-                width: 640, height: 480
-            });
-            camera.start();
-
-            cameraReady = true;
-            document.getElementById('screen-setup').classList.add('hidden');
-            document.getElementById('screen-start').classList.remove('hidden');
-            showToast('鏡頭已啟動！');
-        } catch (e) {
-            showToast('無法存取鏡頭');
+            const response = await fetch(GAS_URL);
+            if (!response.ok) throw new Error("網路連線異常");
+            const data = await response.json();
+            allRecords = data;
+            
+            if (data.length > 0) {
+                // 由於 GAS 回傳的 results 已經照分數排序，第一題即為最高分
+                highScore = data[0].score || 0;
+                document.getElementById('high-score-display').textContent = '🏆 ' + highScore;
+            }
+            renderLeaderboard();
+        } catch (err) {
+            console.error("讀取排行榜失敗:", err);
+            const el = document.getElementById('leaderboard');
+            if (el) el.innerHTML = '<div class="text-center opacity-50 mt-2 text-xs">排行榜讀取失敗</div>';
         }
     }
 
+    async function submitScore() {
+        const nameInput = document.getElementById('player-name');
+        const name = nameInput.value.trim() || '匿名';
+        const btn = document.getElementById('btn-submit');
+        const originalText = btn.textContent;
+        
+        btn.disabled = true;
+        btn.textContent = '提交中...';
+        
+        try {
+            // 發送 POST 請求至 GAS
+            // 注意：GAS 的 Web App 對 POST 請求通常會有轉向問題，但 fetch 預設會處理
+            const response = await fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ name: name, score: score })
+            });
+
+            // GAS 通常會回傳 result: success
+            showToast('提交成功！');
+            btn.textContent = '已提交';
+            
+            // 提交後重新載入排行榜數據
+            setTimeout(loadLeaderboard, 1000);
+
+        } catch (err) {
+            console.error("提交失敗:", err);
+            showToast('提交失敗，請檢查網路');
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+
+    function renderLeaderboard() {
+        const el = document.getElementById('leaderboard');
+        if (!el) return;
+        
+        if (!allRecords.length) { 
+            el.innerHTML = '<div class="text-center opacity-50 mt-2 text-xs">尚未有全球排行榜數據</div>'; 
+            return; 
+        }
+
+        el.innerHTML = '<div class="font-bold mb-1 text-yellow-300 border-b border-yellow-300/30 pb-1 text-center">🏆 全球排行榜</div>' +
+            allRecords.map((e, i) => `
+                <div class="flex justify-between border-b border-white/5 py-1 text-xs">
+                    <span class="${i < 3 ? 'text-yellow-400 font-bold' : ''}">${i+1}. ${e.name || '匿名'}</span>
+                    <span class="font-mono text-yellow-200">${e.score || 0}</span>
+                </div>
+            `).join('');
+    }
+
+    // --- 影像偵測邏輯 ---
+    let hands, camera;
+
+    function onHandResults(r) {
+        if (r.multiHandLandmarks && r.multiHandLandmarks[0]) {
+            const lm = r.multiHandLandmarks[0][9]; 
+            handX = (1 - lm.x) * W; 
+            handLandmarks = r.multiHandLandmarks[0].map(lm => ({
+                x: (1 - lm.x) * W,
+                y: lm.y * H
+            }));
+        } else {
+            handLandmarks = [];
+        }
+    }
+    
+    async function openCamera() {
+        if (cameraReady) return;
+        const btn = document.getElementById('btn-camera');
+        btn.disabled = true;
+        btn.textContent = '啟動中...';
+        
+        try {
+            const video = document.getElementById('webcam');
+            hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}` });
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
+            hands.onResults(onHandResults);
+            camera = new Camera(video, { onFrame: async () => { if(hands) await hands.send({ image: video }); }, width: 640, height: 480 });
+            await camera.start();
+            cameraReady = true;
+            document.getElementById('screen-setup').classList.add('hidden');
+            document.getElementById('screen-start').classList.remove('hidden');
+            if (!animId) loop();
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = '📷 開啟鏡頭';
+            showToast('鏡頭開啟失敗');
+        }
+    }
+
+    // --- 遊戲邏輯 ---
     function resetBall(dir) {
         ball.x = W/2; ball.y = H/2;
         ball.speed = 4;
@@ -231,7 +241,6 @@
         resetBall(1);
         document.getElementById('screen-start').classList.add('hidden');
         playing = true;
-        loop();
     }
 
     function restartGame() {
@@ -241,182 +250,79 @@
 
     function gameOver() {
         playing = false;
-        cancelAnimationFrame(animId);
         document.getElementById('final-score').textContent = score;
-        
         const btn = document.getElementById('btn-submit');
         btn.disabled = false;
         btn.textContent = '提交分數';
-        
         document.getElementById('screen-gameover').classList.remove('hidden');
-        renderLeaderboard();
+        loadLeaderboard(); // 遊戲結束時再次同步最新排行
     }
-
-    async function submitScore() {
-        const name = document.getElementById('player-name').value.trim() || '匿名';
-        const btn = document.getElementById('btn-submit');
-        const originalText = btn.textContent;
-        
-        if (!window.auth?.currentUser) {
-            showToast('正在登入資料庫...');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = '提交中...';
-        
-        try {
-            const { db, appId, firebaseUtils } = window;
-            const scoresRef = firebaseUtils.collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-            
-            await firebaseUtils.addDoc(scoresRef, {
-                player_name: name,
-                score: score,
-                difficulty: difficulty,
-                created_at: new Date().toISOString()
-            });
-            
-            showToast('已提交！');
-            btn.textContent = '已提交';
-            // 提交後立即觸發一次排行榜渲染
-            renderLeaderboard();
-        } catch (err) {
-            console.error(err);
-            showToast('提交失敗');
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
-    }
-
-    // 將 renderLeaderboard 掛載到 window 方便 module 呼叫
-    window.renderLeaderboard = function() {
-        const records = window.allRecords || [];
-        const sorted = records.slice().sort((a, b) => b.score - a.score).slice(0, 10);
-        const el = document.getElementById('leaderboard');
-        if (!el) return;
-        
-        if (!sorted.length) { 
-            el.innerHTML = '<div class="text-center opacity-50">暫無數據</div>'; 
-            return; 
-        }
-
-        el.innerHTML = '<div class="font-bold mb-1 text-yellow-300 border-b border-yellow-300/30 pb-1">🏆 排行榜 (Top 10)</div>' +
-            sorted.map((e, i) => `
-                <div class="flex justify-between border-b border-white/5 py-1 text-xs">
-                    <span class="${i < 3 ? 'text-yellow-400 font-bold' : ''}">${i+1}. ${e.player_name}</span>
-                    <span class="font-mono">${e.score}</span>
-                </div>
-            `).join('');
-    };
 
     function draw() {
-        if (camera && camera.video && camera.video.readyState === camera.video.HAVE_ENOUGH_DATA) {
-            ctx.save();
-            ctx.scale(-1, 1);
-            ctx.drawImage(camera.video, -W, 0, W, H);
+        ctx.clearRect(0, 0, W, H);
+        const video = document.getElementById('webcam');
+        
+        // 1. 繪製鏡頭影像 (圖 2 的透明質感)
+        if (cameraReady && video && video.readyState >= 2) {
+            ctx.save(); 
+            ctx.scale(-1, 1); 
+            ctx.drawImage(video, -W, 0, W, H); 
             ctx.restore();
         }
-
-        ctx.fillStyle = 'rgba(34, 197, 94, 0.45)';
-        ctx.fillRect(0, 0, W, H);
-
-        ctx.strokeStyle = '#fff'; 
-        ctx.lineWidth = 2;
-        ctx.strokeRect(40, 20, W-80, H-40);
-        ctx.setLineDash([8, 6]);
-        ctx.beginPath(); 
-        ctx.moveTo(40, H/2); 
-        ctx.lineTo(W-40, H/2); 
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath(); 
-        ctx.arc(W/2, H/2, 40, 0, Math.PI*2); 
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.font = 'bold 120px DM Sans'; 
-        ctx.textAlign = 'center';
-        ctx.fillText(score, W/2, H/2 + 40);
-
-        ctx.fillStyle = 'rgba(250,204,21,0.3)';
-        ctx.beginPath(); 
-        ctx.arc(ball.x - ball.vx, ball.y - ball.vy, ball.r * 0.7, 0, Math.PI*2); 
-        ctx.fill();
         
-        ctx.fillStyle = '#facc15';
-        ctx.beginPath(); 
-        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
-        ctx.fill();
-
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        const pr = 6;
-        ctx.roundRect(player.x - player.w/2, player.y - player.h/2, player.w, player.h, pr);
-        ctx.fill();
-
-        ctx.fillStyle = '#3b82f6';
-        ctx.beginPath();
-        ctx.roundRect(ai.x - ai.w/2, ai.y - ai.h/2, ai.w, ai.h, pr);
-        ctx.fill();
-
+        // 2. 疊加桌面顏色與邊界
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.35)'; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(40, 20, W-80, H-40);
+        ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.moveTo(40, H/2); ctx.lineTo(W-40, H/2); ctx.stroke(); ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(W/2, H/2, 40, 0, Math.PI*2); ctx.stroke();
+        
+        // 3. 畫得分背景
+        ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.font = 'bold 120px DM Sans'; ctx.textAlign = 'center'; ctx.fillText(score, W/2, H/2 + 40);
+        
+        // 4. 畫球
+        ctx.fillStyle = 'rgba(250,204,21,0.4)'; ctx.beginPath(); ctx.arc(ball.x - ball.vx, ball.y - ball.vy, ball.r * 0.7, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+        
+        // 5. 畫球拍
+        ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.roundRect(player.x - player.w/2, player.y - player.h/2, player.w, player.h, 6); ctx.fill();
+        ctx.fillStyle = '#3b82f6'; ctx.beginPath(); ctx.roundRect(ai.x - ai.w/2, ai.y - ai.h/2, ai.w, ai.h, 6); ctx.fill();
+        
+        // 6. 畫手部點
         if (handLandmarks.length > 0) {
-            ctx.fillStyle = '#00d9ff';
-            handLandmarks.forEach(lm => {
-                ctx.beginPath();
-                ctx.arc(lm.x, lm.y, 4, 0, Math.PI*2);
-                ctx.fill();
-            });
+            ctx.fillStyle = '#00d9ff'; handLandmarks.forEach(lm => { ctx.beginPath(); ctx.arc(lm.x, lm.y, 4, 0, Math.PI*2); ctx.fill(); });
         }
     }
 
     function update() {
+        if (!playing) return;
         player.x += (handX - player.x) * 0.3;
         player.x = Math.max(player.w/2, Math.min(W - player.w/2, player.x));
-
-        const aiTarget = ball.x + ball.vx * 5;
+        const aiTarget = ball.x + (ball.vx * 3);
         ai.x += (aiTarget - ai.x) * (ai.speed / 30);
         ai.x = Math.max(ai.w/2, Math.min(W - ai.w/2, ai.x));
-
         ball.x += ball.vx; ball.y += ball.vy;
-
-        if (ball.x < ball.r) { ball.x = ball.r; ball.vx *= -1; }
-        if (ball.x > W - ball.r) { ball.x = W - ball.r; ball.vx *= -1; }
-
+        if (ball.x < ball.r || ball.x > W - ball.r) { ball.vx *= -1; ball.x = ball.x < ball.r ? ball.r : W - ball.r; }
         if (ball.vy > 0 && ball.y + ball.r >= player.y - player.h/2 && ball.y - ball.r < player.y + player.h/2 &&
             ball.x > player.x - player.w/2 - ball.r && ball.x < player.x + player.w/2 + ball.r) {
             ball.vy *= -1; ball.y = player.y - player.h/2 - ball.r;
-            ball.vx += (ball.x - player.x) * 0.1;
-            ball.speed = Math.min(ball.speed + 0.15, 10);
-            ball.vy = -ball.speed;
+            ball.vx += (ball.x - player.x) * 0.15; ball.speed = Math.min(ball.speed + 0.2, 10); ball.vy = -ball.speed;
         }
-
         if (ball.vy < 0 && ball.y - ball.r <= ai.y + ai.h/2 && ball.y + ball.r > ai.y - ai.h/2 &&
             ball.x > ai.x - ai.w/2 - ball.r && ball.x < ai.x + ai.w/2 + ball.r) {
             ball.vy *= -1; ball.y = ai.y + ai.h/2 + ball.r;
-            ball.vx += (ball.x - ai.x) * 0.1;
-            ball.speed = Math.min(ball.speed + 0.15, 10);
-            ball.vy = ball.speed;
+            ball.vx += (ball.x - ai.x) * 0.15; ball.speed = Math.min(ball.speed + 0.2, 10); ball.vy = ball.speed;
         }
-
-        if (ball.y < -10) { 
-          score++; 
-          updateScoreUI();
-          resetBall(1); 
-        }
-        if (ball.y > H + 10) { 
-          lives--; 
-          updateLives(); 
-          if (lives <= 0) { gameOver(); return; } 
-          resetBall(-1); 
-        }
+        if (ball.y < -10) { score++; updateScoreUI(); resetBall(1); }
+        if (ball.y > H + 10) { lives--; updateLives(); if (lives <= 0) { gameOver(); return; } resetBall(-1); }
     }
 
     function loop() {
-        if (!playing) return;
         update(); draw();
         animId = requestAnimationFrame(loop);
     }
 
+    // 初始化讀取試算表
+    loadLeaderboard();
     draw();
   </script>
 </body>
