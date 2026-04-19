@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Ping Pong - Firebase Edition</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js"></script>
+  
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Firebase Configuration from environment
+    const firebaseConfig = JSON.parse(__firebase_config);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-ping-pong-app';
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Global references for the game to use
+    window.db = db;
+    window.auth = auth;
+    window.appId = appId;
+    window.firebaseUtils = { addDoc, collection, onSnapshot, query };
+
+    // Authentication Logic
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Firebase Auth Error:", err);
+      }
+    };
+
+    initAuth();
+
+    // Listen for Auth and Data
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.dataSdkReady = true;
+        // Listen to scores collection
+        const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+        onSnapshot(scoresRef, (snapshot) => {
+          const data = [];
+          snapshot.forEach(doc => data.push(doc.data()));
+          window.allRecords = data;
+          
+          if (data.length > 0) {
+            window.highScore = Math.max(...data.map(r => r.score || 0));
+            const hsDisplay = document.getElementById('high-score-display');
+            if(hsDisplay) hsDisplay.textContent = '🏆 ' + window.highScore;
+          }
+
+          // 即時更新排行榜 UI
+          if (typeof window.renderLeaderboard === 'function') {
+            window.renderLeaderboard();
+          }
+        }, (error) => {
+          console.error("Firestore Listen Error:", error);
+        });
+      }
+    });
+  </script>
+
+  <style>
+    body { font-family: 'DM Sans', sans-serif; margin: 0; }
+    .game-wrap { position: relative; display: inline-block; }
+    .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); z-index: 10; border-radius: 8px; }
+    .overlay.hidden { display: none; }
+    #toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #facc15; color: #1a1a2e; padding: 8px 20px; border-radius: 20px; font-weight: 700; z-index: 99; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    #toast.show { opacity: 1; }
+    canvas#game { border-radius: 8px; display: block; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="/_sdk/resizing_sdk.js" type="text/javascript"></script>
+</head>
+
+<body class="min-h-screen flex flex-col items-center" style="background: rgb(10, 10, 26);">
+  <header class="w-full max-w-2xl mx-auto px-4 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2">
+    <div>
+      <h1 class="canva-text font-bold" style="color: rgb(250, 204, 21); font-weight: 700; font-size: 22px;">PING PONG AI 體感桌球</h1>
+      <p class="canva-text mt-1 opacity-80 text-sm" style="color: rgb(148, 163, 184); font-size: 14px;">用手掌左右移動來控制球拍</p>
+    </div>
+    <div class="flex items-center gap-4 text-sm font-medium">
+      <span id="score-display" class="text-white bg-white/10 px-3 py-1 rounded-full">得分: 0</span>
+      <span id="high-score-display" class="text-yellow-300">🏆 0</span>
+      <span id="lives-display" class="text-red-400">❤️❤️❤️</span>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-start justify-center px-4 pb-4">
+    <div class="game-wrap">
+      <video id="webcam" autoplay playsinline style="display:none"></video>
+      <canvas id="game" width="640" height="480"></canvas>
+      
+      <!-- Setup -->
+      <div id="screen-setup" class="overlay">
+        <div class="text-6xl mb-4">🏓</div>
+        <h2 class="canva-text text-2xl font-bold mb-4" style="color: rgb(255, 255, 255); font-weight: 700; font-size: 26px;">啟動 AI 體感鏡頭</h2>
+        <button id="btn-camera" class="canva-button px-6 py-3 rounded-lg font-bold text-lg cursor-pointer transition hover:scale-105" onclick="openCamera()" style="background: rgb(250, 204, 21); color: rgb(26, 26, 46); font-weight: 700; font-size: 18px;">📷 開啟鏡頭</button>
+      </div>
+
+      <!-- Difficulty -->
+      <div id="screen-start" class="overlay hidden">
+        <h2 class="canva-text text-2xl font-bold mb-6" style="color: rgb(255, 255, 255); font-weight: 700; font-size: 26px;">選擇難度</h2>
+        <div class="flex gap-3">
+          <button class="canva-button px-5 py-3 rounded-lg font-bold cursor-pointer transition hover:scale-105" onclick="startGame('easy')" style="background: rgb(34, 197, 94); color: rgb(255, 255, 255); font-weight: 700;">🟢 簡單</button>
+          <button class="canva-button px-5 py-3 rounded-lg font-bold cursor-pointer transition hover:scale-105" onclick="startGame('medium')" style="background: rgb(245, 158, 11); color: rgb(255, 255, 255); font-weight: 700;">🟡 中等</button>
+          <button class="canva-button px-5 py-3 rounded-lg font-bold cursor-pointer transition hover:scale-105" onclick="startGame('hard')" style="background: rgb(239, 68, 68); color: rgb(255, 255, 255); font-weight: 700;">🔴 困難</button>
+        </div>
+      </div>
+
+      <!-- Game Over -->
+      <div id="screen-gameover" class="overlay hidden">
+        <h2 class="canva-text text-3xl font-bold mb-2" style="color: rgb(239, 68, 68); font-weight: 700; font-size: 32px;">遊戲結束</h2>
+        <p id="final-score" class="text-yellow-300 text-5xl font-bold mb-4">0</p>
+        <input id="player-name" type="text" class="canva-input px-4 py-2 rounded-lg mb-3 text-center text-gray-900 w-48" placeholder="輸入你的名字" style="background: rgb(255, 255, 255); color: rgb(17, 24, 39);">
+        <div class="flex gap-3">
+          <button id="btn-submit" class="canva-button px-5 py-2 rounded-lg font-bold cursor-pointer transition hover:scale-105" onclick="submitScore()" style="background: rgb(250, 204, 21); color: rgb(26, 26, 46); font-weight: 700;">提交分數</button>
+          <button id="btn-restart" class="canva-button px-5 py-2 rounded-lg font-bold cursor-pointer transition hover:scale-105" onclick="restartGame()" style="background: rgb(59, 130, 246); color: rgb(255, 255, 255); font-weight: 700;">重新開始</button>
+        </div>
+        <div id="leaderboard" class="mt-4 text-sm text-gray-300 w-64 max-h-40 overflow-y-auto"></div>
+      </div>
+    </div>
+  </main>
+  
+  <div id="toast"></div>
+
+  <script>
+    const cvs = document.getElementById('game');
+    const ctx = cvs.getContext('2d');
+    const W = 640, H = 480;
+
+    let handX = W / 2;
+    let handLandmarks = [];
+    let score = 0, lives = 3, highScore = 0;
+    let playing = false, animId = null;
+    let allRecords = [];
+    let cameraReady = false;
+
+    const ball = { x: W/2, y: H/2, vx: 3, vy: 4, r: 8, speed: 4 };
+    const player = { x: W/2, y: H - 30, w: 80, h: 12 };
+    const ai = { x: W/2, y: 18, w: 80, h: 12, speed: 3 };
+
+    let difficulty = 'medium';
+    const diffSettings = {
+        easy:   { aiSpeed: 2.2, aiW: 70 },
+        medium: { aiSpeed: 3.5, aiW: 80 },
+        hard:   { aiSpeed: 5,   aiW: 100 }
+    };
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    function updateLives() {
+        document.getElementById('lives-display').textContent = '❤️'.repeat(lives) || '💔';
+    }
+
+    function updateScoreUI() {
+        document.getElementById('score-display').textContent = '得分: ' + score;
+    }
+
+    // MediaPipe Hands
+    let hands, camera;
+    
+    async function openCamera() {
+        if (cameraReady) return;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+            const video = document.getElementById('webcam');
+            video.srcObject = stream;
+
+            hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}` });
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
+            hands.onResults(r => {
+                if (r.multiHandLandmarks && r.multiHandLandmarks[0]) {
+                    const lm = r.multiHandLandmarks[0][9];
+                    handX = (1 - lm.x) * W; 
+                    handLandmarks = r.multiHandLandmarks[0].map(lm => ({
+                        x: (1 - lm.x) * W,
+                        y: lm.y * H
+                    }));
+                } else {
+                    handLandmarks = [];
+                }
+            });
+
+            camera = new Camera(video, {
+                onFrame: async () => { await hands.send({ image: video }); },
+                width: 640, height: 480
+            });
+            camera.start();
+
+            cameraReady = true;
+            document.getElementById('screen-setup').classList.add('hidden');
+            document.getElementById('screen-start').classList.remove('hidden');
+            showToast('鏡頭已啟動！');
+        } catch (e) {
+            showToast('無法存取鏡頭');
+        }
+    }
+
+    function resetBall(dir) {
+        ball.x = W/2; ball.y = H/2;
+        ball.speed = 4;
+        ball.vx = (Math.random() > 0.5 ? 1 : -1) * 3;
+        ball.vy = dir * ball.speed;
+    }
+
+    function startGame(diff) {
+        difficulty = diff;
+        const s = diffSettings[diff];
+        ai.speed = s.aiSpeed; ai.w = s.aiW;
+        score = 0; lives = 3; 
+        updateLives();
+        updateScoreUI();
+        resetBall(1);
+        document.getElementById('screen-start').classList.add('hidden');
+        playing = true;
+        loop();
+    }
+
+    function restartGame() {
+        document.getElementById('screen-gameover').classList.add('hidden');
+        document.getElementById('screen-start').classList.remove('hidden');
+    }
+
+    function gameOver() {
+        playing = false;
+        cancelAnimationFrame(animId);
+        document.getElementById('final-score').textContent = score;
+        
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = false;
+        btn.textContent = '提交分數';
+        
+        document.getElementById('screen-gameover').classList.remove('hidden');
+        renderLeaderboard();
+    }
+
+    async function submitScore() {
+        const name = document.getElementById('player-name').value.trim() || '匿名';
+        const btn = document.getElementById('btn-submit');
+        const originalText = btn.textContent;
+        
+        if (!window.auth?.currentUser) {
+            showToast('正在登入資料庫...');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '提交中...';
+        
+        try {
+            const { db, appId, firebaseUtils } = window;
+            const scoresRef = firebaseUtils.collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+            
+            await firebaseUtils.addDoc(scoresRef, {
+                player_name: name,
+                score: score,
+                difficulty: difficulty,
+                created_at: new Date().toISOString()
+            });
+            
+            showToast('已提交！');
+            btn.textContent = '已提交';
+            // 提交後立即觸發一次排行榜渲染
+            renderLeaderboard();
+        } catch (err) {
+            console.error(err);
+            showToast('提交失敗');
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+
+    // 將 renderLeaderboard 掛載到 window 方便 module 呼叫
+    window.renderLeaderboard = function() {
+        const records = window.allRecords || [];
+        const sorted = records.slice().sort((a, b) => b.score - a.score).slice(0, 10);
+        const el = document.getElementById('leaderboard');
+        if (!el) return;
+        
+        if (!sorted.length) { 
+            el.innerHTML = '<div class="text-center opacity-50">暫無數據</div>'; 
+            return; 
+        }
+
+        el.innerHTML = '<div class="font-bold mb-1 text-yellow-300 border-b border-yellow-300/30 pb-1">🏆 排行榜 (Top 10)</div>' +
+            sorted.map((e, i) => `
+                <div class="flex justify-between border-b border-white/5 py-1 text-xs">
+                    <span class="${i < 3 ? 'text-yellow-400 font-bold' : ''}">${i+1}. ${e.player_name}</span>
+                    <span class="font-mono">${e.score}</span>
+                </div>
+            `).join('');
+    };
+
+    function draw() {
+        if (camera && camera.video && camera.video.readyState === camera.video.HAVE_ENOUGH_DATA) {
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(camera.video, -W, 0, W, H);
+            ctx.restore();
+        }
+
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.45)';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.strokeStyle = '#fff'; 
+        ctx.lineWidth = 2;
+        ctx.strokeRect(40, 20, W-80, H-40);
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath(); 
+        ctx.moveTo(40, H/2); 
+        ctx.lineTo(W-40, H/2); 
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); 
+        ctx.arc(W/2, H/2, 40, 0, Math.PI*2); 
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.font = 'bold 120px DM Sans'; 
+        ctx.textAlign = 'center';
+        ctx.fillText(score, W/2, H/2 + 40);
+
+        ctx.fillStyle = 'rgba(250,204,21,0.3)';
+        ctx.beginPath(); 
+        ctx.arc(ball.x - ball.vx, ball.y - ball.vy, ball.r * 0.7, 0, Math.PI*2); 
+        ctx.fill();
+        
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath(); 
+        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
+        ctx.fill();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        const pr = 6;
+        ctx.roundRect(player.x - player.w/2, player.y - player.h/2, player.w, player.h, pr);
+        ctx.fill();
+
+        ctx.fillStyle = '#3b82f6';
+        ctx.beginPath();
+        ctx.roundRect(ai.x - ai.w/2, ai.y - ai.h/2, ai.w, ai.h, pr);
+        ctx.fill();
+
+        if (handLandmarks.length > 0) {
+            ctx.fillStyle = '#00d9ff';
+            handLandmarks.forEach(lm => {
+                ctx.beginPath();
+                ctx.arc(lm.x, lm.y, 4, 0, Math.PI*2);
+                ctx.fill();
+            });
+        }
+    }
+
+    function update() {
+        player.x += (handX - player.x) * 0.3;
+        player.x = Math.max(player.w/2, Math.min(W - player.w/2, player.x));
+
+        const aiTarget = ball.x + ball.vx * 5;
+        ai.x += (aiTarget - ai.x) * (ai.speed / 30);
+        ai.x = Math.max(ai.w/2, Math.min(W - ai.w/2, ai.x));
+
+        ball.x += ball.vx; ball.y += ball.vy;
+
+        if (ball.x < ball.r) { ball.x = ball.r; ball.vx *= -1; }
+        if (ball.x > W - ball.r) { ball.x = W - ball.r; ball.vx *= -1; }
+
+        if (ball.vy > 0 && ball.y + ball.r >= player.y - player.h/2 && ball.y - ball.r < player.y + player.h/2 &&
+            ball.x > player.x - player.w/2 - ball.r && ball.x < player.x + player.w/2 + ball.r) {
+            ball.vy *= -1; ball.y = player.y - player.h/2 - ball.r;
+            ball.vx += (ball.x - player.x) * 0.1;
+            ball.speed = Math.min(ball.speed + 0.15, 10);
+            ball.vy = -ball.speed;
+        }
+
+        if (ball.vy < 0 && ball.y - ball.r <= ai.y + ai.h/2 && ball.y + ball.r > ai.y - ai.h/2 &&
+            ball.x > ai.x - ai.w/2 - ball.r && ball.x < ai.x + ai.w/2 + ball.r) {
+            ball.vy *= -1; ball.y = ai.y + ai.h/2 + ball.r;
+            ball.vx += (ball.x - ai.x) * 0.1;
+            ball.speed = Math.min(ball.speed + 0.15, 10);
+            ball.vy = ball.speed;
+        }
+
+        if (ball.y < -10) { 
+          score++; 
+          updateScoreUI();
+          resetBall(1); 
+        }
+        if (ball.y > H + 10) { 
+          lives--; 
+          updateLives(); 
+          if (lives <= 0) { gameOver(); return; } 
+          resetBall(-1); 
+        }
+    }
+
+    function loop() {
+        if (!playing) return;
+        update(); draw();
+        animId = requestAnimationFrame(loop);
+    }
+
+    draw();
+  </script>
+</body>
+</html>
