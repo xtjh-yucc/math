@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學考卷解析 - 自動解題系統</title>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) B4-3-1試卷</h1>
+        <p>範圍：3-1 三角形與多邊形的內角、外角 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "1. 如右圖，將六邊形 ABCDEF 由 A 點畫出通過所有頂點的對角線，可將此六邊形分割成多少個三角形？",
+            image: "q1_img.png",
+            options: ["3", "4", "5", "6"],
+            answer: 1,
+            solution: "公式概念：\n從 n 邊形的一個頂點出發作對角線，可將其分割成 (n - 2) 個三角形。\n本題為六邊形，故 n = 6。\n可分割成：6 - 2 = 4 個三角形。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "2. 已知任何一個三角形其內角和為 \\( 180^{\\circ} \\)。在 \\( \\triangle ABC \\) 中，若 \\( \\angle A + \\angle B = \\angle C + 36^{\\circ} \\)，且 \\( \\angle A - \\angle B = 20^{\\circ} \\)，則 \\( \\angle B \\) 為多少度？",
+            options: ["40", "42", "44", "46"],
+            answer: 2,
+            solution: "步驟 1：求出 \\( \\angle C \\)\n已知 \\( \\angle A + \\angle B + \\angle C = 180^{\\circ} \\) 且 \\( \\angle A + \\angle B = \\angle C + 36^{\\circ} \\)。\n將後式代入前式：\\( (\\angle C + 36^{\\circ}) + \\angle C = 180^{\\circ} \\)\n\\( 2\\angle C = 144^{\\circ} \\Rightarrow \\angle C = 72^{\\circ} \\)。\n\n步驟 2：求 \\( \\angle A + \\angle B \\)\n\\( \\angle A + \\angle B = 72^{\\circ} + 36^{\\circ} = 108^{\\circ} \\) ......(1)\n\n步驟 3：解聯立方程式求 \\( \\angle B \\)\n已知 \\( \\angle A - \\angle B = 20^{\\circ} \\) ......(2)\n(1) - (2) 得：\\( 2\\angle B = 88^{\\circ} \\Rightarrow \\angle B = 44^{\\circ} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "3. 右圖 \\( \\triangle ABC \\) 中，P 為 BC 的中點。若 AP = BP，且 \\( \\angle APC = 110^{\\circ} \\)，則 \\( \\angle B \\) 為多少度？",
+            image: "q3_img.png",
+            options: ["75", "72", "55", "52"],
+            answer: 2,
+            solution: "因為 AP = BP，所以 \\( \\triangle ABP \\) 為等腰三角形，\\( \\angle B = \\angle BAP \\)。\n\\( \\angle APC \\) 為 \\( \\triangle ABP \\) 的外角，外角等於兩內對角之和。\n\\( \\angle APC = \\angle B + \\angle BAP \\)\n\\( 110^{\\circ} = 2\\angle B \\Rightarrow \\angle B = 55^{\\circ} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "4. 若正 n 邊形中的每一個內角都是 \\( 150^{\\circ} \\)，則 n 之值為何？",
+            options: ["12", "11", "8", "7"],
+            answer: 0,
+            solution: "正多邊形的內角與外角互補：每一個外角 = \\( 180^{\\circ} - 150^{\\circ} = 30^{\\circ} \\)。\n任意多邊形的外角和恆為 \\( 360^{\\circ} \\)。\n邊數 n = \\( 360^{\\circ} \\div 30^{\\circ} = 12 \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "5. 右圖直線 L 與 M 相交於一點，則下列敘述何者正確？",
+            image: "q5_img.png",
+            options: ["\\( \\angle 1 + \\angle 3 = 90^{\\circ} \\)", "\\( \\angle 2 + \\angle 4 = 180^{\\circ} \\)", "\\( \\angle 1 = \\angle 3 \\), \\( \\angle 2 = \\angle 4 \\)", "\\( \\angle 1 + \\angle 2 + \\angle 3 + \\angle 4 = 180^{\\circ} \\)"],
+            answer: 2,
+            solution: "當兩直線相交時，相對的角稱為「對頂角」，對頂角度數相等。\n因此，\\( \\angle 1 = \\angle 3 \\) 且 \\( \\angle 2 = \\angle 4 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "6. 若 \\ (\\angle A 與 \\angle B) \\互餘，且 \\( \\angle A \\) 和 \\( \\angle C \\) 互補，且( \\angle A = 36^{\\circ}\\)，則下列敘述何者正確？",
+            options: ["\\( \\angle A + \\angle B = 120^{\\circ} \\)", "\\( \\angle B + \\angle C = 198^{\\circ} \\)", "\\( \\angle B = 72^{\\circ} \\)", "\\( \\angle C = 54^{\\circ} \\)"],
+            answer: 1,
+            solution: " \\(\\angle B = 54^{\\circ} \\) ......(1)，\\(\\angle C = 144^{\\circ} \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "7. 右圖中，正五邊形 ABCDE 與正方形 ABFG 有共同邊 AB，請問圖中 \\( \\angle CBF \\) 為多少度？",
+            image: "q7_img.png",
+            options: ["27", "28", "32", "35"],
+            answer: 0,
+            solution: "正五邊形內角 = \\( 108^{\\circ} \\)，正方形內角 = \\( 90^{\\circ} \\)。\n由圖形向外作圖的相對位置與外角關係推導，可求出所夾的 \\( \\angle CBF = 27^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "8. 右圖 \\( \\triangle ABC \\) 中，\\( \\angle B = 84^{\\circ} \\)，若圖中 \\( \\angle 1 + \\angle 2 + \\angle 3 = 176^{\\circ} \\)，則 \\( \\angle 4 \\) 為多少度？",
+            image: "q8_img.png",
+            options: ["\\( 108^{\\circ} \\)", "\\( 106^{\\circ} \\)", "\\( 98^{\\circ} \\)", "\\( 96^{\\circ} \\)"],
+            answer: 3,
+            solution: "利用多邊形與飛鏢型內外角的綜合性質：\n已知四邊形區域角度推導，\\( \\angle 4 = 176^{\\circ} - 80^{\\circ} = 96^{\\circ} \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "9. 如右圖，若 AD 平分 \\( \\angle BAC \\)，BD 平分 \\( \\angle ABC \\)，若 \\( \\angle B = 57^{\\circ} \\)，則 \\( \\angle 1 + \\angle 2 + \\angle 3 \\) 的和為多少度？",
+            image: "q9_img.png",
+            options: ["\\( 316^{\\circ} \\)", "\\( 303^{\\circ} \\)", "\\( 296^{\\circ} \\)", "\\( 283^{\\circ} \\)"],
+            answer: 1,
+            solution: "此題型利用四邊形外角和的變化：\n\\( \\angle 1 + \\angle 2 + \\angle 3 = 360^{\\circ} - \\angle B \\)\n= \\( 360^{\\circ} - 57^{\\circ} = 303^{\\circ} \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "10. 已知五邊形 ABCDE 中，\\( \\angle A=(x+20)^{\\circ} \\), \\( \\angle B=x^{\\circ} \\), \\( \\angle C=(3x-10)^{\\circ} \\), \\( \\angle D=(2x-10)^{\\circ} \\), \\( \\angle E=(3x+20)^{\\circ} \\)，則下列敘述何者正確？",
+            options: ["內角和為 \\( 450^{\\circ} \\)", "x 值為 56", "\\( \\angle A \\) 的外角為 \\( 108^{\\circ} \\)", "\\( \\angle E \\) 為最大內角且為 \\( 172^{\\circ} \\)"],
+            answer: 2,
+            solution: "五邊形內角和 = \\( (5-2) \\times 180^{\\circ} = 540^{\\circ} \\)。\n\\( (x+20) + x + (3x-10) + (2x-10) + (3x+20) = 540 \\)\n\\( 10x + 20 = 540 \\Rightarrow 10x = 520 \\Rightarrow x = 52 \\)。\n\\( \\angle A = 52 + 20 = 72^{\\circ} \\)。外角 = \\( 180^{\\circ} - 72^{\\circ} = 108^{\\circ} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "11. 如右圖，若 \\( \\angle A + \\angle D = 86^{\\circ} \\)，則 \\( \\angle B + \\angle C + \\angle E + \\angle F \\) 的和為多少度？",
+            image: "q11_img.png",
+            options: ["\\( 274^{\\circ} \\)", "\\( 272^{\\circ} \\)", "\\( 268^{\\circ} \\)", "\\( 264^{\\circ} \\)"],
+            answer: 0,
+            solution: "根據蝴蝶型和多邊形外角性質：\n所求四角和 = \\( 360^{\\circ} - (\\angle A + \\angle D) \\)\n= \\( 360^{\\circ} - 86^{\\circ} = 274^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "12. 若正 n 邊形的一內角與一外角之比為 4：1，則 n 之值為何？",
+            options: ["8", "9", "10", "12"],
+            answer: 2,
+            solution: "內角與外角互補（和為 \\( 180^{\\circ} \\)）。\n外角 = \\( 180^{\\circ} \\times \\frac{1}{4+1} = 180^{\\circ} \\times \\frac{1}{5} = 36^{\\circ} \\)。\n正多邊形外角和為 \\( 360^{\\circ} \\)，邊數 n = \\( 360^{\\circ} \\div 36^{\\circ} = 10 \\)。\n答：選 (C)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "1. \\( \\triangle ABC \\) 中，\\( \\angle A = 76^{\\circ} \\)，\\( \\angle B = 47^{\\circ} \\)，則 \\( \\angle C \\) = _______ 度，且 \\( \\angle A \\) 的外角為 _______ 度。",
+            image: "f1_img.png",
+            solution: "三角形內角和為 \\( 180^{\\circ} \\)。\n\\( \\angle C = 180^{\\circ} - 76^{\\circ} - 47^{\\circ} = 57^{\\circ} \\)。\n\\( \\angle A \\) 的外角 = \\( 180^{\\circ} - 76^{\\circ} = 104^{\\circ} \\)。\n答：57，104。"
+        },
+        {
+            type: 'fill',
+            text: "2. 如下圖，\\( \\triangle ABC \\) 中，若 \\( \\overline{AB} = \\overline{AC} \\)，且 \\( \\overline{AD} = \\overline{BD} = \\overline{BC} \\)，則 \\( \\angle A \\) = _______ 度。",
+            image: "f2_img.png",
+            solution: "設 \\( \\angle A = x \\)。\n因為 \\( AD = BD \\)，所以 \\( \\angle ABD = x \\)。外角 \\( \\angle BDC = 2x \\)。\n因為 \\( BD = BC \\)，所以 \\( \\angle C = 2x \\)。\n因為 \\( AB = AC \\)，所以 \\( \\angle ABC = \\angle C = 2x \\)。\n在 \\( \\triangle ABC \\) 中，內角和 \\( x + 2x + 2x = 180^{\\circ} \\Rightarrow 5x = 180^{\\circ} \\Rightarrow x = 36^{\\circ} \\)。\n答：36。"
+        },
+        {
+            type: 'fill',
+            text: "3. 如右圖，\\( \\angle A = 85^{\\circ} \\)，\\( \\angle B = 20^{\\circ} \\)，\\( \\angle C = 30^{\\circ} \\)，\\( \\angle D = 40^{\\circ} \\)，則 \\( \\angle P + \\angle Q \\) = _______ 度。",
+            image: "f3_img.png",
+            solution: "這屬於多邊形內外角綜合題型。\n利用圖形凹角性質：\\( \\angle P + \\angle Q = 360^{\\circ} - (85^{\\circ} + 20^{\\circ} + 30^{\\circ} + 40^{\\circ}) \\)\n= \\( 360^{\\circ} - 175^{\\circ} = 185^{\\circ} \\)。\n答：185。"
+        },
+        {
+            type: 'fill',
+            text: "4. 直角 \\( \\triangle ABC \\) 中，\\( \\angle A = 90^{\\circ} \\)，若 \\( \\angle C - \\angle B = 30^{\\circ} \\)，則 \\( \\angle C \\) = _______ 度。",
+            solution: "直角三角形中，兩銳角互餘：\\( \\angle B + \\angle C = 90^{\\circ} \\) ......(1)\n已知：\\( \\angle C - \\angle B = 30^{\\circ} \\) ......(2)\n兩式相加：\\( 2\\angle C = 120^{\\circ} \\Rightarrow \\angle C = 60^{\\circ} \\)。\n答：60。"
+        },
+        {
+            type: 'fill',
+            text: "5. 有一六邊形其內角度數為一等差數列，若最大內角為 \\( 145^{\\circ} \\)，則此六邊形最小內角為 _______ 度。",
+            solution: "六邊形內角和 = \\( (6-2) \\times 180^{\\circ} = 720^{\\circ} \\)。\n設最小角為 a₁，最大角 a₆ = \\( 145^{\\circ} \\)。\n級數和 \\( S_6 = \\frac{(a_1 + 145) \\times 6}{2} = 720 \\)\n\\( (a_1 + 145) \\times 3 = 720 \\Rightarrow a_1 + 145 = 240 \\Rightarrow a_1 = 95^{\\circ} \\)。\n答：95。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "1. 利用九邊形中的一個頂點可作出 a 條對角線，可將九邊形分割為 b 個三角形，由於一個三角形的內角和為 c 度，故九邊形的內角和為 d 度。試求上述中的 a、b、c、d 的值為何？",
+            solution: "公式概念：從 n 邊形的一個頂點可作 (n - 3) 條對角線，分割成 (n - 2) 個三角形。\nn = 9：\n對角線 a = 9 - 3 = 6 條。\n三角形 b = 9 - 2 = 7 個。\n三角形內角和 c = 180 度。\n九邊形內角和 d = 7 \\times 180 = 1260 度。\n答：a=6, b=7, c=180, d=1260。"
+        },
+        {
+            type: 'calc',
+            text: "2. 右圖 \\( \\triangle ABC \\) 中，\\( \\overline{AB} = \\overline{BC} \\)，P 點在 \\( \\overline{AB} \\) 上移動，且不與 A、B 兩點重合。若 \\( \\angle B = 75^{\\circ} \\)，請問 \\( \\angle BPC \\) 的範圍為何？",
+            image: "calc2_img.png",
+            solution: "因為 \\( \\overline{AB} = \\overline{BC} \\)，所以 \\( \\angle A = \\angle C = (180^{\\circ} - 75^{\\circ}) \\div 2 = 52.5^{\\circ} \\)。\n在 \\( \\triangle BPC \\) 中，\\( \\angle BPC \\) 是 \\( \\triangle APC \\) 的外角，故 \\( \\angle BPC > \\angle A = 52.5^{\\circ} \\)。\n同時，\\( \\angle BPC \\) 與 \\( \\angle APC \\) 互補，極端情況下 P 靠近 B 點時，\\( \\angle BPC \\) 接近 \\( 180^{\\circ} - 75^{\\circ} = 105^{\\circ} \\)。\n因此範圍是：\\( 52.5^{\\circ} < \\angle BPC < 105^{\\circ} \\)。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "1. 搖滾歌手 Geta 在演唱會舞臺上自 P 點出發，每走 5 步後即「右轉 \\( 36^{\\circ} \\)」，重複走位後又回到 P 點，且與出發時同方向。若此路徑恰為一正 n 邊形，請問 n = ？",
+            options: ["16", "12", "10", "8"],
+            answer: 2,
+            solution: "概念轉換：\n歌手沿著多邊形邊緣行走，每次「轉向的度數」，實際上就是該多邊形的「外角」。\n已知正 n 邊形的每一個外角為 \\( 36^{\\circ} \\)。\n多邊形外角和恆為 \\( 360^{\\circ} \\)。\n邊數 n = \\( 360^{\\circ} \\div 36^{\\circ} = 10 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'app',
+            text: "2. 品順利用色紙折成一架紙飛機，其俯視圖如右。則 \\( \\angle A + \\angle B + \\angle C + \\angle D \\) 為多少度？",
+            image: "a2_img.png",
+            options: ["150", "160", "180", "200"],
+            answer: 3,
+            solution: "觀察俯視圖，這四個角 \\( \\angle A, \\angle B, \\angle C, \\angle D \\) 位於紙飛機的兩個機翼上。\n圖中標示了兩個 \\( 100^{\\circ} \\) 的角。\n在對稱的飛鏢型折紙結構中，外圍這四個角之和恰好等於中心兩個大角的和。\n\\( \\angle A + \\angle B + \\angle C + \\angle D = 2 \\times 100^{\\circ} = 200^{\\circ} \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "3. 如圖，環安將玩具車自 P 點出發，沿著圖中各邊經過 A, B, C, D 四點一圈回到 P 點。若 \\( \\angle B = 72^{\\circ} \\), \\( \\angle C = 68^{\\circ} \\), \\( \\angle D = 20^{\\circ} \\)，試求此玩具車共轉了多少度？",
+            image: "a3_img.png",
+            options: ["\\( 360^{\\circ} \\)", "\\( 400^{\\circ} \\)", "\\( 450^{\\circ} \\)", "\\( 475^{\\circ} \\)"],
+            answer: 1,
+            solution: "玩具車轉彎的度數即為路徑的「外角」。\n車子在 B 點轉了 \\( 180^{\\circ} - 72^{\\circ} = 108^{\\circ} \\)。\n車子在 C 點轉了 \\( 180^{\\circ} - 68^{\\circ} = 112^{\\circ} \\)。\n車子在 D 點轉了 \\( 180^{\\circ} - 20^{\\circ} = 160^{\\circ} \\)。\n\n利用飛鏢型性質先求出 \\( \\angle A \\)：\n\\( \\angle A = \\angle B + \\angle C + \\angle D = 72^{\\circ} + 68^{\\circ} + 20^{\\circ} = 160^{\\circ} \\)。\n車子在 A 點轉了 \\( 180^{\\circ} - 160^{\\circ} = 20^{\\circ} \\)。\n\n將這四個轉角相加：\n\\( 108^{\\circ} + 112^{\\circ} + 160^{\\circ} + 20^{\\circ} = 400^{\\circ} \\)。\n答：選 (B)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            // 處理圖片區塊
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            // 處理選擇題選項按鈕
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${item.text}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = htmlContent;
+        
+        // 觸發 MathJax 進行數學公式渲染
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise();
+        }
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+            // 嘗試動態渲染展開後可能出現的數學公式
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([solBox]);
+            }
+        }
+    };
+
+    // 頁面載入時啟動渲染
+    renderQuiz();
+
+</script>
+
+</body>
+</html>
