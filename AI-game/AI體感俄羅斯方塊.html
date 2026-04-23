@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 體感俄羅斯方塊 - Pose Tetris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    
+    <style>
+        body {
+            background-color: #0c0a09;
+            color: white;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft JhengHei';
+            touch-action: none;
+        }
+        .game-wrapper {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            aspect-ratio: 16/9;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(139, 92, 246, 0.2);
+            border: 2px solid #2e1065;
+        }
+        
+        #input_video { display: none; }
+        #output_canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .neon-border { border: 2px solid #8b5cf6; box-shadow: 0 0 15px #8b5cf6; }
+        .leaderboard-scroll { 
+            max-height: 250px; 
+            overflow-y: auto; 
+            padding-right: 4px;
+        }
+        .leaderboard-scroll::-webkit-scrollbar { width: 4px; }
+        .leaderboard-scroll::-webkit-scrollbar-thumb { background: #8b5cf6; border-radius: 10px; }
+        
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 bg-stone-950">
+
+    <!-- 訊息提示 -->
+    <div id="toast" class="hidden bg-purple-600 text-white px-6 py-2 rounded-full shadow-2xl z-[100] border border-purple-400">
+        <span id="toastMsg">訊息內容</span>
+    </div>
+
+    <!-- 頂部資訊 (HUD) -->
+    <div class="w-full max-w-4xl flex justify-between items-end mb-4 px-2">
+        <div class="text-left">
+            <h1 class="text-3xl font-black tracking-tighter italic text-purple-400">POSE <span class="text-white">TETRIS</span></h1>
+            <p class="text-[10px] text-purple-300 uppercase tracking-[0.2em]">Google AI Experiment Style</p>
+        </div>
+        <div class="flex gap-8">
+            <div class="text-center">
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Lines</p>
+                <p id="linesDisplay" class="text-2xl font-mono font-black text-white">0</p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Level</p>
+                <p id="levelDisplay" class="text-2xl font-mono font-black text-cyan-400">1</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲區域 -->
+    <div class="game-wrapper bg-black">
+        <video id="input_video" playsinline muted></video>
+        <canvas id="output_canvas" width="1280" height="720"></canvas>
+
+        <!-- 覆蓋層 -->
+        <div id="overlay" class="absolute inset-0 bg-stone-950/90 z-50 flex flex-col items-center justify-center p-8 backdrop-blur-md transition-all duration-500">
+            
+            <!-- A. 初始化 -->
+            <div id="setupScreen" class="space-y-6 w-full max-w-sm text-center">
+                <div class="text-7xl mb-4 animate-bounce">🕺</div>
+                <h2 class="text-2xl font-bold text-purple-300 tracking-widest">啟動全身感應引擎</h2>
+                <button onclick="requestCamera()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-4 rounded-2xl text-xl shadow-[0_0_30px_rgba(167,139,250,0.4)] active:scale-95 transition-all">
+                    開啟攝影機權限
+                </button>
+                <p class="text-xs text-stone-500">建議距離鏡頭 1.5 - 2 公尺以獲得最佳全身追蹤效果</p>
+            </div>
+
+            <!-- B. 開始與教學 -->
+            <div id="startScreen" class="hidden space-y-4 w-full max-w-md text-center">
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-stone-900 p-3 rounded-xl border border-white/5">
+                        <p class="text-xl">↔️</p>
+                        <p class="text-[10px] font-bold text-purple-400">左右平移</p>
+                        <p class="text-[9px] text-stone-400">控制方塊位置</p>
+                    </div>
+                    <div class="bg-stone-900 p-3 rounded-xl border border-white/5">
+                        <p class="text-xl">🙋‍♂️</p>
+                        <p class="text-[10px] font-bold text-cyan-400">右手舉起</p>
+                        <p class="text-[9px] text-stone-400">旋轉方塊</p>
+                    </div>
+                    <div class="bg-stone-900 p-3 rounded-xl border border-white/5">
+                        <p class="text-xl">🙌</p>
+                        <p class="text-[10px] font-bold text-pink-400">左手舉起</p>
+                        <p class="text-[9px] text-stone-400">加速下落</p>
+                    </div>
+                </div>
+                
+                <h3 class="text-white font-bold tracking-[0.3em] uppercase">Ready to Play?</h3>
+                <button onclick="startGame()" class="w-full bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-black py-5 rounded-2xl text-2xl shadow-lg active:scale-95 transition-all italic">
+                    START EXPERIMENT
+                </button>
+            </div>
+
+            <!-- C. 遊戲結束 -->
+            <div id="resultScreen" class="hidden space-y-4 w-full max-w-sm text-center">
+                <h2 class="text-5xl font-black text-white italic tracking-tighter">GAME OVER</h2>
+                <div class="bg-stone-900 p-6 rounded-2xl border border-white/10">
+                    <p class="text-xs text-stone-400 font-bold uppercase mb-1">Final Score</p>
+                    <p class="text-6xl font-black text-purple-400" id="finalScore">0</p>
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="playerName" placeholder="輸入玩家代號" class="w-full bg-black border-2 border-stone-700 rounded-xl px-4 py-3 text-center text-white font-bold text-lg focus:border-purple-500 outline-none uppercase">
+                    <button id="submitBtn" onclick="submitScore()" class="w-full bg-purple-600 text-white font-black py-3 rounded-xl text-xl">上傳作戰紀錄</button>
+                </div>
+                <button onclick="showLeaderboard()" class="text-slate-500 text-xs underline">查看全球排行榜</button>
+            </div>
+
+            <!-- D. 排行榜 -->
+            <div id="leaderboardScreen" class="hidden space-y-4 w-full max-w-sm text-center">
+                <h2 class="text-2xl font-black text-cyan-400 italic">🏆 HALL OF FAME</h2>
+                <div id="leaderboardList" class="leaderboard-scroll bg-stone-900/80 rounded-xl p-2 min-h-[200px] text-left border border-white/5">
+                    <!-- 資料將從上方開始排列 -->
+                </div>
+                <button onclick="resetGame()" class="w-full bg-stone-800 font-black py-4 rounded-xl text-lg mt-2">REPLAY</button>
+            </div>
+        </div>
+
+        <!-- 分數顯示 (左下角) -->
+        <div class="absolute bottom-6 left-8 z-40 bg-stone-900/80 px-6 py-3 rounded-2xl backdrop-blur-md border border-white/10">
+            <span class="text-stone-500 text-[10px] font-bold uppercase block tracking-widest">Current Score</span>
+            <span id="currentScore" class="text-4xl font-mono font-black text-white">0</span>
+        </div>
+    </div>
+
+    <script type="module">
+        // === 配置 GAS 網址 (更新為最新提供版本) ===
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwjJhzRZXs_tmbsHPWqrYAhBhaYkKEEQl76gyouDPcE7tP-goBxKVG4JplUl2a-Ay46/exec"; 
+
+        window.requestCamera = requestCamera;
+        window.startGame = startGame;
+        window.submitScore = submitScore;
+        window.showLeaderboard = showLeaderboard;
+        window.resetGame = resetGame;
+
+        // --- 俄羅斯方塊核心變數 ---
+        const COLS = 10;
+        const ROWS = 20;
+        let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+        let score = 0, linesCleared = 0, level = 1;
+        let currentPiece = null;
+        let gameActive = false;
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let lastTime = 0;
+
+        const PIECES = {
+            'I': { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color: '#22d3ee' },
+            'J': { shape: [[1,0,0],[1,1,1],[0,0,0]], color: '#3b82f6' },
+            'L': { shape: [[0,0,1],[1,1,1],[0,0,0]], color: '#fb923c' },
+            'O': { shape: [[1,1],[1,1]], color: '#facc15' },
+            'S': { shape: [[0,1,1],[1,1,0],[0,0,0]], color: '#4ade80' },
+            'T': { shape: [[0,1,0],[1,1,1],[0,0,0]], color: '#a855f7' },
+            'Z': { shape: [[1,1,0],[0,1,1],[0,0,0]], color: '#f43f5e' }
+        };
+
+        let currentPose = null;
+        let targetCol = 5;      
+        let isRightHandUp = false; 
+        let isLeftHandUp = false;  
+        let rotateCooldown = false;
+
+        let pose;
+        try {
+            pose = new Pose({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+            });
+            pose.setOptions({
+                modelComplexity: 1,
+                smoothLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            pose.onResults(onResults);
+        } catch (e) { console.error("Pose Init Error", e); }
+
+        async function requestCamera() {
+            try {
+                const video = document.getElementById('input_video');
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+                video.srcObject = stream;
+                
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve);
+                    };
+                });
+
+                detectLoop();
+                gameLoop(); 
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('startScreen').classList.remove('hidden');
+            } catch (err) { alert("攝影機啟動失敗：" + err.message); }
+        }
+
+        async function detectLoop() {
+            const video = document.getElementById('input_video');
+            if (video && video.readyState >= 2 && pose) {
+                await pose.send({ image: video });
+            }
+            requestAnimationFrame(detectLoop);
+        }
+
+        function onResults(results) {
+            currentPose = results.poseLandmarks;
+            if (currentPose) {
+                const nose = currentPose[0];
+                let x = (nose.x - 0.25) / 0.5; 
+                x = Math.max(0, Math.min(1, 1 - x)); 
+                targetCol = Math.floor(x * COLS);
+
+                const rightWrist = currentPose[16];
+                const rightShoulder = currentPose[12];
+                if (rightWrist && rightShoulder && rightWrist.y < rightShoulder.y - 0.1) {
+                    if (!rotateCooldown && gameActive) {
+                        playerRotate();
+                        rotateCooldown = true;
+                        setTimeout(() => rotateCooldown = false, 400); 
+                    }
+                    isRightHandUp = true;
+                } else {
+                    isRightHandUp = false;
+                }
+
+                const leftWrist = currentPose[15];
+                const leftShoulder = currentPose[11];
+                isLeftHandUp = (leftWrist && leftShoulder && leftWrist.y < leftShoulder.y - 0.1);
+            }
+        }
+
+        function createPiece() {
+            const types = 'IJLOSTZ';
+            const type = types[Math.floor(Math.random() * types.length)];
+            const piece = PIECES[type];
+            return {
+                pos: { x: Math.floor(COLS/2) - 2, y: 0 },
+                matrix: JSON.parse(JSON.stringify(piece.shape)), // 深拷貝防止原形變動
+                color: piece.color
+            };
+        }
+
+        function playerReset() {
+            currentPiece = createPiece();
+            if (collide(board, currentPiece)) {
+                endGame();
+            }
+        }
+
+        function collide(board, piece) {
+            const [m, o] = [piece.matrix, piece.pos];
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== 0 && (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function merge(board, piece) {
+            piece.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        board[y + piece.pos.y][x + piece.pos.x] = piece.color;
+                    }
+                });
+            });
+        }
+
+        function playerDrop() {
+            currentPiece.pos.y++;
+            if (collide(board, currentPiece)) {
+                currentPiece.pos.y--;
+                merge(board, currentPiece);
+                playerReset();
+                arenaSweep();
+                updateScoreDisplay();
+            }
+            dropCounter = 0;
+        }
+
+        function playerMove(dir) {
+            currentPiece.pos.x += dir;
+            if (collide(board, currentPiece)) {
+                currentPiece.pos.x -= dir;
+            }
+        }
+
+        function playerRotate() {
+            const pos = currentPiece.pos.x;
+            let offset = 1;
+            rotate(currentPiece.matrix);
+            while (collide(board, currentPiece)) {
+                currentPiece.pos.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (offset > currentPiece.matrix[0].length) {
+                    rotate(currentPiece.matrix, -1);
+                    currentPiece.pos.x = pos;
+                    return;
+                }
+            }
+        }
+
+        function rotate(matrix, dir = 1) {
+            for (let y = 0; y < matrix.length; ++y) {
+                for (let x = 0; x < y; ++x) {
+                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+                }
+            }
+            if (dir > 0) matrix.forEach(row => row.reverse());
+            else matrix.reverse();
+        }
+
+        function arenaSweep() {
+            let rowCount = 1;
+            outer: for (let y = ROWS - 1; y >= 0; --y) {
+                for (let x = 0; x < COLS; ++x) {
+                    if (board[y][x] === 0) continue outer;
+                }
+                const row = board.splice(y, 1)[0].fill(0);
+                board.unshift(row);
+                ++y;
+                score += rowCount * 10;
+                linesCleared++;
+                rowCount *= 2;
+            }
+            level = Math.floor(linesCleared / 10) + 1;
+            dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('currentScore').innerText = score;
+            document.getElementById('linesDisplay').innerText = linesCleared;
+            document.getElementById('levelDisplay').innerText = level;
+        }
+
+        function startGame() {
+            board.forEach(row => row.fill(0));
+            score = 0; linesCleared = 0; level = 1; dropInterval = 1000;
+            updateScoreDisplay();
+            playerReset();
+            gameActive = true;
+            document.getElementById('overlay').classList.add('hidden');
+        }
+
+        function endGame() {
+            gameActive = false;
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+        }
+
+        function gameLoop(time = 0) {
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            if (gameActive) {
+                if (currentPiece.pos.x < targetCol) playerMove(1);
+                if (currentPiece.pos.x > targetCol) playerMove(-1);
+
+                dropCounter += deltaTime;
+                let currentInterval = isLeftHandUp ? 50 : dropInterval;
+                if (dropCounter > currentInterval) {
+                    playerDrop();
+                }
+            }
+
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function draw() {
+            const canvas = document.getElementById('output_canvas');
+            const ctx = canvas.getContext('2d');
+            const video = document.getElementById('input_video');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (video && video.readyState >= 2) {
+                ctx.save();
+                ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+                ctx.globalAlpha = 0.3;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            }
+
+            if (currentPose) {
+                ctx.strokeStyle = '#8b5cf6';
+                ctx.lineWidth = 4;
+                const connections = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24]];
+                connections.forEach(([i, j]) => {
+                    ctx.beginPath();
+                    ctx.moveTo((1-currentPose[i].x) * canvas.width, currentPose[i].y * canvas.height);
+                    ctx.lineTo((1-currentPose[j].x) * canvas.width, currentPose[j].y * canvas.height);
+                    ctx.stroke();
+                });
+                currentPose.forEach((pt, i) => {
+                    if (i > 10 && i < 25) { 
+                        ctx.fillStyle = (i===16 && isRightHandUp) ? '#22d3ee' : (i===15 && isLeftHandUp) ? '#f43f5e' : '#ffffff';
+                        ctx.beginPath();
+                        ctx.arc((1-pt.x)*canvas.width, pt.y*canvas.height, 6, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                });
+            }
+
+            const blockSize = 30;
+            const offsetX = canvas.width / 2 - (COLS * blockSize) / 2;
+            const offsetY = 50;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(offsetX, offsetY, COLS * blockSize, ROWS * blockSize);
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.strokeRect(offsetX, offsetY, COLS * blockSize, ROWS * blockSize);
+
+            board.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        drawBlock(ctx, offsetX + x * blockSize, offsetY + y * blockSize, blockSize, value);
+                    }
+                });
+            });
+
+            if (currentPiece) {
+                currentPiece.matrix.forEach((row, y) => {
+                    row.forEach((value, x) => {
+                        if (value !== 0) {
+                            drawBlock(ctx, offsetX + (currentPiece.pos.x + x) * blockSize, offsetY + (currentPiece.pos.y + y) * blockSize, blockSize, currentPiece.color);
+                        }
+                    });
+                });
+            }
+
+            if (gameActive) {
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'left';
+                if (isRightHandUp) { ctx.fillStyle = '#22d3ee'; ctx.fillText('🔄 ROTATE ACTIVE', 50, 100); }
+                if (isLeftHandUp) { ctx.fillStyle = '#f43f5e'; ctx.fillText('⚡ FAST DROP', 50, 140); }
+            }
+        }
+
+        function drawBlock(ctx, x, y, size, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.strokeRect(x + 2, y + 2, size - 4, size - 4);
+        }
+
+        // --- GAS 串接修正 ---
+        async function submitScore() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+            if (!name) return alert("請輸入代號");
+            
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true; 
+            btn.innerText = "資料上傳中...";
+
+            try {
+                // 移除 Headers 以避免 CORS 預檢請求卡死
+                await fetch(GAS_URL, { 
+                    method: "POST", 
+                    mode: "no-cors", 
+                    body: JSON.stringify({ name, score, game: "PoseTetris" }) 
+                });
+                
+                // 給予 GAS 一點處理時間後自動顯示排行榜
+                setTimeout(() => {
+                    showLeaderboard();
+                }, 1000);
+            } catch (e) { 
+                alert("上傳異常"); 
+                btn.disabled = false; 
+                btn.innerText = "重試上傳";
+            }
+        }
+
+        async function showLeaderboard() {
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = "<p class='text-center py-12 italic text-stone-500 animate-pulse'>正在存取時空數據庫...</p>";
+
+            try {
+                const res = await fetch(GAS_URL);
+                if (!res.ok) throw new Error("Network Response Fail");
+                
+                const rawData = await res.json();
+                
+                if (!rawData || rawData.length === 0) {
+                    list.innerHTML = "<p class='text-center py-12 text-stone-400 text-sm'>目前尚無作戰紀錄</p>";
+                    return;
+                }
+
+                // 排序並過濾資料
+                const data = rawData.sort((a,b) => b.score - a.score).slice(0, 10);
+                
+                list.innerHTML = data.map((e, i) => `
+                    <div class="flex justify-between items-center p-3 mb-2 bg-white/5 rounded-xl border border-white/5 shadow-inner">
+                        <div class="flex items-center gap-4">
+                            <span class="font-black text-lg ${i < 3 ? 'text-purple-400' : 'text-stone-600'}">
+                                ${i + 1}
+                            </span>
+                            <span class="font-bold uppercase text-sm tracking-widest text-stone-200">
+                                ${e.name || 'ANONYMOUS'}
+                            </span>
+                        </div>
+                        <span class="font-mono font-black text-cyan-400 text-lg">
+                            ${e.score}
+                        </span>
+                    </div>
+                `).join('');
+            } catch(e) { 
+                list.innerHTML = `
+                    <div class="text-center py-10">
+                        <p class="text-red-500 font-bold mb-2">讀取失敗</p>
+                        <p class="text-[10px] text-stone-500">請確認 GAS 已佈署為「所有人」<br>且版本已更新</p>
+                        <button onclick="showLeaderboard()" class="mt-4 text-xs text-cyan-400 underline">點此重試</button>
+                    </div>
+                `; 
+            }
+        }
+
+        function resetGame() {
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('playerName').value = "";
+        }
+    </script>
+</body>
+</html>
