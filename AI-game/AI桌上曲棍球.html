@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 桌上曲棍球 - 體感對戰</title>
+    <title>AI 桌上曲棍球 - 節點追蹤版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     
@@ -17,13 +17,13 @@
         }
         .game-container {
             width: 100%;
-            max-width: 500px; /* 曲棍球桌通常較為瘦長 */
+            max-width: 500px;
             margin: 0 auto;
             border-radius: 2rem;
             background: #000000;
             box-shadow: 0 0 50px rgba(56, 189, 248, 0.3), inset 0 0 30px rgba(255, 255, 255, 0.05);
             position: relative;
-            aspect-ratio: 3/4; /* 調整為直向桌面 */
+            aspect-ratio: 3/4;
             overflow: hidden;
             border: 4px solid #1e3a8a;
         }
@@ -36,15 +36,7 @@
             object-fit: cover;
         }
 
-        .neon-text { text-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8, 0 0 40px #38bdf8; color: #e0f2fe; }
-        .score-bump { animation: bump 0.2s ease-out; }
-        
-        @keyframes bump {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.5); text-shadow: 0 0 20px #facc15; color: #facc15; }
-            100% { transform: scale(1); }
-        }
-
+        .neon-text { text-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8; color: #e0f2fe; }
         .leaderboard-scroll { max-height: 200px; overflow-y: auto; }
         .leaderboard-scroll::-webkit-scrollbar { width: 4px; }
         .leaderboard-scroll::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 10px; }
@@ -54,160 +46,86 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-2 bg-slate-950">
 
-    <!-- 訊息提示 -->
     <div id="toast" class="hidden bg-sky-600 text-white px-6 py-2 rounded-full shadow-[0_0_20px_rgba(56,189,248,0.5)] z-[100] flex items-center gap-3 border border-sky-400">
         <span id="toastMsg">訊息內容</span>
     </div>
 
-    <!-- 頂部資訊 (HUD) -->
-    <div class="w-full max-w-lg flex justify-between items-end mb-2 px-2">
+    <div class="w-full max-lg flex justify-between items-end mb-2 px-2">
         <div class="text-left">
-            <h1 class="text-3xl font-black tracking-tighter italic neon-text">AIR HOCKEY</h1>
-            <p class="text-xs text-sky-300 mt-1 uppercase tracking-widest">2D Vector Battle</p>
+            <h1 class="text-2xl font-black tracking-tighter italic neon-text">AIR HOCKEY</h1>
+            <p class="text-[10px] text-sky-400 font-bold uppercase tracking-widest">Digital Hand Tracking</p>
         </div>
         <div class="flex gap-4">
             <div class="text-center">
-                <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase">AI Score</p>
-                <p id="aiScoreDisplay" class="text-2xl font-mono font-black text-red-500">0</p>
+                <p class="text-[8px] text-slate-500 font-bold uppercase">AI Score</p>
+                <p id="aiScoreDisplay" class="text-xl font-mono font-black text-red-500">0</p>
             </div>
             <div class="text-right">
-                <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase">Time</p>
-                <p id="timerDisplay" class="text-4xl font-mono font-black text-white leading-none">60</p>
+                <p class="text-[8px] text-slate-500 font-bold uppercase">Lives</p>
+                <p id="livesDisplay" class="text-xl font-mono font-black text-red-500">❤️❤️❤️</p>
             </div>
         </div>
     </div>
 
-    <!-- 遊戲主畫面 -->
     <div class="game-container">
         <video id="input_video" playsinline muted></video>
         <canvas id="output_canvas" width="600" height="800"></canvas>
 
-        <!-- 覆蓋層 (選單 / 結算 / 排行榜) -->
-        <div id="overlay" class="absolute inset-0 bg-slate-950/90 z-50 rounded-2xl flex flex-col items-center justify-center p-6 backdrop-blur-md transition-all duration-300">
+        <div id="overlay" class="absolute inset-0 bg-slate-950/80 z-50 rounded-2xl flex flex-col items-center justify-center p-6 backdrop-blur-sm transition-all duration-300">
             
-            <!-- 初始化攝影機 -->
             <div id="setupScreen" class="space-y-6 w-full max-w-sm text-center">
-                <div class="text-7xl mb-2 animate-pulse">🛸</div>
-                <h2 class="text-2xl font-bold text-sky-300 tracking-widest">啟動體感曲棍球桌</h2>
+                <div class="text-7xl mb-2 animate-pulse">🖐️</div>
+                <h2 class="text-2xl font-bold text-sky-300 tracking-widest">啟動手勢感應鏡頭</h2>
                 <button onclick="requestCamera()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-4 rounded-2xl text-xl shadow-[0_0_30px_rgba(56,189,248,0.6)] active:scale-95 transition-all tracking-widest">
                     允許攝影機權限
                 </button>
             </div>
 
-            <!-- 開始畫面 -->
             <div id="startScreen" class="hidden space-y-4 w-full max-w-sm text-center">
-                <div class="bg-slate-900/80 border border-sky-500/30 p-4 rounded-2xl text-left mb-2 shadow-inner">
-                    <p class="text-sm text-sky-400 font-bold mb-2 uppercase tracking-widest border-b border-sky-500/30 pb-2">🕹️ 操作說明：</p>
-                    <ul class="text-xs text-slate-300 space-y-2 list-none pl-1">
-                        <li>🔵 舉起手掌控制 <b class="text-sky-400">藍色推槌</b> (X與Y軸)</li>
-                        <li>🏒 快速將推槌「往前推」可以打出強力殺球！</li>
-                        <li>🛡️ 守住底部的球門，把圓盤打進上方紅色的 AI 球門。</li>
-                        <li>⏳ 60秒內盡可能獲得最高分。</li>
-                    </ul>
+                <div class="bg-slate-800/80 border border-sky-500/30 p-4 rounded-xl mb-2">
+                    <p class="text-sm text-sky-400 font-bold mb-2">【感應測試中】</p>
+                    <p class="text-xs text-slate-300">請在背景畫面確認是否出現 <b class="text-sky-400">藍色關節點</b><br>移動手掌即可同步操控藍色推槌！</p>
                 </div>
                 
-                <h3 class="text-white font-bold tracking-widest">選擇 AI 難度</h3>
+                <h3 class="text-white font-bold tracking-widest">選擇難度開始挑戰</h3>
                 <div class="flex gap-2">
-                    <button onclick="startGame('easy')" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-500 transition-colors">初階</button>
-                    <button onclick="startGame('normal')" class="flex-1 bg-yellow-600 text-white font-bold py-3 rounded-xl hover:bg-yellow-500 transition-colors">進階</button>
-                    <button onclick="startGame('hard')" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-500 transition-colors">高手</button>
+                    <button onclick="startGame('easy')" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-500">初階</button>
+                    <button onclick="startGame('normal')" class="flex-1 bg-yellow-600 text-white font-bold py-3 rounded-xl hover:bg-yellow-500">進階</button>
+                    <button onclick="startGame('hard')" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-500">高手</button>
                 </div>
             </div>
 
-            <!-- 結算畫面 -->
             <div id="resultScreen" class="hidden space-y-4 w-full max-w-sm text-center">
-                <h2 class="text-5xl font-black text-white tracking-widest italic neon-text">TIME UP</h2>
-                
-                <div class="bg-slate-900/80 p-6 rounded-2xl border border-white/10 shadow-inner flex justify-around items-center">
+                <h2 class="text-5xl font-black text-white tracking-widest italic neon-text">GAME OVER</h2>
+                <div class="bg-slate-900/80 p-6 rounded-2xl border border-white/10 flex justify-around items-center">
                     <div class="text-center">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">AI</p>
+                        <p class="text-[10px] text-slate-400 font-bold">AI</p>
                         <p class="text-4xl font-black text-red-500" id="finalAiScore">0</p>
                     </div>
-                    <div class="text-3xl font-black text-slate-600">VS</div>
                     <div class="text-center">
-                        <p class="text-[10px] text-sky-400 font-bold uppercase tracking-widest mb-1">Player</p>
+                        <p class="text-[10px] text-sky-400 font-bold">Player</p>
                         <p class="text-5xl font-black text-sky-400" id="finalScore">0</p>
                     </div>
                 </div>
-                
                 <div class="space-y-3 mt-2">
-                    <input type="text" id="playerName" placeholder="輸入玩家代號" maxlength="10" class="w-full bg-black/50 border-2 border-sky-500/50 rounded-xl px-4 py-3 text-center text-white font-bold text-lg focus:outline-none focus:border-sky-400 uppercase placeholder-slate-600">
-                    <button id="submitBtn" onclick="submitScore()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3 rounded-xl text-xl shadow-[0_0_15px_rgba(56,189,248,0.5)] active:scale-95 transition-all tracking-widest">
-                        上傳得分紀錄
-                    </button>
+                    <input type="text" id="playerName" placeholder="輸入玩家代號" class="w-full bg-black border-2 border-sky-500/50 rounded-xl px-4 py-3 text-center text-white font-bold">
+                    <button id="submitBtn" onclick="submitScore()" class="w-full bg-sky-600 text-white font-black py-3 rounded-xl text-xl">上傳紀錄</button>
                 </div>
-                <button onclick="showLeaderboard()" class="text-slate-500 text-xs font-bold underline hover:text-white transition-colors">查看排行榜</button>
+                <button onclick="showLeaderboard()" class="text-slate-500 text-xs underline">查看排行榜</button>
             </div>
 
-            <!-- 排行榜畫面 -->
             <div id="leaderboardScreen" class="hidden space-y-4 w-full max-w-sm text-center">
-                <h2 class="text-2xl font-black text-sky-400 italic tracking-widest">🏆 RANKING TOP 10</h2>
-                <div id="leaderboardList" class="leaderboard-scroll bg-slate-900/80 rounded-xl border border-sky-500/30 p-2 space-y-1 min-h-[150px] text-left shadow-inner">
-                    <p class="text-slate-500 text-xs py-8 italic text-center animate-pulse">連線讀取中...</p>
-                </div>
-                <button onclick="resetGame()" class="w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 font-black py-4 rounded-xl text-lg shadow-lg active:scale-95 transition-all uppercase tracking-widest mt-2">
-                    PLAY AGAIN
-                </button>
+                <h2 class="text-2xl font-black text-sky-400 italic">🏆 RANKING TOP 10</h2>
+                <div id="leaderboardList" class="leaderboard-scroll bg-slate-800/80 rounded-xl p-2 min-h-[150px] text-left shadow-inner"></div>
+                <button onclick="resetGame()" class="w-full bg-slate-800 font-black py-4 rounded-xl text-lg mt-2">PLAY AGAIN</button>
             </div>
         </div>
 
-        <!-- 玩家分數顯示 (左下角) -->
         <div class="absolute bottom-4 left-4 z-40 bg-sky-900/50 px-4 py-2 rounded-xl backdrop-blur-sm border border-sky-400/30">
-            <span class="text-sky-300 text-xs font-bold uppercase tracking-widest mr-2">Player</span>
             <span id="currentScore" class="text-3xl font-mono font-black text-white">0</span>
         </div>
     </div>
 
-    <!-- 音效引擎 -->
-    <script>
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let audioCtx;
-
-        function initAudio() {
-            if (!audioCtx) audioCtx = new AudioContext();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function playSound(type, intensity = 1.0) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-
-            if (type === 'hit') {
-                // 圓盤撞擊推槌聲 (短促清脆)
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(600 * intensity, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
-                gainNode.gain.setValueAtTime(0.5 * Math.min(intensity, 1), audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.05);
-            } else if (type === 'wall') {
-                // 撞牆聲 (較悶)
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(200 * intensity, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
-                gainNode.gain.setValueAtTime(0.2 * Math.min(intensity, 1), audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'score') {
-                // 得分歡呼聲
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(554, audioCtx.currentTime + 0.1);
-                osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.2);
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.4);
-            }
-        }
-    </script>
-
-    <!-- 遊戲主邏輯 -->
     <script type="module">
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwmrn5bhdnS-NM59BHXS9hVqH4zLr2XiBYWofv3CZehpHXZQgdyN894UwsZndtjZs46SA/exec"; 
 
@@ -217,72 +135,48 @@
         window.showLeaderboard = showLeaderboard;
         window.resetGame = resetGame;
 
-        // --- 物理系統變數 ---
-        let score = 0, aiScore = 0, timeLeft = 60;
-        let isPlaying = false, timerInterval;
-        let animationFrameId;
+        let score = 0, aiScore = 0, playerLives = 3;
+        let isPlaying = false, animationFrameId;
+        let targetX = 300, targetY = 600, currentHandLandmarks = null;
 
-        // 玩家手部目標座標
-        let targetX = 300, targetY = 600; 
+        const C_WIDTH = 600, C_HEIGHT = 800, GOAL_WIDTH = 200;
+        const p = { x: 300, y: 400, vx: 0, vy: 0, r: 25, mass: 1, color: '#eab308' };
+        const m1 = { x: 300, y: 650, vx: 0, vy: 0, r: 40, mass: 5, color: '#38bdf8' };
+        const m2 = { x: 300, y: 150, vx: 0, vy: 0, r: 40, mass: 5, color: '#ef4444', speed: 6, reactionTime: 0.15 };
+        const FRICTION = 0.99, RESTITUTION = 0.85;
 
-        // 實體定義 (桌子大小: 600x800)
-        const C_WIDTH = 600;
-        const C_HEIGHT = 800;
-        const GOAL_WIDTH = 200;
-
-        const p = { // Puck (圓盤)
-            x: 300, y: 400, vx: 0, vy: 0, r: 25, mass: 1, color: '#eab308'
-        };
-        const m1 = { // Player Mallet (藍色推槌)
-            x: 300, y: 650, vx: 0, vy: 0, r: 40, mass: 5, color: '#38bdf8'
-        };
-        const m2 = { // AI Mallet (紅色推槌)
-            x: 300, y: 150, vx: 0, vy: 0, r: 40, mass: 5, color: '#ef4444', 
-            speed: 4, reactionTime: 0.1
-        };
-
-        // 碰撞摩擦力與彈性係數
-        const FRICTION = 0.99; 
-        const RESTITUTION = 0.85; // 彈性係數 (避免完全彈性導致速度無限疊加)
-
-        let currentDifficulty = 'normal';
-
-        // --- MediaPipe 初始化 ---
+        // MediaPipe 手部偵測
         let hands;
         try {
             hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 0,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+            hands.onResults(results => {
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    currentHandLandmarks = results.multiHandLandmarks[0];
+                    targetX = (1 - ((currentHandLandmarks[0].x + currentHandLandmarks[9].x) / 2)) * C_WIDTH; 
+                    targetY = ((currentHandLandmarks[0].y + currentHandLandmarks[9].y) / 2) * C_HEIGHT;
+                    
+                    if (targetY < C_HEIGHT / 2 + m1.r) targetY = C_HEIGHT / 2 + m1.r;
+                    if (targetY > C_HEIGHT - m1.r) targetY = C_HEIGHT - m1.r;
+                    if (targetX < m1.r) targetX = m1.r;
+                    if (targetX > C_WIDTH - m1.r) targetX = C_WIDTH - m1.r;
+                } else {
+                    currentHandLandmarks = null;
+                }
             });
-            hands.onResults(onResults);
-        } catch (e) { console.error("Hands init failed", e); }
+        } catch (e) { console.error(e); }
 
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
-            t.classList.remove('hidden');
-            setTimeout(() => t.classList.add('hidden'), 3000);
-        }
-
-        // --- 攝影機與 AI 分析 ---
         async function requestCamera() {
             try {
                 const video = document.getElementById('input_video');
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
                 video.srcObject = stream;
-                await new Promise(r => { video.onloadedmetadata = () => video.play().then(r); });
-                
+                await video.play();
                 detectLoop();
-                if (!animationFrameId) gameLoop(); // 啟動畫面渲染
-
+                if (!animationFrameId) gameLoop();
                 document.getElementById('setupScreen').classList.add('hidden');
                 document.getElementById('startScreen').classList.remove('hidden');
-            } catch (err) {
-                alert("無法存取攝影機：" + err.message);
-            }
+            } catch (err) { alert("攝影機錯誤：" + err.message); }
         }
 
         async function detectLoop() {
@@ -291,376 +185,154 @@
             requestAnimationFrame(detectLoop);
         }
 
-        function onResults(results) {
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const hand = results.multiHandLandmarks[0];
-                // 鏡像 X，正常 Y。將攝影機比例映射至畫布 (600x800)
-                targetX = (1 - ((hand[0].x + hand[9].x) / 2)) * C_WIDTH; 
-                targetY = ((hand[0].y + hand[9].y) / 2) * C_HEIGHT;
-                
-                // 限制玩家推槌只能在下半場活動
-                if (targetY < C_HEIGHT / 2 + m1.r) targetY = C_HEIGHT / 2 + m1.r;
-                if (targetY > C_HEIGHT - m1.r) targetY = C_HEIGHT - m1.r;
-                if (targetX < m1.r) targetX = m1.r;
-                if (targetX > C_WIDTH - m1.r) targetX = C_WIDTH - m1.r;
-            }
-        }
-
-        // --- 遊戲邏輯 ---
         function startGame(diff) {
-            initAudio();
-            currentDifficulty = diff;
-            score = 0; aiScore = 0; timeLeft = 60;
-            isPlaying = true;
-            
-            // 難度設定
-            if(diff === 'easy') { m2.speed = 3; m2.reactionTime = 0.05; }
-            if(diff === 'normal') { m2.speed = 6; m2.reactionTime = 0.15; }
-            if(diff === 'hard') { m2.speed = 10; m2.reactionTime = 0.3; }
-
+            score = 0; aiScore = 0; playerLives = 3; isPlaying = true;
+            if(diff === 'easy') m2.speed = 3;
+            else if(diff === 'normal') m2.speed = 6;
+            else m2.speed = 10;
             updateHUD();
             document.getElementById('overlay').classList.add('hidden');
             resetPuck();
-            
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timerDisplay').innerText = timeLeft;
-                if (timeLeft <= 10) document.getElementById('timerDisplay').classList.add('text-red-500', 'animate-pulse');
-                if (timeLeft <= 0) endGame();
-            }, 1000);
         }
 
-        function updateHUD(playerScored = false, aiScored = false) {
-            const scoreEl = document.getElementById('currentScore');
-            const aiScoreEl = document.getElementById('aiScoreDisplay');
-            scoreEl.innerText = score;
-            aiScoreEl.innerText = aiScore;
-
-            if (playerScored) {
-                scoreEl.classList.remove('score-bump');
-                void scoreEl.offsetWidth; 
-                scoreEl.classList.add('score-bump');
-            }
+        function updateHUD(playerScored = false) {
+            document.getElementById('currentScore').innerText = score;
+            document.getElementById('aiScoreDisplay').innerText = aiScore;
+            document.getElementById('livesDisplay').innerText = '❤️'.repeat(Math.max(0, playerLives)) + '🖤'.repeat(Math.max(0, 3 - playerLives));
         }
 
-        function resetPuck(whoScored = 'nobody') {
-            p.vx = 0; p.vy = 0;
-            p.x = C_WIDTH / 2;
-            // 輸家發球
-            if (whoScored === 'player') p.y = C_HEIGHT * 0.25; // 發給 AI
-            else if (whoScored === 'ai') p.y = C_HEIGHT * 0.75; // 發給玩家
-            else p.y = C_HEIGHT / 2; // 預設中間
-        }
+        function resetPuck() { p.vx = 0; p.vy = 0; p.x = C_WIDTH / 2; p.y = C_HEIGHT / 2; }
 
-        function endGame() {
-            isPlaying = false;
-            clearInterval(timerInterval);
-            
-            document.getElementById('timerDisplay').classList.remove('text-red-500', 'animate-pulse');
-            document.getElementById('finalScore').innerText = score;
-            document.getElementById('finalAiScore').innerText = aiScore;
-            
-            const overlay = document.getElementById('overlay');
-            overlay.classList.remove('hidden');
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('resultScreen').classList.remove('hidden');
-            document.getElementById('leaderboardScreen').classList.add('hidden');
-        }
-
-        // 圓形碰撞解析 (The Math Part!)
-        function resolveCollision(mallet, puck) {
-            const dx = puck.x - mallet.x;
-            const dy = puck.y - mallet.y;
-            const distance = Math.hypot(dx, dy);
-            const minDist = mallet.r + puck.r;
-
-            if (distance < minDist) {
-                // 1. 分離物件 (避免卡在內部)
-                const overlap = minDist - distance;
-                const nx = dx / distance; // 法向量 x
-                const ny = dy / distance; // 法向量 y
-                
-                puck.x += nx * overlap;
-                puck.y += ny * overlap;
-
-                // 2. 計算相對速度
-                const rvx = puck.vx - mallet.vx;
-                const rvy = puck.vy - mallet.vy;
-
-                // 計算沿著法線方向的速度分量 (內積)
-                const velAlongNormal = rvx * nx + rvy * ny;
-
-                // 如果正在遠離就不計算反彈
-                if (velAlongNormal > 0) return;
-
-                // 3. 衝量計算 (考慮質量與彈性)
-                const j = -(1 + RESTITUTION) * velAlongNormal;
-                const impulse = j / (1/mallet.mass + 1/puck.mass);
-
-                // 4. 更新速度 (賦予打擊感)
-                // 將推槌的速度加成進去，打擊越快，反彈越猛
-                puck.vx += (impulse * nx) / puck.mass;
-                puck.vy += (impulse * ny) / puck.mass;
-
-                // 限制最高速度避免飛出畫面
-                const maxSpeed = 30;
-                const currentSpeed = Math.hypot(puck.vx, puck.vy);
-                if (currentSpeed > maxSpeed) {
-                    puck.vx = (puck.vx / currentSpeed) * maxSpeed;
-                    puck.vy = (puck.vy / currentSpeed) * maxSpeed;
-                }
-
-                playSound('hit', Math.min(currentSpeed / 10, 1.5));
-            }
-        }
-
-        // --- 主物理迴圈 ---
         function gameLoop() {
             const canvas = document.getElementById('output_canvas');
             const ctx = canvas.getContext('2d');
             
-            // 計算 Delta Time 與推槌速度
-            // 玩家推槌平滑移動 (Lerp)
-            const oldM1X = m1.x; const oldM1Y = m1.y;
+            const oldM1X = m1.x, oldM1Y = m1.y;
             m1.x += (targetX - m1.x) * 0.5;
             m1.y += (targetY - m1.y) * 0.5;
-            m1.vx = m1.x - oldM1X; 
-            m1.vy = m1.y - oldM1Y;
+            m1.vx = m1.x - oldM1X; m1.vy = m1.y - oldM1Y;
 
             if (isPlaying) {
-                // --- AI 邏輯 ---
-                const oldM2X = m2.x; const oldM2Y = m2.y;
-                let aiTargetX = m2.x; let aiTargetY = m2.y;
+                // AI 簡單邏輯
+                const oldM2X = m2.x, oldM2Y = m2.y;
+                let aiTX = (p.y < C_HEIGHT/2) ? p.x : C_WIDTH/2;
+                let aiTY = (p.y < C_HEIGHT/2) ? Math.min(p.y - m2.r, C_HEIGHT/2 - m2.r) : 100;
+                m2.x += (aiTX - m2.x) * 0.2;
+                m2.y += (aiTY - m2.y) * 0.2;
+                m2.vx = m2.x - oldM2X; m2.vy = m2.y - oldM2Y;
 
-                if (p.y < C_HEIGHT / 2) {
-                    // 球在 AI 側，積極追球並打擊
-                    aiTargetX = p.x + (p.vx * m2.reactionTime * 10); // 簡單預判
-                    aiTargetY = p.y - m2.r; // 試圖跑到球後方往下打
-                    
-                    // 防呆：AI 不要越界
-                    if(aiTargetY > C_HEIGHT/2 - m2.r) aiTargetY = C_HEIGHT/2 - m2.r;
+                p.vx *= FRICTION; p.vy *= FRICTION;
+                p.x += p.vx; p.y += p.vy;
+
+                // 邊界反彈
+                if (p.x - p.r < 0 || p.x + p.r > C_WIDTH) { p.vx *= -RESTITUTION; p.x = (p.x < p.r) ? p.r : C_WIDTH - p.r; }
+                
+                const inGoal = p.x > C_WIDTH/2 - GOAL_WIDTH/2 && p.x < C_WIDTH/2 + GOAL_WIDTH/2;
+                if (!inGoal) {
+                    if (p.y - p.r < 0 || p.y + p.r > C_HEIGHT) { p.vy *= -RESTITUTION; p.y = (p.y < p.r) ? p.r : C_HEIGHT - p.r; }
                 } else {
-                    // 球在玩家側，退回防守
-                    aiTargetX = Math.max(C_WIDTH/2 - GOAL_WIDTH/2, Math.min(C_WIDTH/2 + GOAL_WIDTH/2, p.x));
-                    aiTargetY = m2.r + 20; 
+                    if (p.y < -p.r) { score++; updateHUD(true); resetPuck(); }
+                    else if (p.y > C_HEIGHT + p.r) { aiScore++; playerLives--; updateHUD(); if (playerLives <= 0) endGame(); else resetPuck(); }
                 }
 
-                // AI 移動限制與平滑
-                const aiDx = aiTargetX - m2.x;
-                const aiDy = aiTargetY - m2.y;
-                const aiDist = Math.hypot(aiDx, aiDy);
-                
-                if (aiDist > 0) {
-                    const step = Math.min(m2.speed, aiDist);
-                    m2.x += (aiDx / aiDist) * step;
-                    m2.y += (aiDy / aiDist) * step;
-                }
-
-                m2.vx = m2.x - oldM2X;
-                m2.vy = m2.y - oldM2Y;
-
-                // 限制 AI 邊界
-                if(m2.x < m2.r) m2.x = m2.r;
-                if(m2.x > C_WIDTH - m2.r) m2.x = C_WIDTH - m2.r;
-                if(m2.y < m2.r) m2.y = m2.r;
-
-                // --- 圓盤物理 ---
-                p.vx *= FRICTION;
-                p.vy *= FRICTION;
-                p.x += p.vx;
-                p.y += p.vy;
-
-                // 牆壁反彈判定 (排除球門區)
-                const inGoalX = p.x > C_WIDTH/2 - GOAL_WIDTH/2 && p.x < C_WIDTH/2 + GOAL_WIDTH/2;
-                
-                // 左右牆壁
-                if (p.x - p.r < 0) { p.x = p.r; p.vx *= -RESTITUTION; playSound('wall', Math.abs(p.vx)/10); }
-                if (p.x + p.r > C_WIDTH) { p.x = C_WIDTH - p.r; p.vx *= -RESTITUTION; playSound('wall', Math.abs(p.vx)/10); }
-                
-                // 上下牆壁 (如果不在球門範圍內)
-                if (!inGoalX) {
-                    if (p.y - p.r < 0) { p.y = p.r; p.vy *= -RESTITUTION; playSound('wall', Math.abs(p.vy)/10); }
-                    if (p.y + p.r > C_HEIGHT) { p.y = C_HEIGHT - p.r; p.vy *= -RESTITUTION; playSound('wall', Math.abs(p.vy)/10); }
-                } else {
-                    // 進球判定
-                    if (p.y < -p.r) {
-                        // 玩家得分 (打進上方)
-                        score++; playSound('score'); updateHUD(true, false); resetPuck('player');
-                    } else if (p.y > C_HEIGHT + p.r) {
-                        // AI 得分 (打進下方)
-                        aiScore++; playSound('score'); updateHUD(false, true); resetPuck('ai');
+                // 碰撞
+                [m1, m2].forEach(m => {
+                    const dist = Math.hypot(p.x - m.x, p.y - m.y);
+                    if (dist < m.r + p.r) {
+                        const nx = (p.x - m.x) / dist, ny = (p.y - m.y) / dist;
+                        const rvx = p.vx - m.vx, rvy = p.vy - m.vy;
+                        const vAlongN = rvx * nx + rvy * ny;
+                        if (vAlongN < 0) {
+                            const impulse = -(1 + RESTITUTION) * vAlongN / (1/m.mass + 1/p.mass);
+                            p.vx += impulse * nx / p.mass; p.vy += impulse * ny / p.mass;
+                        }
                     }
-                }
-
-                // 圓盤與推槌碰撞
-                resolveCollision(m1, p); // 玩家碰撞
-                resolveCollision(m2, p); // AI 碰撞
+                });
             }
 
-            // --- 畫面繪製 ---
+            // 繪圖
             ctx.clearRect(0, 0, C_WIDTH, C_HEIGHT);
-            
-            // 繪製背景 (攝影機微弱透視)
             const video = document.getElementById('input_video');
-            if (video && video.readyState >= 2) {
-                ctx.save();
-                ctx.translate(C_WIDTH, 0); ctx.scale(-1, 1);
-                ctx.globalAlpha = 0.2; // 淡淡的攝影機背景幫助對齊手部
-                // 保持原比例繪製在中央
-                const vRatio = video.videoWidth / video.videoHeight;
-                const cRatio = C_WIDTH / C_HEIGHT;
-                let dWidth = C_WIDTH, dHeight = C_HEIGHT, dx = 0, dy = 0;
-                if (vRatio > cRatio) {
-                    dWidth = C_HEIGHT * vRatio; dx = (C_WIDTH - dWidth) / 2;
-                } else {
-                    dHeight = C_WIDTH / vRatio; dy = (C_HEIGHT - dHeight) / 2;
-                }
-                ctx.drawImage(video, dx, dy, dWidth, dHeight);
-                ctx.restore();
+            if (video.readyState >= 2) {
+                ctx.save(); ctx.translate(C_WIDTH, 0); ctx.scale(-1, 1); ctx.globalAlpha = 0.2;
+                ctx.drawImage(video, 0, 0, C_WIDTH, C_HEIGHT); ctx.restore();
             }
 
-            // 繪製曲棍球桌線條 (Neon 風格)
-            ctx.globalAlpha = 1.0;
-            ctx.strokeStyle = '#0284c7'; // 暗藍色邊線
-            ctx.lineWidth = 6;
-            ctx.strokeRect(0, 0, C_WIDTH, C_HEIGHT);
-            
-            // 中線
-            ctx.beginPath();
-            ctx.moveTo(0, C_HEIGHT / 2);
-            ctx.lineTo(C_WIDTH, C_HEIGHT / 2);
-            ctx.stroke();
-            
-            // 中圈
-            ctx.beginPath();
-            ctx.arc(C_WIDTH / 2, C_HEIGHT / 2, 80, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.fillStyle = '#0284c7';
-            ctx.beginPath(); ctx.arc(C_WIDTH / 2, C_HEIGHT / 2, 8, 0, Math.PI * 2); ctx.fill();
+            // 畫線
+            ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 4; ctx.strokeRect(0, 0, C_WIDTH, C_HEIGHT);
+            ctx.beginPath(); ctx.moveTo(0, C_HEIGHT/2); ctx.lineTo(C_WIDTH, C_HEIGHT/2); ctx.stroke();
+            ctx.strokeRect(C_WIDTH/2 - GOAL_WIDTH/2, -10, GOAL_WIDTH, 20);
+            ctx.strokeRect(C_WIDTH/2 - GOAL_WIDTH/2, C_HEIGHT - 10, GOAL_WIDTH, 20);
 
-            // 球門區標示
-            ctx.strokeStyle = '#ef4444'; // 上方紅隊球門區
-            ctx.beginPath(); ctx.arc(C_WIDTH / 2, 0, GOAL_WIDTH/2, 0, Math.PI); ctx.stroke();
-            ctx.strokeStyle = '#38bdf8'; // 下方藍隊球門區
-            ctx.beginPath(); ctx.arc(C_WIDTH / 2, C_HEIGHT, GOAL_WIDTH/2, Math.PI, Math.PI*2); ctx.stroke();
-
-            // 畫實體發光效果封裝
-            const drawGlowEntity = (entity, glowColor) => {
-                ctx.save();
-                ctx.translate(entity.x, entity.y);
-                ctx.shadowColor = glowColor;
-                ctx.shadowBlur = 20;
-                ctx.fillStyle = entity.color;
-                ctx.beginPath();
-                ctx.arc(0, 0, entity.r, 0, Math.PI*2);
-                ctx.fill();
+            // 畫手部節點 (手部骨骼視覺回饋)
+            if (currentHandLandmarks) {
+                ctx.fillStyle = '#38bdf8';
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+                ctx.lineWidth = 2;
                 
-                // 內凹感
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.arc(0, 0, entity.r * 0.6, 0, Math.PI*2);
-                ctx.fill();
+                // 畫骨架連線
+                const connections = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+                connections.forEach(([i, j]) => {
+                    ctx.beginPath();
+                    ctx.moveTo((1 - currentHandLandmarks[i].x) * C_WIDTH, currentHandLandmarks[i].y * C_HEIGHT);
+                    ctx.lineTo((1 - currentHandLandmarks[j].x) * C_WIDTH, currentHandLandmarks[j].y * C_HEIGHT);
+                    ctx.stroke();
+                });
                 
-                // 握把中心
-                ctx.fillStyle = entity.color;
-                ctx.beginPath();
-                ctx.arc(0, 0, entity.r * 0.3, 0, Math.PI*2);
-                ctx.fill();
-                ctx.restore();
-            };
+                // 畫關節點
+                currentHandLandmarks.forEach(pt => {
+                    ctx.beginPath();
+                    ctx.arc((1 - pt.x) * C_WIDTH, pt.y * C_HEIGHT, 4, 0, Math.PI*2);
+                    ctx.fill();
+                });
+            }
 
-            // 繪製 AI 推槌
-            drawGlowEntity(m2, '#ef4444');
-            
-            // 繪製 玩家推槌
-            drawGlowEntity(m1, '#38bdf8');
-
-            // 繪製圓盤
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 15;
-            ctx.fillStyle = '#fef08a';
-            ctx.beginPath();
-            ctx.arc(0, 0, p.r, 0, Math.PI*2);
-            ctx.fill();
-            ctx.restore();
+            // 畫實體
+            [[m2, '#ef4444'], [m1, '#38bdf8'], [p, '#facc15']].forEach(([ent, col]) => {
+                ctx.fillStyle = col; ctx.beginPath(); ctx.arc(ent.x, ent.y, ent.r, 0, Math.PI*2); ctx.fill();
+            });
 
             animationFrameId = requestAnimationFrame(gameLoop);
         }
 
-        // --- GAS 排行榜邏輯 ---
+        function endGame() {
+            isPlaying = false;
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('finalAiScore').innerText = aiScore;
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+        }
+
         async function submitScore() {
             const name = document.getElementById('playerName').value.trim();
-            const submitBtn = document.getElementById('submitBtn');
-            if (!name) { showToast("特工，請輸入代號！"); return; }
-
-            submitBtn.disabled = true;
-            submitBtn.innerText = "資料上傳中...";
-
-            // 為了單一排行榜，我們傳送「玩家得分」當作排行榜排序依據
-            const payload = { name, score: score, game: "AirHockey", difficulty: currentDifficulty };
-
-            if (GAS_URL && GAS_URL.startsWith("https")) {
-                try {
-                    await fetch(GAS_URL, {
-                        method: "POST", 
-                        mode: "no-cors", 
-                        body: JSON.stringify(payload)
-                    });
-                    showToast("數據上傳成功！");
-                    setTimeout(() => showLeaderboard(), 1000);
-                } catch (e) { 
-                    showToast("時空連線異常，上傳失敗"); 
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = "重新上傳";
-                }
-            }
+            if (!name) return alert("請輸入代號");
+            try {
+                await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ name, score }) });
+                showLeaderboard();
+            } catch (e) { alert("上傳失敗"); }
         }
 
         async function showLeaderboard() {
             document.getElementById('resultScreen').classList.add('hidden');
             document.getElementById('leaderboardScreen').classList.remove('hidden');
             const list = document.getElementById('leaderboardList');
-            list.innerHTML = '<p class="text-xs py-8 italic text-slate-500 text-center animate-pulse">正在存取全服排行榜...</p>';
-
+            list.innerHTML = "讀取中...";
             try {
-                const response = await fetch(GAS_URL);
-                if (!response.ok) throw new Error("Fetch failed");
-                const top10 = await response.json();
-                
-                if (!top10 || top10.length === 0) {
-                    list.innerHTML = '<p class="text-xs py-8 italic text-slate-500 text-center">無資料，你是第一個突破者！</p>';
-                    return;
-                }
-
-                // 以分數高低排列
-                const sortedData = top10.sort((a, b) => b.score - a.score).slice(0, 10);
-                
-                list.innerHTML = sortedData.map((e, i) => `
-                    <div class="flex justify-between items-center px-5 py-3 ${i<3?'bg-sky-900/40 border-sky-500/50':'bg-white/5 border-white/5'} rounded-xl mb-2 border text-sm">
-                        <div class="flex items-center gap-4">
-                            <span class="font-black text-lg ${i===0?'text-yellow-400':i===1?'text-slate-300':i===2?'text-orange-400':'text-slate-500'}">
-                                ${i+1}
-                            </span>
-                            <span class="font-bold text-white uppercase">${e.name}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="font-black text-sky-400 text-lg">${e.score} <span class="text-xs text-slate-400 font-normal">Goals</span></span>
-                        </div>
+                const res = await fetch(GAS_URL);
+                const data = await res.json();
+                list.innerHTML = data.sort((a,b)=>b.score-a.score).slice(0,10).map((e,i)=>`
+                    <div class="flex justify-between p-2 mb-1 bg-white/5 rounded">
+                        <span>${i+1}. ${e.name}</span>
+                        <span class="text-sky-400 font-bold">${e.score}</span>
                     </div>
                 `).join('');
-            } catch (e) { 
-                list.innerHTML = `<p class="text-red-400 text-sm py-6 font-bold text-center">伺服器無回應</p>`; 
-            }
+            } catch(e) { list.innerHTML = "讀取失敗"; }
         }
 
         function resetGame() {
             document.getElementById('leaderboardScreen').classList.add('hidden');
             document.getElementById('startScreen').classList.remove('hidden');
-            document.getElementById('playerName').value = "";
         }
     </script>
 </body>
