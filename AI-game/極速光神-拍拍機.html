@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極速光神 - Catch the Light</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            background-color: #0f172a; /* 深色街機背景 */
+            color: white;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace, 'Microsoft JhengHei';
+            touch-action: none; /* 防止手機點擊放大或滑動 */
+        }
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: 1.5rem;
+            background: #1e293b;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+        }
+        
+        /* 街機按鈕樣式 */
+        .arcade-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            aspect-ratio: 1 / 1;
+            margin-top: 1rem;
+        }
+        .arcade-btn {
+            background: #334155;
+            border-radius: 50%; /* 圓形按鈕 */
+            box-shadow: 
+                inset 0px 4px 10px rgba(255,255,255,0.1),
+                0px 6px 0px #0f172a,
+                0px 8px 15px rgba(0,0,0,0.5);
+            transition: transform 0.05s, box-shadow 0.05s, background 0.1s;
+            cursor: pointer;
+            position: relative;
+            /* 防止選取文字 */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        /* 按下時的物理回饋感 */
+        .arcade-btn:active, .arcade-btn.pressed {
+            transform: translateY(6px);
+            box-shadow: 
+                inset 0px 2px 5px rgba(0,0,0,0.5),
+                0px 0px 0px #0f172a,
+                0px 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* 亮燈狀態 (Neon Glow) */
+        .arcade-btn.active {
+            background: #3b82f6; /* 預設藍光 */
+            box-shadow: 
+                inset 0px 4px 15px rgba(255,255,255,0.5),
+                0px 6px 0px #1d4ed8,
+                0px 0px 30px #3b82f6,
+                0px 0px 60px #60a5fa;
+            animation: pulse-glow 1s infinite alternate;
+        }
+        .arcade-btn.active.pressed {
+            box-shadow: 
+                inset 0px 2px 5px rgba(0,0,0,0.5),
+                0px 0px 0px #1d4ed8,
+                0px 0px 40px #60a5fa;
+        }
+
+        /* 擊中特效 */
+        .arcade-btn.hit {
+            background: #ffffff;
+            box-shadow: 0 0 50px #ffffff;
+            transition: all 0.1s;
+        }
+
+        /* 顏色變體：隨機亮不同顏色 */
+        .active.color-1 { background: #ef4444; box-shadow: inset 0px 4px 15px rgba(255,255,255,0.5), 0px 6px 0px #b91c1c, 0px 0px 30px #ef4444; }
+        .active.color-2 { background: #22c55e; box-shadow: inset 0px 4px 15px rgba(255,255,255,0.5), 0px 6px 0px #15803d, 0px 0px 30px #22c55e; }
+        .active.color-3 { background: #eab308; box-shadow: inset 0px 4px 15px rgba(255,255,255,0.5), 0px 6px 0px #a16207, 0px 0px 30px #eab308; }
+        .active.color-4 { background: #a855f7; box-shadow: inset 0px 4px 15px rgba(255,255,255,0.5), 0px 6px 0px #7e22ce, 0px 0px 30px #a855f7; }
+
+        @keyframes pulse-glow {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.3); }
+        }
+
+        /* 數字跳動特效 */
+        .score-bump { animation: bump 0.2s ease-out; color: #facc15; }
+        @keyframes bump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+
+        /* UI 捲軸 */
+        .leaderboard-scroll { max-height: 200px; overflow-y: auto; }
+        .leaderboard-scroll::-webkit-scrollbar { width: 4px; }
+        .leaderboard-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- 訊息提示 -->
+    <div id="toast" class="hidden bg-blue-600 text-white px-6 py-2 rounded-full shadow-2xl z-[100] flex items-center gap-3">
+        <span id="toastMsg">訊息內容</span>
+    </div>
+
+    <div class="game-container relative border-2 border-blue-900">
+        
+        <!-- 頂部資訊 (HUD) -->
+        <div class="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-700 shadow-inner mb-4">
+            <div class="text-left">
+                <p class="text-xs text-blue-400 font-bold tracking-widest uppercase">Combo</p>
+                <p id="comboDisplay" class="text-2xl font-black text-slate-500">0</p>
+            </div>
+            <div class="text-center">
+                <p class="text-xs text-slate-500 font-bold tracking-widest uppercase">Score</p>
+                <p id="scoreDisplay" class="text-5xl font-black text-white leading-none">0</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-red-400 font-bold tracking-widest uppercase">Time</p>
+                <p id="timerDisplay" class="text-4xl font-black text-red-500">30</p>
+            </div>
+        </div>
+
+        <!-- 遊戲按鈕網格 (4x4) -->
+        <div id="gridBoard" class="arcade-grid">
+            <!-- JavaScript 將自動產生 16 個按鈕 -->
+        </div>
+
+        <!-- 覆蓋層 (選單 / 結算 / 排行榜) -->
+        <div id="overlay" class="absolute inset-0 bg-slate-900/95 z-50 rounded-xl flex flex-col items-center justify-center p-8 backdrop-blur-sm transition-all duration-300">
+            
+            <!-- 開始畫面 -->
+            <div id="startScreen" class="space-y-6 w-full max-w-sm text-center">
+                <div class="text-6xl mb-2 animate-bounce">🎇</div>
+                <h1 class="text-4xl font-black text-blue-400 tracking-tighter italic">CATCH THE LIGHT</h1>
+                <p class="text-sm text-slate-300 font-bold tracking-widest">極速光神 - 街機拍拍機</p>
+                
+                <div class="bg-slate-800 border border-blue-500/30 p-4 rounded-xl text-left my-4">
+                    <p class="text-xs text-blue-300 font-bold mb-2">🕹️ 玩法說明：</p>
+                    <ul class="text-xs text-slate-400 space-y-1 list-disc pl-4">
+                        <li>按鈕發光時，<strong class="text-white">盡全力快速點擊！</strong></li>
+                        <li>連續擊中可累積 <strong class="text-yellow-400">Combo 加成</strong>。</li>
+                        <li>支援多點觸控，建議平放於桌面雙手遊玩。</li>
+                    </ul>
+                </div>
+                
+                <button onclick="startGame()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-2xl shadow-[0_0_20px_rgba(37,99,235,0.5)] active:scale-95 transition-all uppercase tracking-widest">
+                    INSERT COIN (開始)
+                </button>
+            </div>
+
+            <!-- 結算與上傳畫面 -->
+            <div id="resultScreen" class="hidden space-y-6 w-full max-w-sm text-center">
+                <h2 class="text-5xl font-black text-red-500 tracking-widest italic">TIME UP!</h2>
+                
+                <div class="bg-slate-800 p-6 rounded-2xl border border-white/10 shadow-inner">
+                    <p class="text-sm text-slate-400 font-bold uppercase tracking-widest mb-1">Final Score</p>
+                    <p class="text-7xl font-black text-white" id="finalScore">0</p>
+                    <p class="text-xs text-blue-400 mt-2 font-bold" id="maxComboDisplay">Max Combo: 0</p>
+                </div>
+                
+                <div class="space-y-3 mt-4">
+                    <input type="text" id="playerName" placeholder="輸入玩家代號 (3-10字)" maxlength="10" class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-center text-white font-bold text-lg focus:outline-none focus:border-blue-500 uppercase">
+                    <button id="submitBtn" onclick="submitScore()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xl shadow-lg active:scale-95 transition-all">
+                        登錄街機榮譽榜
+                    </button>
+                </div>
+                <button onclick="showLeaderboard()" class="text-slate-500 text-xs font-bold underline hover:text-white transition-colors mt-2">跳過並查看榜單</button>
+            </div>
+
+            <!-- 排行榜畫面 -->
+            <div id="leaderboardScreen" class="hidden space-y-4 w-full max-w-sm text-center">
+                <h2 class="text-3xl font-black text-blue-400 italic tracking-widest">🏆 HALL OF FAME</h2>
+                <div id="leaderboardList" class="leaderboard-scroll bg-slate-800/80 rounded-xl border border-blue-500/20 p-2 space-y-1 min-h-[150px] text-left">
+                    <p class="text-slate-500 text-xs py-8 italic text-center">連線讀取數據中...</p>
+                </div>
+                <button onclick="resetGame()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-4 rounded-xl text-xl shadow-lg active:scale-95 transition-all uppercase tracking-widest mt-4">
+                    PLAY AGAIN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音效引擎 (Web Audio API) -->
+    <script>
+        // 音效引擎：零延遲合成音效
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'hit') {
+                // 清脆的電子得分聲
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1); // 往上滑音
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'miss') {
+                // 低沉的失誤聲
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'gameover') {
+                // 結束長音
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1);
+            }
+        }
+    </script>
+
+    <!-- 遊戲邏輯與 GAS 串接 -->
+    <script type="module">
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxciltHfA3Q91iSeu0OB70_iZ_kZka-42KY1VzeADI1c67UOQGXlubBigVu-9hPqe9r/exec"; 
+
+        // 綁定全域函數
+        window.startGame = startGame;
+        window.submitScore = submitScore;
+        window.showLeaderboard = showLeaderboard;
+        window.resetGame = resetGame;
+
+        // 遊戲參數
+        const GRID_SIZE = 16;
+        let score = 0;
+        let timeLeft = 30; // 30秒極限挑戰
+        let isPlaying = false;
+        let combo = 0;
+        let maxCombo = 0;
+        
+        let timerInterval;
+        let spawnInterval;
+        
+        // 燈光管理
+        const activeLights = new Map(); // 儲存 index -> timeout ID
+        let currentSpawnRate = 800; // 初始生燈速度 (ms)
+        let currentLightDuration = 1200; // 燈號存活時間 (ms)
+
+        // UI 元素
+        const gridBoard = document.getElementById('gridBoard');
+        const scoreEl = document.getElementById('scoreDisplay');
+        const comboEl = document.getElementById('comboDisplay');
+        const timerEl = document.getElementById('timerDisplay');
+        const overlay = document.getElementById('overlay');
+
+        // 初始化網格按鈕
+        function initGrid() {
+            gridBoard.innerHTML = '';
+            for (let i = 0; i < GRID_SIZE; i++) {
+                const btn = document.createElement('div');
+                btn.className = 'arcade-btn';
+                btn.dataset.index = i;
+                
+                // 支援滑鼠點擊與手機多點觸控 (pointerdown 是最靈敏的)
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault(); // 防止預設滾動或縮放
+                    btn.classList.add('pressed');
+                    handleHit(i, btn);
+                });
+                
+                // 放開時恢復物理外觀
+                btn.addEventListener('pointerup', () => btn.classList.remove('pressed'));
+                btn.addEventListener('pointerleave', () => btn.classList.remove('pressed'));
+                
+                gridBoard.appendChild(btn);
+            }
+        }
+
+        // 啟動遊戲
+        function startGame() {
+            initAudio(); // 喚醒音效引擎
+            
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            timeLeft = 30;
+            isPlaying = true;
+            currentSpawnRate = 700;
+            currentLightDuration = 1200;
+            
+            updateHUD();
+            overlay.classList.add('hidden');
+            
+            // 清除現有燈號
+            activeLights.forEach(timeout => clearTimeout(timeout));
+            activeLights.clear();
+            document.querySelectorAll('.arcade-btn').forEach(btn => btn.className = 'arcade-btn');
+
+            // 啟動倒數
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 5) timerEl.classList.add('animate-pulse');
+                
+                // 難度隨時間遞增 (越後面越快)
+                if (timeLeft === 20) { currentSpawnRate = 500; currentLightDuration = 900; updateSpawnInterval(); }
+                if (timeLeft === 10) { currentSpawnRate = 350; currentLightDuration = 700; updateSpawnInterval(); }
+                
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+
+            // 啟動生燈引擎
+            updateSpawnInterval();
+            
+            // 遊戲一開始先亮兩顆
+            spawnLight();
+            setTimeout(spawnLight, 300);
+        }
+
+        function updateSpawnInterval() {
+            if (spawnInterval) clearInterval(spawnInterval);
+            if (!isPlaying) return;
+            spawnInterval = setInterval(spawnLight, currentSpawnRate);
+        }
+
+        // 隨機亮燈邏輯
+        function spawnLight() {
+            if (!isPlaying) return;
+            if (activeLights.size >= 8) return; // 畫面上最多同時亮 8 顆
+
+            // 尋找未亮起的按鈕
+            let availableIndexes = [];
+            for (let i = 0; i < GRID_SIZE; i++) {
+                if (!activeLights.has(i)) availableIndexes.push(i);
+            }
+            
+            if (availableIndexes.length === 0) return;
+
+            const targetIndex = availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+            const btn = gridBoard.children[targetIndex];
+            
+            // 隨機顏色
+            const colorClass = 'color-' + (Math.floor(Math.random() * 4) + 1);
+            btn.classList.add('active', colorClass);
+
+            // 設定燈號熄滅倒數 (Miss)
+            const timeoutId = setTimeout(() => {
+                if (activeLights.has(targetIndex)) {
+                    // 玩家沒點到 (Miss)
+                    btn.classList.remove('active', colorClass);
+                    activeLights.delete(targetIndex);
+                    breakCombo();
+                }
+            }, currentLightDuration);
+
+            activeLights.set(targetIndex, timeoutId);
+        }
+
+        // 點擊處理邏輯
+        function handleHit(index, btn) {
+            if (!isPlaying) return;
+
+            if (activeLights.has(index)) {
+                // Hit! (打中)
+                playSound('hit');
+                
+                // 計算分數 (Combo 加成)
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
+                
+                let points = 10;
+                if (combo > 10) points = 20;
+                if (combo > 20) points = 30;
+                score += points;
+                
+                updateHUD(true);
+                
+                // 清除燈號狀態
+                clearTimeout(activeLights.get(index));
+                activeLights.delete(index);
+                
+                // 特效
+                btn.className = 'arcade-btn hit';
+                setTimeout(() => {
+                    if(!activeLights.has(index)) btn.className = 'arcade-btn';
+                }, 100);
+
+                // 打中後立即補一顆新的，節奏更緊湊
+                setTimeout(spawnLight, 100);
+
+            } else {
+                // Wrong Hit! (打錯暗的按鈕)
+                breakCombo();
+                btn.classList.add('bg-red-900'); // 錯誤回饋
+                setTimeout(() => btn.classList.remove('bg-red-900'), 150);
+            }
+        }
+
+        function breakCombo() {
+            if (combo > 0) playSound('miss');
+            combo = 0;
+            updateHUD();
+            comboEl.classList.remove('text-blue-400', 'text-yellow-400', 'text-red-400');
+            comboEl.classList.add('text-slate-500');
+        }
+
+        function updateHUD(animateScore = false) {
+            scoreEl.innerText = score;
+            comboEl.innerText = combo;
+            
+            if (animateScore) {
+                scoreEl.classList.remove('score-bump');
+                void scoreEl.offsetWidth; 
+                scoreEl.classList.add('score-bump');
+            }
+
+            // Combo 變色
+            if (combo > 5) comboEl.className = 'text-2xl font-black text-blue-400';
+            if (combo > 15) comboEl.className = 'text-2xl font-black text-yellow-400 animate-pulse';
+            if (combo > 30) comboEl.className = 'text-2xl font-black text-red-500 animate-bounce';
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            clearInterval(spawnInterval);
+            playSound('gameover');
+            
+            // 熄滅所有燈
+            activeLights.forEach(timeout => clearTimeout(timeout));
+            activeLights.clear();
+            document.querySelectorAll('.arcade-btn').forEach(btn => btn.className = 'arcade-btn');
+            
+            timerEl.classList.remove('animate-pulse');
+            
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('maxComboDisplay').innerText = `Max Combo: ${maxCombo}`;
+            
+            overlay.classList.remove('hidden');
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').innerText = "登錄街機榮譽榜";
+        }
+
+        // === 試算表 GAS 串接 ===
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        }
+
+        async function submitScore() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            if (!name) { showToast("請輸入代號！"); return; }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "資料傳送中...";
+
+            // Payload: 將 maxCombo 也傳入 (您可以選擇在試算表記錄)
+            const payload = { name, score, game: "CatchTheLight", maxCombo };
+
+            if (GAS_URL && GAS_URL.startsWith("https")) {
+                try {
+                    await fetch(GAS_URL, {
+                        method: "POST", 
+                        mode: "no-cors", // 解決跨域問題
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    showToast("成績登錄成功！");
+                    
+                    setTimeout(() => {
+                        showLeaderboard();
+                    }, 1000);
+                } catch (e) { 
+                    showToast("網路異常，寫入失敗"); 
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "重新傳送";
+                }
+            }
+        }
+
+        async function showLeaderboard() {
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '<p class="text-xs py-8 italic text-slate-400 text-center animate-pulse">連線讀取數據庫中...</p>';
+
+            try {
+                const response = await fetch(GAS_URL);
+                if (!response.ok) throw new Error("Fetch failed");
+                
+                const top10 = await response.json();
+                
+                if (!top10 || top10.length === 0) {
+                    list.innerHTML = '<p class="text-xs py-8 italic text-slate-500 text-center">無人打破紀錄，機台等你挑戰</p>';
+                    return;
+                }
+
+                // 渲染排行榜 (依分數由高到低，我們假設 GAS 已經排好了，這裡再確認一次)
+                const sortedData = top10.sort((a, b) => b.score - a.score).slice(0, 10);
+                
+                list.innerHTML = sortedData.map((e, i) => `
+                    <div class="flex justify-between items-center px-5 py-3 ${i<3?'bg-blue-600/30 border-blue-500/50':'bg-white/5 border-white/5'} rounded-xl mb-2 border text-sm">
+                        <div class="flex items-center gap-4">
+                            <span class="font-black text-lg ${i===0?'text-yellow-400':i===1?'text-slate-300':i===2?'text-orange-400':'text-slate-500'}">
+                                ${i+1}
+                            </span>
+                            <span class="font-bold text-white tracking-wider uppercase">${e.name}</span>
+                        </div>
+                        <span class="font-black text-blue-400 text-lg">${e.score}</span>
+                    </div>
+                `).join('');
+            } catch (e) { 
+                list.innerHTML = `<p class="text-red-400 text-sm py-6 font-bold text-center">無法取得伺服器回應</p>`; 
+            }
+        }
+
+        function resetGame() {
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('playerName').value = "";
+        }
+
+        // 初始化畫面
+        initGrid();
+
+    </script>
+</body>
+</html>
