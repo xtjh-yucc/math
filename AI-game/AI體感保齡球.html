@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 體感保齡球 - Pro Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    
+    <style>
+        body {
+            background-color: #0c0a09;
+            color: white;
+            overflow-x: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft JhengHei';
+            touch-action: none;
+        }
+        .game-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            aspect-ratio: 16/9;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(56, 189, 248, 0.3);
+            background: black;
+        }
+        
+        #input_video { display: none; }
+        #output_canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* 響應式計分板樣式 */
+        .score-cell {
+            border: 1px solid rgba(255,255,255,0.2);
+            min-width: 45px;
+            flex: 1;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.85);
+            border-radius: 4px;
+        }
+        .score-sub { height: 18px; display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .score-sub div { flex: 1; border-right: 1px solid rgba(255,255,255,0.1); line-height: 18px; font-weight: 800; font-size: 11px; }
+        .score-sub div:last-child { border-right: none; }
+        .score-total { height: 25px; line-height: 25px; font-weight: bold; font-size: 15px; color: #facc15; }
+
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; transition: all 0.3s ease; }
+        
+        .ready-countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 6rem;
+            font-weight: 900;
+            color: #38bdf8;
+            text-shadow: 0 0 40px rgba(56, 189, 248, 0.9);
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        .strike-anim {
+            animation: strike-vibe 0.5s ease-in-out infinite alternate;
+        }
+        @keyframes strike-vibe {
+            from { transform: scale(1); text-shadow: 0 0 10px #fbbf24; }
+            to { transform: scale(1.1); text-shadow: 0 0 30px #fbbf24, 0 0 50px #ef4444; }
+        }
+
+        /* RWD 適配手機平板 */
+        @media (max-width: 768px) {
+            .score-cell { min-width: 26px; border-radius: 2px; }
+            .score-sub { height: 16px; }
+            .score-sub div { font-size: 9px; line-height: 16px; }
+            .score-total { font-size: 11px; height: 20px; line-height: 20px; }
+            .ready-countdown { font-size: 4rem; }
+            .game-wrapper { aspect-ratio: 4/3; } 
+            #output_canvas { object-fit: cover; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-start min-h-screen p-1 md:p-4 bg-slate-950">
+
+    <!-- 訊息提示 -->
+    <div id="toast" class="hidden bg-yellow-500 text-slate-900 px-6 md:px-10 py-3 md:py-4 rounded-full shadow-2xl z-[100] border-2 md:border-4 border-white font-black text-xl md:text-2xl">
+        <span id="toastMsg">STRIKE!</span>
+    </div>
+
+    <!-- 計分板 -->
+    <div class="w-full max-w-5xl mb-2 md:mb-4">
+        <div class="flex flex-row bg-slate-800/80 rounded-xl p-1 md:p-2 gap-1 md:gap-2 border border-white/10 shadow-lg">
+            <div id="scoreBoard" class="flex flex-nowrap flex-1 gap-0.5 md:gap-1 overflow-hidden">
+                <!-- 由 JS 動態生成 -->
+            </div>
+            <div class="bg-sky-900/80 px-2 md:px-6 py-1 md:py-2 rounded-lg flex flex-col justify-center items-center border border-sky-500/50 min-w-[60px] md:min-w-[120px]">
+                <p class="text-[8px] md:text-[10px] font-bold uppercase text-sky-300">Total Score</p>
+                <p id="totalScoreDisplay" class="text-xl md:text-3xl font-mono font-black text-white">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲區域 -->
+    <div class="game-wrapper">
+        <video id="input_video" playsinline muted></video>
+        <canvas id="output_canvas" width="1280" height="720"></canvas>
+        <div id="countdown" class="ready-countdown hidden">READY</div>
+
+        <!-- 感應警告提示 -->
+        <div id="poseWarning" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-4 py-1 rounded-full font-bold text-xs z-50 animate-pulse border border-white/20 whitespace-nowrap">
+            ⚠️ 偵測不到手部！請確保雙手在畫面內
+        </div>
+
+        <!-- 狀態指示器 -->
+        <div class="absolute bottom-4 right-4 z-40 flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full border border-white/20 text-[10px] font-bold">
+            <div id="statusDot" class="w-2 h-2 rounded-full bg-red-500"></div>
+            <span id="statusText">AI Offline</span>
+        </div>
+    </div>
+
+    <!-- 覆蓋層 -->
+    <div id="overlay" class="fixed inset-0 bg-slate-950/90 z-50 flex flex-col items-center justify-center p-4 md:p-8 backdrop-blur-md transition-all duration-500">
+        <div id="setupScreen" class="space-y-6 w-full max-w-sm text-center">
+            <div class="text-6xl md:text-7xl mb-4">🎳</div>
+            <h2 class="text-xl md:text-2xl font-bold text-sky-400 tracking-widest uppercase">體感保齡球：專業賽制</h2>
+            <button onclick="requestCamera()" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-black py-4 rounded-2xl text-lg md:text-xl shadow-[0_0_30px_rgba(14,165,233,0.3)] active:scale-95 transition-all">
+                啟動攝影機
+            </button>
+            <p class="text-xs text-slate-500">請確保您的上半身與雙手在畫面內</p>
+        </div>
+
+        <div id="startScreen" class="hidden space-y-4 md:space-y-6 w-full max-w-md text-center">
+            <div class="bg-white/5 border border-white/10 p-4 md:p-6 rounded-2xl text-left shadow-inner">
+                <h3 class="text-sky-400 font-bold mb-2 md:mb-3 uppercase tracking-wider border-b border-white/10 pb-2">投球指南</h3>
+                <ul class="text-xs md:text-sm text-slate-300 space-y-2 md:space-y-3">
+                    <li>🎭 <b class="text-white">看到藍色節點</b>：手腕需出現圓點才算成功感應</li>
+                    <li>🦾 <b class="text-white">揮臂感應</b>：快速由下而上擺動手臂投球</li>
+                    <li>📏 <b class="text-white">正規計分</b>：殘瓶將保留至第二球投出為止</li>
+                </ul>
+            </div>
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black py-4 md:py-5 rounded-2xl text-xl md:text-2xl shadow-lg active:scale-95 transition-all italic tracking-widest">
+                START MATCH
+            </button>
+        </div>
+
+        <div id="resultScreen" class="hidden space-y-4 w-full max-w-sm text-center">
+            <h2 class="text-4xl md:text-5xl font-black text-white italic tracking-tighter">FINISH</h2>
+            <div class="bg-slate-800 p-4 md:p-6 rounded-2xl border border-white/10 shadow-inner">
+                <p class="text-xs text-slate-400 font-bold uppercase mb-1">Final Score</p>
+                <p class="text-6xl md:text-7xl font-black text-yellow-400" id="finalScore">0</p>
+            </div>
+            <div class="space-y-3">
+                <input type="text" id="playerName" placeholder="球員姓名" class="w-full bg-black border-2 border-slate-700 rounded-xl px-4 py-3 text-center text-white font-bold text-lg focus:border-sky-500 outline-none uppercase">
+                <button id="submitBtn" onclick="submitScore()" class="w-full bg-sky-600 text-white font-black py-3 rounded-xl text-xl">提交排行榜</button>
+            </div>
+            <button onclick="showLeaderboard()" class="text-slate-500 text-xs underline">查看排行榜</button>
+        </div>
+
+        <div id="leaderboardScreen" class="hidden space-y-4 w-full max-w-sm text-center">
+            <h2 class="text-xl md:text-2xl font-black text-sky-400 italic">🏆 HALL OF FAME</h2>
+            <div id="leaderboardList" class="leaderboard-scroll bg-slate-900/80 rounded-xl p-2 min-h-[150px] text-left border border-white/5 shadow-inner"></div>
+            <button onclick="resetGame()" class="w-full bg-slate-800 font-black py-3 md:py-4 rounded-xl text-lg mt-2 uppercase">REPLAY</button>
+        </div>
+    </div>
+
+    <!-- 音效引擎 -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playThudSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(110, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.25);
+            g.gain.setValueAtTime(0.4, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+            osc.connect(g); g.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+        }
+
+        function playPinClatter(force = 1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // 1. 木製球瓶碰撞的清脆聲
+            const osc = audioCtx.createOscillator(); 
+            const g = audioCtx.createGain();
+            osc.type = 'square'; 
+            osc.frequency.setValueAtTime(400 + Math.random()*200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+            g.gain.setValueAtTime(Math.min(0.2 * force, 0.3), audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.connect(g); g.connect(audioCtx.destination); 
+            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            
+            // 2. 倒地時的沉悶碰撞聲 (Thud)，營造砸在地板的擬真感
+            const oscFloor = audioCtx.createOscillator(); 
+            const gFloor = audioCtx.createGain();
+            oscFloor.type = 'sine'; 
+            oscFloor.frequency.setValueAtTime(150, audioCtx.currentTime);
+            oscFloor.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+            gFloor.gain.setValueAtTime(Math.min(0.4 * force, 0.6), audioCtx.currentTime);
+            gFloor.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            oscFloor.connect(gFloor); gFloor.connect(audioCtx.destination); 
+            oscFloor.start(); oscFloor.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function playCheerSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const noise = audioCtx.createBufferSource();
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.value = 1600;
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
+            noise.connect(filter); filter.connect(g); g.connect(audioCtx.destination);
+            noise.start();
+        }
+    </script>
+
+    <script type="module">
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwmXBz3rbMUbrbHKEPwT3p4bB1HHwkd3sVMBv_NyDEgq7O-rGBMBdH6DM4Ie0E6FNOhBA/exec"; 
+
+        window.requestCamera = requestCamera;
+        window.startGame = startGame;
+        window.submitScore = submitScore;
+        window.showLeaderboard = showLeaderboard;
+        window.resetGame = resetGame;
+
+        let gameActive = false, isReadyToThrow = false;
+        let rolls = [], currentFrame = 1;
+        let ball = { x: 640, y: 650, vx: 0, vy: 0, r: 25, active: false };
+        let pins = [];
+        const PIN_R = 14, FRICTION = 0.985;
+        let currentPose = null, wristHistory = [];
+        const HISTORY_SIZE = 5;
+        let isDetecting = false; 
+
+        let pose;
+        try {
+            pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+            pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+            pose.onResults(res => {
+                currentPose = res.poseLandmarks;
+                isDetecting = false; 
+                if(currentPose) {
+                    document.getElementById('statusDot').className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                    document.getElementById('statusText').innerText = "AI Tracking";
+                    
+                    const rw = currentPose[16], lw = currentPose[15];
+                    const handsVisible = (rw && rw.visibility > 0.2) || (lw && lw.visibility > 0.2);
+                    document.getElementById('poseWarning').classList.toggle('hidden', handsVisible);
+                }
+            });
+        } catch (e) { console.error(e); }
+
+        async function requestCamera() {
+            try {
+                const video = document.getElementById('input_video');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } 
+                });
+                video.srcObject = stream;
+                await new Promise(r => video.onloadedmetadata = () => video.play().then(r));
+                requestAnimationFrame(mainLoop);
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('startScreen').classList.remove('hidden');
+            } catch (err) { alert("攝影機開啟失敗：" + err.message); }
+        }
+
+        function onPoseLogic() {
+            if (currentPose && gameActive && isReadyToThrow && !ball.active) {
+                const nose = currentPose[0];
+                ball.x = 440 + (1 - nose.x) * 400; 
+                
+                [16, 15].forEach(idx => {
+                    const wrist = currentPose[idx];
+                    if(wrist && wrist.visibility > 0.2) {
+                        wristHistory.push(wrist.y);
+                        if(wristHistory.length > HISTORY_SIZE) wristHistory.shift();
+                        if(wristHistory.length === HISTORY_SIZE) {
+                            const dv = wristHistory[0] - wristHistory[HISTORY_SIZE-1];
+                            if (dv > 0.10) launchBall(dv * 100);
+                        }
+                    }
+                });
+            }
+        }
+
+        function launchBall(speed) {
+            if (ball.active) return;
+            playThudSound();
+            ball.vy = -Math.min(speed, 26); 
+            ball.vx = (Math.random() - 0.5) * 1.5;
+            ball.active = true;
+            isReadyToThrow = false;
+            wristHistory = [];
+        }
+
+        function initPins() {
+            pins = [];
+            const startX = 640, startY = 140, gap = 42;
+            let id = 0;
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j <= i; j++) {
+                    pins.push({
+                        id: id++, x: startX + (j - i / 2) * gap, y: startY - i * gap,
+                        vx: 0, vy: 0, r: PIN_R, knocked: false, active: true,
+                        rot: 0, targetRot: 0, visible: true
+                    });
+                }
+            }
+        }
+
+        function drawPin(ctx, p) {
+            if (!p.visible) return;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            if (p.knocked) {
+                p.rot += (p.targetRot - p.rot) * 0.1;
+                ctx.rotate(p.rot);
+                ctx.globalAlpha = 0.5;
+            }
+            const r = PIN_R;
+            ctx.fillStyle = "#fff"; ctx.strokeStyle = "#ccc"; ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -r*2.2);
+            ctx.bezierCurveTo(r*0.6, -r*2.2, r*0.5, -r*1.5, r*0.3, -r*1.2);
+            ctx.bezierCurveTo(r*1.2, -r*0.5, r, r, 0, r);
+            ctx.bezierCurveTo(-r, r, -r*1.2, -r*0.5, -r*0.3, -r*1.2);
+            ctx.bezierCurveTo(-r*0.5, -r*1.5, -r*0.6, -r*2.2, 0, -r*2.2);
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#ef4444"; ctx.fillRect(-r*0.3, -r*1.6, r*0.6, r*0.2);
+            ctx.restore();
+        }
+
+        function mainLoop() {
+            const video = document.getElementById('input_video');
+            if (video.readyState >= 2 && pose && !isDetecting) {
+                isDetecting = true;
+                pose.send({ image: video }).catch(() => { isDetecting = false; });
+            }
+            
+            onPoseLogic();
+            updatePhysics();
+            draw();
+            requestAnimationFrame(mainLoop);
+        }
+
+        function updatePhysics() {
+            if (!gameActive || !ball.active) return;
+            ball.x += ball.vx; ball.y += ball.vy;
+            ball.vx *= FRICTION; ball.vy *= FRICTION;
+            if (ball.x < 380 || ball.x > 900) ball.vx *= -0.5;
+
+            pins.forEach(pin => {
+                if (pin.visible && !pin.knocked) {
+                    const d = Math.hypot(ball.x - pin.x, ball.y - pin.y);
+                    if (d < ball.r + pin.r) {
+                        pin.knocked = true;
+                        pin.targetRot = (Math.random() > 0.5 ? 1 : -1) * Math.PI / 2;
+                        const force = Math.abs(ball.vy) * 0.7;
+                        const angle = Math.atan2(pin.y - ball.y, pin.x - ball.x);
+                        pin.vx = Math.cos(angle) * force; pin.vy = Math.sin(angle) * force;
+                        ball.vx *= 0.8; ball.vy *= 0.8;
+                        playPinClatter(1.5);
+                    }
+                }
+            });
+
+            for(let i=0; i<pins.length; i++){
+                for(let j=i+1; j<pins.length; j++){
+                    let p1 = pins[i], p2 = pins[j];
+                    if(!p1.visible || !p2.visible) continue;
+                    const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                    if(d < p1.r + p2.r){
+                        if(!p1.knocked || !p2.knocked) playPinClatter(0.8);
+                        p1.knocked = p2.knocked = true;
+                        if(p1.targetRot===0) p1.targetRot = Math.PI/2;
+                        if(p2.targetRot===0) p2.targetRot = -Math.PI/2;
+                        const angle = Math.atan2(p2.y-p1.y, p2.x-p1.x);
+                        p1.vx -= Math.cos(angle)*1.5; p1.vy -= Math.sin(angle)*1.5;
+                        p2.vx += Math.cos(angle)*1.5; p2.vy += Math.sin(angle)*1.5;
+                    }
+                }
+            }
+            pins.forEach(p => { if(p.knocked){ p.x += p.vx; p.y += p.vy; p.vx *= FRICTION; p.vy *= FRICTION; } });
+            if (ball.y < -150 || (Math.abs(ball.vy) < 0.05 && ball.y < 350)) {
+                ball.active = false; setTimeout(processRoll, 1000);
+            }
+        }
+
+        function processRoll() {
+            const knockedThisRoll = pins.filter(p => p.knocked && p.visible).length;
+            // 讓已經倒下的瓶子在下一球時「消失」，保留沒倒的殘瓶！
+            pins.forEach(p => { if(p.knocked) p.visible = false; }); 
+            rolls.push(knockedThisRoll);
+            updateScoreTable();
+
+            const fRolls = getFrameRolls();
+            const curF = fRolls[currentFrame - 1] || [];
+            let frameComplete = false;
+
+            if (currentFrame < 10) {
+                if (curF[0] === 10 || curF.length === 2) frameComplete = true;
+                if (curF[0] === 10) { showToast("STRIKE! 🎇"); playCheerSound(); }
+                else if (curF[0]+curF[1] === 10) showToast("SPARE! 🌟");
+            } else {
+                const totalIn10 = curF.reduce((a,b)=>a+b, 0);
+                if (knockedThisRoll === 10) { showToast("STRIKE! 🎇"); playCheerSound(); }
+                if (curF.length === 2 && totalIn10 < 10) frameComplete = true;
+                else if (curF.length === 3) frameComplete = true;
+                
+                if ((totalIn10 >= 10 || curF[0]===10) && curF.length < 3 && pins.every(p=>!p.visible)) initPins();
+            }
+
+            if (frameComplete) {
+                if (currentFrame === 10) endGame();
+                else { currentFrame++; initPins(); startReadyTimer(); }
+            } else {
+                startReadyTimer(); // 第二球開始前，故意不呼叫 initPins()，藉此保留殘瓶
+            }
+        }
+
+        function getFrameRolls() {
+            let res = [], rIdx = 0;
+            for(let f=0; f<9; f++) {
+                if(rolls[rIdx] === 10) { 
+                    res.push([10]); 
+                    rIdx++; 
+                } else { 
+                    let frame = [];
+                    if(rolls[rIdx] !== undefined) frame.push(rolls[rIdx]);
+                    if(rolls[rIdx+1] !== undefined) frame.push(rolls[rIdx+1]);
+                    res.push(frame); 
+                    rIdx += 2; 
+                }
+            }
+            res.push(rolls.slice(rIdx).filter(x => x !== undefined));
+            return res;
+        }
+
+        function calculateTotal() {
+            let total = 0, rIdx = 0;
+            for(let f=0; f<10; f++) {
+                if(f < 9) {
+                    if(rolls[rIdx] === 10) { total += 10 + (rolls[rIdx+1]||0) + (rolls[rIdx+2]||0); rIdx++; }
+                    else if((rolls[rIdx]||0)+(rolls[rIdx+1]||0) === 10) { total += 10 + (rolls[rIdx+2]||0); rIdx+=2; }
+                    else { total += (rolls[rIdx]||0) + (rolls[rIdx+1]||0); rIdx+=2; }
+                } else { total += (rolls[rIdx]||0) + (rolls[rIdx+1]||0) + (rolls[rIdx+2]||0); }
+            }
+            return total;
+        }
+
+        function updateScoreTable() {
+            const container = document.getElementById('scoreBoard');
+            const frameData = getFrameRolls();
+            container.innerHTML = "";
+            let cumulative = 0, rIdx = 0;
+            for(let i=0; i<10; i++) {
+                const cell = document.createElement('div'); cell.className = "score-cell flex flex-col";
+                const sub = document.createElement('div'); sub.className = "score-sub";
+                const d = frameData[i] || [];
+                if (i < 9) {
+                    const r1 = d[0] === 10 ? "" : (d[0] === undefined ? "" : d[0]);
+                    const r2 = d[0] === 10 ? "X" : ( (d[0]+d[1] === 10) ? "/" : (d[1] === undefined ? "" : d[1]));
+                    sub.innerHTML = `<div>${r1}</div><div>${r2}</div>`;
+                } else {
+                    const r1 = d[0] === 10 ? "X" : (d[0] === undefined ? "" : d[0]);
+                    const r2 = d[1] === 10 ? "X" : ( (d[0]+d[1] === 10 && d[0]!==10) ? "/" : (d[1] === undefined ? "" : d[1]));
+                    const r3 = d[2] === 10 ? "X" : ( (d[1]+d[2] === 10 && d[1]!==10) ? "/" : (d[2] === undefined ? "" : d[2]));
+                    sub.innerHTML = `<div>${r1}</div><div>${r2}</div><div>${r3}</div>`;
+                }
+                const tot = document.createElement('div'); tot.className = "score-total";
+                if (d.length > 0) {
+                    let canShow = false;
+                    if (i < 9) {
+                        if (rolls[rIdx] === 10 && rolls[rIdx+2] !== undefined) canShow = true;
+                        else if (rolls[rIdx] + rolls[rIdx+1] === 10 && rolls[rIdx+2] !== undefined) canShow = true;
+                        else if (rolls[rIdx] + rolls[rIdx+1] < 10 && rolls[rIdx+1] !== undefined) canShow = true;
+                    } else if (d.length >= 2) { if (d[0]+d[1] < 10 || d.length === 3) canShow = true; }
+                    if (canShow) {
+                        let curS = 0;
+                        if(i < 9) { if(rolls[rIdx] === 10) { curS = 10+rolls[rIdx+1]+rolls[rIdx+2]; rIdx++; } else { curS = rolls[rIdx]+rolls[rIdx+1]; rIdx+=2; }
+                        } else { curS = (d[0]||0)+(d[1]||0)+(d[2]||0); }
+                        cumulative += curS; tot.innerText = cumulative;
+                    }
+                }
+                cell.appendChild(sub); cell.appendChild(tot); container.appendChild(cell);
+            }
+            document.getElementById('totalScoreDisplay').innerText = calculateTotal();
+        }
+
+        function draw() {
+            const canvas = document.getElementById('output_canvas'), ctx = canvas.getContext('2d');
+            const video = document.getElementById('input_video');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (video.readyState >= 2) {
+                ctx.save(); ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.globalAlpha = 0.55;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height); ctx.restore();
+            }
+            if (currentPose) {
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)'; ctx.lineWidth = 4;
+                const conn = [[11,12],[11,23],[12,24],[23,24],[11,13],[13,15],[12,14],[14,16]];
+                conn.forEach(([i, j]) => { 
+                    if(currentPose[i].visibility > 0.4 && currentPose[j].visibility > 0.4) {
+                        ctx.beginPath(); ctx.moveTo((1-currentPose[i].x)*canvas.width, currentPose[i].y*canvas.height);
+                        ctx.lineTo((1-currentPose[j].x)*canvas.width, currentPose[j].y*canvas.height); ctx.stroke();
+                    }
+                });
+                currentPose.forEach((p, i) => { 
+                    if (p.visibility > 0.4) {
+                        const isHand = (i===15||i===16);
+                        ctx.beginPath(); ctx.arc((1-p.x)*canvas.width, p.y*canvas.height, isHand?12:5, 0, Math.PI*2);
+                        ctx.fillStyle=isHand?"#38bdf8":"#fff"; ctx.fill();
+                        if(isHand) { ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke(); }
+                    } 
+                });
+            }
+            ctx.save(); ctx.fillStyle = 'rgba(15, 23, 42, 0.45)'; ctx.beginPath(); ctx.moveTo(350, 720); ctx.lineTo(500, 40); ctx.lineTo(780, 40); ctx.lineTo(930, 720); ctx.fill(); ctx.restore();
+            pins.forEach(p => drawPin(ctx, p));
+            ctx.save(); ctx.translate(ball.x, ball.y);
+            const g = ctx.createRadialGradient(-5,-5,5, 0,0,ball.r); g.addColorStop(0, '#38bdf8'); g.addColorStop(1, '#1e40af'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, ball.r, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#082f49'; for(let i=0; i<3; i++) { const a=(i*Math.PI*2)/3; ctx.beginPath(); ctx.arc(Math.cos(a)*8, Math.sin(a)*8, 3, 0, Math.PI*2); ctx.fill(); }
+            ctx.restore();
+            if(!ball.active && isReadyToThrow) {
+                ctx.setLineDash([5, 10]); ctx.strokeStyle = 'rgba(250, 204, 21, 0.7)'; ctx.beginPath(); ctx.moveTo(ball.x, ball.y); ctx.lineTo(ball.x, 40); ctx.stroke(); ctx.setLineDash([]);
+            }
+        }
+
+        function startGame() { 
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            rolls = []; currentFrame = 1; updateScoreTable(); initPins(); startReadyTimer(); gameActive = true; document.getElementById('overlay').classList.add('hidden'); 
+        }
+        function startReadyTimer() {
+            isReadyToThrow = false; const cd = document.getElementById('countdown');
+            cd.innerText = "READY"; cd.classList.remove('hidden');
+            setTimeout(() => { cd.innerText = "GO!"; setTimeout(() => { cd.classList.add('hidden'); isReadyToThrow = true; resetBall(); }, 600); }, 1400);
+        }
+        function resetBall() { ball.vx = 0; ball.vy = 0; ball.y = 650; ball.active = false; wristHistory = []; }
+        function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toastMsg').innerText = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 2000); }
+        function endGame() { gameActive = false; document.getElementById('finalScore').innerText = calculateTotal(); document.getElementById('overlay').classList.remove('hidden'); document.getElementById('startScreen').classList.add('hidden'); document.getElementById('resultScreen').classList.remove('hidden'); }
+        async function submitScore() {
+            const name = document.getElementById('playerName').value.trim(); if(!name) return;
+            const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerText = "UPLOADING...";
+            try { await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ name, score: calculateTotal(), game: "BowlingPro" }) }); showLeaderboard(); } 
+            catch(e) { btn.disabled = false; btn.innerText = "RETRY"; }
+        }
+        async function showLeaderboard() {
+            document.getElementById('resultScreen').classList.add('hidden'); document.getElementById('leaderboardScreen').classList.remove('hidden');
+            const list = document.getElementById('leaderboardList'); list.innerHTML = "<p class='text-center py-10 italic opacity-50 font-bold'>CONNECTING...</p>";
+            try { const res = await fetch(GAS_URL); const data = await res.json(); list.innerHTML = data.sort((a,b)=>b.score-a.score).slice(0,10).map((e,i)=>`<div class="flex justify-between items-center p-3 mb-2 bg-white/5 rounded-xl border border-white/5"><div class="flex items-center gap-3"><span class="font-black ${i<3?'text-sky-400':'text-slate-500'}">${i+1}</span><span class="font-bold uppercase text-xs text-slate-200">${e.name}</span></div><span class="font-mono font-black text-yellow-400">${e.score}</span></div>`).join(''); } 
+            catch(e) { list.innerHTML = "<p class='text-center text-red-500 py-4 font-bold'>FETCH ERROR</p>"; }
+        }
+        function resetGame() { document.getElementById('leaderboardScreen').classList.add('hidden'); document.getElementById('startScreen').classList.remove('hidden'); }
+    </script>
+</body>
+</html>
