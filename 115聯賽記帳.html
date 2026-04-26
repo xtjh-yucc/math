@@ -3,33 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI 記帳轉換站</title>
-  <!-- 引入 Tailwind CSS 進行切版與樣式設定 -->
+  <title>記帳小幫手 - 快速輸入站</title>
+  <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- 引入 Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    /* 簡單的淡入動畫 */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-fade-in {
-      animation: fadeIn 0.3s ease-out forwards;
+    .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    /* 隱藏數字輸入框的上下箭頭 */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; margin: 0; 
     }
   </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
+<!-- 加上 id="appBody" 並設定預設為漸層背景 -->
+<body id="appBody" class="min-h-screen text-slate-800 font-sans selection:bg-indigo-100 pb-10 bg-gradient-to-br transition-colors duration-500">
 
-  <!-- 導覽列 -->
-  <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+  <!-- 導覽列 (加入毛玻璃半透明效果) -->
+  <header class="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200/50 sticky top-0 z-20">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center space-x-2 text-indigo-600">
-        <i data-lucide="file-spreadsheet" class="w-7 h-7"></i>
-        <h1 class="text-xl font-bold tracking-wide">AI 記帳轉換站</h1>
+        <i data-lucide="calculator" class="w-7 h-7"></i>
+        <h1 class="text-xl font-bold tracking-wide">記帳小幫手</h1>
       </div>
       
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <!-- 開啟試算表按鈕 -->
+        <a href="https://docs.google.com/spreadsheets/d/1LedTPq_mdf9Z8xmczKI6bA4C3F0GJKTtIhF30o2irZY/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 hover:text-emerald-800 rounded-lg transition-colors text-sm font-medium shadow-sm border border-emerald-200" title="在新分頁開啟 Google 試算表">
+          <i data-lucide="external-link" class="w-4 h-4"></i>
+          <span>開啟試算表</span>
+        </a>
+        <a href="https://docs.google.com/spreadsheets/d/1LedTPq_mdf9Z8xmczKI6bA4C3F0GJKTtIhF30o2irZY/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" class="sm:hidden flex items-center justify-center p-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 hover:text-emerald-800 rounded-lg transition-colors shadow-sm border border-emerald-200" title="在新分頁開啟 Google 試算表">
+          <i data-lucide="external-link" class="w-5 h-5"></i>
+        </a>
+
+        <!-- 合計支出顯示區塊 -->
+        <div id="totalExpenseDisplay" class="cursor-pointer hover:bg-rose-100 transition-colors items-center space-x-1 text-xs sm:text-sm font-semibold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full shadow-sm border border-rose-100 animate-fade-in flex" title="點擊從試算表重新抓取 G1 最新金額">
+          <i data-lucide="wallet" class="w-4 h-4 mr-1"></i>
+          <span class="hidden sm:inline">目前合計支出</span><span class="sm:hidden">總計</span>
+          <span id="totalExpenseAmount" class="text-base font-bold ml-1">...</span> 元
+        </div>
+
         <!-- 通知訊息 -->
         <div id="notificationArea" class="hidden items-center space-x-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full animate-fade-in">
           <i data-lucide="check-circle-2" class="w-4 h-4"></i>
@@ -37,7 +56,7 @@
         </div>
         
         <!-- 設定按鈕 -->
-        <button id="btnSettings" class="p-2 rounded-lg transition-colors text-slate-500 hover:bg-slate-100 hover:text-slate-700" title="設定連線">
+        <button id="btnSettings" class="p-2 rounded-lg transition-colors text-slate-500 hover:bg-slate-100 hover:text-slate-700" title="設定與外觀">
           <i data-lucide="settings" class="w-5 h-5"></i>
         </button>
       </div>
@@ -46,49 +65,117 @@
 
   <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
     
-    <!-- 左側：輸入區 -->
+    <!-- 左側：輸入表單區 -->
     <section class="lg:col-span-4 flex flex-col space-y-4">
       
-      <!-- 設定區塊 (預設隱藏) -->
-      <div id="settingsSection" class="hidden bg-indigo-50 rounded-2xl border border-indigo-100 p-5 animate-fade-in">
-        <h3 class="text-sm font-semibold text-indigo-900 mb-2">連接 Google 試算表</h3>
-        <p class="text-xs text-indigo-700 mb-3 leading-relaxed">
-          請貼上您部署好的 Google Apps Script (Web App) 網址，這樣就能一鍵自動寫入資料喔！
-        </p>
+      <!-- 設定區塊 (加入調色盤功能) -->
+      <div id="settingsSection" class="hidden bg-white/60 backdrop-blur-md rounded-2xl border border-indigo-100 p-5 animate-fade-in shadow-sm">
+        
+        <!-- 背景主題設定 -->
+        <h3 class="text-sm font-semibold text-indigo-900 mb-3 flex items-center">
+          <i data-lucide="palette" class="w-4 h-4 mr-1.5"></i> 背景主題
+        </h3>
+        <div class="flex space-x-3 mb-5">
+          <button onclick="changeTheme('purple')" class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-200 to-indigo-200 shadow-sm border-2 border-white hover:scale-110 hover:shadow-md transition-all" title="淡紫漸層"></button>
+          <button onclick="changeTheme('blue')" class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 to-cyan-200 shadow-sm border-2 border-white hover:scale-110 hover:shadow-md transition-all" title="水藍漸層"></button>
+          <button onclick="changeTheme('green')" class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-200 to-teal-200 shadow-sm border-2 border-white hover:scale-110 hover:shadow-md transition-all" title="薄荷綠漸層"></button>
+          <button onclick="changeTheme('orange')" class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-200 to-amber-200 shadow-sm border-2 border-white hover:scale-110 hover:shadow-md transition-all" title="晨橘漸層"></button>
+          <button onclick="changeTheme('rose')" class="w-8 h-8 rounded-full bg-gradient-to-br from-rose-200 to-pink-200 shadow-sm border-2 border-white hover:scale-110 hover:shadow-md transition-all" title="玫瑰粉漸層"></button>
+        </div>
+        
+        <hr class="border-indigo-100/50 mb-4">
+        
+        <!-- GAS 網址設定 -->
+        <h3 class="text-sm font-semibold text-indigo-900 mb-2 flex items-center">
+          <i data-lucide="link" class="w-4 h-4 mr-1.5"></i> GAS 連線網址
+        </h3>
         <input
           type="url"
           id="gasUrlInput"
-          class="w-full text-sm p-2.5 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+          class="w-full text-sm p-2.5 bg-white/80 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           placeholder="https://script.google.com/macros/s/.../exec"
-          value="https://script.google.com/macros/s/AKfycbzdLHGIpm3Y5tTmvFL3MtaITRiFZaNdDi7jAIxU3SIeh4FeZUYDv7OktX8B7bCBee4/exec"
         />
       </div>
 
-      <!-- 文字輸入區塊 -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-        <div class="flex justify-between items-end mb-3">
-          <h2 class="text-lg font-semibold text-slate-700">輸入記帳內容</h2>
-          <button id="btnSample" class="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors">
-            帶入範例
+      <!-- 記帳表單 (加入毛玻璃效果 bg-white/80 backdrop-blur-md) -->
+      <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200/50 p-5">
+        <h2 class="text-lg font-semibold text-slate-700 mb-5 flex items-center">
+          <i data-lucide="pen-line" class="w-5 h-5 mr-2 text-indigo-500"></i> 新增紀錄
+        </h2>
+        
+        <form id="recordForm" class="space-y-5">
+          <!-- 收支 -->
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2">收支</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="cursor-pointer">
+                <input type="radio" name="type" value="支出" class="peer hidden" checked>
+                <div class="text-center py-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 font-medium peer-checked:bg-rose-50 peer-checked:text-rose-600 peer-checked:border-rose-300 transition-all hover:bg-slate-50">支出</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="type" value="收入" class="peer hidden">
+                <div class="text-center py-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 font-medium peer-checked:bg-emerald-50 peer-checked:text-emerald-600 peer-checked:border-emerald-300 transition-all hover:bg-slate-50">收入</div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 類別 -->
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2">類別 <span class="text-rose-500">*</span></label>
+            <div class="grid grid-cols-3 gap-2 sm:gap-3">
+              <label class="cursor-pointer">
+                <input type="radio" name="category" value="餐飲" class="peer hidden" required>
+                <div class="text-center py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-colors">餐飲</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="category" value="交通" class="peer hidden">
+                <div class="text-center py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-colors">交通</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="category" value="房租" class="peer hidden">
+                <div class="text-center py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-colors">房租</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="category" value="娛樂" class="peer hidden">
+                <div class="text-center py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-colors">娛樂</div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="category" value="其他" class="peer hidden">
+                <div class="text-center py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-colors">其他</div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 項目 -->
+          <div>
+            <label for="item" class="block text-sm font-medium text-slate-600 mb-1">項目</label>
+            <input type="text" id="item" class="w-full p-2.5 bg-white/80 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="例如：午餐便當、計程車...">
+          </div>
+
+          <!-- 金額 -->
+          <div>
+            <label for="amount" class="block text-sm font-medium text-slate-600 mb-1">金額 <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+              <input type="number" id="amount" required min="0" step="1" class="w-full p-2.5 pl-8 text-lg font-semibold text-slate-800 bg-white/80 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="0">
+            </div>
+          </div>
+
+          <!-- 備註 -->
+          <div>
+            <label for="note" class="block text-sm font-medium text-slate-600 mb-1">備註</label>
+            <input type="text" id="note" class="w-full p-2.5 bg-white/80 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="選填...">
+          </div>
+
+          <!-- 送出按鈕 -->
+          <button type="submit" class="w-full mt-2 flex items-center justify-center space-x-2 py-3.5 px-4 rounded-xl font-medium text-white transition-all bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg active:scale-[0.98]">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            <span>加入清單</span>
           </button>
-        </div>
-        
-        <textarea
-          id="inputText"
-          class="w-full h-40 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none transition-all"
-          placeholder="請輸入您的花費... (支援多筆一起輸入)&#10;例如：今天午餐吃麵100元，剛剛搭捷運30元..."
-        ></textarea>
-        
-        <button
-          id="btnParse"
-          class="w-full mt-4 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-medium text-white transition-all bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg active:scale-[0.98]"
-        >
-          <i id="parseIcon" data-lucide="send" class="w-5 h-5"></i>
-          <span id="parseText">開始解析並轉換</span>
-        </button>
+        </form>
       </div>
-      
-      <!-- 手機版顯示的通知 -->
+
+      <!-- 手機版通知 -->
       <div id="mobileNotificationArea" class="hidden sm:hidden items-center space-x-2 text-sm font-medium text-emerald-600 bg-emerald-50 px-4 py-3 rounded-xl border border-emerald-100">
         <i data-lucide="check-circle-2" class="w-4 h-4"></i>
         <span id="mobileNotificationText"></span>
@@ -97,43 +184,35 @@
 
     <!-- 右側：表格結果區 -->
     <section class="lg:col-span-8 flex flex-col space-y-4">
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col h-full">
+      <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200/50 p-5 flex flex-col h-full">
         
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
           <h2 class="text-lg font-semibold text-slate-700 flex items-center space-x-2">
-            <span>解析結果</span>
-            <span id="recordCount" class="text-xs font-normal px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">共 0 筆</span>
+            <span>待上傳清單</span>
+            <span id="recordCount" class="text-xs font-normal px-2 py-0.5 bg-white/50 border border-slate-200 text-slate-500 rounded-full">共 0 筆</span>
           </h2>
           
           <div class="flex space-x-2">
-            <button id="btnDownload" disabled class="hidden sm:flex flex-1 sm:flex-none items-center justify-center space-x-1.5 px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium">
+            <button id="btnDownload" disabled class="hidden sm:flex flex-1 sm:flex-none items-center justify-center space-x-1.5 px-4 py-2 bg-white/80 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium">
               <i data-lucide="download" class="w-4 h-4"></i>
               <span>下載 CSV</span>
             </button>
-            <button id="btnCopy" disabled class="flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium">
-              <i data-lucide="copy" class="w-4 h-4"></i>
-              <span>複製</span>
-            </button>
-            <button id="btnSync" disabled class="flex-[2] sm:flex-none flex items-center justify-center space-x-1.5 px-4 py-2 text-white bg-emerald-400 rounded-lg shadow-sm transition-all text-sm font-medium disabled:cursor-not-allowed">
+            <button id="btnSync" disabled class="flex-[2] sm:flex-none flex items-center justify-center space-x-1.5 px-5 py-2 text-white bg-emerald-500 rounded-lg shadow-sm hover:bg-emerald-600 transition-all text-sm font-medium disabled:bg-emerald-300 disabled:cursor-not-allowed">
               <i id="syncIcon" data-lucide="cloud-upload" class="w-4 h-4"></i>
               <span id="syncText">一鍵寫入試算表</span>
             </button>
           </div>
         </div>
 
-        <!-- 表格容器 -->
-        <div class="flex-1 overflow-x-auto border border-slate-200 rounded-xl relative min-h-[300px]">
-          
-          <!-- 空白狀態 -->
-          <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50/50">
-            <i data-lucide="file-spreadsheet" class="w-12 h-12 mb-3 opacity-20"></i>
-            <p>尚未有資料</p>
-            <p class="text-sm mt-1">在左側輸入文字並按下解析，資料會自動填入此處</p>
+        <div class="flex-1 overflow-x-auto border border-slate-200/60 rounded-xl relative min-h-[300px] bg-white/40">
+          <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50/20">
+            <i data-lucide="list-plus" class="w-12 h-12 mb-3 opacity-20"></i>
+            <p>清單空空如也</p>
+            <p class="text-sm mt-1">請從左側表單輸入資料並加入</p>
           </div>
 
-          <!-- 資料表格 -->
           <table id="dataTable" class="hidden w-full text-sm text-left">
-            <thead class="text-xs text-slate-600 uppercase bg-slate-100 sticky top-0">
+            <thead class="text-xs text-slate-600 uppercase bg-white/60 sticky top-0 backdrop-blur-sm">
               <tr>
                 <th class="px-4 py-3 whitespace-nowrap">日期</th>
                 <th class="px-4 py-3 whitespace-nowrap">收支</th>
@@ -144,45 +223,52 @@
                 <th class="px-4 py-3 text-center">操作</th>
               </tr>
             </thead>
-            <tbody id="tableBody" class="divide-y divide-slate-200">
-              <!-- 動態生成內容 -->
+            <tbody id="tableBody" class="divide-y divide-slate-100">
             </tbody>
           </table>
         </div>
-        
-        <p id="tableHint" class="hidden text-xs text-slate-500 mt-3 flex items-center">
-          <span class="inline-block w-2 h-2 bg-indigo-400 rounded-full mr-2"></span>
-          小提示：點擊右上角的齒輪圖示 ⚙️ 設定您的 GAS 網址，就可以直接「一鍵寫入試算表」囉！
-        </p>
-
       </div>
     </section>
 
   </main>
 
   <script>
-    // 初始化 Lucide 圖示
     lucide.createIcons();
 
-    // === 全域變數與狀態 ===
-    const apiKey = ""; // 執行環境提供的 API Key
+    // === 主題背景邏輯 ===
+    const themeDefinitions = {
+      purple: ['from-purple-100', 'via-indigo-50', 'to-slate-50'],
+      blue: ['from-blue-100', 'via-cyan-50', 'to-slate-50'],
+      green: ['from-emerald-100', 'via-teal-50', 'to-slate-50'],
+      orange: ['from-orange-100', 'via-amber-50', 'to-slate-50'],
+      rose: ['from-rose-100', 'via-pink-50', 'to-slate-50']
+    };
+
+    function changeTheme(themeName) {
+      const body = document.getElementById('appBody');
+      // 移除現有漸層
+      Object.values(themeDefinitions).forEach(classes => {
+        body.classList.remove(...classes);
+      });
+      // 套用新漸層
+      body.classList.add(...themeDefinitions[themeName]);
+      // 儲存偏好
+      localStorage.setItem('ai_accounting_theme', themeName);
+    }
+
+    // 載入時套用主題 (預設為紫)
+    const savedTheme = localStorage.getItem('ai_accounting_theme') || 'purple';
+    changeTheme(savedTheme);
+
+    // === 原有的資料與連線邏輯 ===
     let tableData = [];
     let notificationTimeout;
 
-    // 取得今天日期
-    const today = new Date().toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-
-    // === DOM 元素選取 ===
     const dom = {
-      inputText: document.getElementById('inputText'),
-      btnParse: document.getElementById('btnParse'),
-      parseIcon: document.getElementById('parseIcon'),
-      parseText: document.getElementById('parseText'),
-      btnSample: document.getElementById('btnSample'),
+      recordForm: document.getElementById('recordForm'),
+      itemInput: document.getElementById('item'),
+      amountInput: document.getElementById('amount'),
+      noteInput: document.getElementById('note'),
       
       btnSettings: document.getElementById('btnSettings'),
       settingsSection: document.getElementById('settingsSection'),
@@ -193,38 +279,80 @@
       mobileNotificationArea: document.getElementById('mobileNotificationArea'),
       mobileNotificationText: document.getElementById('mobileNotificationText'),
       
+      totalExpenseDisplay: document.getElementById('totalExpenseDisplay'),
+      totalExpenseAmount: document.getElementById('totalExpenseAmount'),
+
       recordCount: document.getElementById('recordCount'),
       btnDownload: document.getElementById('btnDownload'),
-      btnCopy: document.getElementById('btnCopy'),
       btnSync: document.getElementById('btnSync'),
       syncIcon: document.getElementById('syncIcon'),
       syncText: document.getElementById('syncText'),
       
       emptyState: document.getElementById('emptyState'),
       dataTable: document.getElementById('dataTable'),
-      tableBody: document.getElementById('tableBody'),
-      tableHint: document.getElementById('tableHint')
+      tableBody: document.getElementById('tableBody')
     };
 
-    // === 初始化設定 ===
-    // 預設的 GAS 網址
-    const defaultGasUrl = "https://script.google.com/macros/s/AKfycbzdLHGIpm3Y5tTmvFL3MtaITRiFZaNdDi7jAIxU3SIeh4FeZUYDv7OktX8B7bCBee4/exec";
+    // 載入網址設定
+    const currentGasUrl = "https://script.google.com/macros/s/AKfycbwTNTihpRKYNpCr2g7uDqibKbnOmtjuNAH726u25xRlS3rYmADELCArDyoLdb9EUiYHpw/exec";
+    const savedGasUrl = localStorage.getItem('ai_accounting_gas_url_latest');
     
-    // 從 LocalStorage 載入先前儲存的 GAS 網址
-    const savedGasUrl = localStorage.getItem('ai_accounting_gas_url');
-    if (savedGasUrl) {
-      dom.gasUrlInput.value = savedGasUrl;
+    if (!savedGasUrl || savedGasUrl !== currentGasUrl) {
+      dom.gasUrlInput.value = currentGasUrl;
+      localStorage.setItem('ai_accounting_gas_url_latest', currentGasUrl);
     } else {
-      dom.gasUrlInput.value = defaultGasUrl; // 如果沒有存過，就使用預設網址
+      dom.gasUrlInput.value = savedGasUrl;
     }
 
-    // 監聽 GAS 網址變更並自動儲存
     dom.gasUrlInput.addEventListener('input', (e) => {
-      localStorage.setItem('ai_accounting_gas_url', e.target.value.trim());
+      localStorage.setItem('ai_accounting_gas_url_latest', e.target.value.trim());
     });
 
-    // === 畫面互動功能 ===
-    function showNotification(msg) {
+    // === 直接向試算表請求 G1 的金額 ===
+    function fetchTotalFromSheet() {
+      const baseUrl = dom.gasUrlInput.value.trim();
+      if (!baseUrl) return;
+
+      dom.totalExpenseAmount.textContent = '...';
+
+      const callbackName = 'gasCallback_total_' + Date.now() + Math.floor(Math.random() * 1000);
+      const cleanup = () => {
+        delete window[callbackName];
+        const scriptElement = document.getElementById(callbackName);
+        if (scriptElement) document.body.removeChild(scriptElement);
+      };
+
+      window[callbackName] = function(result) {
+        if (result.status === 'success' && result.total !== undefined) {
+          dom.totalExpenseAmount.textContent = Number(result.total).toLocaleString();
+        } else {
+          dom.totalExpenseAmount.textContent = '讀取失敗';
+        }
+        cleanup();
+      };
+
+      const script = document.createElement('script');
+      script.id = callbackName;
+      script.onerror = () => {
+        dom.totalExpenseAmount.textContent = '連線失敗';
+        cleanup();
+      };
+
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      script.src = `${baseUrl}${separator}action=getTotal&callback=${callbackName}`;
+      document.body.appendChild(script);
+    }
+
+    // 初始化時向試算表請求 G1 金額
+    fetchTotalFromSheet();
+
+    // 點擊合計區塊時重新抓取
+    dom.totalExpenseDisplay.addEventListener('click', () => {
+      showNotification('正在從試算表重新抓取最新合計...');
+      fetchTotalFromSheet();
+    });
+
+    function showNotification(msg, isError = false) {
       clearTimeout(notificationTimeout);
       dom.notificationText.textContent = msg;
       dom.mobileNotificationText.textContent = msg;
@@ -233,6 +361,18 @@
       dom.notificationArea.classList.add('flex');
       dom.mobileNotificationArea.classList.remove('hidden');
       dom.mobileNotificationArea.classList.add('flex');
+      
+      if(isError) {
+        dom.notificationArea.classList.replace('bg-emerald-50', 'bg-rose-50');
+        dom.notificationArea.classList.replace('text-emerald-600', 'text-rose-600');
+        dom.mobileNotificationArea.classList.replace('bg-emerald-50', 'bg-rose-50');
+        dom.mobileNotificationArea.classList.replace('text-emerald-600', 'text-rose-600');
+      } else {
+        dom.notificationArea.classList.replace('bg-rose-50', 'bg-emerald-50');
+        dom.notificationArea.classList.replace('text-rose-600', 'text-emerald-600');
+        dom.mobileNotificationArea.classList.replace('bg-rose-50', 'bg-emerald-50');
+        dom.mobileNotificationArea.classList.replace('text-rose-600', 'text-emerald-600');
+      }
       
       notificationTimeout = setTimeout(() => {
         dom.notificationArea.classList.add('hidden');
@@ -245,71 +385,68 @@
     dom.btnSettings.addEventListener('click', () => {
       dom.settingsSection.classList.toggle('hidden');
       if (!dom.settingsSection.classList.contains('hidden')) {
-        dom.btnSettings.classList.add('bg-slate-100', 'text-slate-800');
+        dom.btnSettings.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
         dom.btnSettings.classList.remove('text-slate-500');
       } else {
-        dom.btnSettings.classList.remove('bg-slate-100', 'text-slate-800');
+        dom.btnSettings.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
         dom.btnSettings.classList.add('text-slate-500');
       }
     });
 
-    dom.btnSample.addEventListener('click', () => {
-      dom.inputText.value = "昨天晚上去夜市吃晚餐花了150，今天早上搭計程車200元，中午吃便當100元，另外昨天還繳了電話費599。";
-      updateParseButtonState();
+    dom.recordForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(dom.recordForm);
+      const type = formData.get('type');
+      const category = formData.get('category');
+      const item = dom.itemInput.value.trim();
+      const amount = dom.amountInput.value.trim();
+      const note = dom.noteInput.value.trim();
+
+      if (!category) return alert('請選擇一個類別！');
+
+      const now = new Date();
+      const dateString = now.toLocaleDateString('zh-TW', {
+        year: 'numeric', month: '2-digit', day: '2-digit'
+      });
+
+      tableData.unshift({
+        date: dateString, type: type, category: category,
+        item: item, amount: Number(amount), note: note
+      });
+
+      dom.itemInput.value = '';
+      dom.amountInput.value = '';
+      dom.noteInput.value = '';
+
+      renderTable();
+      showNotification('已加入清單！');
     });
 
-    dom.inputText.addEventListener('input', updateParseButtonState);
-
-    function updateParseButtonState() {
-      if (dom.inputText.value.trim() === '') {
-        dom.btnParse.classList.replace('bg-indigo-600', 'bg-slate-300');
-        dom.btnParse.classList.replace('hover:bg-indigo-700', 'cursor-not-allowed');
-      } else {
-        dom.btnParse.classList.replace('bg-slate-300', 'bg-indigo-600');
-        dom.btnParse.classList.replace('cursor-not-allowed', 'hover:bg-indigo-700');
-      }
-    }
-
-    // === 表格渲染邏輯 ===
     function renderTable() {
       dom.recordCount.textContent = `共 ${tableData.length} 筆`;
       
       if (tableData.length === 0) {
         dom.emptyState.classList.remove('hidden');
         dom.dataTable.classList.add('hidden');
-        dom.tableHint.classList.add('hidden');
-        
         dom.btnDownload.disabled = true;
-        dom.btnCopy.disabled = true;
         dom.btnSync.disabled = true;
-        
-        dom.btnSync.classList.replace('bg-emerald-600', 'bg-emerald-400');
-        dom.btnSync.classList.replace('hover:bg-emerald-700', 'cursor-not-allowed');
       } else {
         dom.emptyState.classList.add('hidden');
         dom.dataTable.classList.remove('hidden');
-        dom.tableHint.classList.remove('hidden');
-        
         dom.btnDownload.disabled = false;
-        dom.btnCopy.disabled = false;
         dom.btnSync.disabled = false;
         
-        dom.btnSync.classList.replace('bg-emerald-400', 'bg-emerald-600');
-        dom.btnSync.classList.replace('cursor-not-allowed', 'hover:bg-emerald-700');
-        
-        // 產生 HTML
         dom.tableBody.innerHTML = tableData.map((row, index) => `
-          <tr class="bg-white hover:bg-slate-50 transition-colors">
-            <td class="px-4 py-3 whitespace-nowrap">${row.date || ''}</td>
+          <tr class="hover:bg-white/50 transition-colors">
+            <td class="px-4 py-3 whitespace-nowrap text-slate-500">${row.date}</td>
             <td class="px-4 py-3 whitespace-nowrap">
-              <span class="px-2 py-1 rounded-md text-xs font-medium ${row.type === '收入' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-                ${row.type || '支出'}
-              </span>
+              <span class="px-2 py-1 rounded-md text-xs font-medium ${row.type === '收入' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${row.type}</span>
             </td>
-            <td class="px-4 py-3 whitespace-nowrap">${row.category || ''}</td>
-            <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-800">${row.item || ''}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-right font-medium text-slate-800">${row.amount || 0}</td>
-            <td class="px-4 py-3 text-slate-500 truncate max-w-[150px]" title="${row.note || ''}">${row.note || '-'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${row.category}</td>
+            <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-800">${row.item || '-'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-right font-medium text-slate-800">${row.amount}</td>
+            <td class="px-4 py-3 text-slate-500 truncate max-w-[150px]" title="${row.note}">${row.note || '-'}</td>
             <td class="px-4 py-3 whitespace-nowrap text-center">
               <button onclick="deleteRow(${index})" class="text-slate-400 hover:text-rose-500 transition-colors p-1" title="刪除此筆">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -317,199 +454,100 @@
             </td>
           </tr>
         `).join('');
-        
-        // 重新初始化新產生的圖示
         lucide.createIcons();
       }
     }
 
-    // 全域函數供 inline onclick 使用
     window.deleteRow = function(index) {
       tableData.splice(index, 1);
       renderTable();
     };
 
-    // === API 相關邏輯 ===
-    const fetchWithRetry = async (url, options, retries = 5) => {
-      const delays = [1000, 2000, 4000, 8000, 16000];
-      for (let i = 0; i < retries; i++) {
-        try {
-          const response = await fetch(url, options);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          return await response.json();
-        } catch (error) {
-          if (i === retries - 1) throw error;
-          await new Promise(res => setTimeout(res, delays[i]));
-        }
-      }
-    };
-
-    // 1. AI 解析
-    dom.btnParse.addEventListener('click', async () => {
-      const text = dom.inputText.value.trim();
-      if (!text) {
-        showNotification('請先輸入記帳內容喔！');
-        return;
-      }
-
-      // UI 讀取狀態
-      dom.btnParse.disabled = true;
-      dom.parseIcon.setAttribute('data-lucide', 'refresh-cw');
-      dom.parseIcon.classList.add('animate-spin');
-      dom.parseText.textContent = 'AI 解析中...';
-      lucide.createIcons();
-
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-        const payload = {
-          contents: [{ parts: [{ text: text }] }],
-          systemInstruction: {
-            parts: [{ 
-              text: `你是一個專業的記帳助理。請將使用者的對話輸入解析為記帳資料。
-              欄位必須包含：日期、收支、類別、項目、金額、備註。
-              - 今天的日期是：${today}。若使用者未指定日期，請預設使用此日期。
-              - 金額必須是純數字。
-              - 收支僅能是 '支出' 或 '收入'。` 
-            }]
-          },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "ARRAY",
-              items: {
-                type: "OBJECT",
-                properties: {
-                  date: { type: "STRING" },
-                  type: { type: "STRING" },
-                  category: { type: "STRING" },
-                  item: { type: "STRING" },
-                  amount: { type: "NUMBER" },
-                  note: { type: "STRING" }
-                },
-                required: ["date", "type", "category", "item", "amount", "note"]
-              }
-            }
-          }
-        };
-
-        const result = await fetchWithRetry(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (jsonText) {
-          const parsedData = JSON.parse(jsonText);
-          tableData = [...parsedData, ...tableData]; // 放最前面
-          dom.inputText.value = '';
-          updateParseButtonState();
-          renderTable();
-          showNotification('解析成功！已加入表格。');
-        } else {
-          throw new Error('無法解析回應');
-        }
-
-      } catch (error) {
-        console.error("Parsing error:", error);
-        showNotification('解析失敗，請稍後再試。');
-      } finally {
-        dom.btnParse.disabled = false;
-        dom.parseIcon.setAttribute('data-lucide', 'send');
-        dom.parseIcon.classList.remove('animate-spin');
-        dom.parseText.textContent = '開始解析並轉換';
-        lucide.createIcons();
-      }
-    });
-
-    // 2. 匯出 CSV
     dom.btnDownload.addEventListener('click', () => {
       if (tableData.length === 0) return;
       const headers = ['日期', '收支', '類別', '項目', '金額', '備註'];
-      const rows = tableData.map(row => 
-        [row.date, row.type, row.category, row.item, row.amount, row.note || ''].join(',')
-      );
+      const rows = tableData.map(row => [row.date, row.type, row.category, row.item, row.amount, row.note || ''].join(','));
       const csvContent = [headers.join(','), ...rows].join('\n');
-      
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `記帳匯出_${today.replace(/\//g, '')}.csv`;
+      const d = new Date();
+      a.download = `記帳匯出_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     });
 
-    // 3. 複製 TSV
-    dom.btnCopy.addEventListener('click', () => {
+    // === 使用 JSONP 方式，避開跨域阻擋寫入試算表 ===
+    dom.btnSync.addEventListener('click', () => {
       if (tableData.length === 0) return;
-      const rows = tableData.map(row => 
-        [row.date, row.type, row.category, row.item, row.amount, row.note || ''].join('\t')
-      );
-      const tsvContent = rows.join('\n');
-
-      const textarea = document.createElement('textarea');
-      textarea.value = tsvContent;
-      document.body.appendChild(textarea);
-      textarea.select();
-      try {
-        document.execCommand('copy');
-        showNotification('已複製到剪貼簿！請直接到試算表按 Ctrl+V 貼上。');
-      } catch (err) {
-        showNotification('複製失敗，您的瀏覽器可能不支援。');
-      } finally {
-        document.body.removeChild(textarea);
-      }
-    });
-
-    // 4. 同步至 GAS 試算表
-    dom.btnSync.addEventListener('click', async () => {
-      if (tableData.length === 0) return;
-      const url = dom.gasUrlInput.value.trim();
       
-      if (!url) {
-        showNotification('請先在設定中輸入 Google Apps Script 網址喔！');
+      const baseUrl = dom.gasUrlInput.value.trim();
+      if (!baseUrl) {
+        showNotification('請先在設定中輸入 Google Apps Script 網址喔！', true);
         dom.settingsSection.classList.remove('hidden');
-        dom.btnSettings.classList.add('bg-slate-100', 'text-slate-800');
         return;
       }
 
-      // UI 狀態更新
+      // 更新按鈕狀態
       dom.btnSync.disabled = true;
       dom.syncIcon.setAttribute('data-lucide', 'refresh-cw');
       dom.syncIcon.classList.add('animate-spin');
       dom.syncText.textContent = '寫入中...';
       lucide.createIcons();
 
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(tableData)
-        });
+      // 產生唯一的 callback 函數名稱
+      const callbackName = 'gasCallback_' + Date.now() + Math.floor(Math.random() * 1000);
 
-        const result = await response.json();
+      // 清理函數
+      const cleanup = () => {
+        delete window[callbackName];
+        const scriptElement = document.getElementById(callbackName);
+        if (scriptElement) document.body.removeChild(scriptElement);
 
-        if (result.status === 'success') {
-          showNotification(`太棒了！成功將 ${result.count} 筆資料寫入試算表！`);
-          tableData = []; // 清空資料
-          renderTable();
-        } else {
-          throw new Error(result.message || '寫入失敗');
-        }
-      } catch (error) {
-        console.error("Sync error:", error);
-        showNotification('寫入失敗，請檢查 GAS 網址是否正確。');
-      } finally {
-        // 恢復 UI 狀態
         dom.btnSync.disabled = false;
         dom.syncIcon.setAttribute('data-lucide', 'cloud-upload');
         dom.syncIcon.classList.remove('animate-spin');
         dom.syncText.textContent = '一鍵寫入試算表';
         lucide.createIcons();
-      }
-    });
+      };
 
+      // 註冊全域的 Callback 函數，接收 GAS 傳回的結果
+      window[callbackName] = function(result) {
+        if (result.status === 'success') {
+          showNotification(`太棒了！成功將 ${result.count} 筆資料寫入試算表！`);
+          
+          // 【更新】直接將後端傳回來的最新 G1 總金額顯示在畫面上
+          if (result.total !== undefined) {
+             dom.totalExpenseAmount.textContent = Number(result.total).toLocaleString();
+          }
+
+          // 清空暫存表單
+          tableData = []; 
+          renderTable();
+        } else {
+          showNotification('寫入失敗！原因：' + result.message, true);
+        }
+        cleanup();
+      };
+
+      // 建立 script 標籤
+      const script = document.createElement('script');
+      script.id = callbackName;
+      
+      script.onerror = function() {
+        showNotification('網路連線發生錯誤，或 GAS 未發布為「所有人」。', true);
+        cleanup();
+      };
+
+      // 將資料編碼並放入網址中
+      const dataString = encodeURIComponent(JSON.stringify(tableData));
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      script.src = `${baseUrl}${separator}callback=${callbackName}&data=${dataString}`;
+
+      // 執行請求
+      document.body.appendChild(script);
+    });
   </script>
 </body>
 </html>
