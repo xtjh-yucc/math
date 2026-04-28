@@ -24,21 +24,36 @@
     
     .hidden { display: none !important; }
     
+    /* 修正核心：防彈版棋盤外框，解決高度坍塌問題 */
     .board-wrapper {
       flex: 1;
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 100%;
+      position: relative;
+      background-color: #f1f5f9; /* 對應 bg-slate-100 */
+      border-radius: 0.5rem;
+      overflow: hidden;
     }
     
-    /* 暗棋棋盤比例 4:8 (即 1:2)，適合手機直向 */
+    /* 完美 1:2 比例，絕對置中，並自動縮放不超出邊界 */
     .responsive-board {
-      height: 100%;
-      max-width: 100%;
-      max-height: 800px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      height: 94%; 
+      max-width: 94%;
       aspect-ratio: 1 / 2;
-      position: relative;
+      padding: 4px;
+    }
+
+    /* 原生 CSS 網格，確保 4x8 格子絕對存在 */
+    .darkchess-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: repeat(8, minmax(0, 1fr));
+      gap: 2px;
+      width: 100%;
+      height: 100%;
     }
 
     /* ========== 棋盤與棋子樣式 ========== */
@@ -65,7 +80,7 @@
       display: flex; align-items: center; justify-content: center;
       font-family: "DFKai-SB", "BiauKai", "Kaiti TC", serif;
       font-weight: 900;
-      font-size: clamp(1.2rem, 5vw, 2.5rem);
+      font-size: clamp(1rem, 5vw, 2.2rem);
       transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
       user-select: none;
     }
@@ -83,7 +98,7 @@
       background: radial-gradient(circle at 50% 50%, #c49258, #8a5a2b);
       border: 2px solid #5C4033;
       color: rgba(255,255,255,0.15);
-      font-size: clamp(1rem, 4vw, 2rem);
+      font-size: clamp(0.9rem, 4vw, 1.8rem);
     }
 
     .piece.selected {
@@ -226,10 +241,10 @@
           </div>
         </div>
 
-        <!-- 核心暗棋棋盤區 4x8 -->
-        <div class="board-wrapper bg-slate-100 p-2 md:p-3">
-          <div id="board-container" class="responsive-board board-bg shadow-xl p-1 relative">
-            <div id="board-grid" class="absolute inset-1 grid grid-cols-4 grid-rows-8 gap-[2px]">
+        <!-- 修正的防彈版暗棋棋盤區 4x8 -->
+        <div class="board-wrapper">
+          <div id="board-container" class="responsive-board board-bg shadow-xl">
+            <div id="board-grid" class="darkchess-grid">
               <!-- Grid cells injected by JS -->
             </div>
           </div>
@@ -287,9 +302,8 @@
      <button onclick="document.getElementById('orientation-warning').style.display='none'" class="px-6 py-2 bg-teal-600 text-white font-bold rounded-full hover:bg-teal-700 shadow-lg">我已轉好 / 關閉提示</button>
   </div>
 
-  <!-- 新增：PWA 動態生成腳本 (單一檔案實作法) -->
+  <!-- PWA 動態生成腳本 -->
   <script>
-    // 1. 動態產生 PWA Manifest
     const manifestJSON = {
       "name": "象棋暗棋連線對戰",
       "short_name": "暗棋對戰",
@@ -311,12 +325,10 @@
     manifestLink.href = manifestUrl;
     document.head.appendChild(manifestLink);
 
-    // 2. 動態產生 Service Worker (PWA 必備條件)
     const swCode = `
       self.addEventListener('install', (e) => self.skipWaiting());
       self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
       self.addEventListener('fetch', (e) => {
-        // 放行外部網路請求，確保 Firebase 正常運作
         e.respondWith(fetch(e.request).catch(() => new Response('網路連線中斷，請檢查網路狀態。')));
       });
     `;
@@ -326,18 +338,15 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register(swUrl).catch(err => {
-          console.log('PWA Service Worker 註冊受限 (可能因為位於 iframe 或無 HTTPS 環境):', err);
+          console.log('PWA Service Worker 註冊受限', err);
         });
       });
     }
 
-    // 3. 攔截並自訂「加入主畫面 (安裝)」提示
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
-      // 阻止瀏覽器預設的彈出橫幅
       e.preventDefault();
       deferredPrompt = e;
-      // 顯示我們自訂的安裝按鈕橫幅
       document.getElementById('pwa-install-banner').classList.remove('hidden');
     });
 
@@ -380,19 +389,18 @@
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     // ==========================================
-    // 💡【給老師的提醒】: 取消註解並填寫您的設定
-    // 放在 GitHub Pages 或 Google Sites 上，請務必填寫這裡！
+    // 💡【給老師的提醒】: 放在 GitHub Pages 上，請務必填寫這裡！
     // ==========================================
     if (Object.keys(firebaseConfig).length === 0) {
       /* 👇 申請好 Firebase 之後，請把您的設定貼在下方大括號內 👇 */
       
       firebaseConfig = {
-        apiKey: "AIzaSyBlDxVepcLi1Lku-8-_tV4JJD6UzXTpv-E",
-        authDomain: "my-class-122f0.firebaseapp.com",
-        projectId: "my-class-122f0",
-        storageBucket: "my-class-122f0.firebasestorage.app",
-        messagingSenderId: "796984611486",
-        appId: "1:796984611486:web:119cc51cc88fd69fa6618f"
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
       };
       
     }
@@ -618,13 +626,13 @@
               if (board[ni] === '') moves.push(ni);
             }
             
-            // 2. 跳躍吃子
+            // 2. 跳躍吃子 (已修正無法跳吃的問題)
             let jumpCount = 0;
             let step = 1;
             while (true) {
               const jr = row + dr * step;
               const jc = col + dc * step;
-              if (jr < 0 || jr >= 8 || jc < 0 || jc >= 4) break; // 超出邊界
+              if (jr < 0 || jr >= 8 || jc < 0 || jc >= 4) break; // 邊界判斷
               
               const ji = jr * 4 + jc;
               const target = board[ji];
@@ -671,7 +679,6 @@
         const isP1 = localPlayerId === gameState.player1;
         
         // 推算目前的顏色
-        // 如果 p1Color 存在，判斷我是不是該顏色
         const myColor = isP1 ? gameState.p1Color : (gameState.p1Color ? (gameState.p1Color === 'r' ? 'b' : 'r') : null);
         const targetPiece = gameState.board[index];
 
@@ -724,7 +731,6 @@
             const winnerIsP1 = (winColor === gameState.p1Color);
             const winnerUid = winnerIsP1 ? gameState.player1 : gameState.player2;
             
-            const isMeP1 = localPlayerId === gameState.player1;
             const newP1Wins = winnerIsP1 ? gameState.p1Wins + 1 : gameState.p1Wins;
             const newP2Wins = !winnerIsP1 ? gameState.p2Wins + 1 : gameState.p2Wins;
             
