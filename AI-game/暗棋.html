@@ -13,14 +13,12 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* ========== 響應式與防溢出核心設定 ========== */
+    /* ========== 響應式與防溢出核心設定 (修正 Google Sites 相容性) ========== */
     html, body { 
-      height: 100%; 
-      height: 100dvh; 
+      width: 100%;
+      min-height: 100vh; /* 使用 min-height 讓 iframe 可以自然延伸 */
       margin: 0; 
       padding: 0; 
-      overflow: hidden; 
-      overscroll-behavior: none; 
       touch-action: manipulation; 
     }
     
@@ -123,9 +121,9 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 flex flex-col w-full">
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col w-full min-h-screen">
 
-  <!-- 新增：PWA 安裝提示橫幅 (當瀏覽器支援時自動顯示) -->
+  <!-- PWA 安裝提示橫幅 (當瀏覽器支援時自動顯示) -->
   <div id="pwa-install-banner" class="hidden bg-teal-800 text-white px-4 py-3 flex justify-between items-center shadow-md z-50">
     <div class="flex items-center gap-3">
       <span class="text-2xl">📱</span>
@@ -137,14 +135,14 @@
   </div>
 
   <!-- 1. 載入中畫面 -->
-  <div id="loading-screen" class="flex-1 flex items-center justify-center p-4">
+  <div id="loading-screen" class="flex-1 flex items-center justify-center p-4 min-h-screen">
     <div id="loading-content" class="animate-pulse text-xl text-teal-700 font-bold tracking-widest bg-white px-8 py-4 rounded-full shadow-md border border-teal-100 text-center">
       連線中...
     </div>
   </div>
 
   <!-- 2. 大廳畫面 -->
-  <div id="lobby-screen" class="hidden h-full overflow-y-auto w-full max-w-md mx-auto flex-col justify-center p-4 md:p-6">
+  <div id="lobby-screen" class="hidden flex-1 overflow-y-auto w-full max-w-md mx-auto flex-col justify-center p-4 md:p-6 min-h-screen">
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 shrink-0 my-4">
       <div class="bg-teal-700 p-6 md:p-8 text-center">
         <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-wide">運籌帷幄 象棋暗棋</h1>
@@ -184,7 +182,7 @@
   </div>
 
   <!-- 3. 主遊戲容器 -->
-  <div id="game-container" class="hidden flex-col h-full w-full max-w-lg mx-auto p-2 md:p-4">
+  <div id="game-container" class="hidden flex-col flex-1 w-full max-w-lg mx-auto p-2 md:p-4 min-h-screen">
     
     <!-- 頂部資訊列 -->
     <div class="shrink-0 flex justify-between items-center gap-2 mb-2">
@@ -385,14 +383,15 @@
     // 💡【給老師的提醒】: 取消註解並填寫您的設定
     // ==========================================
     if (Object.keys(firebaseConfig).length === 0) {
+      /* 👇 申請好 Firebase 之後，請把您的設定貼在下方大括號內 👇 */
       /*
       firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyBlDxVepcLi1Lku-8-_tV4JJD6UzXTpv-E",
+  authDomain: "my-class-122f0.firebaseapp.com",
+  projectId: "my-class-122f0",
+  storageBucket: "my-class-122f0.firebasestorage.app",
+  messagingSenderId: "796984611486",
+  appId: "1:796984611486:web:119cc51cc88fd69fa6618f"
       };
       */
     }
