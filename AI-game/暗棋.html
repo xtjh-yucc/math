@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>象棋暗棋大作戰 (連線版)</title>
+  
+  <!-- 新增：PWA 蘋果 iOS 專用 Meta 標籤 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="暗棋對戰">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f766e'/%3E%3Ctext x='50' y='65' font-size='40' font-family='serif' font-weight='bold' text-anchor='middle' fill='white'%3E帥%3C/text%3E%3C/svg%3E">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* ========== 響應式與防溢出核心設定 ========== */
+    html, body { 
+      height: 100%; 
+      height: 100dvh; 
+      margin: 0; 
+      padding: 0; 
+      overflow: hidden; 
+      overscroll-behavior: none; 
+      touch-action: manipulation; 
+    }
+    
+    .hidden { display: none !important; }
+    
+    .board-wrapper {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* 暗棋棋盤比例 4:8 (即 1:2)，適合手機直向 */
+    .responsive-board {
+      height: 100%;
+      max-width: 100%;
+      max-height: 800px;
+      aspect-ratio: 1 / 2;
+      position: relative;
+    }
+
+    /* ========== 棋盤與棋子樣式 ========== */
+    .board-bg {
+      background-color: #d2a679;
+      background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 2px, transparent 2px, transparent 4px);
+      border: 4px solid #5C4033;
+      border-radius: 8px;
+    }
+
+    .darkchess-cell {
+      position: relative; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      border: 1px solid rgba(92, 64, 51, 0.4);
+    }
+    
+    .piece { 
+      width: 85%; height: 85%; 
+      border-radius: 50%; z-index: 10; 
+      box-shadow: 2px 3px 5px rgba(0,0,0,0.4), inset -1px -2px 4px rgba(0,0,0,0.15); 
+      display: flex; align-items: center; justify-content: center;
+      font-family: "DFKai-SB", "BiauKai", "Kaiti TC", serif;
+      font-weight: 900;
+      font-size: clamp(1.2rem, 5vw, 2.5rem);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
+      user-select: none;
+    }
+
+    /* 翻開的明棋 */
+    .piece.visible {
+      background: radial-gradient(circle at 30% 30%, #fcdab0, #e6b981);
+      border: 2px solid #b48552;
+    }
+    .piece.red { color: #dc2626; text-shadow: 1px 1px 0 rgba(255,255,255,0.3); }
+    .piece.black { color: #1e293b; text-shadow: 1px 1px 0 rgba(255,255,255,0.3); }
+    
+    /* 蓋住的暗棋 */
+    .piece.hidden-piece {
+      background: radial-gradient(circle at 50% 50%, #c49258, #8a5a2b);
+      border: 2px solid #5C4033;
+      color: rgba(255,255,255,0.15);
+      font-size: clamp(1rem, 4vw, 2rem);
+    }
+
+    .piece.selected {
+      transform: scale(1.15) translateY(-5px);
+      box-shadow: 0 10px 15px rgba(0,0,0,0.4);
+      outline: 4px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
+    /* 標記與動畫 */
+    .valid-move-marker {
+      width: 25%; height: 25%;
+      border-radius: 50%;
+      background-color: rgba(34, 197, 94, 0.8);
+      z-index: 5;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .last-move-highlight {
+      position: absolute; inset: 0;
+      background-color: rgba(239, 68, 68, 0.2);
+      z-index: 4;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 0.4; }
+      100% { transform: scale(1); opacity: 0.8; }
+    }
+
+    /* ========== 螢幕方向警告 ========== */
+    #orientation-warning { display: none; }
+    @media screen and (max-width: 767px) and (orientation: landscape) and (max-height: 500px) {
+      #orientation-warning { display: flex; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col w-full">
+
+  <!-- 新增：PWA 安裝提示橫幅 (當瀏覽器支援時自動顯示) -->
+  <div id="pwa-install-banner" class="hidden bg-teal-800 text-white px-4 py-3 flex justify-between items-center shadow-md z-50">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">📱</span>
+      <span class="font-bold text-sm md:text-base">將「暗棋對戰」安裝到桌面，全螢幕體驗更好！</span>
+    </div>
+    <button id="install-pwa-btn" class="bg-teal-500 hover:bg-teal-400 text-white px-5 py-2 rounded-full font-bold text-sm shadow-sm transition shrink-0">
+      安裝 App
+    </button>
+  </div>
+
+  <!-- 1. 載入中畫面 -->
+  <div id="loading-screen" class="flex-1 flex items-center justify-center p-4">
+    <div id="loading-content" class="animate-pulse text-xl text-teal-700 font-bold tracking-widest bg-white px-8 py-4 rounded-full shadow-md border border-teal-100 text-center">
+      連線中...
+    </div>
+  </div>
+
+  <!-- 2. 大廳畫面 -->
+  <div id="lobby-screen" class="hidden h-full overflow-y-auto w-full max-w-md mx-auto flex-col justify-center p-4 md:p-6">
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 shrink-0 my-4">
+      <div class="bg-teal-700 p-6 md:p-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-wide">運籌帷幄 象棋暗棋</h1>
+        <p class="text-teal-200">數學小幫手專屬連線版</p>
+      </div>
+      <div class="p-6 flex flex-col gap-6">
+        <div class="bg-teal-50 p-5 rounded-2xl flex flex-col gap-4 border border-teal-100">
+          <h3 class="font-bold text-teal-900 flex items-center gap-2">⚙️ 建立房間設定</h3>
+          <div>
+            <label class="block text-sm font-semibold text-slate-600 mb-1">搶幾局決定最終勝利？</label>
+            <input id="setup-target-wins" type="number" min="1" max="10" value="2" class="w-full px-4 py-3 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-teal-500 font-bold text-xl text-center" />
+          </div>
+          <button onclick="window.createRoom()" class="w-full py-4 mt-2 bg-teal-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-teal-800 transition duration-200 shadow-md text-lg">
+            ▶ 建立新遊戲房間
+          </button>
+        </div>
+
+        <div class="relative flex items-center py-2">
+          <div class="flex-grow border-t border-slate-200"></div>
+          <span class="flex-shrink-0 mx-4 text-slate-400 text-sm">或</span>
+          <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <label class="text-sm font-semibold text-slate-600">輸入朋友的房間代碼加入：</label>
+          <div class="flex gap-2">
+            <input id="join-input" type="text" placeholder="例如: 1234" maxlength="4" class="flex-1 px-4 py-3 bg-slate-100 border-none rounded-2xl text-center text-xl tracking-widest font-bold focus:ring-2 focus:ring-teal-500 outline-none" />
+            <button onclick="window.joinRoom()" class="px-6 py-3 bg-slate-800 text-white font-bold rounded-2xl hover:bg-slate-700 transition shadow-md flex items-center gap-2">
+              加入 ➔
+            </button>
+          </div>
+        </div>
+
+        <div id="lobby-error-msg" class="hidden p-3 bg-red-50 text-red-600 rounded-xl text-center text-sm font-medium"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 主遊戲容器 -->
+  <div id="game-container" class="hidden flex-col h-full w-full max-w-lg mx-auto p-2 md:p-4">
+    
+    <!-- 頂部資訊列 -->
+    <div class="shrink-0 flex justify-between items-center gap-2 mb-2">
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-200 text-sm">
+        <div id="room-status-dot" class="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse"></div>
+        <span class="font-bold text-slate-700">房號:<span id="display-room-code" class="text-teal-700 tracking-wider ml-1">----</span></span>
+      </div>
+      
+      <div id="scoreboard" class="hidden flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-200 font-bold text-sm">
+        <span id="score-p1" class="flex items-center gap-1">P1:0</span>
+        <span class="text-slate-300">|</span>
+        <span id="score-p2" class="flex items-center gap-1">P2:0</span>
+        <span id="score-target" class="ml-1 text-xs bg-teal-100 text-teal-800 px-2 rounded-md hidden sm:inline-block">搶2勝</span>
+      </div>
+
+      <button onclick="window.leaveRoom()" class="text-xs md:text-sm font-medium text-slate-500 hover:text-red-500 transition px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-200">
+        離開
+      </button>
+    </div>
+
+    <!-- 遊戲主體與等待畫面 -->
+    <div class="flex-1 min-h-0 flex flex-col relative w-full">
+      
+      <div id="waiting-screen" class="hidden absolute inset-0 bg-white rounded-2xl shadow-lg border border-slate-100 flex flex-col items-center justify-center p-6 text-center z-10">
+        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">等待對手加入...</h2>
+        <p class="text-slate-500 text-sm md:text-base mb-6">請另一台平板輸入以下房間代碼：</p>
+        <div id="big-room-code" class="text-5xl md:text-7xl font-black text-teal-700 tracking-widest bg-teal-50 px-10 py-6 rounded-3xl border border-teal-100 shadow-inner">
+          ----
+        </div>
+      </div>
+
+      <div id="playing-screen" class="hidden flex-1 flex flex-col bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden relative">
+        
+        <div class="shrink-0 p-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center gap-2">
+          <div class="font-medium text-slate-600 text-sm md:text-base flex items-center gap-1.5">
+            你是：<span id="player-role-text" class="font-bold text-teal-800">----</span>
+            <div id="my-color-indicator" class="w-6 h-6 rounded-full shadow-sm border border-slate-400 hidden font-bold flex items-center justify-center text-xs text-white pb-[2px]"></div>
+          </div>
+          <div id="turn-indicator" class="px-3 py-1 md:px-5 md:py-1.5 rounded-full font-bold text-xs md:text-sm shadow-sm transition-all duration-300 bg-slate-100 text-slate-400">
+            ⏳ 等待對手中...
+          </div>
+        </div>
+
+        <!-- 核心暗棋棋盤區 4x8 -->
+        <div class="board-wrapper bg-slate-100 p-2 md:p-3">
+          <div id="board-container" class="responsive-board board-bg shadow-xl p-1 relative">
+            <div id="board-grid" class="absolute inset-1 grid grid-cols-4 grid-rows-8 gap-[2px]">
+              <!-- Grid cells injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="shrink-0 p-2 border-t border-slate-100 bg-white flex justify-center">
+           <button onclick="window.toggleTip()" class="flex items-center gap-2 text-teal-700 font-semibold hover:text-teal-900 transition px-4 py-2 rounded-full hover:bg-teal-50 text-sm">
+             💡 數學小幫手秘訣
+           </button>
+        </div>
+
+        <div id="round-finished-overlay" class="hidden absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
+          <h2 id="round-winner-title" class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-2">----</h2>
+          <div id="round-score-text" class="text-base md:text-lg text-slate-600 mb-6 font-semibold">----</div>
+          <button onclick="window.nextRound()" class="px-6 py-3 bg-teal-700 text-white text-base font-bold rounded-full hover:bg-teal-800 transition shadow-lg flex items-center gap-2">
+            ▶ 進入下一局 (換人先翻)
+          </button>
+        </div>
+
+        <div id="match-finished-overlay" class="hidden absolute inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center z-40 text-white p-4 text-center">
+          <h2 id="match-winner-title" class="text-4xl md:text-6xl font-black mb-4 px-2 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">----</h2>
+          <div id="match-final-score" class="text-xl md:text-2xl text-teal-300 mb-8 font-bold tracking-widest">----</div>
+          <button onclick="window.playAgain()" class="px-6 py-4 bg-yellow-400 text-slate-900 text-lg font-black rounded-full hover:bg-yellow-300 transition shadow-[0_0_20px_rgba(250,204,21,0.4)] flex items-center gap-2">
+            ↻ 重新開啟新比賽
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="math-tip-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-indigo-50 border border-indigo-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+      <button onclick="window.toggleTip()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-2xl w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm">✕</button>
+      <h3 class="font-bold text-xl mb-3 flex items-center gap-2 text-indigo-900"><span class="text-2xl">💡</span> 暗棋必勝心法：機率與記牌</h3>
+      <p class="mb-3 text-indigo-800 font-medium text-sm md:text-base">暗棋是一個充滿「機率」的遊戲！學會記牌能大幅提升勝率：</p>
+      <div class="grid grid-cols-2 gap-2 text-sm md:text-base font-bold text-slate-700 mb-4 bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
+        <div class="col-span-2 text-indigo-600 mb-1 border-b border-indigo-50 pb-1">開局 32 顆棋子的數量分佈：</div>
+        <div>👑 將/帥 各 <span class="text-red-500">1</span> 顆</div>
+        <div>💣 炮/砲 各 <span class="text-red-500">2</span> 顆</div>
+        <div>🛡️ 士象車馬 各 <span class="text-red-500">2</span> 顆</div>
+        <div>💂 卒/兵 各 <span class="text-red-500">5</span> 顆</div>
+      </div>
+      <div class="bg-indigo-100 p-3 rounded-xl border border-indigo-300 text-xs md:text-sm font-medium text-indigo-900">
+        📌 <strong>小幫手提問：</strong> 遊戲一開始，翻出「將或帥」的機率是多少呢？<br>
+        解答：(1+1) / 32 = <strong class="text-red-600">6.25%</strong>。機率很低，所以不要害怕去翻棋喔！
+      </div>
+    </div>
+  </div>
+
+  <div id="orientation-warning" class="fixed inset-0 z-[200] bg-slate-900/95 flex-col items-center justify-center text-white p-6 text-center">
+     <div class="text-6xl mb-4 animate-bounce">📱</div>
+     <h2 class="text-2xl font-bold mb-2">請轉動您的設備</h2>
+     <p class="text-slate-300 text-base mb-6 leading-relaxed">暗棋棋盤較長，為了完美顯示，<br>請將手機轉為<strong class="text-teal-400 text-xl">「直向」</strong>握持。</p>
+     <button onclick="document.getElementById('orientation-warning').style.display='none'" class="px-6 py-2 bg-teal-600 text-white font-bold rounded-full hover:bg-teal-700 shadow-lg">我已轉好 / 關閉提示</button>
+  </div>
+
+  <!-- 新增：PWA 動態生成腳本 (單一檔案實作法) -->
+  <script>
+    // 1. 動態產生 PWA Manifest
+    const manifestJSON = {
+      "name": "象棋暗棋連線對戰",
+      "short_name": "暗棋對戰",
+      "start_url": window.location.href.split('?')[0],
+      "display": "standalone",
+      "background_color": "#f8fafc",
+      "theme_color": "#0f766e",
+      "icons": [{
+        "src": "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f766e'/%3E%3Ctext x='50' y='65' font-size='40' font-family='serif' font-weight='bold' text-anchor='middle' fill='white'%3E帥%3C/text%3E%3C/svg%3E",
+        "sizes": "192x192 512x512",
+        "type": "image/svg+xml",
+        "purpose": "any maskable"
+      }]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifestJSON)], {type: 'application/manifest+json'});
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = manifestUrl;
+    document.head.appendChild(manifestLink);
+
+    // 2. 動態產生 Service Worker (PWA 必備條件)
+    const swCode = `
+      self.addEventListener('install', (e) => self.skipWaiting());
+      self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
+      self.addEventListener('fetch', (e) => {
+        // 放行外部網路請求，確保 Firebase 正常運作
+        e.respondWith(fetch(e.request).catch(() => new Response('網路連線中斷，請檢查網路狀態。')));
+      });
+    `;
+    const swBlob = new Blob([swCode], {type: 'application/javascript'});
+    const swUrl = URL.createObjectURL(swBlob);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register(swUrl).catch(err => {
+          console.log('PWA Service Worker 註冊受限 (可能因為位於 iframe 或無 HTTPS 環境):', err);
+        });
+      });
+    }
+
+    // 3. 攔截並自訂「加入主畫面 (安裝)」提示
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // 阻止瀏覽器預設的彈出橫幅
+      e.preventDefault();
+      deferredPrompt = e;
+      // 顯示我們自訂的安裝按鈕橫幅
+      document.getElementById('pwa-install-banner').classList.remove('hidden');
+    });
+
+    document.getElementById('install-pwa-btn').addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          document.getElementById('pwa-install-banner').classList.add('hidden');
+        }
+        deferredPrompt = null;
+      }
+    });
+  </script>
+
+  <script>
+    setTimeout(function() {
+      var loadingContent = document.getElementById('loading-content');
+      if (loadingContent && loadingContent.innerText.includes('連線中')) {
+         loadingContent.innerHTML = `
+          <div class="flex flex-col items-center justify-center max-w-sm bg-white rounded-3xl text-center">
+            <div class="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 class="text-xl font-black text-slate-800 mb-2">無法連線至資料庫</h2>
+            <p class="text-slate-600 text-sm mb-4 leading-relaxed font-medium">
+              在 Google Sites 上運作，需要您填寫 Firebase 設定。<br>請將 <span class="text-teal-600 font-bold bg-teal-50 px-1 rounded">firebaseConfig</span> 替換為您的專屬設定！
+            </p>
+          </div>
+         `;
+         loadingContent.className = "bg-white px-6 py-6 rounded-3xl shadow-xl border-t-8 border-red-500 border-x border-b border-slate-100";
+      }
+    }, 3000);
+  </script>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+    let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+    // ==========================================
+    // 💡【給老師的提醒】: 取消註解並填寫您的設定
+    // ==========================================
+    if (Object.keys(firebaseConfig).length === 0) {
+      /*
+      firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+      };
+      */
+    }
+
+    const UI = {
+      loading: document.getElementById('loading-screen'),
+      loadingContent: document.getElementById('loading-content'),
+      lobby: document.getElementById('lobby-screen'),
+      game: document.getElementById('game-container'),
+      waiting: document.getElementById('waiting-screen'),
+      playing: document.getElementById('playing-screen'),
+      lobbyError: document.getElementById('lobby-error-msg'),
+      boardGrid: document.getElementById('board-grid')
+    };
+
+    // 棋子標籤設定
+    const PIECE_LABELS = {
+      'r_k': '帥', 'r_a': '仕', 'r_e': '相', 'r_h': '傌', 'r_r': '俥', 'r_c': '炮', 'r_p': '兵',
+      'b_k': '將', 'b_a': '士', 'b_e': '象', 'b_h': '馬', 'b_r': '車', 'b_c': '砲', 'b_p': '卒'
+    };
+
+    // 產生打亂的暗棋初始盤面
+    function generateShuffledBoard() {
+      const initialPieces = [
+        'r_k', 'r_a','r_a', 'r_e','r_e', 'r_r','r_r', 'r_h','r_h', 'r_c','r_c', 'r_p','r_p','r_p','r_p','r_p',
+        'b_k', 'b_a','b_a', 'b_e','b_e', 'b_r','b_r', 'b_h','b_h', 'b_c','b_c', 'b_p','b_p','b_p','b_p','b_p'
+      ];
+      // 洗牌演算法 (Fisher-Yates)
+      for (let i = initialPieces.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [initialPieces[i], initialPieces[j]] = [initialPieces[j], initialPieces[i]];
+      }
+      return initialPieces.map(p => 'h_' + p); // 加上 h_ 代表隱藏 (hidden)
+    }
+
+    let app, auth, db;
+    try {
+      if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) throw new Error("MissingConfig");
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch (e) {
+      console.error("Firebase 初始化失敗:", e);
+    }
+
+    if (auth && db) {
+      let user = null;
+      const localPlayerId = Math.random().toString(36).substring(2, 12);
+      let currentRoomCode = null;
+      let gameState = null;
+      let unsubscribeRoom = null;
+      
+      let selectedIndex = -1;
+      let validMoves = [];
+
+      // 初始化 DOM 網格 (4x8 = 32格)
+      function initBoardDOM() {
+        UI.boardGrid.innerHTML = '';
+        for (let i = 0; i < 32; i++) {
+          const cell = document.createElement('div');
+          cell.className = 'darkchess-cell';
+          cell.onclick = () => handleCellClick(i);
+          UI.boardGrid.appendChild(cell);
+        }
+      }
+      initBoardDOM();
+
+      const initAuth = async () => {
+        try {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          UI.loadingContent.innerHTML = `<div class="text-center p-6 text-red-500 font-bold bg-red-50 rounded-2xl shadow-md">連線驗證失敗！</div>`;
+          UI.loadingContent.className = "";
+        }
+      };
+
+      onAuthStateChanged(auth, (currentUser) => {
+        user = currentUser;
+        updateUI();
+      });
+
+      initAuth();
+
+      const listenToRoom = (code) => {
+        if (unsubscribeRoom) unsubscribeRoom();
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'darkchess_rooms', code);
+        
+        unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const oldTurn = gameState ? gameState.turn : null;
+            gameState = docSnap.data();
+            // 如果換回合或換局，清空選擇
+            if (oldTurn !== gameState.turn) {
+              selectedIndex = -1;
+              validMoves = [];
+            }
+            updateUI();
+          } else {
+            showError('房間已關閉或不存在');
+            window.leaveRoom();
+          }
+        });
+      };
+
+      window.createRoom = async () => {
+        if (!user) return;
+        const targetWins = parseInt(document.getElementById('setup-target-wins').value);
+        if (targetWins < 1) return showError('至少需要贏 1 局');
+        
+        hideError();
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'darkchess_rooms', code);
+        
+        await setDoc(roomRef, {
+          player1: localPlayerId,
+          player2: null,
+          board: generateShuffledBoard(),
+          turn: localPlayerId, // P1 先手
+          p1Color: null, // 尚未決定顏色
+          status: 'waiting',
+          winner: null,
+          targetWins: targetWins,
+          p1Wins: 0,
+          p2Wins: 0,
+          lastMoveFrom: -1,
+          lastMoveTo: -1,
+          createdAt: Date.now()
+        });
+        
+        currentRoomCode = code;
+        listenToRoom(code);
+      };
+
+      window.joinRoom = async () => {
+        if (!user) return;
+        const code = document.getElementById('join-input').value.trim();
+        if (!code) return;
+        hideError();
+        
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'darkchess_rooms', code);
+        try {
+          const docSnap = await getDoc(roomRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.status === 'waiting' && data.player1 !== localPlayerId) {
+              await updateDoc(roomRef, {
+                player2: localPlayerId,
+                status: 'playing' 
+              });
+              currentRoomCode = code;
+              listenToRoom(code);
+            } else if (data.player1 === localPlayerId || data.player2 === localPlayerId) {
+              currentRoomCode = code;
+              listenToRoom(code);
+            } else {
+              showError('房間已滿或遊戲已開始！');
+            }
+          } else {
+            showError('找不到這個房間號碼！');
+          }
+        } catch (err) {
+          showError('加入失敗，請重試。');
+        }
+      };
+
+      // --- 暗棋吃子邏輯判斷 ---
+      function canCapture(atkType, defType) {
+        if (atkType === defType) return true; // 同階級互吃
+        if (atkType === 'c') return true; // 炮只要符合跳吃條件，什麼都能吃
+        if (defType === 'c') return atkType !== 'p'; // 除了兵/卒之外，其他人都能直接吃炮
+        if (atkType === 'k') return defType !== 'p'; // 帥不能吃兵
+        if (atkType === 'p') return defType === 'k'; // 兵只能吃帥 (同階級的兵上面判斷過了)
+        
+        // 階級大小比較表
+        const ranks = { 'a': 5, 'e': 4, 'r': 3, 'h': 2, 'p': 1 };
+        return ranks[atkType] >= ranks[defType];
+      }
+
+      // --- 產生可移動/吃子的格子 ---
+      function generateValidMoves(board, index) {
+        const moves = [];
+        const piece = board[index];
+        if (!piece || piece.startsWith('h_')) return moves;
+        
+        const atkColor = piece[2]; // 'r' 或 'b'
+        const atkType = piece[4];  // 'k', 'a', etc.
+        const row = Math.floor(index / 4);
+        const col = index % 4;
+        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // 上下左右
+
+        if (atkType !== 'c') {
+          // 一般棋子的移動與吃子
+          for (let [dr, dc] of dirs) {
+            const nr = row + dr;
+            const nc = col + dc;
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 4) {
+              const ni = nr * 4 + nc;
+              const target = board[ni];
+              if (target === '') {
+                moves.push(ni); // 走空位
+              } else if (target.startsWith('v_')) {
+                const defColor = target[2];
+                const defType = target[4];
+                // 是敵軍且符合階級
+                if (atkColor !== defColor && canCapture(atkType, defType)) {
+                  moves.push(ni);
+                }
+              }
+            }
+          }
+        } else {
+          // 炮的特殊邏輯
+          for (let [dr, dc] of dirs) {
+            // 1. 走一步空位
+            const nr = row + dr;
+            const nc = col + dc;
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 4) {
+              const ni = nr * 4 + nc;
+              if (board[ni] === '') moves.push(ni);
+            }
+            
+            // 2. 跳躍吃子
+            let jumpCount = 0;
+            let step = 1;
+            while (true) {
+              const jr = row + dr * step;
+              const jc = col + dc * step;
+              if (jr < 0 || jr >= 8 || jc < 0 || jc >= 4) break; // 超出邊界
+              
+              const ji = jr * 4 + jc;
+              const target = board[ji];
+              
+              if (target !== '') {
+                jumpCount++;
+                if (jumpCount === 2) {
+                  // 找到第二顆棋子，如果是敵方的「明棋」就可以吃
+                  if (target.startsWith('v_')) {
+                    const defColor = target[2];
+                    if (atkColor !== defColor) {
+                      moves.push(ji);
+                    }
+                  }
+                  break; // 不管能不能吃，跳過第二顆就停止
+                }
+              }
+              step++;
+            }
+          }
+        }
+        return moves;
+      }
+
+      // --- 檢查全滅勝負 ---
+      function checkWin(board) {
+        let rCount = 0;
+        let bCount = 0;
+        for (let p of board) {
+          if (p === '') continue;
+          if (p.includes('_r_')) rCount++;
+          if (p.includes('_b_')) bCount++;
+        }
+        if (rCount === 0) return 'b';
+        if (bCount === 0) return 'r';
+        return null;
+      }
+
+      // --- 點擊互動邏輯 ---
+      const handleCellClick = async (index) => {
+        if (!gameState || gameState.status !== 'playing') return;
+        if (gameState.turn !== localPlayerId) return; // 不是我的回合
+
+        const isP1 = localPlayerId === gameState.player1;
+        
+        // 推算目前的顏色
+        // 如果 p1Color 存在，判斷我是不是該顏色
+        const myColor = isP1 ? gameState.p1Color : (gameState.p1Color ? (gameState.p1Color === 'r' ? 'b' : 'r') : null);
+        const targetPiece = gameState.board[index];
+
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'darkchess_rooms', currentRoomCode);
+
+        // 動作 1：翻暗棋 (只要是暗棋，且輪到我，都可以翻)
+        if (targetPiece.startsWith('h_')) {
+          const newBoard = [...gameState.board];
+          // 把 'h_' 換成 'v_'
+          newBoard[index] = 'v_' + targetPiece.substring(2);
+          
+          let newP1Color = gameState.p1Color;
+          // 如果是全場第一步，決定顏色
+          if (!newP1Color) {
+            const flippedColor = newBoard[index][2]; // 'r' 或 'b'
+            newP1Color = isP1 ? flippedColor : (flippedColor === 'r' ? 'b' : 'r');
+          }
+
+          const nextTurn = localPlayerId === gameState.player1 ? gameState.player2 : gameState.player1;
+          
+          await updateDoc(roomRef, {
+            board: newBoard,
+            p1Color: newP1Color,
+            lastMoveFrom: -1,
+            lastMoveTo: index, // 標記翻開的位置
+            turn: nextTurn
+          });
+          return;
+        }
+
+        // 動作 2：點擊自己的明棋 -> 選取
+        if (myColor && targetPiece !== '' && targetPiece.startsWith('v_') && targetPiece[2] === myColor) {
+          selectedIndex = index;
+          validMoves = generateValidMoves(gameState.board, selectedIndex);
+          updateUI();
+          return;
+        }
+
+        // 動作 3：移動或吃子
+        if (selectedIndex !== -1 && validMoves.includes(index)) {
+          const newBoard = [...gameState.board];
+          newBoard[index] = newBoard[selectedIndex]; // 覆蓋目標
+          newBoard[selectedIndex] = ''; // 原本位置清空
+          
+          // 檢查是否獲勝 (對方全滅)
+          const winColor = checkWin(newBoard);
+          
+          if (winColor) {
+            // 判斷獲勝者是誰
+            const winnerIsP1 = (winColor === gameState.p1Color);
+            const winnerUid = winnerIsP1 ? gameState.player1 : gameState.player2;
+            
+            const isMeP1 = localPlayerId === gameState.player1;
+            const newP1Wins = winnerIsP1 ? gameState.p1Wins + 1 : gameState.p1Wins;
+            const newP2Wins = !winnerIsP1 ? gameState.p2Wins + 1 : gameState.p2Wins;
+            
+            const isMatchFinished = newP1Wins >= gameState.targetWins || newP2Wins >= gameState.targetWins;
+
+            await updateDoc(roomRef, {
+              board: newBoard,
+              lastMoveFrom: selectedIndex,
+              lastMoveTo: index,
+              status: isMatchFinished ? 'match_finished' : 'round_finished',
+              winner: winnerUid,
+              p1Wins: newP1Wins,
+              p2Wins: newP2Wins
+            });
+          } else {
+            // 換下一位
+            const nextTurn = localPlayerId === gameState.player1 ? gameState.player2 : gameState.player1;
+            await updateDoc(roomRef, {
+              board: newBoard,
+              lastMoveFrom: selectedIndex,
+              lastMoveTo: index,
+              turn: nextTurn
+            });
+          }
+          selectedIndex = -1;
+          validMoves = [];
+        }
+      };
+
+      window.nextRound = async () => {
+        if (!gameState) return;
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'darkchess_rooms', currentRoomCode);
+        
+        // 輸家在下一局先手翻牌，顏色重新決定
+        let nextFirstPlayer = gameState.player2; 
+        if (gameState.winner === gameState.player1) nextFirstPlayer = gameState.player2;
+        else if (gameState.winner === gameState.player2) nextFirstPlayer = gameState.player1;
+
+        await updateDoc(roomRef, {
+          board: generateShuffledBoard(),
+          status: 'playing',
+          winner: null,
+          lastMoveFrom: -1,
+          lastMoveTo: -1,
+          p1Color: null, // 重新洗牌，清空顏色
+          turn: nextFirstPlayer
+        });
+      };
+
+      window.playAgain = async () => {
+        if (!gameState) return;
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'darkchess_rooms', currentRoomCode);
+        await updateDoc(roomRef, {
+          board: generateShuffledBoard(),
+          status: 'playing',
+          winner: null,
+          p1Wins: 0,
+          p2Wins: 0,
+          lastMoveFrom: -1,
+          lastMoveTo: -1,
+          p1Color: null,
+          turn: gameState.player1
+        });
+      };
+
+      window.leaveRoom = () => {
+        if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+        currentRoomCode = null;
+        gameState = null;
+        document.getElementById('join-input').value = '';
+        hideError();
+        updateUI();
+      };
+
+      window.toggleTip = () => {
+        const modal = document.getElementById('math-tip-modal');
+        modal.classList.toggle('hidden');
+      };
+
+      function showError(msg) {
+        UI.lobbyError.innerText = msg;
+        UI.lobbyError.classList.remove('hidden');
+      }
+      function hideError() {
+        UI.lobbyError.classList.add('hidden');
+      }
+
+      function updateUI() {
+        if (!user) {
+          UI.loading.classList.remove('hidden'); UI.lobby.classList.add('hidden'); UI.game.classList.add('hidden');
+          return;
+        }
+        if (!currentRoomCode || !gameState) {
+          UI.loading.classList.add('hidden'); UI.lobby.classList.remove('hidden'); UI.game.classList.add('hidden');
+          return;
+        }
+
+        UI.loading.classList.add('hidden');
+        UI.lobby.classList.add('hidden');
+        UI.game.classList.remove('hidden');
+        UI.game.classList.add('flex');
+
+        const isPlayer1 = gameState.player1 === localPlayerId;
+        const myColor = isPlayer1 ? gameState.p1Color : (gameState.p1Color ? (gameState.p1Color === 'r' ? 'b' : 'r') : null);
+        const isMyTurn = gameState.turn === localPlayerId;
+
+        document.getElementById('display-room-code').innerText = currentRoomCode;
+        document.getElementById('room-status-dot').className = `w-2.5 h-2.5 rounded-full ${gameState.status === 'playing' ? 'bg-teal-500' : 'bg-amber-400 animate-pulse'}`;
+
+        const scoreboard = document.getElementById('scoreboard');
+        if (gameState.status !== 'waiting') {
+          scoreboard.classList.remove('hidden'); scoreboard.classList.add('flex');
+          
+          let p1ColorStr = gameState.p1Color ? (gameState.p1Color === 'r' ? '🔴' : '⚫') : '❓';
+          let p2ColorStr = gameState.p1Color ? (gameState.p1Color === 'r' ? '⚫' : '🔴') : '❓';
+          
+          document.getElementById('score-p1').innerHTML = `P1:${gameState.p1Wins} <span class="text-[12px]">${p1ColorStr}</span>`;
+          document.getElementById('score-p2').innerHTML = `P2:${gameState.p2Wins} <span class="text-[12px]">${p2ColorStr}</span>`;
+          document.getElementById('score-p1').className = `flex items-center gap-1 ${isPlayer1 ? "text-teal-700" : "text-slate-500"}`;
+          document.getElementById('score-p2').className = `flex items-center gap-1 ${!isPlayer1 ? "text-teal-700" : "text-slate-500"}`;
+          document.getElementById('score-target').innerText = `搶${gameState.targetWins}勝`;
+        } else {
+          scoreboard.classList.add('hidden'); scoreboard.classList.remove('flex');
+        }
+
+        UI.waiting.classList.add('hidden');
+        UI.playing.classList.add('hidden');
+        document.getElementById('round-finished-overlay').classList.add('hidden');
+        document.getElementById('match-finished-overlay').classList.add('hidden');
+
+        if (gameState.status === 'waiting') {
+          UI.waiting.classList.remove('hidden');
+          document.getElementById('big-room-code').innerText = currentRoomCode;
+        } 
+        else {
+          UI.playing.classList.remove('hidden');
+          document.getElementById('player-role-text').innerText = isPlayer1 ? "玩家 1 (主)" : "玩家 2 (客)";
+          
+          const colorInd = document.getElementById('my-color-indicator');
+          colorInd.classList.remove('hidden');
+          if (myColor) {
+            colorInd.style.background = myColor === 'r' ? '#dc2626' : '#1e293b';
+            colorInd.innerText = myColor === 'r' ? '帥' : '將';
+          } else {
+            colorInd.style.background = '#cbd5e1';
+            colorInd.innerText = '?';
+          }
+
+          const turnInd = document.getElementById('turn-indicator');
+          if (gameState.status === 'playing') {
+            if (isMyTurn) {
+              turnInd.className = "px-3 py-1 md:px-5 md:py-1.5 rounded-full font-bold text-xs md:text-sm shadow-sm transition-all duration-300 bg-teal-100 text-teal-800 ring-2 ring-teal-400 scale-105 flex items-center gap-1";
+              turnInd.innerHTML = "👉 換你了！";
+            } else {
+              turnInd.className = "px-3 py-1 md:px-5 md:py-1.5 rounded-full font-bold text-xs md:text-sm shadow-sm transition-all duration-300 bg-slate-100 text-slate-400 flex items-center gap-1";
+              turnInd.innerHTML = "⏳ 對手思考...";
+            }
+          }
+
+          const cells = UI.boardGrid.children;
+          for (let i = 0; i < 32; i++) {
+            cells[i].innerHTML = ''; // 清空
+            
+            // 繪製最後一步提示底色
+            if (i === gameState.lastMoveFrom || i === gameState.lastMoveTo) {
+              const highlight = document.createElement('div');
+              highlight.className = 'last-move-highlight';
+              cells[i].appendChild(highlight);
+            }
+
+            // 繪製棋子
+            const cellValue = gameState.board[i];
+            if (cellValue !== '') {
+              const piece = document.createElement('div');
+              
+              if (cellValue.startsWith('h_')) {
+                // 暗棋
+                piece.className = 'piece hidden-piece';
+                piece.innerText = '？';
+              } else {
+                // 明棋
+                piece.className = `piece visible ${cellValue[2] === 'r' ? 'red' : 'black'}`;
+                piece.innerText = PIECE_LABELS[cellValue.substring(2)];
+              }
+
+              if (i === selectedIndex) piece.classList.add('selected');
+              cells[i].appendChild(piece);
+            }
+
+            // 繪製合法移動提示點
+            if (validMoves.includes(i)) {
+              const marker = document.createElement('div');
+              marker.className = 'valid-move-marker';
+              cells[i].appendChild(marker);
+            }
+          }
+
+          if (gameState.status === 'round_finished') {
+            document.getElementById('round-finished-overlay').classList.remove('hidden');
+            document.getElementById('round-winner-title').innerText = gameState.winner === localPlayerId ? '🎉 敵軍全滅，你贏了！' : '🥺 你被全滅了！';
+            document.getElementById('round-score-text').innerText = `目前總分 👉 玩家1: ${gameState.p1Wins} / 玩家2: ${gameState.p2Wins}`;
+          }
+
+          if (gameState.status === 'match_finished') {
+            document.getElementById('match-finished-overlay').classList.remove('hidden');
+            document.getElementById('match-winner-title').innerText = gameState.winner === localPlayerId ? '🏆 你獲得了總冠軍！' : '💔 遺憾，對手獲得了總冠軍！';
+            document.getElementById('match-final-score').innerText = `最終比數 ${gameState.p1Wins} : ${gameState.p2Wins}`;
+          }
+        }
+      }
+    }
+
+  </script>
+</body>
+</html>
