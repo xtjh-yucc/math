@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>五子棋大作戰 (連線版)</title>
+
+  <!-- PWA 專屬 Meta 標籤 (支援 iOS 與 Android 全螢幕與圖示) -->
+  <meta name="theme-color" content="#059669">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="五子棋連線">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23059669' rx='112'/%3E%3Ccircle cx='180' cy='180' r='60' fill='%23000' /%3E%3Ccircle cx='332' cy='332' r='60' fill='%23fff' /%3E%3Ccircle cx='180' cy='332' r='60' fill='%23fff' /%3E%3Ccircle cx='332' cy='180' r='60' fill='%23000' /%3E%3C/svg%3E">
+
+  <script>
+    // PWA 初始化腳本：動態建立 Manifest 與 Service Worker
+    window.addEventListener('load', () => {
+      try {
+        // 1. 動態掛載 Manifest (應用程式設定檔)
+        const iconSvg = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23059669' rx='112'/%3E%3Ccircle cx='180' cy='180' r='60' fill='%23000' /%3E%3Ccircle cx='332' cy='332' r='60' fill='%23fff' /%3E%3Ccircle cx='180' cy='332' r='60' fill='%23fff' /%3E%3Ccircle cx='332' cy='180' r='60' fill='%23000' /%3E%3C/svg%3E";
+        const manifest = {
+          name: "五子棋大作戰 (數學小幫手版)",
+          short_name: "五子棋",
+          start_url: window.location.href,
+          display: "standalone",
+          background_color: "#f8fafc",
+          theme_color: "#059669",
+          icons: [{ src: iconSvg, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const linkManifest = document.createElement('link');
+        linkManifest.rel = 'manifest';
+        linkManifest.href = URL.createObjectURL(manifestBlob);
+        document.head.appendChild(linkManifest);
+
+        // 2. 動態註冊 Service Worker (PWA 必備核心)
+        if ('serviceWorker' in navigator) {
+          const swCode = `
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+            self.addEventListener('fetch', e => {
+              // 連線遊戲，若斷線則回傳友善提示
+              e.respondWith(fetch(e.request).catch(() => new Response("五子棋大作戰：此遊戲需要網路連線才能遊玩喔！", { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })));
+            });
+          `;
+          const swBlob = new Blob([swCode], { type: 'text/javascript' });
+          navigator.serviceWorker.register(URL.createObjectURL(swBlob))
+            .then(() => console.log('PWA Service Worker 已就緒，可以加到桌面囉！'))
+            .catch(e => console.log('PWA SW 註冊跳過', e));
+        }
+      } catch (e) {
+        console.log('PWA 初始化跳過', e);
+      }
+    });
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* ========== 響應式與防溢出核心設定 ========== */
+    /* 確保 body 永遠等於螢幕高度，禁止任何捲動與下拉更新 */
+    html, body { 
+      height: 100%; 
+      height: 100dvh; /* 支援動態視窗高度 */
+      margin: 0; 
+      padding: 0; 
+      overflow: hidden; 
+      overscroll-behavior: none; 
+      touch-action: manipulation; 
+    }
+    
+    .hidden { display: none !important; }
+    
+    /* 魔法響應式棋盤：不論螢幕多扁多窄，永遠保持正方形且完全顯示 */
+    .board-wrapper {
+      flex: 1;
+      min-height: 0; /* Flex 核心：防止子元素撐破父容器 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .responsive-board {
+      height: 100%;
+      max-width: 100%;
+      max-height: 600px; /* 棋盤最大限制 */
+      aspect-ratio: 1 / 1; /* 強制正方形 */
+    }
+
+    /* ========== 棋盤與棋子樣式 ========== */
+    .grid-cols-15 { grid-template-columns: repeat(15, minmax(0, 1fr)); }
+    .board-bg { background-color: #E2C08D; border-color: #5C4033; }
+    
+    .board-cell { position: relative; cursor: pointer; }
+    /* 棋盤十字線 */
+    .board-cell::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1.5px; background-color: #5C4033; z-index: 0; }
+    .board-cell::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1.5px; background-color: #5C4033; z-index: 0; }
+    
+    /* 邊界線微調 */
+    .board-cell.top-edge::after { top: 50%; }
+    .board-cell.bottom-edge::after { bottom: 50%; }
+    .board-cell.left-edge::before { left: 50%; }
+    .board-cell.right-edge::before { right: 50%; }
+    
+    /* 棋子樣式 */
+    .stone { 
+      position: absolute; top: 8%; left: 8%; width: 84%; height: 84%; 
+      border-radius: 50%; z-index: 10; box-shadow: 2px 2px 4px rgba(0,0,0,0.4); 
+      transition: all 0.2s ease;
+    }
+    .stone.black { background: radial-gradient(circle at 30% 30%, #4a4a4a, #000); }
+    .stone.white { background: radial-gradient(circle at 30% 30%, #fff, #d4d4d4); }
+    
+    /* 最後一手標記 */
+    .last-move-marker {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 25%; height: 25%; border-radius: 50%; background-color: #ef4444; z-index: 20;
+    }
+
+    /* ========== 螢幕方向警告 ========== */
+    #orientation-warning { display: none; }
+    /* 只有在手機尺寸且橫向時，才顯示轉向警告 */
+    @media screen and (max-width: 767px) and (orientation: landscape) and (max-height: 500px) {
+      #orientation-warning { display: flex; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col w-full">
+
+  <!-- 1. 載入中畫面 -->
+  <div id="loading-screen" class="flex-1 flex items-center justify-center p-4">
+    <div id="loading-content" class="animate-pulse text-xl text-emerald-600 font-bold tracking-widest bg-white px-8 py-4 rounded-full shadow-md border border-emerald-100 text-center">
+      連線中...
+    </div>
+  </div>
+
+  <!-- 2. 大廳畫面 (建立/加入房間) -->
+  <div id="lobby-screen" class="hidden h-full overflow-y-auto w-full max-w-md mx-auto flex-col justify-center p-4 md:p-6">
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 shrink-0 my-4">
+      <div class="bg-emerald-600 p-6 md:p-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-wide">五子棋大作戰</h1>
+        <p class="text-emerald-200">數學小幫手專屬連線版</p>
+      </div>
+      <div class="p-6 flex flex-col gap-6">
+        <!-- 玩家 1 設定區 -->
+        <div class="bg-emerald-50 p-5 rounded-2xl flex flex-col gap-4 border border-emerald-100">
+          <h3 class="font-bold text-emerald-800 flex items-center gap-2">⚙️ 建立房間設定</h3>
+          <div>
+            <label class="block text-sm font-semibold text-slate-600 mb-1">搶幾局決定最終勝利？</label>
+            <input id="setup-target-wins" type="number" min="1" max="10" value="3" class="w-full px-4 py-3 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-emerald-500 font-bold text-xl text-center" />
+          </div>
+          <button onclick="window.createRoom()" class="w-full py-4 mt-2 bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 transition duration-200 shadow-md text-lg">
+            ▶ 建立新遊戲房間
+          </button>
+        </div>
+
+        <div class="relative flex items-center py-2">
+          <div class="flex-grow border-t border-slate-200"></div>
+          <span class="flex-shrink-0 mx-4 text-slate-400 text-sm">或</span>
+          <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+
+        <!-- 玩家 2 加入區 -->
+        <div class="flex flex-col gap-3">
+          <label class="text-sm font-semibold text-slate-600">輸入朋友的房間代碼加入：</label>
+          <div class="flex gap-2">
+            <input id="join-input" type="text" placeholder="例如: 1234" maxlength="4" class="flex-1 px-4 py-3 bg-slate-100 border-none rounded-2xl text-center text-xl tracking-widest font-bold focus:ring-2 focus:ring-emerald-500 outline-none" />
+            <button onclick="window.joinRoom()" class="px-6 py-3 bg-slate-800 text-white font-bold rounded-2xl hover:bg-slate-700 transition shadow-md flex items-center gap-2">
+              加入 ➔
+            </button>
+          </div>
+        </div>
+
+        <div id="lobby-error-msg" class="hidden p-3 bg-red-50 text-red-600 rounded-xl text-center text-sm font-medium"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 主遊戲容器 -->
+  <div id="game-container" class="hidden flex-col h-full w-full max-w-4xl mx-auto p-2 md:p-4">
+    
+    <!-- 頂部資訊列 (空間壓縮至最緊湊) -->
+    <div class="shrink-0 flex justify-between items-center gap-2 mb-2">
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-200 text-sm">
+        <div id="room-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
+        <span class="font-bold text-slate-700">房號:<span id="display-room-code" class="text-emerald-600 tracking-wider ml-1">----</span></span>
+      </div>
+      
+      <!-- 記分板 -->
+      <div id="scoreboard" class="hidden flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-200 font-bold text-sm">
+        <span id="score-p1" class="flex items-center gap-1">P1:0</span>
+        <span class="text-slate-300">|</span>
+        <span id="score-p2" class="flex items-center gap-1">P2:0</span>
+        <span id="score-target" class="ml-1 text-xs bg-emerald-100 text-emerald-800 px-2 rounded-md hidden sm:inline-block">搶3勝</span>
+      </div>
+
+      <button onclick="window.leaveRoom()" class="text-xs md:text-sm font-medium text-slate-500 hover:text-red-500 transition px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-200">
+        離開
+      </button>
+    </div>
+
+    <!-- 遊戲主體與等待畫面 -->
+    <div class="flex-1 min-h-0 flex flex-col relative w-full">
+      
+      <!-- 等待對手畫面 -->
+      <div id="waiting-screen" class="hidden absolute inset-0 bg-white rounded-2xl shadow-lg border border-slate-100 flex flex-col items-center justify-center p-6 text-center z-10">
+        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">等待對手加入...</h2>
+        <p class="text-slate-500 text-sm md:text-base mb-6">請另一台平板輸入以下房間代碼：</p>
+        <div id="big-room-code" class="text-5xl md:text-7xl font-black text-emerald-600 tracking-widest bg-emerald-50 px-10 py-6 rounded-3xl border border-emerald-100 shadow-inner">
+          ----
+        </div>
+      </div>
+
+      <!-- 遊戲進行中畫面 (完美佔滿剩餘空間) -->
+      <div id="playing-screen" class="hidden flex-1 flex flex-col bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden relative">
+        
+        <!-- 角色與回合提示 -->
+        <div class="shrink-0 p-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center gap-2">
+          <div class="font-medium text-slate-600 text-sm md:text-base flex items-center gap-1.5">
+            你是：<span id="player-role-text" class="font-bold text-emerald-700">----</span>
+            <div id="my-color-indicator" class="w-4 h-4 rounded-full shadow-md border border-slate-400 hidden"></div>
+          </div>
+          <div id="turn-indicator" class="px-3 py-1 md:px-5 md:py-1.5 rounded-full font-bold text-xs md:text-sm shadow-sm transition-all duration-300 bg-slate-100 text-slate-400">
+            ⏳ 等待對手中...
+          </div>
+        </div>
+
+        <!-- 核心棋盤區 (自動變正方形) -->
+        <div class="board-wrapper bg-[#f8f9fa] p-1.5 md:p-4">
+          <div class="responsive-board board-bg border-4 shadow-xl p-1.5 md:p-3 rounded-sm relative">
+            <div id="board-grid" class="w-full h-full grid grid-cols-15 gap-0">
+              <!-- Grid cells injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部呼叫數學小幫手按鈕 -->
+        <div class="shrink-0 p-2 border-t border-slate-100 bg-white flex justify-center">
+           <button onclick="window.toggleTip()" class="flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-800 transition px-4 py-2 rounded-full hover:bg-emerald-50 text-sm">
+             💡 數學小幫手秘訣
+           </button>
+        </div>
+
+        <!-- 單局結束宣告覆蓋層 -->
+        <div id="round-finished-overlay" class="hidden absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
+          <h2 id="round-winner-title" class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2">----</h2>
+          <div id="round-score-text" class="text-base md:text-lg text-slate-600 mb-6 font-semibold">----</div>
+          <button onclick="window.nextRound()" class="px-6 py-3 bg-emerald-600 text-white text-base font-bold rounded-full hover:bg-emerald-700 transition shadow-lg flex items-center gap-2">
+            ▶ 進入下一局 (輸家先手)
+          </button>
+        </div>
+
+        <!-- 整場比賽結束宣告覆蓋層 -->
+        <div id="match-finished-overlay" class="hidden absolute inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center z-40 text-white p-4 text-center">
+          <h2 id="match-winner-title" class="text-3xl md:text-5xl font-black mb-4 px-2 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">----</h2>
+          <div id="match-final-score" class="text-xl md:text-2xl text-emerald-300 mb-8 font-bold tracking-widest">----</div>
+          <button onclick="window.playAgain()" class="px-6 py-4 bg-yellow-400 text-slate-900 text-lg font-black rounded-full hover:bg-yellow-300 transition shadow-[0_0_20px_rgba(250,204,21,0.4)] flex items-center gap-2">
+            ↻ 重新開啟新比賽
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 數學小幫手專屬提示 (懸浮視窗 Modal) -->
+  <div id="math-tip-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-amber-50 border border-amber-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+      <button onclick="window.toggleTip()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-2xl w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm">✕</button>
+      <h3 class="font-bold text-xl mb-3 flex items-center gap-2 text-amber-900"><span class="text-2xl">💡</span> 五子棋必勝心法</h3>
+      <p class="mb-2 text-amber-800 font-medium text-sm md:text-base">五子棋不是單純把棋子連成線，而是要透過邏輯佈局，讓對手<strong class="text-red-600">「防不勝防」</strong>！</p>
+      <ul class="list-disc pl-5 mb-4 space-y-2 font-semibold text-amber-800 text-sm md:text-base">
+        <li><strong>雙活三：</strong> 同時在兩個方向形成「三個相連且兩端沒有被擋住」的棋子。對手只能擋一邊，另一邊你就能變成「活四」穩贏！</li>
+        <li><strong>四三：</strong> 一個方向有四顆子 (聽牌)，另一個方向有三顆子。對手必須去擋四顆子的那邊，你就能趁機把三顆子連成四顆。</li>
+      </ul>
+      <div class="bg-white/70 p-3 rounded-xl border border-amber-300 text-xs md:text-sm font-medium text-amber-900">
+        📌 <strong>老師的話：</strong> 遊戲時可以仔細觀察，不要只看自己想連線的地方，也要看對手是不是正在偷偷製造「雙重威脅」喔！
+      </div>
+    </div>
+  </div>
+
+  <!-- 螢幕方向警告 (僅手機橫放時顯示) -->
+  <div id="orientation-warning" class="fixed inset-0 z-[200] bg-slate-900/95 flex-col items-center justify-center text-white p-6 text-center">
+     <div class="text-6xl mb-4 animate-bounce">📱</div>
+     <h2 class="text-2xl font-bold mb-2">請轉動您的設備</h2>
+     <p class="text-slate-300 text-base mb-6 leading-relaxed">為了讓棋盤完美顯示在畫面中，<br>請將手機轉為<strong class="text-emerald-400 text-xl">「直向」</strong>握持。</p>
+     <button onclick="document.getElementById('orientation-warning').style.display='none'" class="px-6 py-2 bg-emerald-600 text-white font-bold rounded-full hover:bg-emerald-700 shadow-lg">我已轉好 / 關閉提示</button>
+  </div>
+
+  <!-- 💡 畫面超時錯誤處理 -->
+  <script>
+    setTimeout(function() {
+      var loadingContent = document.getElementById('loading-content');
+      if (loadingContent && loadingContent.innerText.includes('連線中')) {
+         loadingContent.innerHTML = `
+          <div class="flex flex-col items-center justify-center max-w-sm bg-white rounded-3xl text-center">
+            <div class="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 class="text-xl font-black text-slate-800 mb-2">無法連線至資料庫</h2>
+            <p class="text-slate-600 text-sm mb-4 leading-relaxed font-medium">
+              在 GitHub Pages 上運作，需要您自行填寫 Firebase 資料庫設定。<br><br>請修改程式碼，將 <span class="text-emerald-600 font-bold bg-emerald-50 px-1 rounded">firebaseConfig</span> 的內容替換為您的專屬設定喔！
+            </p>
+          </div>
+         `;
+         loadingContent.className = "bg-white px-6 py-6 rounded-3xl shadow-xl border-t-8 border-red-500 border-x border-b border-slate-100";
+      }
+    }, 3000);
+  </script>
+
+  <!-- Firebase 與 遊戲邏輯 -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+    let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+    // ==========================================
+    // 💡【給老師的提醒】:
+    // 如果您將此網頁部署到 GitHub Pages、平板或電腦上執行，
+    // 請務必將下方的 firebaseConfig 替換成您自己的設定！
+    // ==========================================
+    if (Object.keys(firebaseConfig).length === 0) {
+      /* 👇 請取消註解以下內容並填寫您的 Firebase 設定 👇 */
+      /*
+      firebaseConfig = {
+        apiKey: "AIzaSyBlDxVepcLi1Lku-8-_tV4JJD6UzXTpv-E",
+  authDomain: "my-class-122f0.firebaseapp.com",
+  projectId: "my-class-122f0",
+  storageBucket: "my-class-122f0.firebasestorage.app",
+  messagingSenderId: "796984611486",
+  appId: "1:796984611486:web:119cc51cc88fd69fa6618f"
+      };
+      */
+    }
+
+    const UI = {
+      loading: document.getElementById('loading-screen'),
+      loadingContent: document.getElementById('loading-content'),
+      lobby: document.getElementById('lobby-screen'),
+      game: document.getElementById('game-container'),
+      waiting: document.getElementById('waiting-screen'),
+      playing: document.getElementById('playing-screen'),
+      lobbyError: document.getElementById('lobby-error-msg'),
+      boardGrid: document.getElementById('board-grid')
+    };
+
+    let app, auth, db;
+    try {
+      if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) throw new Error("MissingConfig");
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch (e) {
+      console.error("Firebase 初始化失敗:", e);
+    }
+
+    if (auth && db) {
+      let user = null;
+      const localPlayerId = Math.random().toString(36).substring(2, 12);
+      let currentRoomCode = null;
+      let gameState = null;
+      let unsubscribeRoom = null;
+
+      // 產生 15x15 的 DOM
+      function initBoardDOM() {
+        UI.boardGrid.innerHTML = '';
+        for (let i = 0; i < 225; i++) {
+          const cell = document.createElement('div');
+          cell.className = 'board-cell';
+          if (i < 15) cell.classList.add('top-edge');
+          if (i >= 210) cell.classList.add('bottom-edge');
+          if (i % 15 === 0) cell.classList.add('left-edge');
+          if (i % 15 === 14) cell.classList.add('right-edge');
+          
+          cell.onclick = () => window.makeMove(i);
+          UI.boardGrid.appendChild(cell);
+        }
+      }
+      initBoardDOM();
+
+      const initAuth = async () => {
+        try {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          UI.loadingContent.innerHTML = `<div class="text-center p-6 text-red-500 font-bold bg-red-50 rounded-2xl shadow-md">連線驗證失敗！</div>`;
+          UI.loadingContent.className = "";
+        }
+      };
+
+      onAuthStateChanged(auth, (currentUser) => {
+        user = currentUser;
+        updateUI();
+      });
+
+      initAuth();
+
+      const listenToRoom = (code) => {
+        if (unsubscribeRoom) unsubscribeRoom();
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'gomoku_rooms', code);
+        
+        unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+          if (docSnap.exists()) {
+            gameState = docSnap.data();
+            updateUI();
+          } else {
+            showError('房間已關閉或不存在');
+            window.leaveRoom();
+          }
+        });
+      };
+
+      window.createRoom = async () => {
+        if (!user) return;
+        const targetWins = parseInt(document.getElementById('setup-target-wins').value);
+        if (targetWins < 1) return showError('至少需要贏 1 局');
+        
+        hideError();
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'gomoku_rooms', code);
+        
+        const emptyBoard = Array(225).fill(0);
+        
+        await setDoc(roomRef, {
+          player1: localPlayerId,
+          player2: null,
+          board: emptyBoard,
+          turn: localPlayerId,
+          blackPlayer: localPlayerId, 
+          status: 'waiting',
+          winner: null,
+          targetWins: targetWins,
+          p1Wins: 0,
+          p2Wins: 0,
+          lastMove: -1,
+          createdAt: Date.now()
+        });
+        
+        currentRoomCode = code;
+        listenToRoom(code);
+      };
+
+      window.joinRoom = async () => {
+        if (!user) return;
+        const code = document.getElementById('join-input').value.trim();
+        if (!code) return;
+        hideError();
+        
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'gomoku_rooms', code);
+        try {
+          const docSnap = await getDoc(roomRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.status === 'waiting' && data.player1 !== localPlayerId) {
+              await updateDoc(roomRef, {
+                player2: localPlayerId,
+                status: 'playing' 
+              });
+              currentRoomCode = code;
+              listenToRoom(code);
+            } else if (data.player1 === localPlayerId || data.player2 === localPlayerId) {
+              currentRoomCode = code;
+              listenToRoom(code);
+            } else {
+              showError('房間已滿或遊戲已開始！');
+            }
+          } else {
+            showError('找不到這個房間號碼！');
+          }
+        } catch (err) {
+          showError('加入失敗，請重試。');
+        }
+      };
+
+      function checkWin(board, lastIdx) {
+        if (lastIdx < 0) return false;
+        const row = Math.floor(lastIdx / 15);
+        const col = lastIdx % 15;
+        const playerColor = board[lastIdx];
+        if (playerColor === 0) return false;
+
+        const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]]; 
+        
+        for (let [dx, dy] of dirs) {
+          let count = 1;
+          for (let step = 1; step < 5; step++) {
+            const r = row + dx * step;
+            const c = col + dy * step;
+            if (r < 0 || r >= 15 || c < 0 || c >= 15 || board[r * 15 + c] !== playerColor) break;
+            count++;
+          }
+          for (let step = 1; step < 5; step++) {
+            const r = row - dx * step;
+            const c = col - dy * step;
+            if (r < 0 || r >= 15 || c < 0 || c >= 15 || board[r * 15 + c] !== playerColor) break;
+            count++;
+          }
+          if (count >= 5) return true;
+        }
+        return false;
+      }
+
+      window.makeMove = async (index) => {
+        if (!gameState || gameState.turn !== localPlayerId || gameState.status !== 'playing') return;
+        if (gameState.board[index] !== 0) return; 
+
+        const myColor = (localPlayerId === gameState.blackPlayer) ? 1 : 2;
+        const newBoard = [...gameState.board];
+        newBoard[index] = myColor;
+
+        const isWin = checkWin(newBoard, index);
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'gomoku_rooms', currentRoomCode);
+
+        if (isWin) {
+          const isP1 = localPlayerId === gameState.player1;
+          const newP1Wins = isP1 ? gameState.p1Wins + 1 : gameState.p1Wins;
+          const newP2Wins = !isP1 ? gameState.p2Wins + 1 : gameState.p2Wins;
+          const isMatchFinished = newP1Wins >= gameState.targetWins || newP2Wins >= gameState.targetWins;
+
+          await updateDoc(roomRef, {
+            board: newBoard,
+            lastMove: index,
+            status: isMatchFinished ? 'match_finished' : 'round_finished',
+            winner: localPlayerId,
+            p1Wins: newP1Wins,
+            p2Wins: newP2Wins
+          });
+        } else {
+          if (!newBoard.includes(0)) {
+            await updateDoc(roomRef, {
+              board: newBoard, lastMove: index, status: 'round_finished', winner: 'draw'
+            });
+            return;
+          }
+          const nextTurn = localPlayerId === gameState.player1 ? gameState.player2 : gameState.player1;
+          await updateDoc(roomRef, {
+            board: newBoard,
+            lastMove: index,
+            turn: nextTurn
+          });
+        }
+      };
+
+      window.nextRound = async () => {
+        if (!gameState) return;
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'gomoku_rooms', currentRoomCode);
+        
+        let nextBlackPlayer = gameState.player2; 
+        if (gameState.winner === gameState.player1) nextBlackPlayer = gameState.player2;
+        else if (gameState.winner === gameState.player2) nextBlackPlayer = gameState.player1;
+        else nextBlackPlayer = gameState.turn; 
+
+        await updateDoc(roomRef, {
+          board: Array(225).fill(0),
+          status: 'playing',
+          winner: null,
+          lastMove: -1,
+          blackPlayer: nextBlackPlayer,
+          turn: nextBlackPlayer
+        });
+      };
+
+      window.playAgain = async () => {
+        if (!gameState) return;
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'gomoku_rooms', currentRoomCode);
+        await updateDoc(roomRef, {
+          board: Array(225).fill(0),
+          status: 'playing',
+          winner: null,
+          p1Wins: 0,
+          p2Wins: 0,
+          lastMove: -1,
+          blackPlayer: gameState.player1,
+          turn: gameState.player1
+        });
+      };
+
+      window.leaveRoom = () => {
+        if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+        currentRoomCode = null;
+        gameState = null;
+        document.getElementById('join-input').value = '';
+        hideError();
+        updateUI();
+      };
+
+      // 改版後的彈出視窗切換功能
+      window.toggleTip = () => {
+        const modal = document.getElementById('math-tip-modal');
+        if (modal.classList.contains('hidden')) {
+          modal.classList.remove('hidden');
+        } else {
+          modal.classList.add('hidden');
+        }
+      };
+
+      function showError(msg) {
+        UI.lobbyError.innerText = msg;
+        UI.lobbyError.classList.remove('hidden');
+      }
+      function hideError() {
+        UI.lobbyError.classList.add('hidden');
+      }
+
+      function updateUI() {
+        if (!user) {
+          UI.loading.classList.remove('hidden'); UI.lobby.classList.add('hidden'); UI.game.classList.add('hidden');
+          return;
+        }
+        if (!currentRoomCode || !gameState) {
+          UI.loading.classList.add('hidden'); UI.lobby.classList.remove('hidden'); UI.game.classList.add('hidden');
+          return;
+        }
+
+        UI.loading.classList.add('hidden');
+        UI.lobby.classList.add('hidden');
+        UI.game.classList.remove('hidden');
+        UI.game.classList.add('flex');
+
+        const isPlayer1 = gameState.player1 === localPlayerId;
+        const isMyTurn = gameState.turn === localPlayerId;
+        const myColorType = (localPlayerId === gameState.blackPlayer) ? 1 : 2;
+
+        document.getElementById('display-room-code').innerText = currentRoomCode;
+        document.getElementById('room-status-dot').className = `w-2.5 h-2.5 rounded-full ${gameState.status === 'playing' ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`;
+
+        const scoreboard = document.getElementById('scoreboard');
+        if (gameState.status !== 'waiting') {
+          scoreboard.classList.remove('hidden'); scoreboard.classList.add('flex');
+          
+          const p1IsBlack = gameState.blackPlayer === gameState.player1;
+          const p2IsBlack = gameState.blackPlayer === gameState.player2;
+          
+          document.getElementById('score-p1').innerHTML = `P1:${gameState.p1Wins} <span class="text-[10px]">${p1IsBlack ? '⚫' : '⚪'}</span>`;
+          document.getElementById('score-p2').innerHTML = `P2:${gameState.p2Wins} <span class="text-[10px]">${p2IsBlack ? '⚫' : '⚪'}</span>`;
+          document.getElementById('score-p1').className = `flex items-center gap-1 ${isPlayer1 ? "text-emerald-600" : "text-slate-500"}`;
+          document.getElementById('score-p2').className = `flex items-center gap-1 ${!isPlayer1 ? "text-emerald-600" : "text-slate-500"}`;
+          document.getElementById('score-target').innerText = `搶${gameState.targetWins}勝`;
+        } else {
+          scoreboard.classList.add('hidden'); scoreboard.classList.remove('flex');
+        }
+
+        UI.waiting.classList.add('hidden');
+        UI.playing.classList.add('hidden');
+        document.getElementById('round-finished-overlay').classList.add('hidden');
+        document.getElementById('match-finished-overlay').classList.add('hidden');
+
+        if (gameState.status === 'waiting') {
+          UI.waiting.classList.remove('hidden');
+          document.getElementById('big-room-code').innerText = currentRoomCode;
+        } 
+        else {
+          UI.playing.classList.remove('hidden');
+
+          document.getElementById('player-role-text').innerText = isPlayer1 ? "玩家 1 (主)" : "玩家 2 (客)";
+          
+          const colorInd = document.getElementById('my-color-indicator');
+          colorInd.classList.remove('hidden');
+          colorInd.style.background = myColorType === 1 ? '#000' : '#fff';
+
+          const turnInd = document.getElementById('turn-indicator');
+          if (gameState.status === 'playing') {
+            if (isMyTurn) {
+              turnInd.className = "px-3 py-1 md:px-5 md:py-1.5 rounded-full font-bold text-xs md:text-sm shadow-sm transition-all duration-300 bg-emerald-100 text-emerald-800 ring-2 ring-emerald-400 scale-105 flex items-center gap-1";
+              turnInd.innerHTML = "👉 換你下棋！";
+            } else {
+              turnInd.className = "px-3 py-1 md:px-5 md:py-1.5 rounded-full font-bold text-xs md:text-sm shadow-sm transition-all duration-300 bg-slate-100 text-slate-400 flex items-center gap-1";
+              turnInd.innerHTML = "⏳ 等手...";
+            }
+          }
+
+          const cells = UI.boardGrid.children;
+          for (let i = 0; i < 225; i++) {
+            const existingStone = cells[i].querySelector('.stone');
+            if (existingStone) existingStone.remove();
+            
+            const cellValue = gameState.board[i];
+            if (cellValue !== 0) {
+              const stone = document.createElement('div');
+              stone.className = `stone ${cellValue === 1 ? 'black' : 'white'}`;
+              
+              if (i === gameState.lastMove) {
+                const marker = document.createElement('div');
+                marker.className = 'last-move-marker';
+                stone.appendChild(marker);
+              }
+              cells[i].appendChild(stone);
+            }
+          }
+
+          if (gameState.status === 'round_finished') {
+            document.getElementById('round-finished-overlay').classList.remove('hidden');
+            let title = '';
+            if (gameState.winner === 'draw') title = '🤝 平手！';
+            else title = gameState.winner === localPlayerId ? '🎉 你贏了這一局！' : '🥺 對手贏了這一局！';
+            
+            document.getElementById('round-winner-title').innerText = title;
+            document.getElementById('round-score-text').innerText = `目前總分 👉 玩家1: ${gameState.p1Wins} / 玩家2: ${gameState.p2Wins}`;
+          }
+
+          if (gameState.status === 'match_finished') {
+            document.getElementById('match-finished-overlay').classList.remove('hidden');
+            document.getElementById('match-winner-title').innerText = gameState.winner === localPlayerId ? '🏆 你獲得了總冠軍！' : '💔 遺憾，對手獲得了總冠軍！';
+            document.getElementById('match-final-score').innerText = `最終比數 ${gameState.p1Wins} : ${gameState.p2Wins}`;
+          }
+        }
+      }
+    }
+
+  </script>
+</body>
+</html>
