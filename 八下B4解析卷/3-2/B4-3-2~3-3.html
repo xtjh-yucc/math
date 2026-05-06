@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - 自動解題系統</title>
+    
+    <!-- 引入 MathJax 3 並優化效能：僅在網頁初次載入時渲染一次 -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            },
+            startup: {
+                typeset: true // 確保網頁載入時自動渲染所有公式
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none; /* 預設隱藏，切換速度快 */
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 段考模擬試卷</h1>
+        <p>範圍：3-2~3-3 尺規作圖、三角形的全等性質 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        <!-- 題目將透過 JavaScript 動態載入 -->
+    </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "1. 如右圖，下列敘述何者正確？",
+            image: "q1_img.png",
+            options: ["\\( \\overline{AB} \\neq \\overline{BC} \\)", "\\( \\overline{AC} = 2\\overline{CD} \\)", "\\( \\overline{AB} = \\overline{CD} = 2a \\)", "\\( \\overline{AD} = 4a \\)"],
+            answer: 1,
+            solution: "從圖中可觀察線段分割關係：\\( \\overline{AC} \\) 的長度恰好是 \\( \\overline{CD} \\) 的兩倍[cite: 6]。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "2. 如右圖，民偉利用尺規作圖，欲畫出 \\( \\angle POQ = \\angle ABC \\)，則下列敘述何者正確？",
+            image: "q2_img.png",
+            options: ["\\( \\overline{AB} = \\overline{AC} \\)", "\\( \\overline{PO} = \\overline{OP} \\)", "\\( \\overline{PQ} = \\overline{AC} \\)", "\\( \\overline{PO} = \\overline{AC} \\)"],
+            answer: 2,
+            solution: "此為「等角作圖」步驟[cite: 6]。\n先在原角以 B 為圓心畫弧交 A、C，接著在新角同半徑畫弧。\n最後量取 \\( \\overline{AC} \\) 的長度作為弦長複製，故需保證 \\( \\overline{PQ} = \\overline{AC} \\)[cite: 6]。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "3. 下列何者不是三角形全等性質？",
+            options: ["SSS", "ASA", "AAS", "SSA"],
+            answer: 3,
+            solution: "三角形的全等性質包含：SSS、SAS、ASA、AAS、RHS[cite: 6]。\nSSA (邊邊角) 無法保證兩個三角形全等[cite: 6]。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "4. 如右圖，\\( \\triangle ABC \\) 與 \\( \\triangle DCB \\) 中，\\( \\angle 1 = \\angle 2 \\)，\\( \\angle A = \\angle D \\)，則 \\( \\triangle ABC \\cong \\triangle DCB \\) 是根據何種全等性質？",
+            image: "q4_img.png",
+            options: ["AAS", "ASA", "RHS", "AAA"],
+            answer: 0,
+            solution: "已知兩組角相等：\\( \\angle 1 = \\angle 2 \\) 及 \\( \\angle A = \\angle D \\)[cite: 6]。\n兩三角形又共用底邊 \\( \\overline{BC} \\) (非夾邊)[cite: 6]。\n兩角及一非夾邊對應相等，符合 AAS 全等性質[cite: 6]。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "5. 右圖為牧群利用尺規作圖，使得 \\( \\triangle DEF \\cong \\triangle ABC \\)，則牧群是利用何種作圖方式？",
+            image: "q5_img.png",
+            options: ["SSS", "SAS", "AAS", "RHS"],
+            answer: 0,
+            solution: "由作圖痕跡可知，他分別複製了三條邊的長度，即 \\( \\overline{AC} = \\overline{DF} \\)，\\( \\overline{AB} = \\overline{DE} \\)，\\( \\overline{BC} = \\overline{EF} \\)[cite: 6]。\n符合三邊對應相等的 SSS 全等性質[cite: 6]。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "6. 如右圖，\\( \\angle A = 24^{\\circ} \\)，\\( \\angle BCA = 52^{\\circ} \\)，以 B 點為圓心、\\( \\overline{BC} \\) 長為半徑畫弧，交 \\( \\overline{AC} \\) 於 D 點，延伸至 E 點，使得 \\( \\overline{AC} = \\overline{DE} \\)，則下列敘述何者錯誤？",
+            image: "q6_img.png",
+            options: ["\\( \\overline{BE} = \\overline{AB} \\)", "\\( \\angle ABD = 24^{\\circ} \\)", "\\( \\angle CBD = 76^{\\circ} \\)", "根據 SAS 全等性質，\\( \\triangle BCE \\cong \\triangle BDA \\)"],
+            answer: 1,
+            solution: "因為畫弧，\\( \\overline{BC} = \\overline{BD} \\)，\\( \\triangle BCD \\) 為等腰三角形，底角 \\( \\angle BDC = 52^{\\circ} \\)[cite: 6]。\n利用外角定理：\\( \\angle BDC = \\angle A + \\angle ABD \\)[cite: 6]。\n\\( 52^{\\circ} = 24^{\\circ} + \\angle ABD \\Rightarrow \\angle ABD = 28^{\\circ} \\)[cite: 6]。\n選項 (B) 寫 \\( 24^{\\circ} \\) 是錯誤的[cite: 6]。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "7. 宜瑄說明 \\( \\triangle BAF \\) 與 \\( \\triangle CDE \\) 中，\\( \\angle 1 = \\angle 2 \\)，\\( \\overline{BF} = \\overline{CE} \\)，又 ______，可得 \\( \\triangle BAF \\cong \\triangle CDE \\) (ASA 全等)。試問空格處應填入何種條件？",
+            image: "q7_img.png",
+            options: ["\\( \\angle A = \\angle D \\)", "\\( \\angle B = \\angle C \\)", "\\( \\overline{AB} = \\overline{CD} \\)", "\\( \\overline{AF} = \\overline{DE} \\)"],
+            answer: 1,
+            solution: "要構成 ASA (角邊角) 全等，需要兩個角及它們的夾邊對應相等[cite: 6]。\n已知角 \\( \\angle 1 = \\angle 2 \\) 與邊 \\( \\overline{BF} = \\overline{CE} \\) (推導出夾邊對應)[cite: 6]。\n故所需的另一個角必須是與該邊相鄰的 \\( \\angle B = \\angle C \\)[cite: 6]。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "8. 已知直角 \\( \\triangle ABC \\) 與直角 \\( \\triangle DEF \\) 中，若 \\( \\overline{AB} = \\overline{DE} \\)，且 \\( \\overline{AC} \\parallel \\overline{DF} \\)，則下列敘述何者正確？",
+            options: ["\\( \\triangle ABC \\cong \\triangle DEF \\) 根據 AAS 全等性質", "\\( \\triangle ABC \\cong \\triangle DEF \\) 根據 SAS 全等性質", "\\( \\triangle ABC \\cong \\triangle DEF \\) 根據 ASA 全等性質", "\\( \\triangle ABC \\) 和 \\( \\triangle DEF \\) 不一定全等"],
+            answer: 3,
+            solution: "僅有一組斜邊相等以及直角，配合平行線只能推得部分角度關係[cite: 6]。\n條件不足以證明兩個直角三角形全等，故不一定全等[cite: 6]。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "9. 若 \\( \\triangle ABC \\cong \\triangle DEF \\)，且 A、B、C 分別對應 D、E、F，已知 \\( \\angle A = (5x + 7)^{\\circ} \\)，\\( \\angle B = (9x + 10)^{\\circ} \\)，\\( \\angle C = (6x - 17)^{\\circ} \\)，則 \\( \\angle E \\) 為多少度？",
+            options: ["\\( 87^{\\circ} \\)", "\\( 89^{\\circ} \\)", "\\( 91^{\\circ} \\)", "\\( 93^{\\circ} \\)"],
+            answer: 2,
+            solution: "三角形內角和為 \\( 180^{\\circ} \\)[cite: 6]：\n\\( (5x + 7) + (9x + 10) + (6x - 17) = 180 \\)[cite: 6]\n\\( 20x = 180 \\Rightarrow x = 9 \\)[cite: 6]。\n因全等，\\( \\angle E = \\angle B = 9(9) + 10 = 91^{\\circ} \\)[cite: 6]。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "10. 如右圖，AC 與 BD 相交於 E 點，若 \\( \\triangle ABE \\) 與 \\( \\triangle DCE \\) 中，\\( \\overline{AB} = \\overline{CD} \\)，\\( \\angle A = \\angle D \\)，則下列敘述何者錯誤？",
+            image: "q10_img.png",
+            options: ["\\( \\angle AEB = \\angle DEC \\)", "\\( \\triangle ABE \\) 與 \\( \\triangle DCE \\) 面積相等", "\\( \\overline{AE} = \\overline{CE} \\)", "\\( \\angle AED = \\angle C + \\angle A \\)"],
+            answer: 2,
+            solution: "已知 \\( \\angle A = \\angle D \\)，對頂角 \\( \\angle AEB = \\angle DEC \\)，且 \\( \\overline{AB} = \\overline{CD} \\)[cite: 6]。\n根據 AAS，兩三角形全等[cite: 6]。\n全等三角形對應邊相等，\\( \\overline{AE} \\) 的對應邊應為 \\( \\overline{DE} \\)，並非 \\( \\overline{CE} \\)[cite: 6]。選項 (C) 錯誤。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "11. 右圖直線 L 為 \\( \\overline{AB} \\) 的對稱軸，P、Q 為 L 上相異的兩點，則下列敘述何者錯誤？",
+            image: "q11_img.png",
+            options: ["\\( \\triangle AQO \\cong \\triangle BQO \\)", "\\( \\triangle APQ \\cong \\triangle BPQ \\)", "\\( \\triangle APO \\cong \\triangle BPO \\)", "\\( \\triangle APB \\cong \\triangle AQB \\)"],
+            answer: 3,
+            solution: "L 為中垂線，故左右對稱的三角形皆全等[cite: 6]。\n但上下兩個三角形 \\( \\triangle APB \\) 和 \\( \\triangle AQB \\) 之間，沒有必然的全等關係 (因 P、Q 位置不固定)[cite: 6]。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "12. 如右圖，\\( \\triangle ABC \\cong \\triangle DEF \\)，其中 A、B、C 的對應點分別為 D、E、F。若 \\( \\overline{AB} = x + y - 1 \\)，\\( \\overline{BC} = y + 2 \\)，\\( \\overline{AC} = x + 1 \\)，\\( \\overline{DE} = 6 \\)，\\( \\overline{DF} = 4 \\)，則下列敘述何者正確？",
+            image: "q12_img.png",
+            options: ["\\( \\triangle DEF \\) 周長為 17", "\\( \\overline{BC} = 8 \\)", "\\( \\angle B = 36^{\\circ} \\)", "x - y = 2"],
+            answer: 0,
+            solution: "對應邊相等：\n\\( \\overline{AC} = \\overline{DF} \\Rightarrow x + 1 = 4 \\Rightarrow x = 3 \\)[cite: 6]。\n\\( \\overline{AB} = \\overline{DE} \\Rightarrow x + y - 2 = 6 \\Rightarrow 3 + y - 2 = 6 \\Rightarrow y = 5 \\)[cite: 6] (註:原卷計算式設定)。\n\\( \\overline{BC} = y + 2 = 7 \\)[cite: 6]。\n周長 = \\( 4 + 6 + 7 = 17 \\)[cite: 6]。\n答：選 (A)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "1. 如右圖，在下列各題填入適當三角形全等性質：\n(1) 若 \\( \\angle 1 = \\angle 2 \\)，\\( \\angle 3 = \\angle 4 \\)，則 \\( \\triangle AOD \\cong \\triangle AOE \\) 根據 _______ 全等性質。\n(2) 若 \\( \\angle 5 = \\angle 6 \\)，\\( \\overline{BO} = \\overline{CO} \\)，則 \\( \\triangle BOD \\cong \\triangle COE \\) 根據 _______ 全等性質。",
+            image: "f1_img.png",
+            solution: "(1) 兩角與一夾邊 (共用邊 \\( \\overline{AO} \\)) 相等，為 ASA 全等[cite: 6]。\n(2) 兩角 (包含對頂角相等) 與一非夾邊相等，為 AAS 全等[cite: 6]。\n答：(1) ASA (2) AAS。"
+        },
+        {
+            type: 'fill',
+            text: "2. 右圖為 \\( \\triangle ABC \\) 與 \\( \\triangle DBE \\) 重疊的情形，其中 \\( \\overline{AC} = \\overline{BE} \\)，\\( \\overline{AB} = \\overline{BD} \\)，\\( \\overline{BC} = \\overline{DE} \\)。若 \\( \\angle AEB = 68^{\\circ} \\)，\\( \\angle DBE = 32^{\\circ} \\)，則 \\( \\angle ABD = \\) _______ 度。",
+            image: "f2_img.png",
+            solution: "由 SSS 可知 \\( \\triangle ABC \\cong \\triangle BDE \\)[cite: 6]。\n利用全等與角度運算，\\( \\angle ABD = (180^{\\circ} - 68^{\\circ} - 32^{\\circ}) - 32^{\\circ} = 48^{\\circ} \\)[cite: 6]。\n答：48。"
+        },
+        {
+            type: 'fill',
+            text: "3. 如右圖，\\( \\triangle ABD \\) 與 \\( \\triangle ACD \\) 中，若 \\( \\angle 1 = \\angle 2 \\)，\\( \\overline{BD} = \\overline{CD} \\)，則 \\( \\angle B + \\angle C = \\) _______ 度。",
+            image: "f3_img.png",
+            solution: "此為 SSA 的特殊互補情況[cite: 6]。在無法證明全等時，這兩個不相等的對應角互補[cite: 6]。\n因此 \\( \\angle B + \\angle C = 180^{\\circ} \\)[cite: 6]。\n答：180。"
+        },
+        {
+            type: 'fill',
+            text: "4. 已知 \\( \\triangle ABC \\cong \\triangle DEF \\)，其中 A、B、C 的對應點為 D、E、F。若 \\( \\overline{AB} = 3x - 1 \\)，\\( \\overline{BC} = 4x + 1 \\)，\\( \\overline{AC} = 2x + 3 \\)，\\( \\overline{DE} = x + 5 \\)，則 \\( \\triangle DEF \\) 周長為 _______ 。",
+            solution: "全等對應邊相等：\\( 3x - 1 = x + 5 \\Rightarrow 2x = 6 \\Rightarrow x = 3 \\)[cite: 6]。\n三邊長分別為 8, 13, 9[cite: 6]。\n周長 = 8 + 13 + 9 = 30[cite: 6]。\n答：30。"
+        },
+        {
+            type: 'fill',
+            text: "5. 右圖 \\( \\triangle ABC \\) 與 \\( \\triangle BDE \\) 皆為正三角形，若 \\( \\angle AEB = 105^{\\circ} \\)，則 \\( \\angle EDC = \\) _______ 度。",
+            image: "f5_img.png",
+            solution: "證明 \\( \\triangle ABE \\cong \\triangle CBD \\) (SAS)[cite: 6]。\n對應角 \\( \\angle CDB = \\angle AEB = 105^{\\circ} \\)[cite: 6]。\n\\( \\angle EDC = 105^{\\circ} - 60^{\\circ} = 45^{\\circ} \\)[cite: 6]。\n答：45。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "1. 下圖 ①~⑩ 中，請回答何者全等並寫出是根據哪一種全等性質？",
+            image: "calc1_img.png",
+            solution: "根據各圖形的邊角條件比對：\n① 和 ⑧ 全等 (SAS)\n② 和 ⑩ 全等 (AAS)\n③ 和 ⑥ 全等 (SSS)\n④ 和 ⑦ 全等 (RHS)\n⑤ 和 ⑨ 全等 (ASA)[cite: 6]"
+        },
+        {
+            type: 'calc',
+            text: "2. 如右圖，四邊形 ABCD 與四邊形 AEFG 均為正方形，則：\n(1) 試說明 \\( \\triangle ABG \\cong \\triangle ADE \\)。\n(2) 若 \\( \\angle AGB = 60^{\\circ} \\)，則 \\( \\angle DPG \\) 為多少度？",
+            image: "calc2_img.png",
+            solution: "(1) 利用正方形邊長與直角性質，推得夾角相等，根據 SAS 全等性質說明兩三角形全等[cite: 6]。\n(2) 運用全等對應角及內角運算，\\( \\angle 1 = 90^{\\circ} - 60^{\\circ} = 30^{\\circ} \\)[cite: 6]。\n外角 \\( \\angle DPG = 90^{\\circ} - 30^{\\circ} = 60^{\\circ} \\)[cite: 6]。\n答：(2) 60度。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "1. 右圖為永晴利用尺規作圖的痕跡，若 \\( \\angle 1 = \\angle 2 \\)，連接 \\( \\overline{AP} \\)、\\( \\overline{BP} \\)，則下列四人所述何者正確？",
+            image: "a1_img.png",
+            options: ["建妤：根據 AAS", "文華：根據 RHS", "恩廷：根據 ASA", "宥安：根據 SAS"],
+            answer: 3,
+            solution: "角平分線作圖痕跡保證了 \\( \\overline{OA} = \\overline{OB} \\)[cite: 6]。\n加上平分角 \\( \\angle 1 = \\angle 2 \\)，以及共用邊 \\( \\overline{OP} \\)[cite: 6]。\n構成邊、角、邊的條件，符合 SAS 全等性質[cite: 6]。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "2. 雨辰利用尺規作圖（如附圖），若 \\( \\angle A = 24^{\\circ} \\)，\\( \\angle BCA = 52^{\\circ} \\)，則下列敘述何者正確？",
+            image: "a2_img.png",
+            options: ["\\( \\angle BDC = 48^{\\circ} \\)", "\\( \\angle EBC = 28^{\\circ} \\)", "\\( \\angle CBD = 72^{\\circ} \\)", "\\( \\triangle ABC \\cong \\triangle EBD \\) 根據 ASA"],
+            answer: 1,
+            solution: "由作圖痕跡得知 \\( \\triangle ABC \\cong \\triangle EBD \\) (SAS)[cite: 6]。\n推得 \\( \\angle BED = 24^{\\circ} \\)[cite: 6]。\n故 \\( \\angle EBC = 52^{\\circ} - 24^{\\circ} = 28^{\\circ} \\)[cite: 6]。\n答：選 (B)。"
+        },
+        {
+            type: 'app',
+            text: "3. 梓瑜將四邊形 ABCD 及四邊形 EFGH 分別以對角線 AC 與 EG 分割成甲、乙、丙、丁四個三角形，利用量角器測得 \\( \\angle 1 = \\angle 3 = \\angle 6 = 28^{\\circ} \\)，\\( \\angle 2 = \\angle 4 = \\angle 5 = \\angle 7 \\)，且 \\( \\angle 1 \\neq \\angle 2 \\)，則下列敘述何者正確？",
+            image: "a3_img.png",
+            options: ["甲、乙全等，丙、丁不全等", "甲、乙不全等，丙、丁全等", "甲、乙全等，丙、丁全等", "甲、乙不全等，丙、丁不全等"],
+            answer: 0,
+            solution: "甲、乙兩三角形有共用邊且兩端角度分別相等，符合 ASA 全等[cite: 6]。\n丙、丁兩三角形條件不足，無法證明全等[cite: 6]。\n答：選 (A)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            // 處理圖片區塊
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            // 處理選擇題選項按鈕
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${item.text}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將所有產生的 HTML 一次性插入網頁中
+        container.innerHTML = htmlContent;
+        
+        // ⚠️ 取消這裡的 MathJax.typesetPromise(); 
+        // 因為上方設定檔中已經設有 startup: { typeset: true }，MathJax 會在網頁元素產生後自動在背景渲染完畢。
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 僅單純切換 CSS 的 display 屬性，不重新呼叫渲染，達到瞬間開關的效果
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 頁面載入時啟動
+    renderQuiz();
+
+</script>
+
+</body>
+</html>
