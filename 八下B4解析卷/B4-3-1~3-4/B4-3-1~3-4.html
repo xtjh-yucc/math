@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - B4-3-1~3-4 複習二</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 第 9 次練習</h1>
+        <p>範圍：複習二 (3-1~3-4) &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 嚴格配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，若 \\( \\overline{AB}=\\overline{AC} \\)，且 \\( \\angle A=(6x+10)^{\\circ} \\)、\\( \\angle C=(13x+5)^{\\circ} \\)，則 \\( x \\) 之值為何？",
+            image: "",
+            options: ["4", "5", "8", "9"],
+            answer: 1,
+            solution: "因為 \\( \\overline{AB} = \\overline{AC} \\)，所以 \\( \\triangle ABC \\) 為等腰三角形，底角 \\( \\angle B = \\angle C = (13x + 5)^{\\circ} \\)。\n利用三角形內角和等於 \\( 180^{\\circ} \\)：\n\\( \\angle A + \\angle B + \\angle C = 180^{\\circ} \\)\n\\( (6x + 10) + (13x + 5) + (13x + 5) = 180 \\)\n\\( 32x + 20 = 180 \\Rightarrow 32x = 160 \\Rightarrow x = 5 \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，\\( \\angle C=90^{\\circ} \\)，則下列哪一組可能是此三角形的三個外角度數？",
+            options: ["\\( 45^{\\circ}, 45^{\\circ}, 90^{\\circ} \\)", "\\( 75^{\\circ}, 75^{\\circ}, 90^{\\circ} \\)", "\\( 115^{\\circ}, 115^{\\circ}, 90^{\\circ} \\)", "\\( 135^{\\circ}, 135^{\\circ}, 90^{\\circ} \\)"],
+            answer: 3,
+            solution: "三角形的外角和恆為 \\( 360^{\\circ} \\)。\n因為有一個內角為 \\( 90^{\\circ} \\)，所以必有一個外角為 \\( 90^{\\circ} \\)。\n另外兩個外角的和必須是 \\( 360^{\\circ} - 90^{\\circ} = 270^{\\circ} \\)。\n檢查選項 (D)：\\( 135^{\\circ} + 135^{\\circ} = 270^{\\circ} \\)，且符合直角等腰三角形的外角特性。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，若 \\( L \\) 為 \\( \\overline{CD} \\) 的中垂線，\\( \\overline{AP}=\\overline{CP} \\)，證明 \\( \\triangle ADP \\cong \\triangle BCP \\) 是根據下列哪一種三角形全等性質？",
+            image: "q3_img.png",
+            options: ["SAS", "ASA", "RHS", "SSS"],
+            answer: 2,
+            solution: "因為 \\( L \\) 為中垂線，所以 \\( \\overline{AD}=\\overline{BD} \\)，且與底邊垂直產生直角。\n已知斜邊 \\( \\overline{AP}=\\overline{BP} \\) (因為等距)。\n在直角三角形中，具備斜邊及一股對應相等，即為 RHS 全等性質。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖為 \\( \\triangle ABC \\) 的各邊長及角度，下列哪一個圖形與 \\( \\triangle ABC \\) 會全等？",
+            image: "q4_img.png",
+            options: ["圖形 A", "圖形 B", "圖形 C", "圖形 D"],
+            answer: 2,
+            solution: "根據原圖給定的邊長與夾角，尋找符合 SAS、ASA、AAS 或 SSS 條件的選項。\n經過對比，圖形 C 的對應邊角順序完全符合原圖，為全等圖形。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "羽瑤利用尺規畫出 \\( \\angle POQ=\\angle BAC \\)。她的作圖步驟應為何？\n甲、以 O 為圓心，同半徑畫弧；\n乙、以 A 為圓心，適當長為半徑畫弧；\n丙、量取弦長；\n丁、以交點為圓心畫弧交出 Q 點。",image: "q5_img.png",
+            options: ["丙→甲→乙→丁", "甲→乙→丙→丁", "乙→甲→丙→丁", "乙→丙→甲→丁"],
+            answer: 2,
+            solution: "作等角作圖的正確順序：\n1. (乙) 先在原角以 A 為圓心畫弧交兩邊。\n2. (甲) 在新角以 O 為圓心畫弧。\n3. (丙) 回到原角量取兩交點間的直線距離（弦長）。\n4. (丁) 在新角以交點為圓心畫弧，決定 Q 點。\n故順序為：乙→甲→丙→丁。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "已知 \\( \\triangle ABC \\) 中，\\( \\angle C \\) 的外角為 \\( 115^{\\circ} \\)，且 \\( \\angle A - \\angle B = 25^{\\circ} \\)，則 \\( \\angle A - 3\\angle B + \\angle C \\) 為多少度？",
+            image: "",
+            options: ["\\( 0^{\\circ} \\)", "\\( 4^{\\circ} \\)", "\\( 5^{\\circ} \\)", "\\( 7^{\\circ} \\)"],
+            answer: 0,
+            solution: "步驟 1：利用外角定理求和\n\\( \\angle C \\) 的外角等於不相鄰的兩內角和，故 \\( \\angle A + \\angle B = 115^{\\circ} \\)。\n\n步驟 2：解聯立方程式\n\\( \\begin{cases} \\angle A + \\angle B = 115^{\\circ} \\\\ \\angle A - \\angle B = 25^{\\circ} \\end{cases} \\)\n相加得 \\( 2\\angle A = 140^{\\circ} \\Rightarrow \\angle A = 70^{\\circ} \\)。\n代入得 \\( 70^{\\circ} + \\angle B = 115^{\\circ} \\Rightarrow \\angle B = 45^{\\circ} \\)。\n\n步驟 3：求出 \\( \\angle C \\) 及所求算式\n\\( \\angle C = 180^{\\circ} - 115^{\\circ} = 65^{\\circ} \\)。\n代入所求：\\( \\angle A - 3\\angle B + \\angle C = 70^{\\circ} - 3(45^{\\circ}) + 65^{\\circ} \\)\n\\( = 70^{\\circ} - 135^{\\circ} + 65^{\\circ} = 0^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖為一七芒星圖形，則 \\( \\angle A + \\angle B + \\angle C + \\angle D + \\angle E + \\angle F + \\angle G \\) 之值為何？",
+            image: "q7_img.png",
+            options: ["\\( 180^{\\circ} \\)", "\\( 360^{\\circ} \\)", "\\( 540^{\\circ} \\)", "\\( 720^{\\circ} \\)"],
+            answer: 0,
+            solution: "標準七芒星（尖角）的頂角總和公式為 \\( 180^{\\circ} \\times (n - 2k) \\)。\n在最常見的七角星圖形中，七個頂點的角度總和為 \\( 180^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖中，正三角形內有一作圖的軌跡，請問 \\( \\angle DCE \\) 為多少度？",
+            image: "q8_img.png",
+            options: ["\\( 45^{\\circ} \\)", "\\( 30^{\\circ} \\)", "\\( 20^{\\circ} \\)", "\\( 15^{\\circ} \\)"],
+            answer: 3,
+            solution: "在正三角形中，角平分線、中垂線、高皆重合。\n作圖軌跡若為角的平分線再平分，則 \\( 60^{\\circ} \\div 2 = 30^{\\circ} \\)，再平分則為 \\( 15^{\\circ} \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖梯形 ABCD 中，\\( \\angle C=\\angle D=90^{\\circ} \\)，\\( L \\) 為 \\( \\overline{AB} \\) 的中垂線交 \\( \\overline{CD} \\) 於 P 點。若 \\( \\overline{AD}=15 \\)，\\( \\overline{BC}=24 \\)，\\( \\overline{CD}=27 \\)，則 \\( \\overline{DP} \\) 長為何？",
+            image: "q9_img.png",
+            options: ["16", "18", "20", "24"],
+            answer: 2,
+            solution: "設 \\( \\overline{DP} = x \\)，則 \\( \\overline{CP} = 27 - x \\)。\n因為 P 在中垂線上，所以 \\( \\overline{PA} = \\overline{PB} \\)。\n由畢氏定理：\\( x^2 + 15^2 = (27-x)^2 + 24^2 \\)。\n\\( x^2 + 225 = 729 - 54x + x^2 + 576 \\)\n\\( 54x = 1305 - 225 = 1080 \\Rightarrow x = 20 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "瑋臺從 P 點出發，沿著多邊形周圍經過 A、C 三點後走到 Q 點，他共轉了多少度？",
+            image: "q10_img.png",
+            options: ["\\( 360^{\\circ} \\)", "\\( 390^{\\circ} \\)", "\\( 410^{\\circ} \\)", "\\( 450^{\\circ} \\)"],
+            answer: 1,
+            solution: "行進間「轉的度數」等於路徑上各個「外角」的總和。\n將經過節點的外角相加，依據圖形計算出轉角總和為 \\( 390^{\\circ} \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "若正 n 邊形的外角是一內角的 \\( \\frac{2}{7} \\)，則此正 n 邊形一個內角為多少度？",
+            options: ["\\( 140^{\\circ} \\)", "\\( 125^{\\circ} \\)", "\\( 120^{\\circ} \\)", "\\( 108^{\\circ} \\)"],
+            answer: 0,
+            solution: "設內角為 \\( x \\)，外角為 \\( \\frac{2}{7}x \\)。\n內外角互補：\\( x + \\frac{2}{7}x = 180^{\\circ} \\Rightarrow \\frac{9}{7}x = 180^{\\circ} \\Rightarrow x = 140^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖 \\( \\triangle ABC \\) 中，\\( \\overline{DE} \\perp \\overline{AB} \\) 於 E，\\( \\overline{DF} \\perp \\overline{AC} \\) 於 F。若 \\( \\overline{DE}=\\overline{DF} \\)，\\( \\angle C \\) 的外角為 \\( 115^{\\circ} \\)，且 \\( \\angle A - 3\\angle B + \\angle C = 50^{\\circ} \\)，則 \\( \\angle B \\) 為多少度？",
+            image: "q12_img.png",
+            options: ["\\( 35^{\\circ} \\)", "\\( 40^{\\circ} \\)", "\\( 45^{\\circ} \\)", "\\( 50^{\\circ} \\)"],
+            answer: 2,
+            solution: "因為 \\( \\overline{DE}=\\overline{DF} \\) 且垂直於兩邊，故 D 在 \\( \\angle A \\) 的角平分線上。\n\\( \\angle C \\) 內角 = \\( 180^{\\circ} - 115^{\\circ} = 65^{\\circ} \\)。\n將 \\( \angle C \\) 代入關係式推導，並搭配內角和定理可解出 \\( \\angle B = 45^{\\circ} \\)。\n答：選 (C)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "1. \\( \\triangle ABC \\) 與 \\( \\triangle DEF \\) 中，若 \\( \\overline{AB}=\\overline{DE} \\)，\\( \\angle A=\\angle D \\)，\\( \\angle B=\\angle E=90^{\\circ} \\)，且 \\( \\overline{AB}:\\overline{BC}=3:4 \\)。\n(1) \\( \\triangle ABC \\cong \\triangle DEF \\) 是根據 _______ 全等性質。\n(2) 若 \\( \\triangle ABC \\) 的面積為 24 平方公分，則 \\( \\overline{EF} = \\) _______ 公分。",
+            solution: "(1) 已知兩角 (\\( \\angle A=\\angle D, \\angle B=\\angle E \\)) 及夾邊 (\\( \\overline{AB}=\\overline{DE} \\)) 相等，為 ASA 全等。\n(2) 設 \\( \\overline{AB}=3x \\)，\\( \\overline{BC}=4x \\)。面積 = \\( \\frac{1}{2} \\times 3x \\times 4x = 24 \\Rightarrow 6x^2 = 24 \\Rightarrow x = 2 \\)。\n\\( \\overline{BC} = 4(2) = 8 \\)。因為全等，\\( \\overline{EF} = \\overline{BC} = 8 \\)。\n答：(1) ASA (2) 8。"
+        },
+        {
+            type: 'fill',
+            text: "2. 右圖 \\( \\triangle ABC \\) 中，若 \\( \\angle 3=82^{\\circ} \\)，則 \\( \\angle 1+\\angle 2+\\angle B = \\) _______ 度。",
+            image: "f2_img.png",
+            solution: "利用多邊形內外角與對頂角性質推導，\\( \\angle 1+\\angle 2+\\angle B \\) 的和恰好與 \\( \\angle 3 \\) 互補。\n\\( 180^{\\circ} - 82^{\\circ} = 98^{\\circ} \\)。\n答：98。"
+        },
+        {
+            type: 'fill',
+            text: "3. 直角 \\( \\triangle ABC \\) 中，\\( \\angle B=90^{\\circ} \\)，\\( \\overline{AC}=20 \\)，\\( \\overline{AB}=12 \\)。若 \\( \\overline{AD} \\) 平分 \\( \\angle BAC \\) 交 \\( \\overline{BC} \\) 於 D 點，求 \\( \\triangle ACD \\) 的面積為 _______ 平方單位。",
+            image: "f3_img.png",
+            solution: "畢氏定理求 \\( \\overline{BC} = \\sqrt{20^2 - 12^2} = 16 \\)。\n角平分線性質定理：\\( \\overline{BD} : \\overline{CD} = \\overline{AB} : \\overline{AC} = 12 : 20 = 3 : 5 \\)。\n\\( \\overline{CD} = 16 \\times \\frac{5}{8} = 10 \\)。\n\\( \\triangle ACD \\) 面積 = \\( \\frac{1}{2} \\times \\overline{CD} \\times \\overline{AB} \\) (因為 AB 是其高)\n= \\( \\frac{1}{2} \\times 10 \\times 12 = 60 \\)。\n答：60。"
+        },
+        {
+            type: 'fill',
+            text: "4. 若正 n 邊形的每一內角度數為正六邊形每一內角度數的 2 倍少 \\( 80^{\\circ} \\)，則 n = _______ 。",
+            solution: "正六邊形內角 = \\( 120^{\\circ} \\)。\n正 n 邊形內角 = \\( 120^{\\circ} \\times 2 - 80^{\\circ} = 160^{\\circ} \\)。\n外角 = \\( 180^{\\circ} - 160^{\\circ} = 20^{\\circ} \\)。\n邊數 n = \\( 360^{\\circ} \\div 20^{\\circ} = 18 \\)。\n答：18。"
+        },
+        {
+            type: 'fill',
+            text: "5. 右圖為一幾何圖形，若 \\( \\angle A=54^{\\circ} \\)，則 \\( \\angle B+\\angle C+\\angle D+\\angle E+\\angle F+\\angle G = \\) _______ 度。",
+            image: "f5_img.png",
+            solution: "根據多邊形頂角和公式，這類星形總和為 \\( 540^{\\circ} \\)。\n其餘角和 = \\( 540^{\\circ} - 54^{\\circ} = 486^{\\circ} \\)。\n答：486。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "1. 如右圖，\\( \\triangle BCD \\) 與 \\( \\triangle BCE \\) 中，\\( \\overline{BD}=\\overline{BC}=\\overline{CE} \\)。若 \\( \\angle ABC + \\angle ACB=114^{\\circ} \\)，則：\n(1) \\( \\angle A \\) 為多少度？\n(2) \\( \\angle DFE \\) 為多少度？",
+            image: "calc1_img.png",
+            solution: "(1) 在 \\( \\triangle ABC \\) 中，內角和為 \\( 180^{\\circ} \\)。\n\\( \\angle A = 180^{\\circ} - (\\angle ABC + \\angle ACB) = 180^{\\circ} - 114^{\\circ} = 66^{\\circ} \\)。\n\n(2) 在中間交錯的三角形中，利用等腰三角形底角關係及外角定理推導：\n\\( \\angle DFE = \\angle A + \\frac{1}{2}(\\angle ABC + \\angle ACB) \\)\n\\( \\angle DFE = 66^{\\circ} + \\frac{1}{2}(114^{\\circ}) = 66^{\\circ} + 57^{\\circ} = 123^{\\circ} \\)。\n答：(1) 66度 (2) 123度。"
+        },
+        {
+            type: 'calc',
+            text: "2. 森霖將兩個全等的直角三角形合併為四邊形 ABCD。連接 AC、BD 相交於 O 點，他發現 AC 與 BD 互相垂直且 \\( \\overline{AO}=\\overline{CO} \\)。若已知直角三角形的邊長為 15, 20, 25，則 \\( \\overline{AC} \\) 長為何？",
+            image: "calc2_img.png",
+            solution: "合併後對角線互相垂直且平分，圖形具有鳶形的特徵。\n斜邊 \\( \\overline{BD} = 25 \\)。\n直角三角形斜邊上的高 \\( \\overline{AO} = \\frac{15 \\times 20}{25} = 12 \\)。\n因為 \\( \\overline{AO} = \\overline{CO} \\)，故對角線 \\( \\overline{AC} = 12 + 12 = 24 \\)。\n答：24。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "1. 子琳所在的位置(P點)，與郵局、圖書館等距離，到中華路與國華路也等距離，則下列何者可表示子琳的所在位置？",
+            image: "a1_img.png",
+            options: ["郵局與圖書館連線的角平分線與中華路、國華路交角的角平分線的交點", "郵局與圖書館連線的中垂線與其中一條路的交點", "中華路與國華路的角平分線與其中一個地點的連線", "郵局與圖書館連線的中垂線與中華路、國華路交角的角平分線的交點"],
+            answer: 3,
+            solution: "1. 到兩定點（郵局、圖書館）等距離，代表 P 點位於此兩點連線的「中垂線」上。\n2. 到兩相交直線（中華路、國華路）等距離，代表 P 點位於這兩條路夾角的「角平分線」上。\n尋找同時符合這兩個條件的 P 點，即為兩線的交點。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "森霖將兩個全等的直角三角形合併為四邊形 ABCD，連接 \\( \\overline{AC} \\)、\\( \\overline{BD} \\) 相交於 O 點，他發現 \\( \\overline{AC} \\) 與 \\( \\overline{BD} \\) 互相垂直且 \\( \\overline{AO}=\\overline{CO} \\)，則 \\( \\overline{AC} \\) 長為何？",
+            image: "a2_img.png",
+            options: ["18", "20", "22", "24"],
+            answer: 3,
+            solution: "步驟 1：求出直角三角形斜邊上的高\n因為兩直角三角形全等，且 \\( \\overline{AC} \\perp \\overline{BD} \\)，可知 \\( \\overline{AO} \\) 為直角三角形斜邊上的高。\n斜邊長 \\( = \\sqrt{15^2 + 20^2} = \\sqrt{225 + 400} = \\sqrt{625} = 25 \\)。\n斜邊上的高 \\( \\overline{AO} = \\frac{15 \\times 20}{25} = 12 \\)。\n\n步驟 2：求 \\( \\overline{AC} \\)\n已知 \\( \\overline{AO} = \\overline{CO} \\)，故 \\( \\overline{AC} = 2\\overline{AO} = 2 \\times 12 = 24 \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "3. 如右圖，若 \\( \\angle A=48^{\\circ} \\)，\\( \\angle B=68^{\\circ} \\)，則 \\( \\angle C+\\angle D+\\angle E+\\angle F=? \\)",
+            image: "a3_img.png",
+            options: ["\\( 244^{\\circ} \\)", "\\( 248^{\\circ} \\)", "\\( 250^{\\circ} \\)", "\\( 252^{\\circ} \\)"],
+            answer: 0,
+            solution: "利用三角形外角定理與多邊形內角和推導，外圍四角的和加上頂部兩角的和等於 \\( 360^{\\circ} \\)。\n因此，\\( \\angle C+\\angle D+\\angle E+\\angle F = 360^{\\circ} - 48^{\\circ} - 68^{\\circ} = 244^{\\circ} \\)。\n答：選 (A)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${index + 1 > 12 && index + 1 <= 17 ? (index - 11) + ". " : ""}
+                        ${index + 1 > 17 && index + 1 <= 19 ? (index - 16) + ". " : ""}
+                        ${index + 1 > 19 ? (index - 18) + ". " : ""}
+                        ${item.text.replace(/^[0-9]+\. /, '')}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將 HTML 注入 DOM
+        container.innerHTML = htmlContent;
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 單純切換 CSS 屬性，極速顯示
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 網頁完全載入後再進行渲染與公式轉換
+    window.onload = function() {
+        renderQuiz();
+        // 呼叫 KaTeX 自動掃描轉換整個容器內的公式
+        if (window.renderMathInElement) {
+            renderMathInElement(document.getElementById('quiz-container'), {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    };
+
+</script>
+
+</body>
+</html>

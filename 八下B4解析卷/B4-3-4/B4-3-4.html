@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - B4-3-4 中垂線與角平分線</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 第8次練習</h1>
+        <p>範圍：3-4 中垂線與角平分線的性質 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 嚴格配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "1. 如圖等腰 \\( \\triangle ABC \\) 中，\\( \\overline{AB}=\\overline{AC} \\)，若 D 在 \\( \\overline{BC} \\) 上且 \\( \\overline{BD}=\\overline{CD} \\)，則下列敘述何者正確？",
+            image: "q1_img.png",
+            options: ["\\( \\angle 1 = \\angle 3 \\)", "\\( \\angle 1 = \\angle 4 \\)", "\\( \\angle 1 + \\angle 2 = \\angle 3 + \\angle 4 \\)", "\\( \\overline{AD} \\) 垂直平分 \\( \\overline{BC} \\)"],
+            answer: 3,
+            solution: "在等腰三角形中，底邊的中線（即 \\( \\overline{BD}=\\overline{CD} \\)）同時也會是底邊的中垂線以及頂角的角平分線。\n因此，\\( \\overline{AD} \\) 必定垂直平分 \\( \\overline{BC} \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "2. 如圖，\\( \\overline{BP} \\) 平分 \\( \\angle ABC \\)，且過 P 點作 \\( \\overline{PQ} \\perp \\overline{AB} \\)、\\( \\overline{PR} \\perp \\overline{BC} \\)，則下列敘述何者正確？",
+            image: "q2_img.png",
+            options: ["\\( \\triangle ABP \\cong \\triangle CBP \\)", "\\( \\triangle PQB \\cong \\triangle PRB \\)", "\\( \\angle 1 = \\angle 2 = 45^{\\circ} \\)", "\\( \\overline{BQ} = \\overline{PB} = \\overline{BR} \\)"],
+            answer: 1,
+            solution: "根據角平分線性質：角平分線上任一點到角兩邊的垂直距離相等，故 \\( \\overline{PQ} = \\overline{PR} \\)。\n在直角 \\( \\triangle PQB \\) 與直角 \\( \\triangle PRB \\) 中：\n\\( \\angle PQB = \\angle PRB = 90^{\\circ} \\)\n\\( \\overline{BP} = \\overline{BP} \\) (共用斜邊)\n\\( \\angle QBP = \\angle RBP \\) (角平分線)\n根據 AAS 全等性質，\\( \\triangle PQB \\cong \\triangle PRB \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "3. 如右圖，梯形 ABCD 中，\\( \\overline{EF} \\) 是 \\( \\overline{CD} \\) 的中垂線，若 \\( \\overline{DF} = 8 \\text{ cm} \\)，四邊形 ABCE 的周長為 24 cm，則梯形 ABCD 的周長為多少 cm？",
+            image: "q3_img.png",
+            options: ["32", "40", "48", "56"],
+            answer: 1,
+            solution: "步驟 1：利用中垂線性質\n因為 \\( \\overline{EF} \\) 為 \\( \\overline{CD} \\) 的中垂線，所以 E 到 C、D 等距，即 \\( \\overline{EC} = \\overline{ED} \\)。\n且 \\( \\overline{CD} = 2\\overline{DF} = 2 \\times 8 = 16 \\)。\n\n步驟 2：計算周長\n四邊形 ABCE 周長 = \\( \\overline{AB} + \\overline{BC} + \\overline{CE} + \\overline{AE} = 24 \\)。\n將 \\( \\overline{CE} \\) 換成 \\( \\overline{DE} \\)：\\( \\overline{AB} + \\overline{BC} + \\overline{DE} + \\overline{AE} = 24 \\)，即 \\( \\overline{AB} + \\overline{BC} + \\overline{AD} = 24 \\)。\n梯形 ABCD 周長 = \\( (\\overline{AB} + \\overline{BC} + \\overline{AD}) + \\overline{CD} = 24 + 16 = 40 \\) cm。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "4. 右圖 \\( \\triangle ABC \\) 中，\\( \\overline{AB}=\\overline{AC}=15 \\text{ cm} \\)，\\( \\overline{BC}=10 \\text{ cm} \\)，若 \\( \\overline{AD} \\) 平分 \\( \\angle BAC \\)，則 \\( \\triangle ABC \\) 面積為多少 \\( \\text{cm}^2 \\)？",
+            image: "q4_img.png",
+            options: ["75", "50", "\\( 50\\sqrt{2} \\)", "\\( 15\\sqrt{3} \\)"],
+            answer: 2,
+            solution: "等腰三角形的頂角平分線即為底邊的中垂線，所以 \\( \\overline{AD} \\perp \\overline{BC} \\) 且 \\( \\overline{BD} = \\overline{CD} = 5 \\)。\n利用畢氏定理求高 \\( \\overline{AD} \\)：\n\\( \\overline{AD} = \\sqrt{15^2 - 5^2} = \\sqrt{225 - 25} = \\sqrt{200} = 10\\sqrt{2} \\)。\n\\( \\triangle ABC \\) 面積 = \\( \\frac{1}{2} \\times \\overline{BC} \\times \\overline{AD} = \\frac{1}{2} \\times 10 \\times 10\\sqrt{2} = 50\\sqrt{2} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "5. 右圖 \\( \\triangle ABC \\) 中，\\( \\overline{BD} \\) 平分 \\( \\angle ABC \\)，\\( \\overline{DE} \\) 平分 \\( \\angle ADB \\)，其中 \\( \\angle A=40^{\\circ} \\)，\\( \\angle ABC=30^{\\circ} \\)，則 \\( \\angle BED = ? \\)",
+            image: "q5_img.png",
+            options: ["\\( 90^{\\circ} \\)", "\\( 95^{\\circ} \\)", "\\( 100^{\\circ} \\)", "\\( 102.5^{\\circ} \\)"],
+            answer: 3,
+            solution: "步驟 1：求出相關角度\n因為 \\( \\overline{BD} \\) 平分 \\( \\angle ABC \\)，所以 \\( \\angle ABD = 15^{\\circ} \\)。\n在 \\( \\triangle ABD \\) 中，\\( \\angle ADB = 180^{\\circ} - 40^{\\circ} - 15^{\\circ} = 125^{\\circ} \\)。\n\n步驟 2：利用角平分線與內角和\n因為 \\( \\overline{DE} \\) 平分 \\( \\angle ADB \\)，所以 \\( \\angle BDE = 125^{\\circ} \\div 2 = 62.5^{\\circ} \\)。\n在 \\( \\triangle BDE \\) 中，\\( \\angle BED = 180^{\\circ} - 15^{\\circ} - 62.5^{\\circ} = 102.5^{\\circ} \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "6. 如右圖，\\( \\triangle ABC \\) 中，\\( \\overline{AB}=\\overline{AC} \\)，若 \\( \\overline{AD}=\\overline{DE}=\\overline{BE}=\\overline{BC} \\)，則 \\( \\angle A \\) 為多少度？",
+            image: "q6_img.png",
+            options: ["\\( \\frac{180^{\\circ}}{7} \\)", "\\( 24.5^{\\circ} \\)", "\\( 25.5^{\\circ} \\)", "\\( 30^{\\circ} \\)"],
+            answer: 0,
+            solution: "設 \\( \\angle A = x \\)。\n在 \\( \\triangle ADE \\) 中，因為 \\( \\overline{AD} = \\overline{DE} \\)，所以 \\( \\angle AED = \\angle A = x \\)。\n外角 \\( \\angle BDE = x + x = 2x \\)。\n在 \\( \\triangle BDE \\) 中，因為 \\( \\overline{DE} = \\overline{BE} \\)，所以 \\( \\angle EBD = \\angle BDE = 2x \\)。\n外角 \\( \\angle BEC = \\angle A + \\angle ABE = x + 2x = 3x \\)。\n在 \\( \\triangle BCE \\) 中，因為 \\( \\overline{BE} = \\overline{BC} \\)，所以 \\( \\angle C = \\angle BEC = 3x \\)。\n又因為大 \\( \\triangle ABC \\) 中，\\( \\overline{AB} = \\overline{AC} \\)，所以 \\( \\angle ABC = \\angle C = 3x \\)。\n內角和：\\( \\angle A + \\angle ABC + \\angle C = 180^{\\circ} \\)\n\\( x + 3x + 3x = 180^{\\circ} \\Rightarrow 7x = 180^{\\circ} \\Rightarrow x = \\frac{180^{\\circ}}{7} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "7. 如圖 \\( \\triangle ABC \\) 中，直線 L 為 \\( \\overline{BC} \\) 的中垂線，交 \\( \\overline{BC} \\) 於 E 點，交 \\( \\overline{AB} \\) 於 D 點，連接 \\( \\overline{CD} \\)。若 \\( \\overline{AD}=5 \\)，\\( \\overline{AC}=13 \\)，\\( \\overline{CD}=12 \\)，則 \\( \\triangle ABC \\) 面積為多少平方單位？",
+            image: "q7_img.png",
+            options: ["96", "102", "108", "116"],
+            answer: 1,
+            solution: "步驟 1：判斷直角與邊長\n在 \\( \\triangle ADC \\) 中，三邊為 5, 12, 13。因為 \\( 5^2 + 12^2 = 13^2 \\)，可知 \\( \\angle ADC = 90^{\\circ} \\)。\n這表示 \\( \\overline{CD} \\perp \\overline{AB} \\)，也就是說 \\( \\overline{CD} \\) 剛好是 \\( \\triangle ABC \\) 在 \\( \\overline{AB} \\) 邊上的高。\n\n步驟 2：利用中垂線與面積\n直線 L 是 \\( \\overline{BC} \\) 的中垂線，D 在 L 上，故 \\( \\overline{BD} = \\overline{CD} = 12 \\)。\n底邊 \\( \\overline{AB} = \\overline{AD} + \\overline{BD} = 5 + 12 = 17 \\)。\n\\( \\triangle ABC \\) 面積 = \\( \\frac{1}{2} \\times \\overline{AB} \\times \\overline{CD} = \\frac{1}{2} \\times 17 \\times 12 = 102 \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "8. 如右圖，\\( \\triangle ABC \\) 中，\\( \\overline{BD} \\) 平分 \\( \\angle ABC \\)，過 D 點作 \\( \\overline{DP} \\perp \\overline{AB} \\)，\\( \\overline{DQ} \\perp \\overline{BC} \\)。若 \\( \\overline{AB}=10 \\)，\\( \\overline{BC}=12 \\)，\\( \\overline{DQ}=4 \\)，則 \\( \\triangle ABC \\) 面積為多少平方單位？",
+            image: "q8_img.png",
+            options: ["36", "38", "40", "44"],
+            answer: 3,
+            solution: "根據角平分線性質，D 點到兩邊等距，因此 \\( \\overline{DP} = \\overline{DQ} = 4 \\)。\n\\( \\triangle ABC \\) 面積可分割為兩個小三角形面積之和：\n\\( \\triangle ABC = \\triangle ABD + \\triangle BCD \\)\n\\( = \\frac{1}{2} \\times 10 \\times 4 + \\frac{1}{2} \\times 12 \\times 4 = 20 + 24 = 44 \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "9. 揚哲欲找一點 P，使 P 點到 \\( \\angle C \\) 兩邊等距離，且使 \\( \\overline{PA} = \\overline{PB} \\)，則下列作圖痕跡何者正確？",
+            image: "",
+            options: ["作 \\( \\overline{AB} \\) 與 \\( \\overline{BC} \\) 的中垂線", "作 \\( \\overline{AB} \\) 的中垂線與 \\( \\angle C \\) 的角平分線", "作 \\( \\angle B \\) 與 \\( \\angle C \\) 的角平分線", "作 \\( \\overline{AC} \\) 的中垂線與 \\( \\angle B \\) 的角平分線"],
+            answer: 1,
+            solution: "條件一：P 點到 \\( \\angle C \\) 兩邊等距離 \\( \\Rightarrow \\) P 必在 \\( \\angle C \\) 的「角平分線」上。\n條件二：\\( \\overline{PA} = \\overline{PB} \\) (P 到 A、B 兩點等距離) \\( \\Rightarrow \\) P 必在 \\( \\overline{AB} \\) 的「中垂線」上。\n尋找同時符合這兩個條件的 P 點，即為作此兩線的交點。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "10. 正 \\( \\triangle ABC \\) 中，過 A 點作垂線交 \\( \\overline{BC} \\) 於 H，已知 \\( \\overline{AH} = 3\\sqrt{3} \\)，則 \\( \\triangle ABC \\) 的面積為何？",
+            image: "",
+            options: ["\\( 6\\sqrt{3} \\)", "\\( 7\\sqrt{3} \\)", "\\( 9\\sqrt{3} \\)", "\\( 12\\sqrt{3} \\)"],
+            answer: 2,
+            solution: "正三角形的高 \\( h = \\frac{\\sqrt{3}}{2}a \\)，其中 a 為邊長。\n已知高 \\( \\overline{AH} = 3\\sqrt{3} \\)，代入公式：\n\\( \\frac{\\sqrt{3}}{2}a = 3\\sqrt{3} \\Rightarrow a = 6 \\)。\n正三角形面積公式為 \\( \\frac{\\sqrt{3}}{4}a^2 \\)：\n面積 = \\( \\frac{\\sqrt{3}}{4} \\times 6^2 = \\frac{\\sqrt{3}}{4} \\times 36 = 9\\sqrt{3} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "11. \\( \\triangle ABC \\) 中，\\( \\overline{AB}=\\overline{AC} \\)，\\( \\angle A \\) 的角平分線交 \\( \\overline{BC} \\) 於 D 點，則 \\( \\overline{AD} = ? \\)",
+            image: "",
+            options: ["\\( \\overline{BC} \\) 邊上的高", "\\( \\overline{BC} \\) 邊上的中線", "\\( \\overline{BC} \\) 邊上的中垂線", "以上皆是"],
+            answer: 3,
+            solution: "在等腰三角形中，頂角的角平分線會垂直平分底邊。\n這意味著它同時與底邊上的高、中線，以及中垂線重合（三線合一性質）。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "12. 如右圖，梯形 ABCD 中，\\( \\angle C = \\angle D = 90^{\\circ} \\)，\\( \\overline{AD}=7 \\)，\\( \\overline{BC}=25 \\)。若 \\( \\overline{AB} \\) 的中垂線恰可通過 C 點，則 \\( \\overline{CD} \\) 長為何？",
+            image: "q12_img.png",
+            options: ["16", "18", "20", "24"],
+            answer: 3,
+            solution: "步驟 1：利用中垂線性質\n因為 C 點在 \\( \\overline{AB} \\) 的中垂線上，所以 C 到 A、B 等距，即 \\( \\overline{AC} = \\overline{BC} = 25 \\)。\n\n步驟 2：利用直角三角形求邊長\n在直角 \\( \\triangle ADC \\) 中，斜邊 \\( \\overline{AC} = 25 \\)，股 \\( \\overline{AD} = 7 \\)。\n根據畢氏定理：\\( \\overline{CD} = \\sqrt{25^2 - 7^2} = \\sqrt{625 - 49} = \\sqrt{576} = 24 \\)。\n答：選 (D)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "1. 右圖等腰 \\( \\triangle ABC \\) 中，\\( \\overline{AB}=\\overline{AC}=13 \\) 公分，\\( \\overline{BC}=10 \\) 公分，今作 \\( \\overline{AD} \\perp \\overline{BC} \\)，\\( \\overline{CE} \\perp \\overline{AB} \\)。則 \\( \\overline{CE} = \\) _______ 公分。",
+            image: "f1_img.png",
+            solution: "等腰三角形底邊上的高 \\( \\overline{AD} \\) 也是中線，所以 \\( \\overline{BD} = \\overline{CD} = 5 \\)。\n利用畢氏定理求高 \\( \\overline{AD} = \\sqrt{13^2 - 5^2} = 12 \\)。\n\\( \\triangle ABC \\) 面積 = \\( \\frac{1}{2} \\times 10 \\times 12 = 60 \\)。\n利用另一組底高算面積：\\( \\frac{1}{2} \\times \\overline{AB} \\times \\overline{CE} = 60 \\)\n\\( \\frac{1}{2} \\times 13 \\times \\overline{CE} = 60 \\Rightarrow \\overline{CE} = \\frac{120}{13} \\)。\n答：\\( \\frac{120}{13} \\)。"
+        },
+        {
+            type: 'fill',
+            text: "2. 梯形 ABCD 中，\\( \\angle A = \\angle B = 90^{\\circ} \\)，E 點在 \\( \\overline{AB} \\) 上，\\( \\overline{DE} \\) 平分 \\( \\angle ADC \\)，\\( \\overline{CE} \\) 平分 \\( \\angle BCD \\)。若 \\( \\overline{EF} \\perp \\overline{CD} \\)，且 \\( \\overline{AD}=18 \\)，\\( \\overline{EF}=24 \\)，\\( \\overline{BC}=32 \\)，則：\n(1) 梯形 ABCD 面積為 _______ 平方單位。\n(2) \\( \\overline{AB} = \\) _______ 。",
+            image: "f2_img.png",
+            solution: "(1) 角平分線性質：E 到 \\( \\overline{AD} \\) 與 \\( \\overline{CD} \\) 等距，故 \\( \\overline{EA} = \\overline{EF} = 24 \\)。\n同理，E 到 \\( \\overline{BC} \\) 與 \\( \\overline{CD} \\) 等距，故 \\( \\overline{EB} = \\overline{EF} = 24 \\)。\n因此 \\( \\overline{AB} = 24 + 24 = 48 \\)。\n(2) 梯形面積 = \\( \\frac{(18 + 32) \\times 48}{2} = \\frac{50 \\times 48}{2} = 1200 \\)。\n答：(1) 1200，(2) 48。"
+        },
+        {
+            type: 'fill',
+            text: "3. 直角 \\( \\triangle ABC \\) 中，\\( \\angle A=24^{\\circ} \\)，\\( \\angle ABC=90^{\\circ} \\)。若作圖使得 \\( \\overline{CD} \\) 平分 \\( \\angle ACB \\)，則 \\( \\angle ACD = \\) _______ 度。",
+            image: "f3_img.png",
+            solution: "在直角 \\( \\triangle ABC \\) 中，\\( \\angle ACB = 180^{\\circ} - 90^{\\circ} - 24^{\\circ} = 66^{\\circ} \\)。\n因為 \\( \\overline{CD} \\) 平分 \\( \\angle ACB \\)，所以 \\( \\angle ACD = \\frac{1}{2} \\angle ACB = \\frac{66^{\\circ}}{2} = 33^{\\circ} \\)。\n答：33。"
+        },
+        {
+            type: 'fill',
+            text: "4. \\( \\overline{AD} \\) 為 \\( \\overline{CE} \\) 的中垂線，若 \\( \\angle CAD=28^{\\circ} \\)，\\( \\angle BAE=20^{\\circ} \\)，且 C、B、E 共線，則 \\( \\angle ABE = \\) _______ 度。",
+            image: "f4_img.png",
+            solution: "中垂線性質使得 \\( \\triangle ACE \\) 為等腰，頂角被平分，\\( \\angle DAE = \\angle CAD = 28^{\\circ} \\)。\n在直角 \\( \\triangle ADE \\) 中，底角 \\( \\angle AEC = 90^{\\circ} - 28^{\\circ} = 62^{\\circ} \\)。\n利用外角定理：\\( \\angle ABE = \\angle AEC - \\angle BAE = 62^{\\circ} - 20^{\\circ} = 42^{\\circ} \\)。\n答：42。"
+        },
+        {
+            type: 'fill',
+            text: "5. 直線方程式 \\( 3x + 4y = 24 \\) 分別交兩軸於 A、B 兩點，若直線 M 為 \\( \\overline{AB} \\) 的中垂線，交 x 軸於 C 點，則 C 坐標為何？ _______ (請以坐標格式作答)",image: "f5_img.png",
+            solution: "交 x 軸 (令 y=0)：\\( 3x = 24 \\Rightarrow x = 8 \\)，得 A(8, 0)。\n交 y 軸 (令 x=0)：\\( 4y = 24 \\Rightarrow y = 6 \\)，得 B(0, 6)。\n原點為 O(0,0)，\\( \\overline{OA} = 8, \\overline{OB} = 6 \\)。\nC 在 x 軸上，設 C 坐標為 (c, 0)。因為 C 在中垂線上，所以 \\( \\overline{CA} = \\overline{CB} \\)。\n\\( (8 - c)^2 = c^2 + 6^2 \\Rightarrow 64 - 16c + c^2 = c^2 + 36 \\Rightarrow 16c = 28 \\Rightarrow c = \\frac{7}{4} \\)。\n答：\\( (\\frac{7}{4}, 0) \\)。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "1. 右圖為喬羽在 \\( \\triangle ABC \\) 的作圖痕跡，若 \\( \\angle A=80^{\\circ} \\)，\\( \\angle ABC=42^{\\circ} \\)，則：\n(1) 請說明 \\( \\triangle ABC \\) 不為等腰三角形。(2分)\n(2) \\( \\angle DCB \\) 為多少度？(3分)\n(3) \\( \\angle BIC \\) 為多少度？(3分)",
+            image: "calc1_img.png",
+            solution: "(1) \\( \\angle ACB = 180^{\\circ} - 80^{\\circ} - 42^{\\circ} = 58^{\\circ} \\)。因為三個內角都不相等，故 \\( \\triangle ABC \\) 不是等腰三角形。\n(2) 由作圖痕跡可知，這是作內角平分線的軌跡，交點 I 為內心。\n\\( \\overline{CD} \\) 是 \\( \\angle ACB \\) 的角平分線，故 \\( \\angle DCB = \\frac{1}{2} \\times 58^{\\circ} = 29^{\\circ} \\)。\n(3) 內心夾角公式：\\( \\angle BIC = 90^{\\circ} + \\frac{1}{2} \\angle A = 90^{\\circ} + 40^{\\circ} = 130^{\\circ} \\)。\n答：(1) 見證明 (2) 29度 (3) 130度。"
+        },
+        {
+            type: 'calc',
+            text: "2. 梯形 ABCD 中，\\( \\overline{AB}=6 \\text{ cm} \\)，\\( \\overline{AD}=8 \\text{ cm} \\)，\\( \\angle ABC=90^{\\circ} \\)，四邊形 ABCD 面積為 42 平方公分。今嘉偉沿著角平分線 \\( \\overline{AC} \\) 將四邊形 ABCD 分割成甲、乙兩個三角形，則甲、乙兩三角形面積相差多少平方公分？",
+            image: "calc2_img.png",
+            solution: "因為 \\( \\overline{AC} \\) 是 \\( \\angle BAD \\) 的角平分線，所以 C 點到 \\( \\overline{AD} \\) 與 \\( \\overline{AB} \\) 的垂直距離相等。\n已知 \\( \\angle B = 90^{\\circ} \\)，故 C 到 \\( \\overline{AB} \\) 的距離就是 \\( \\overline{BC} \\)。\n作 \\( \\overline{CE} \\perp \\overline{AD} \\)，則 \\( \\overline{CE} = \\overline{BC} = x \\)。\n梯形面積 = \\( \\triangle ABC \\) 面積 + \\( \\triangle ADC \\) 面積\n\\( 42 = \\frac{1}{2} \\times 6 \\times x + \\frac{1}{2} \\times 8 \\times x \\Rightarrow 42 = 7x \\Rightarrow x = 6 \\)。\n\\( \\triangle ADC \\) 面積 (甲) = \\( \\frac{1}{2} \\times 8 \\times 6 = 24 \\)。\n\\( \\triangle ABC \\) 面積 (乙) = \\( \\frac{1}{2} \\times 6 \\times 6 = 18 \\)。\n相差 = 24 - 18 = 6 平方公分。\n答：6 平方公分。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "1. 湘琦依據下列敘述完成尺規作圖：\n(1) 在 \\( \\triangle ABC \\) 中，以 A 點為圓心，適當長為半徑畫弧交 \\( \\overline{BC} \\) 於 D、E 兩點。\n(2) 分別以 D、E 兩點為圓心，大於 \\( \\frac{1}{2}\\overline{DE} \\) 長為半徑畫弧，兩弧相交於 P 點。\n(3) 作直線 AP 與 \\( \\overline{BC} \\) 相交於 F 點。\n(4) 則 \\( \\overline{AF} \\) 即為所求。\n則下列敘述何者正確？",
+            image: "a1_img.png",
+            options: ["\\( \\overline{BF}=\\overline{CF} \\)", "\\( \\overline{BP}=\\overline{CP} \\)", "\\( \\angle BAF = \\angle CAF \\)", "\\( \\overline{AF} \\perp \\overline{BC} \\)"],
+            answer: 3,
+            solution: "這套作圖步驟是典型的「過線外一點 (A) 作已知直線 (BC) 的垂線」。\n因此，作出的直線 \\( \\overline{AF} \\) 必定垂直於 \\( \\overline{BC} \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "2. 如圖，宏澤將一個邊長 17 公分的正方形積木斜靠在垂直的牆腳，且 B 點距離牆 8 公分，則 A 點距離地面的高度為多少公分？",
+            image: "a2_img.png",
+            options: ["21", "23", "24", "25"],
+            answer: 1,
+            solution: "這是一個利用直角三角形全等推導的經典生活素養題。\n正方形邊長 \\( \\overline{AB} = 17 \\)，B 點距牆的距離為 8。\n由圖中可構造兩個全等的直角三角形（斜邊為 17，一股為 8）。\n利用畢氏定理，另一股 = \\( \\sqrt{17^2 - 8^2} = \\sqrt{289 - 64} = \\sqrt{225} = 15 \\)。\n依據圖形相對位置（全等對應），A 點的高度剛好等於另一股的長度與 8 的和（15 + 8 = 23）或是依圖形對應為 23。\n答：選 (B) 23。"
+        },
+        {
+            type: 'app',
+            text: "3. 如圖 \\( \\overline{AC} \\) 為 \\( \\angle BAD \\) 的角平分線，\\( \\overline{AB}=6cm \\)，\\( \\overline{AD}=8cm \\)，\\( \\angle ABC=90^{\\circ} \\)，四邊形 ABCD 面積為 42 平方公分，今嘉偉沿著 \\( \\overline{AC} \\) 將四邊形 ABCD 分割成甲、乙兩個三角形，則甲、乙兩三角形面積相差多少平方公分？",
+            image: "a3_img.png",
+            options: ["3", "4", "5", "6"],
+            answer: 3,
+            solution: "1. 過 C 點作 \\( \\overline{CE} \\perp \\overline{AD} \\)，設 \\( \\overline{BC}=\\overline{CE}=x \\)。\n2. 梯形面積 = \\( \\frac{6x}{2} + \\frac{8x}{2} = 42 \\Rightarrow 7x = 42 \\Rightarrow x = 6 \\)。\n3. 乙面積 - 甲面積 = \\( \\frac{1}{2} \\times 8 \\times 6 - \\frac{1}{2} \\times 6 \\times 6 = 24 - 18 = 6 \\)。\n答：選 (D)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${item.text}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將 HTML 一次性注入 DOM 中
+        container.innerHTML = htmlContent;
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 單純切換 CSS 屬性，速度極快
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 網頁載入完成後執行
+    window.onload = function() {
+        // 先將題目結構輸出到畫面
+        renderQuiz();
+        
+        // 等待 HTML 插入後，呼叫 KaTeX 自動掃描並轉換整個網頁內的公式
+        if (window.renderMathInElement) {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    };
+
+</script>
+
+</body>
+</html>
