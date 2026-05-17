@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班級黑板聯絡簿</title>
+  
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* 自訂卷軸樣式 (左側控制面板使用) */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.1); 
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.2); 
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.4); 
+    }
+    
+    /* 粉筆字體設定 */
+    .chalk-font {
+      font-family: "Kaiti TC", "BiauKai", "DFKai-SB", "楷體", "標楷體", serif;
+      text-shadow: 0px 0px 2px rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body class="bg-[#e8f0f8] font-sans text-gray-800">
+
+  <div class="flex flex-col md:flex-row h-screen">
+    
+    <!-- 左側控制面板 -->
+    <div class="w-full md:w-[380px] h-full flex flex-col p-4 gap-4 overflow-y-auto border-r border-blue-100 shadow-lg bg-[#f0f6fc] z-10 flex-shrink-0 custom-scrollbar">
+      
+      <!-- 標題區 -->
+      <div class="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-6 text-white shadow-md relative overflow-hidden flex-shrink-0">
+        <div class="relative z-10">
+          <h1 class="text-2xl font-bold tracking-wider mb-1 flex items-center">
+            <i data-lucide="layout" class="w-6 h-6 mr-2"></i> 班級黑板
+          </h1>
+          <p class="text-sm text-blue-100 opacity-90">自動排版黑板</p>
+        </div>
+        <!-- 裝飾背景 -->
+        <div class="absolute top-0 right-0 opacity-20 transform translate-x-4 -translate-y-4">
+          <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        </div>
+      </div>
+
+      <!-- 日期選擇區塊 -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-blue-50 flex-shrink-0">
+        <div class="flex items-center text-blue-600 mb-3 font-semibold">
+          <i data-lucide="calendar" class="w-5 h-5 mr-2"></i> 今日日期
+        </div>
+        <input 
+          type="date" 
+          id="dateInput"
+          class="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 text-gray-700"
+        />
+      </div>
+
+      <!-- 聯絡簿內容區塊 -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-blue-50 flex-1 flex flex-col min-h-[200px]">
+        <div class="flex items-center justify-between text-blue-600 mb-3 font-semibold">
+          <div class="flex items-center"><i data-lucide="edit-3" class="w-5 h-5 mr-2"></i> 黑板內容</div>
+        </div>
+        <textarea 
+          id="contentInput"
+          class="w-full flex-1 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none bg-gray-50 leading-relaxed text-gray-700 custom-scrollbar"
+          placeholder="請輸入聯絡簿內容..."
+        ></textarea>
+      </div>
+
+      <!-- 排版與外觀設定區塊 -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-blue-50 flex-shrink-0">
+        <div class="flex items-center text-blue-600 mb-4 font-semibold">
+          <i data-lucide="settings" class="w-5 h-5 mr-2"></i> 自訂排版模式
+        </div>
+
+        <!-- 黑板底色 -->
+        <div class="flex justify-between items-center mb-4">
+           <div class="flex items-center">
+             <i data-lucide="monitor" class="w-4 h-4 mr-1 text-gray-500"></i>
+             <span class="text-sm font-medium text-gray-600">黑板底色</span>
+           </div>
+           <div class="flex gap-2 items-center">
+              <button id="btnBoardGreen" class="w-6 h-6 rounded-full bg-[#3b5f48] border-2 border-blue-400 shadow-md transition-transform hover:scale-110" title="墨綠色"></button>
+              <button id="btnBoardBlack" class="w-6 h-6 rounded-full bg-[#222222] border-2 border-transparent transition-transform hover:scale-110" title="深黑色"></button>
+              <button id="btnBoardBlue" class="w-6 h-6 rounded-full bg-[#1e3a8a] border-2 border-transparent transition-transform hover:scale-110" title="深藍色"></button>
+              <button id="btnBoardGray" class="w-6 h-6 rounded-full bg-[#374151] border-2 border-transparent transition-transform hover:scale-110" title="深灰色"></button>
+              <button id="btnBoardBrown" class="w-6 h-6 rounded-full bg-[#451a03] border-2 border-transparent transition-transform hover:scale-110" title="深褐色"></button>
+           </div>
+        </div>
+
+        <!-- 粉筆顏色 -->
+        <div class="flex justify-between items-center mb-5">
+           <div class="flex items-center">
+             <i data-lucide="edit-2" class="w-4 h-4 mr-1 text-gray-500"></i>
+             <span class="text-sm font-medium text-gray-600">粉筆顏色</span>
+           </div>
+           <div class="flex gap-2 items-center">
+              <button id="btnTextWhite" class="w-6 h-6 rounded-full bg-[#f8f9fa] border-2 border-blue-400 shadow-md transition-transform hover:scale-110" title="白色"></button>
+              <button id="btnTextYellow" class="w-6 h-6 rounded-full bg-[#fceda8] border-2 border-gray-200 transition-transform hover:scale-110" title="黃色"></button>
+              <button id="btnTextPink" class="w-6 h-6 rounded-full bg-[#fbcfe8] border-2 border-gray-200 transition-transform hover:scale-110" title="粉色"></button>
+              <button id="btnTextBlue" class="w-6 h-6 rounded-full bg-[#bfdbfe] border-2 border-gray-200 transition-transform hover:scale-110" title="藍色"></button>
+              <button id="btnTextGreen" class="w-6 h-6 rounded-full bg-[#bbf7d0] border-2 border-gray-200 transition-transform hover:scale-110" title="綠色"></button>
+           </div>
+        </div>
+
+        <!-- 字體大小 -->
+        <div class="mb-4">
+          <div class="flex justify-between mb-2">
+            <span class="text-sm font-medium text-gray-600">字體大小</span>
+            <span id="fontSizeDisplay" class="text-sm text-blue-500 font-mono">45px</span>
+          </div>
+          <input 
+            type="range" 
+            id="fontSizeInput"
+            min="20" max="80" value="45"
+            class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+        </div>
+
+        <!-- 行距 -->
+        <div>
+          <div class="flex justify-between mb-2">
+            <span class="text-sm font-medium text-gray-600">行高 / 字間距</span>
+            <span id="lineHeightDisplay" class="text-sm text-blue-500 font-mono">2.0x</span>
+          </div>
+          <input 
+            type="range" 
+            id="lineHeightInput"
+            min="1.0" max="3.5" step="0.1" value="2.0"
+            class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 右側黑板預覽區 -->
+    <div class="flex-1 p-4 md:p-8 flex items-center justify-center bg-gray-800 relative min-w-0">
+      <div 
+        id="boardContainer"
+        class="relative w-full h-full shadow-2xl transition-all duration-300 overflow-hidden rounded-lg"
+        style="
+          background-color: #355E3B;
+          background-image: url('data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' opacity=\'0.12\'/%3E%3C/svg%3E');
+          border: 16px solid #4a2f1d;
+          box-shadow: inset 0 0 40px rgba(0,0,0,0.5), 0 20px 40px rgba(0,0,0,0.4);
+        "
+      >
+        <!-- 全螢幕按鈕 -->
+        <button 
+          id="btnFullscreen"
+          class="absolute top-4 right-4 z-50 p-2 bg-black bg-opacity-30 hover:bg-opacity-50 text-white rounded-lg backdrop-blur-sm transition-all flex items-center justify-center group"
+          title="全螢幕顯示"
+        >
+          <i data-lucide="maximize" id="fullscreenIcon" class="w-6 h-6 opacity-70 group-hover:opacity-100"></i>
+          <span id="fullscreenText" class="ml-2 text-sm font-medium opacity-0 max-w-0 group-hover:opacity-100 group-hover:max-w-[100px] transition-all duration-300 overflow-hidden whitespace-nowrap">
+            全螢幕
+          </span>
+        </button>
+
+        <!-- 黑板文字內容容器：嚴格限制高度不超頁 (overflow-hidden) 並且縮小上方間距 (pt-4, md:pt-8) -->
+        <div 
+          id="boardContentContainer"
+          class="w-full h-full px-8 pb-8 pt-4 md:px-16 md:pb-16 md:pt-8 flex flex-col chalk-font box-border relative z-10 overflow-hidden"
+          style="
+            color: #fdfdfd;
+            font-size: 45px;
+            line-height: 2.0;
+            letter-spacing: 0.05em;
+          "
+        >
+          <!-- 日期區塊 (第1列) -->
+          <div id="boardDate" class="font-bold shrink-0 mb-4 md:mb-8 text-left tracking-widest w-full"></div>
+
+          <!-- 聯絡簿內容區塊 (第2列起自動分成兩欄) -->
+          <div class="flex-1 w-full min-h-0">
+            <!-- 運用 column-fill: auto，內容超過畫面高度時自動溢位到第二欄 -->
+            <div id="boardText" class="w-full h-full whitespace-pre-wrap break-words text-left" style="column-count: 2; column-fill: auto; column-gap: 4em;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 初始化 Lucide 圖示
+    lucide.createIcons();
+
+    // 狀態變數
+    let state = {
+      date: getTodayString(),
+      content: '1.數習4-1\n2.國習第5課\n3.英文單字簿L3',
+      boardColor: 'green',
+      textColor: 'white',
+      fontSize: 45,
+      lineHeight: 2.0,
+      isFullscreen: false
+    };
+
+    // 顏色對照表
+    const BOARD_COLORS = {
+      'green': '#355E3B',
+      'black': '#222222',
+      'blue': '#1e3a8a',
+      'gray': '#374151',
+      'brown': '#451a03'
+    };
+
+    const TEXT_COLORS = {
+      'white': '#fdfdfd',
+      'yellow': '#ffe873',
+      'pink': '#fbcfe8',
+      'blue': '#bfdbfe',
+      'green': '#bbf7d0'
+    };
+
+    // 嘗試讀取 LocalStorage 中的暫存資料
+    const SAVED_STATE_KEY = 'classroom_board_state_v3';
+    const saved = localStorage.getItem(SAVED_STATE_KEY);
+    if (saved) {
+      try {
+        const parsedState = JSON.parse(saved);
+        state = { ...state, ...parsedState, isFullscreen: false };
+      } catch(e) {
+        console.error("還原暫存資料失敗:", e);
+      }
+    }
+
+    // DOM 元素選取
+    const els = {
+      dateInput: document.getElementById('dateInput'),
+      contentInput: document.getElementById('contentInput'),
+      
+      // 黑板底色按鈕
+      btnBoardGreen: document.getElementById('btnBoardGreen'),
+      btnBoardBlack: document.getElementById('btnBoardBlack'),
+      btnBoardBlue: document.getElementById('btnBoardBlue'),
+      btnBoardGray: document.getElementById('btnBoardGray'),
+      btnBoardBrown: document.getElementById('btnBoardBrown'),
+      
+      // 粉筆顏色按鈕
+      btnTextWhite: document.getElementById('btnTextWhite'),
+      btnTextYellow: document.getElementById('btnTextYellow'),
+      btnTextPink: document.getElementById('btnTextPink'),
+      btnTextBlue: document.getElementById('btnTextBlue'),
+      btnTextGreen: document.getElementById('btnTextGreen'),
+      
+      fontSizeInput: document.getElementById('fontSizeInput'),
+      fontSizeDisplay: document.getElementById('fontSizeDisplay'),
+      lineHeightInput: document.getElementById('lineHeightInput'),
+      lineHeightDisplay: document.getElementById('lineHeightDisplay'),
+      
+      boardContainer: document.getElementById('boardContainer'),
+      btnFullscreen: document.getElementById('btnFullscreen'),
+      fullscreenIcon: document.getElementById('fullscreenIcon'),
+      fullscreenText: document.getElementById('fullscreenText'),
+      boardContentContainer: document.getElementById('boardContentContainer'),
+      boardDate: document.getElementById('boardDate'),
+      boardText: document.getElementById('boardText'),
+    };
+
+    // 取得今天日期字串 (YYYY-MM-DD)
+    function getTodayString() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // 數字轉中文數字
+    function toChineseNum(num) {
+      const chars = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+      if (num <= 12) return chars[num];
+      if (num < 20) return '十' + chars[num % 10];
+      if (num % 10 === 0) return chars[Math.floor(num / 10)] + '十';
+      return chars[Math.floor(num / 10)] + '十' + chars[num % 10];
+    }
+
+    // 格式化中文日期
+    function formatChineseDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const month = toChineseNum(d.getMonth() + 1);
+      const day = toChineseNum(d.getDate());
+      const days = ['日', '一', '二', '三', '四', '五', '六'];
+      const week = days[d.getDay()];
+      
+      return `${month}月${day}日 星期${week}`;
+    }
+
+    // 渲染畫面更新 UI
+    function render() {
+      // 1. 同步輸入框內容
+      if (els.dateInput.value !== state.date) els.dateInput.value = state.date;
+      if (els.contentInput.value !== state.content) els.contentInput.value = state.content;
+      els.fontSizeDisplay.textContent = `${state.fontSize}px`;
+      els.lineHeightDisplay.textContent = `${state.lineHeight.toFixed(1)}x`;
+
+      // 2. 更新按鈕選取狀態 (黑板色)
+      els.btnBoardGreen.style.borderColor = state.boardColor === 'green' ? '#60a5fa' : 'transparent';
+      els.btnBoardBlack.style.borderColor = state.boardColor === 'black' ? '#60a5fa' : 'transparent';
+      els.btnBoardBlue.style.borderColor = state.boardColor === 'blue' ? '#60a5fa' : 'transparent';
+      els.btnBoardGray.style.borderColor = state.boardColor === 'gray' ? '#60a5fa' : 'transparent';
+      els.btnBoardBrown.style.borderColor = state.boardColor === 'brown' ? '#60a5fa' : 'transparent';
+
+      // 3. 更新按鈕選取狀態 (文字色)
+      els.btnTextWhite.style.borderColor = state.textColor === 'white' ? '#60a5fa' : '#e5e7eb';
+      els.btnTextYellow.style.borderColor = state.textColor === 'yellow' ? '#60a5fa' : '#e5e7eb';
+      els.btnTextPink.style.borderColor = state.textColor === 'pink' ? '#60a5fa' : '#e5e7eb';
+      els.btnTextBlue.style.borderColor = state.textColor === 'blue' ? '#60a5fa' : '#e5e7eb';
+      els.btnTextGreen.style.borderColor = state.textColor === 'green' ? '#60a5fa' : '#e5e7eb';
+
+      // 4. 更新黑板外觀樣式 (全螢幕邏輯)
+      els.boardContainer.style.backgroundColor = BOARD_COLORS[state.boardColor] || BOARD_COLORS['green'];
+      
+      if (state.isFullscreen) {
+        els.boardContainer.style.position = 'fixed';
+        els.boardContainer.style.top = '0';
+        els.boardContainer.style.left = '0';
+        els.boardContainer.style.width = '100vw';
+        els.boardContainer.style.height = '100vh';
+        els.boardContainer.style.zIndex = '9999';
+        els.boardContainer.style.border = 'none';
+        els.boardContainer.style.borderRadius = '0';
+        els.boardContainer.style.boxShadow = 'none';
+        
+        // 全螢幕時稍微放大左右下 padding，但上方距離一樣縮減
+        els.boardContentContainer.className = 'w-full h-full px-12 pb-12 pt-6 md:px-24 md:pb-24 md:pt-12 flex flex-col chalk-font box-border relative z-10 overflow-hidden';
+      } else {
+        els.boardContainer.style.position = 'relative';
+        els.boardContainer.style.top = 'auto';
+        els.boardContainer.style.left = 'auto';
+        els.boardContainer.style.width = '100%';
+        els.boardContainer.style.height = '100%';
+        els.boardContainer.style.zIndex = 'auto';
+        els.boardContainer.style.border = '16px solid #4a2f1d';
+        els.boardContainer.style.borderRadius = '8px';
+        els.boardContainer.style.boxShadow = 'inset 0 0 40px rgba(0,0,0,0.5), 0 20px 40px rgba(0,0,0,0.4)';
+        
+        // 恢復一般視窗的 padding，並縮減上方距離
+        els.boardContentContainer.className = 'w-full h-full px-8 pb-8 pt-4 md:px-16 md:pb-16 md:pt-8 flex flex-col chalk-font box-border relative z-10 overflow-hidden';
+      }
+
+      // 5. 更新字體排版樣式
+      els.boardContentContainer.style.color = TEXT_COLORS[state.textColor] || TEXT_COLORS['white'];
+      els.boardContentContainer.style.fontSize = `${state.fontSize}px`;
+      els.boardContentContainer.style.lineHeight = state.lineHeight;
+
+      // 6. 更新內容與日期文字
+      els.boardDate.innerText = formatChineseDate(state.date);
+      els.boardText.innerText = state.content;
+
+      // 7. 將最新狀態儲存到 LocalStorage
+      const stateToSave = { ...state };
+      delete stateToSave.isFullscreen;
+      localStorage.setItem(SAVED_STATE_KEY, JSON.stringify(stateToSave));
+    }
+
+    // 事件監聽綁定
+    els.dateInput.addEventListener('change', (e) => { state.date = e.target.value; render(); });
+    els.contentInput.addEventListener('input', (e) => { state.content = e.target.value; render(); });
+    
+    // 黑板底色事件綁定
+    els.btnBoardGreen.addEventListener('click', () => { state.boardColor = 'green'; render(); });
+    els.btnBoardBlack.addEventListener('click', () => { state.boardColor = 'black'; render(); });
+    els.btnBoardBlue.addEventListener('click', () => { state.boardColor = 'blue'; render(); });
+    els.btnBoardGray.addEventListener('click', () => { state.boardColor = 'gray'; render(); });
+    els.btnBoardBrown.addEventListener('click', () => { state.boardColor = 'brown'; render(); });
+    
+    // 粉筆顏色事件綁定
+    els.btnTextWhite.addEventListener('click', () => { state.textColor = 'white'; render(); });
+    els.btnTextYellow.addEventListener('click', () => { state.textColor = 'yellow'; render(); });
+    els.btnTextPink.addEventListener('click', () => { state.textColor = 'pink'; render(); });
+    els.btnTextBlue.addEventListener('click', () => { state.textColor = 'blue'; render(); });
+    els.btnTextGreen.addEventListener('click', () => { state.textColor = 'green'; render(); });
+    
+    els.fontSizeInput.addEventListener('input', (e) => { state.fontSize = Number(e.target.value); render(); });
+    els.lineHeightInput.addEventListener('input', (e) => { state.lineHeight = Number(e.target.value); render(); });
+
+    // 全螢幕功能處理
+    function updateFullscreenUI() {
+      if (state.isFullscreen) {
+        els.fullscreenIcon.setAttribute('data-lucide', 'minimize');
+        els.fullscreenText.innerText = '退出';
+        els.btnFullscreen.title = '退出全螢幕';
+      } else {
+        els.fullscreenIcon.setAttribute('data-lucide', 'maximize');
+        els.fullscreenText.innerText = '全螢幕';
+        els.btnFullscreen.title = '全螢幕顯示';
+      }
+      lucide.createIcons(); // 重新渲染剛替換的圖示
+    }
+
+    els.btnFullscreen.addEventListener('click', () => {
+      state.isFullscreen = !state.isFullscreen;
+      updateFullscreenUI();
+      render();
+    });
+
+    // 初始渲染
+    render();
+  </script>
+</body>
+</html>
