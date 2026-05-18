@@ -39,6 +39,7 @@
             display: flex;
             gap: 15px;
             backdrop-filter: blur(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
         .theme-dot {
@@ -65,7 +66,7 @@
             padding: 20px;
         }
 
-        /* 按鈕樣式 */
+        /* 按鈕基本樣式 */
         .subject-btn {
             width: 160px;
             height: 110px;
@@ -81,25 +82,30 @@
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             border: 2px solid rgba(255,255,255,0.2);
+            box-sizing: border-box;
         }
 
         .subject-btn:hover {
             transform: translateY(-8px);
             box-shadow: 0 12px 20px rgba(0,0,0,0.15);
-            filter: brightness(1.1);
+            filter: brightness(1.08);
         }
 
-        /* 各科顏色定義 */
-        .chi { background: linear-gradient(145deg, #ff5252, #d32f2f); }
-        .eng { background: linear-gradient(145deg, #448aff, #1976d2); }
-        .mat { background: linear-gradient(145deg, #ffa726, #f57c00); }
-        .sci { background: linear-gradient(145deg, #66bb6a, #388e3c); }
-        .soc { background: linear-gradient(145deg, #ab47bc, #7b1fa2); }
+        .subject-btn:active {
+            transform: translateY(-2px);
+        }
+
+        /* 各科飽和度調整後的漸層色 */
+        .chi { background: linear-gradient(145deg, #ff5252, #e53935); }
+        .eng { background: linear-gradient(145deg, #448aff, #1e88e5); }
+        .mat { background: linear-gradient(145deg, #ffa726, #fb8c00); }
+        .sci { background: linear-gradient(145deg, #66bb6a, #43a047); }
+        .soc { background: linear-gradient(145deg, #ab47bc, #8e24aa); }
         
         /* 五科 GAS 按鈕 */
         .all { 
-            background: linear-gradient(145deg, #78909c, #455a64); 
-            width: 345px; /* 寬度加長 */
+            background: linear-gradient(145deg, #78909c, #546e7a); 
+            width: 345px; /* 色框加長設計 */
         }
 
         .gas-tag {
@@ -109,8 +115,10 @@
             margin-top: 6px;
         }
 
+        /* 手機板自動適應 */
         @media (max-width: 480px) {
             .all { width: 160px; }
+            h1 { font-size: 1.5rem; text-align: center; padding: 0 10px; }
         }
     </style>
 </head>
@@ -118,14 +126,21 @@
 
     <h1>會考各科解題助教 GEM 110~114</h1>
 
+    <!-- 五種不同的背景漸層切換點點 -->
     <div class="theme-panel">
+        <!-- 1. 淡綠 (預設) -->
         <div class="theme-dot" style="background: linear-gradient(135deg, #f0f9f0, #d5eddb);" onclick="changeBg('linear-gradient(135deg, #f0f9f0 0%, #d5eddb 100%)')"></div>
+        <!-- 2. 晨曦藍 -->
         <div class="theme-dot" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb);" onclick="changeBg('linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)')"></div>
+        <!-- 3. 暖陽橘 -->
         <div class="theme-dot" style="background: linear-gradient(135deg, #fffde7, #fff9c4);" onclick="changeBg('linear-gradient(135deg, #fffde7 0%, #fff9c4 100%)')"></div>
+        <!-- 4. 薰衣紫 -->
         <div class="theme-dot" style="background: linear-gradient(135deg, #f3e5f5, #e1bee7);" onclick="changeBg('linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)')"></div>
+        <!-- 5. 簡約灰 -->
         <div class="theme-dot" style="background: linear-gradient(135deg, #eceff1, #cfd8dc);" onclick="changeBg('linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%)')"></div>
     </div>
 
+    <!-- 功能按鈕區 -->
     <div class="container">
         <a href="https://gemini.google.com/gem/1mZeZyAiqOJ86rtnDjMbPZ9duWjva69KS?usp=sharing" target="_blank" class="subject-btn chi">國文</a>
         <a href="https://gemini.google.com/gem/1DJk7NXsCap3h2BM_c6CJyyfMVRVQkW8d?usp=sharing" target="_blank" class="subject-btn eng">英文</a>
@@ -133,6 +148,7 @@
         <a href="https://gemini.google.com/gem/1IkwHbC7u6gABdabln0alzgY8Zs87M0ek?usp=sharing" target="_blank" class="subject-btn sci">自然</a>
         <a href="https://gemini.google.com/gem/127k3HCHZzJ5tRi-l_Q43zU5ngwEUb7vo?usp=sharing" target="_blank" class="subject-btn soc">社會</a>
         
+        <!-- 五科專用按鈕 (包含先前提供的 GAS 連結) -->
         <a href="https://script.google.com/macros/s/AKfycbxMBAdewlqyINtydSFsmOT5_H_43tAAYIPRwaGRBL5-00D8T7Aj92f4qsLTOoPEyi5v/exec" target="_blank" class="subject-btn all">
             <span>五科</span>
             <span class="gas-tag">(GAS-速度較慢)</span>
@@ -140,6 +156,7 @@
     </div>
 
     <script>
+        // 切換背景的 JavaScript 函數
         function changeBg(gradient) {
             document.body.style.background = gradient;
             document.body.style.backgroundAttachment = "fixed";
