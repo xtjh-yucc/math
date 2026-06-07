@@ -316,7 +316,11 @@
                         body: videoFile
                     });
 
-                    if (!uploadRes.ok) throw new Error(`影片上傳失敗 (Upload Failed: ${uploadRes.status})`);
+                    if (!uploadRes.ok) {
+                        let errTxt = await uploadRes.text();
+                        throw new Error(`影片上傳失敗 (Upload Failed: ${uploadRes.status}) - ${errTxt}`);
+                    }
+                    
                     const uploadData = await uploadRes.json();
                     const uploadedFile = uploadData.file;
 
@@ -402,26 +406,35 @@
                                     contents: [{
                                         parts: [
                                             { text: systemPrompt },
-                                            { file_data: { file_uri: uploadedFile.uri, mime_type: uploadedFile.mimeType } }
+                                            // 修正點：必須使用駝峰式命名法 fileData 與 fileUri
+                                            { fileData: { fileUri: uploadedFile.uri, mimeType: uploadedFile.mimeType } }
                                         ]
                                     }]
                                 })
                             });
                             
                             if (!response.ok) {
-                                throw new Error(`Model ${model} failed: ${response.status}`);
+                                let errMsg = response.statusText;
+                                try {
+                                    const errJson = await response.json();
+                                    if (errJson.error && errJson.error.message) errMsg = errJson.error.message;
+                                } catch(e) {}
+                                throw new Error(`Status ${response.status}: ${errMsg}`);
                             }
                             
                             finalData = await response.json();
                             successModel = model;
                             break; 
                         } catch (err) {
-                            modelErrors.push({ model, error: err });
+                            console.warn(`Model ${model} failed:`, err.message);
+                            modelErrors.push({ model, errorMsg: err.message });
                         }
                     }
 
                     if (!finalData || !successModel) {
-                        throw new Error("所有 AI 模型均無法處理此請求，請稍後再試。");
+                        // 提取第一個失敗的真正原因印在畫面上
+                        const firstErrorMsg = modelErrors[0]?.errorMsg || "未知錯誤";
+                        throw new Error(`AI 模型拒絕請求。\n詳細原因: ${firstErrorMsg}`);
                     }
 
                     setActiveModel(successModel);
@@ -569,7 +582,7 @@
                         {error && (
                             <div className="bg-error/20 border border-error/50 p-4 rounded-xl flex items-start gap-3 text-red-200 animate-fade-in backdrop-blur-md">
                                 <AlertCircle size={20} className="mt-0.5 shrink-0 text-error" />
-                                <div className="text-sm font-medium">{error}</div>
+                                <div className="text-sm font-medium whitespace-pre-wrap">{error}</div>
                             </div>
                         )}
 
