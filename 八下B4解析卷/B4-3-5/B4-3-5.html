@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - B4-3-5 三角形的邊角關係</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 第 10 次練習</h1>
+        <p>範圍：3-5 三角形的邊角關係 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 嚴格配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "下列哪一組數可以作為構成三角形的三邊長？",
+            options: ["\\( 1, 2, 3 \\)", "\\( 1, 3, 5 \\)", "\\( 1, \\frac{1}{2}, \\frac{1}{3} \\)", "\\( \\frac{1}{2}, \\frac{1}{3}, \\frac{1}{4} \\)"],
+            answer: 3,
+            solution: "構成三角形的條件：兩短邊之和必須大於最長邊。\n(A) \\( 1 + 2 = 3 \\) (不行)\n(B) \\( 1 + 3 < 5 \\) (不行)\n(C) \\( \\frac{1}{3} + \\frac{1}{4} = \\frac{7}{12} > \\frac{1}{2} \\) (可以)\n(D) \\( 2 + 4 = 6 \\) (不行)\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "在 \\( \\triangle ABC \\) 中，已知 \\( \\overline{AB} > \\overline{AC} > \\overline{BC} \\)，則 \\( \\angle A \\)、\\( \\angle B \\)、\\( \\angle C \\) 的大小關係為何？",
+            options: ["\\( \\angle A > \\angle B > \\angle C \\)", "\\( \\angle A > \\angle C > \\angle B \\)", "\\( \\angle B > \\angle A > \\angle C \\)", "\\( \\angle C > \\angle B > \\angle A \\)"],
+            answer: 3,
+            solution: "根據「大邊對大角」的性質：\n因為 \\( \\overline{AB} > \\overline{AC} > \\overline{BC} \\)\n所對應的角為 \\( \\angle C > \\angle B > \\angle A \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，\\( \\overline{AB} \\)、\\( \\overline{CD} \\) 為圓的兩弦，O 為圓心，若 \\( \\angle AOB = 55^{\\circ} \\)，\\( \\angle COD = 57^{\\circ} \\)，則下列敘述何者正確？",
+            image: "q3_img.png",
+            options: ["\\( \\angle B = \\angle C \\)", "\\( \\overline{AB} = \\overline{CD} \\)", "\\( \\overline{AB} < \\overline{CD} \\)", "\\( \\triangle AOB \\cong \\triangle COD \\)"],
+            answer: 2,
+            solution: "在同圓或等圓中，圓心角越大，所對應的弦也越長。\n因為 \\( \\angle COD (57^{\\circ}) > \\angle AOB (55^{\\circ}) \\)\n所以 \\( \\overline{CD} > \\overline{AB} \\)，即 \\( \\overline{AB} < \\overline{CD} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，三邊長分別為 \\( a \\)、\\( b \\)、\\( c \\)，則下列敘述何者正確？",
+            options: ["若 \\( c = a + b \\) 時，\\( \\triangle ABC \\) 為直角三角形", "若 \\( c \\le a + b \\) 時，\\( \\triangle ABC \\) 為直角三角形", "若 \\( c^2 = a^2 + b^2 \\) 時，\\( \\triangle ABC \\) 為直角三角形", "若 \\( c^2 < a^2 + b^2 \\) 時，\\( \\triangle ABC \\) 為直角三角形"],
+            answer: 2,
+            solution: "根據畢氏定理的逆定理：\n若三角形的三邊長滿足 \\( c^2 = a^2 + b^2 \\)，則此三角形必為直角三角形。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "有一個三角形的兩邊長分別為 6 公分和 4 公分，則下列何者可能為此三角形的另一邊長？",
+            options: ["2 公分", "5 公分", "10 公分", "12 公分"],
+            answer: 1,
+            solution: "根據三角形邊長關係：兩邊之差 < 第三邊 < 兩邊之和。\n\\( 6 - 4 < x < 6 + 4 \\Rightarrow 2 < x < 10 \\)。\n選項中只有 5 符合此範圍。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "小孟家在雅芳家的西方 3.5 公里處，祐祥家距離小孟家 4.3 公里，且三人的家在地圖上可連成一三角形，則下列何者不可能是雅芳家到祐祥家的直線距離？",
+            options: ["0.8 公里", "3.2 公里", "5.7 公里", "7.6 公里"],
+            answer: 0,
+            solution: "三人的家連成三角形，雅芳家到祐祥家的距離 \\( x \\) 必須滿足：\n\\( 4.3 - 3.5 < x < 4.3 + 3.5 \\Rightarrow 0.8 < x < 7.8 \\)。\n因為必須嚴格大於 0.8，所以 0.8 不可能。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "一條長 11 公分的繩子，用此繩子圍成一三角形，且使三角形的三邊長皆為整數，則此三角形的邊長組合共有幾種？",
+            options: ["3 種", "4 種", "5 種", "6 種"],
+            answer: 1,
+            solution: "設三邊長為整數且和為 11，必須滿足兩邊和 > 第三邊（即任一邊必小於 \\( 11 \div 2 = 5.5 \\)，最大邊最長為 5）。\n可能的組合有：\n(5, 5, 1)、(5, 4, 2)、(5, 3, 3)、(4, 4, 3)。\n共 4 種組合。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "心怡家有一個時鐘，長針為 7 公分，短針為 4 公分，她嘗試調整此時鐘的時間，並將長針與短針的尖端連起來，使其成為一個三角形。若連線長度為 \\( x \\)，則 \\( x \\) 所有可能的整數值共有幾個？",
+image: "q8_img.png",
+            options: ["7 個", "8 個", "9 個", "10 個"],
+            answer: 0,
+            solution: "長針與短針構成三角形的兩邊，連線長度 \\( x \\) 為第三邊。\n\\( 7 - 4 < x < 7 + 4 \\Rightarrow 3 < x < 11 \\)。\n可能的整數有：4, 5, 6, 7, 8, 9, 10，共 7 個。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，三邊長分別為 \\( x \\)、\\( x+8 \\)、\\( 12 \\)，若[(x+8)-12][(x+8)+12]=x²。則何者為 \\( \\triangle ABC \\) 的最長邊？",
+            options: ["12", "\\( x \\)", "\\( x+8 \\)", "條件不足，無法判斷"],
+            answer: 2,
+            solution: "原式=(x+8)²-12²=x²。\n (x+8)²=12²+x²，\n \\( \\triangle ABC \\)為直角三角形，\\( x+8 \\)為斜邊。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，若 \\( \\angle A \\) 的外角 > \\( \\angle C \\) 的外角 > \\( \\angle B \\) 的外角，則 \\( \\overline{AB} \\)、\\( \\overline{AC} \\)、\\( \\overline{BC} \\) 三者的大小關係為何？",
+            options: ["\\( \\overline{AB} > \\overline{BC} > \\overline{AC} \\)", "\\( \\overline{AC} > \\overline{AB} > \\overline{BC} \\)", "\\( \\overline{AC} > \\overline{BC} > \\overline{AB} \\)", "\\( \\overline{BC} > \\overline{AC} > \\overline{AB} \\)"],
+            answer: 1,
+            solution: "外角越大，其相鄰的內角越小。\n因為 外角 A > 外角 C > 外角 B，\n所以 內角 \\( \\angle A < \\angle C < \\angle B \\)。\n根據大角對大邊：\\( \\angle B \\) 對應 \\( \\overline{AC} \\)，\\( \\angle C \\) 對應 \\( \\overline{AB} \\)，\\( \\angle A \\) 對應 \\( \\overline{BC} \\)。\n故 \\( \\overline{AC} > \\overline{AB} > \\overline{BC} \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，已知 \\( \\angle A = \\angle B/3 = 2\\angle C \\)，則 \\( \\overline{AB} \\)、\\( \\overline{BC} \\)、\\( \\overline{AC} \\) 三者的大小關係為何？",
+            options: ["\\( \\overline{AB} > \\overline{BC} > \\overline{AC} \\)", "\\( \\overline{AC} > \\overline{AB} > \\overline{BC} \\)", "\\( \\overline{AC} > \\overline{BC} > \\overline{AB} \\)", "\\( \\overline{BC} > \\overline{AC} > \\overline{AB} \\)"],
+            answer: 2,
+            solution: "設 \\( \\angle A = x \\)，則 \\( \\angle B = 2x \\)，\\( \\angle C = x/2 \\)，則 \\( \\angle B > \\angle A > \\angle C \\)，故對應邊 \\( \\overline{AC} > \\overline{BC} > \\overline{AB} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，若 \\( \\overline{AB} = \\overline{AC} \\) 且 \\( \\overline{AB} < \\overline{BC} \\)，則 \\( \\angle A \\) 的範圍為何？",
+            options: ["\\( 0^{\\circ} < \\angle A < 60^{\\circ} \\)", "\\( 60^{\\circ} < \\angle A < 90^{\\circ} \\)", "\\( 60^{\\circ} < \\angle A < 120^{\\circ} \\)", "\\( 60^{\\circ} < \\angle A < 180^{\\circ} \\)"],
+            answer: 3,
+            solution: "因為 \\( \\overline{AB} = \\overline{AC} \\)，所以 \\( \\angle B = \\angle C \\)。\n因為 \\( \\overline{BC} > \\overline{AB} \\)，所以 \\( \\angle A > \\angle C \\)。\n三角形內角和：\\( \\angle A + 2\\angle C = 180^{\\circ} \\Rightarrow \\angle C = \\frac{180^{\\circ} - \\angle A}{2} \\)。\n代入不等式：\\( \\angle A > \\frac{180^{\\circ} - \\angle A}{2} \\Rightarrow 3\\angle A > 180^{\\circ} \\Rightarrow \\angle A > 60^{\\circ} \\)。\n又 \\( \\angle A \\) 為三角形內角，故必須小於 \\( 180^{\\circ} \\)。\n範圍是 \\( 60^{\\circ} < \\angle A < 180^{\\circ} \\)。\n答：選 (D)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "1. \\( \\triangle ABC \\) 中，若 \\( \\angle A + \\angle B = 130^{\\circ} \\)，\\( \\angle B + \\angle C = 110^{\\circ} \\)，則 \\( \\angle B = \\) _______ 度。",
+            solution: "三角形內角和 \\( \\angle A + \\angle B + \\angle C = 180^{\\circ} \\)。\n將兩式相加：\\( (\\angle A + \\angle B) + (\\angle B + \\angle C) = 130^{\\circ} + 110^{\\circ} = 240^{\\circ} \\)。\n即 \\( (\\angle A + \\angle B + \\angle C) + \\angle B = 240^{\\circ} \\)\n\\( 180^{\\circ} + \\angle B = 240^{\\circ} \\Rightarrow \\angle B = 60^{\\circ} \\)。\n答：60。"
+        },
+        {
+            type: 'fill',
+            text: "2. 承上題，邊長 \\( \\overline{AB} \\)、\\( \\overline{BC} \\)、\\( \\overline{CA} \\) 由大而小的順序為 _______ 。",
+            solution: "由上題知 \\( \\angle B = 60^{\\circ} \\)。\n代回原式：\\( \\angle A = 130^{\\circ} - 60^{\\circ} = 70^{\\circ} \\)，\\( \\angle C = 110^{\\circ} - 60^{\\circ} = 50^{\\circ} \\)。\n因為 \\( \\angle A > \\angle B > \\angle C \\)，大角對大邊，\n故對應邊 \\( \\overline{BC} > \\overline{AC} > \\overline{AB} \\)。\n答：\\( \\overline{BC} > \\overline{AC} > \\overline{AB} \\)。"
+        },
+        {
+            type: 'fill',
+            text: "3. \\( \\triangle ABC \\) 中，已知 \\( \\overline{AB} = 3 \\) 公分，\\( \\overline{BC} = 8 \\) 公分，若 \\( \\overline{AC} \\) 的長度為一質數，則 \\( \\triangle ABC \\) 的周長為 _______ 公分。",
+image: "fill3_img.png",
+            solution: "根據三角形邊長關係：\\( 8 - 3 < \\overline{AC} < 8 + 3 \\Rightarrow 5 < \\overline{AC} < 11 \\)。\n介於 5 和 11 之間的質數只有 7，故 \\( \\overline{AC} = 7 \\)。\n周長 = \\( 3 + 8 + 7 = 18 \\)。\n答：18。"
+        },
+        {
+            type: 'fill',
+            text: "4. \\( \\triangle ABC \\) 中，\\( \\angle A = (2x - 15)^{\\circ} \\)，\\( \\angle C = (4x - 30)^{\\circ} \\)。已知 \\( x \\) 為整數，為使此三角形存在，若 \\( x \\) 的最大值為 \\( M \\)，最小值為 \\( N \\)，則 \\( M - N = \\) _______ 。",
+            solution: "三角形各內角必大於 0：\n(1) \\( 2x - 15 > 0 \\Rightarrow x > 7.5 \\)\n(2) \\( 4x - 30 > 0 \\Rightarrow x > 7.5 \\)\n(3) \\( \\angle B = 180^{\\circ} - (2x - 15) - (4x - 30) = 225 - 6x > 0 \\Rightarrow 6x < 225 \\Rightarrow x < 37.5 \\)。\n故 \\( x \\) 的範圍為 \\( 7.5 < x < 37.5 \\)。\n最大的整數 \\( M = 37 \\)，最小的整數 \\( N = 8 \\)。\n\\( M - N = 37 - 8 = 29 \\)。\n答：29。"
+        },
+        {
+            type: 'fill',
+            text: "5. 四邊形 ABCD 中，\\( \\overline{AB}=5 \\)，\\( \\overline{BC}=6 \\)，\\( \\overline{CD}=8 \\)，\\( \\overline{AD}=4 \\)。若對角線 \\( \\overline{BD} \\) 的長度為整數，則 \\( \\overline{BD} \\) 可能的長度有 _______ 種。",
+            image: "f5_img.png",
+            solution: "利用兩個三角形的邊長關係來限制對角線 \\( \\overline{BD} \\)：\n在 \\( \\triangle ABD \\) 中：\\( 5 - 4 < \\overline{BD} < 5 + 4 \\Rightarrow 1 < \\overline{BD} < 9 \\)。\n在 \\( \\triangle BCD \\) 中：\\( 8 - 6 < \\overline{BD} < 8 + 6 \\Rightarrow 2 < \\overline{BD} < 14 \\)。\n取兩者的交集：\\( 2 < \\overline{BD} < 9 \\)。\n可能的整數長度有 3, 4, 5, 6, 7, 8，共 6 種。\n答：6。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "1. 有一 \\( \\triangle ABC \\) 的三邊長分別為：\\( \\overline{AB} = \\sqrt{7} + \\sqrt{6} \\)，\\( \\overline{BC} = 2\\sqrt{2} + \\sqrt{5} \\)，\\( \\overline{AC} = 2\\sqrt{3} + 1 \\)，則 \\( \\angle A \\)、\\( \\angle B \\)、\\( \\angle C \\) 三者的大小關係為何？",
+            solution: "將三邊長分別平方來比較大小：\n\\( \\overline{AB}^2 = (\\sqrt{7} + \\sqrt{6})^2 = 13 + 2\\sqrt{42} \\)\n\\( \\overline{BC}^2 = (\\sqrt{8} + \\sqrt{5})^2 = 13 + 2\\sqrt{40} \\)\n\\( \\overline{AC}^2 = (\\sqrt{12} + 1)^2 = 13 + 2\\sqrt{12} \\)\n因為 \\( 13 + 2\\sqrt{42} > 13 + 2\\sqrt{40} > 13 + 2\\sqrt{12} \\)\n所以 \\( \\overline{AB} > \\overline{BC} > \\overline{AC} \\)。\n根據大邊對大角，\\( \\angle C > \\angle A > \\angle B \\)。\n答：\\( \\angle C > \\angle A > \\angle B \\)。"
+        },
+        {
+            type: 'calc',
+            text: "2. 如右圖，在 \\( \\triangle ABC \\) 中作一線段 \\( \\overline{AD} \\) 交 \\( \\overline{BC} \\) 於 D 點，若 \\( \\overline{BD} = \\overline{CD} > \\overline{AD} \\)，試說明 \\( \\triangle ABC \\) 為鈍角三角形。",
+            image: "calc2_img.png",
+            solution: "在 \\( \\triangle ABD \\) 中，因為 \\( \\overline{BD} > \\overline{AD} \\)，大邊對大角，所以 \\( \\angle BAD > \\angle B \\)。\n在 \\( \\triangle ACD \\) 中，因為 \\( \\overline{CD} > \\overline{AD} \\)，大邊對大角，所以 \\( \\angle CAD > \\angle C \\)。\n將兩式相加：\\( \\angle BAD + \\angle CAD > \\angle B + \\angle C \\)\n即 \\( \\angle BAC > \\angle B + \\angle C \\)。\n又因為三角形內角和 \\( \\angle BAC + \\angle B + \\angle C = 180^{\\circ} \\)\n將上式代入可得：\\( \\angle BAC + \\angle BAC > 180^{\\circ} \\Rightarrow 2\\angle BAC > 180^{\\circ} \\Rightarrow \\angle BAC > 90^{\\circ} \\)。\n因為有一個內角大於 90 度，故 \\( \\triangle ABC \\) 為鈍角三角形。\n答：見證明過程。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "1. 儷娟在前庭圍出一塊以 A, B, C 為頂點的三角形花圃，打算種植漂亮的紅玫瑰。為了購買圍籬，她已事先測量三角形花圃的邊長，卻因為不小心弄髒紀錄，導致 BC 的長度資料遺失（已知 \\( \\overline{AB}=3.5 \\text{ m}, \\overline{CA}=10.7 \\text{ m} \\)）。根據邊長關係判斷，BC 不可能為下列何數？",
+            image: "a1_img.png",
+            options: ["6", "8", "10", "12"],
+            answer: 0,
+            solution: "根據三角形兩邊之和與差的關係判斷第三邊的範圍：\n\\( 10.7 - 3.5 < \\overline{BC} < 10.7 + 3.5 \\)\n\\( 7.2 < \\overline{BC} < 14.2 \\)。\n選項中只有 6 不在這個範圍內，因此不可能。\n答：選 (A)。"
+        },
+        {
+            type: 'app',
+            text: "2. 如右圖，在繩子 AB 的中點 M 處做記號，再將右側的 B 點往左方拉動，使其與左側的 A 點重合，形成一個 \\( \\triangle APQ \\)。已知 \\( \\angle A = 30^{\\circ}, \\angle P = 125^{\\circ}, \\angle Q = 25^{\\circ} \\)，則 M 點會落在 \\( \\triangle APQ \\) 的哪一個位置？",
+            image: "a2_img.png",
+            options: ["落在 \\( \\overline{PQ} \\) 的中點上", "落在 \\( \\overline{AQ} \\) 的中點上", "落在 \\( \\overline{PQ} \\) 上，且較靠近 P 點", "落在 \\( \\overline{PQ} \\) 上，且較靠近 Q 點"],
+            answer: 3,
+            solution: "繩長一半即為 M 點的位置。\n因為 \\( \\angle P > \\angle A > \\angle Q \\)，大角對大邊，所以 \\( \\overline{AQ} > \\overline{PQ} > \\overline{AP} \\)。\n由於 \\( \\overline{AQ} \\) 最長，M 點若要平分總周長，會越過 P 點落在 \\( \\overline{PQ} \\) 上。\n且為了彌補 \\( \\overline{AP} \\) 較短的長度，M 點必須在 \\( \\overline{PQ} \\) 上多走一些距離，因此會越過 \\( \\overline{PQ} \\) 的中點，較靠近 Q 點。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "3. 心妤、翊慈兩人一同在溜冰場中溜冰，心妤在翊慈正西方 50 公尺處，兩人同時往出口處溜去。已知心妤以東偏北 \\( 70^{\\circ} \\) 方向直線滑行，翊慈以西偏北 \\( 65^{\\circ} \\) 方向直線滑行，剛好在出口處相遇，下列敘述何者正確？",
+            image: "a3_img.png",
+            options: ["翊慈滑行的距離小於 50 公尺", "心妤滑行的距離小於 50 公尺", "翊慈滑行的距離比心妤長", "兩人滑行的距離相等"],
+            answer: 2,
+            solution: "畫出 \\( \\triangle ABC \\)，A 為心妤，B 為翊慈，C 為出口。\n\\( \\overline{AB} = 50 \\)，\\( \\angle A = 70^{\\circ} \\)，\\( \\angle B = 65^{\\circ} \\)。\n出口角 \\( \\angle C = 180^{\\circ} - 70^{\\circ} - 65^{\\circ} = 45^{\\circ} \\)。\n因為 \\( \\angle A (70^{\\circ}) > \\angle B (65^{\\circ}) > \\angle C (45^{\\circ}) \\)\n根據大角對大邊：\\( \\overline{BC} > \\overline{AC} > \\overline{AB} (50) \\)。\n也就是：翊慈滑行距離 > 心妤滑行距離 > 50 公尺。\n答：選 (C)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、生活素養題（共 3 題）</div>`;
+            }
+
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${index + 1 > 12 && index + 1 <= 17 ? (index - 11) + ". " : ""}
+                        ${index + 1 > 17 && index + 1 <= 19 ? (index - 16) + ". " : ""}
+                        ${index + 1 > 19 ? (index - 18) + ". " : ""}
+                        ${item.text.replace(/^[0-9]+\. /, '')}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將 HTML 注入 DOM
+        container.innerHTML = htmlContent;
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 單純切換 CSS 屬性，極速顯示
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 網頁完全載入後再進行渲染與公式轉換
+    window.onload = function() {
+        renderQuiz();
+        // 呼叫 KaTeX 自動掃描轉換整個容器內的公式
+        if (window.renderMathInElement) {
+            renderMathInElement(document.getElementById('quiz-container'), {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    };
+
+</script>
+
+</body>
+</html>
