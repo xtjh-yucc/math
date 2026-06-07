@@ -182,6 +182,7 @@
         const Zap = (props) => <Icon {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></Icon>;
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></Icon>;
 
+        // 確保優先清單內的模型名稱是最新的有效版本
         const MODEL_PRIORITY_LIST = [
             'gemini-1.5-pro-002',
             'gemini-1.5-pro',
@@ -255,8 +256,18 @@
             const [statusMessage, setStatusMessage] = useState('');
             const [result, setResult] = useState(null);
             const [error, setError] = useState(null);
-            const [activeModel, setActiveModel] = useState(localStorage.getItem('gemini_active_model') || null);
             
+            // 驗證緩存中的模型是否存在於目前支援的清單中，若不存在則捨棄
+            const cachedModel = localStorage.getItem('gemini_active_model');
+            const isValidCache = MODEL_PRIORITY_LIST.includes(cachedModel);
+            const [activeModel, setActiveModel] = useState(isValidCache ? cachedModel : null);
+            
+            useEffect(() => {
+                if (cachedModel && !isValidCache) {
+                    localStorage.removeItem('gemini_active_model');
+                }
+            }, [cachedModel, isValidCache]);
+
             const t = translations[lang];
 
             useEffect(() => {
@@ -406,7 +417,6 @@
                                     contents: [{
                                         parts: [
                                             { text: systemPrompt },
-                                            // 修正點：必須使用駝峰式命名法 fileData 與 fileUri
                                             { fileData: { fileUri: uploadedFile.uri, mimeType: uploadedFile.mimeType } }
                                         ]
                                     }]
@@ -432,9 +442,10 @@
                     }
 
                     if (!finalData || !successModel) {
-                        // 提取第一個失敗的真正原因印在畫面上
-                        const firstErrorMsg = modelErrors[0]?.errorMsg || "未知錯誤";
-                        throw new Error(`AI 模型拒絕請求。\n詳細原因: ${firstErrorMsg}`);
+                        // 篩選錯誤訊息：優先顯示非 404 (Not Found) 的錯誤，因為那通常才是阻擋請求的真正原因
+                        const meaningfulError = modelErrors.find(e => !e.errorMsg.includes("404")) || modelErrors[0];
+                        const errorMsg = meaningfulError?.errorMsg || "未知錯誤";
+                        throw new Error(`AI 模型拒絕請求。\n發生在模型 ${meaningfulError.model}:\n${errorMsg}`);
                     }
 
                     setActiveModel(successModel);
