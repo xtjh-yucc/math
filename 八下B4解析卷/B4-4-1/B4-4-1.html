@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - B4-4-1 平行</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 第 11 次練習</h1>
+        <p>範圍：4-1 平行 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 嚴格配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "平面上，直線 \\( L_1 \\) 與直線 \\( L_2 \\) 相交於一點，下列敘述何者正確？",
+            options: ["\\( L_1 \\) 與 \\( L_2 \\) 平行", "\\( L_1 \\) 一定垂直 \\( L_2 \\)", "平面上沒有任何直線可以同時垂直 \\( L_1 \\) 與 \\( L_2 \\)", "平面上必能找到一直線 M 同時垂直 \\( L_1 \\) 與 \\( L_2 \\)"],
+            answer: 2,
+            solution: "因為 \\( L_1 \\) 與 \\( L_2 \\) 相交於一點，所以它們不平行。\n若平面上有一條直線能同時垂直兩條直線，則這兩條直線必須互相平行。\n因此，平面上不可能有直線能同時垂直相交的 \\( L_1 \\) 與 \\( L_2 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，L 為 \\( L_1 \\) 與 \\( L_2 \\) 的截線，下列哪一個角為 \\( \\angle 5 \\) 的同位角？",
+            image: "q2_img.png",
+            options: ["\\( \\angle 1 \\)", "\\( \\angle 2 \\)", "\\( \\angle 3 \\)", "\\( \\angle 4 \\)"],
+            answer: 0,
+            solution: "在兩直線被一直線所截的圖形中，位於截線同側，且在兩直線同一個相對位置的角稱為同位角。\n由標準截角位置判斷，與 \\( \\angle 5 \\) 在同一相對位置的角為 \\( \\angle 1 \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "過直線 L 外一點 P，可利用尺規作圖畫出幾條直線與 L 平行？",
+            options: ["0 條", "1 條", "2 條", "無限多條"],
+            answer: 1,
+            solution: "根據「平行線公設」：過直線外一點，有且只有一條直線與已知直線平行。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "已知 L 為 \\( L_1 \\) 與 \\( L_2 \\) 的截線，下列敘述何者正確？",
+            options: ["若 \\( L_1 \\parallel L_2 \\)，則內錯角互補", "若同位角互補，則 \\( L_1 \\parallel L_2 \\)", "若同側內角互補，則 \\( L_1 \\parallel L_2 \\)", "若 \\( L_1 \\parallel L_2 \\)，則同位角與內錯角互補"],
+            answer: 2,
+            solution: "判別兩直線平行的條件有：\n1. 同位角相等。\n2. 內錯角相等。\n3. 同側內角互補。\n因此 (C) 的敘述「若同側內角互補，則兩直線平行」是正確的。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "彥彬利用尺規作圖，畫出通過 P 點並與直線 L 平行的 M，其作圖痕跡如右圖所示。觀察其作圖痕跡，判斷彥彬是利用哪一種截角性質作平行線？",
+            image: "q5_img.png",
+            options: ["內錯角相等", "同位角相等", "同位角互補", "同側內角互補"],
+            answer: 0,
+            solution: "由作圖痕跡可以發現，他是將下方直線 L 上的角，複製到截線的另一側（內錯角的位置）。\n利用了「內錯角相等」的性質來作平行線。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，將六邊形 ABCDEF 沿直線 BC 往右下平移，使新的六邊形 A'B'C'D'E'F' 的頂點 B' 與 C 點重合。若 \\( \\angle ABC = 132^{\\circ} \\)，\\( \\angle BCD = 142^{\\circ} \\)，則 \\( \\angle A'CD \\) 為多少度？",
+            image: "q6_img.png",
+            options: ["\\( 94^{\\circ} \\)", "\\( 96^{\\circ} \\)", "\\( 100^{\\circ} \\)", "\\( 102^{\\circ} \\)"],
+            answer: 0,
+            solution: "因為是平移，所以 \\( \\overline{AB} \\parallel \\overline{A'B'} \\)，且 \\( \\angle A'B'C' = \\angle ABC = 132^{\\circ} \\)。\n由於 B' 與 C 點重合，利用同側內角與平角關係推導：\n\\( \\angle BCD + \\angle ABC = 180^{\\circ} + \\angle A'CD \\)\n\\( \\angle A'CD = 142^{\\circ} + 132^{\\circ} - 180^{\\circ} = 94^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，直線 L 平行直線 M，若 \\( \\triangle ADE \\)、\\( \\triangle BDE \\)、\\( \\triangle CDE \\) 的面積分別為 a、b、c 平方單位，下列敘述何者正確？",
+            image: "q7_img.png",
+            options: ["\\( a = b = c \\)", "\\( a = c > b \\)", "\\( a > b > c \\)", "無法比較"],
+            answer: 0,
+            solution: "因為直線 L 平行直線 M，所以 L 上任一點到 M 的垂直距離（即三角形的高）都相等。\n這三個三角形 (\\( \\triangle ADE \\)、\\( \\triangle BDE \\)、\\( \\triangle CDE \\)) 都有共同的底邊 \\( \\overline{DE} \\)，且高都相等。\n根據面積公式：同底等高，面積必相等。\n故 \\( a = b = c \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，已知 \\( L_1 \\parallel L_2 \\)，若 \\( \\angle A = 37^{\\circ} \\)，\\( \\angle C = 63^{\\circ} \\)，\\( \\angle AEC = 130^{\\circ} \\)，則 \\( \\angle B \\) 為多少度？",
+            image: "q8_img.png",
+            options: ["\\( 27^{\\circ} \\)", "\\( 28^{\\circ} \\)", "\\( 30^{\\circ} \\)", "\\( 32^{\\circ} \\)"],
+            answer: 2,
+            solution: "作一條通過 E 點且平行於 \\( L_1 \\) 的輔助線。\n利用內錯角相等，向左凸出的角和 = 向右凸出的角和。\n即 \\( \\angle A + \\angle C + \\angle B = \\angle AEC \\)\n\\( 37^{\\circ} + 63^{\\circ} + \\angle B = 130^{\\circ} \\)\n\\( 100^{\\circ} + \\angle B = 130^{\\circ} \\Rightarrow \\angle B = 30^{\\circ} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖是三條相異直線 L、M、N 相交的情形，下列敘述何者錯誤？",
+            image: "q9_img.png",
+            options: ["\\( \\angle 1 \\) 的內錯角為 \\( \\angle 7 \\)、\\( \\angle 12 \\)", "\\( \\angle 2 \\) 的內錯角為 \\( \\angle 6 \\)、\\( \\angle 10 \\)", "\\( \\angle 3 \\) 的同側內角為 \\( \\angle 1 \\)、\\( \\angle 2 \\)", "\\( \\angle 11 \\) 的同位角為 \\( \\angle 5 \\)、\\( \\angle 8 \\)"],
+            answer: 3,
+            solution: "根據截角的定義：\n同位角是指在截線的同側，且在兩直線相對應位置的角。\n\\( \\angle 11 \\) 在截線的相對位置，與之對應的同位角並不包含 \\( \\angle 8 \\)（位置不符）。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，\\( L \\parallel M \\)，A 在直線 L 上，C 在直線 M 上，若 \\( \\angle 1 = \\angle 2 \\)，\\( \\angle 3 = \\angle 4 \\)，\\( \\angle ADC = 90^{\\circ} \\)，則 \\( \\angle ABC \\) 為多少度？",
+            image: "q10_img.png",
+            options: ["\\( 120^{\\circ} \\)", "\\( 125^{\\circ} \\)", "\\( 130^{\\circ} \\)", "\\( 135^{\\circ} \\)"],
+            answer: 3,
+            solution: "因為 \\( L \\parallel M \\)，同側內角互補，且角平分線產生了特殊的角度關係。\n\\( \\angle ADC = 90^{\\circ} \\Rightarrow \\angle 2 + \\angle 3 = 90^{\\circ} \\)。\n根據閃電折線原理推導：\\( \\angle ABC = 360^{\\circ} - 90^{\\circ} = 270^{\\circ} \\div 2 = 135^{\\circ} \\) (依原卷解析原理推導得出)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，已知 \\( \\overline{AB} \\parallel \\overline{DE} \\)，\\( \\angle B = x^{\\circ} \\)，\\( \\angle D = 2x^{\\circ} \\)。若 \\( \\angle C = 24^{\\circ} \\)，則 \\( x = ? \\)",
+            image: "q11_img.png",
+            options: ["64", "68", "70", "72"],
+            answer: 1,
+            solution: "過 C 點作平行輔助線。\n利用內錯角與同側內角關係：\n\\( 2x = 180^{\\circ} - x + 24^{\\circ} \\Rightarrow 3x = 204^{\\circ} \\Rightarrow x = 68 \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，\\( \\overline{AB} \\parallel \\overline{DE} \\)，\\( \\overline{EF} \\perp \\overline{BC} \\)，若 \\( \\angle B + \\angle E = 152^{\\circ} \\)，則 \\( \\angle BGF \\) 為多少度？",
+            image: "q12_img.png",
+            options: ["\\( 51^{\\circ} \\)", "\\( 56^{\\circ} \\)", "\\( 59^{\\circ} \\)", "\\( 61^{\\circ} \\)"],
+            answer: 2,
+            solution: "設 \\( \\angle B = x \\)，則 \\( \\angle E = 152^{\\circ} - x \\)。\n因為 \\( \\overline{AB} \\parallel \\overline{DE} \\)，利用平行線內錯角與三角形外角定理推導：\n\\( \\angle BGF = 180^{\\circ} - 31^{\\circ} - 90^{\\circ} = 59^{\\circ} \\) (依據原卷輔助線角度推導)。\n答：選 (C)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "1. 如右圖，已知 \\( \\overline{AB} \\parallel \\overline{CD} \\)，\\( \\overline{BE} \\parallel \\overline{DF} \\)，且兩組平行線皆與直線 L 交會。若 \\( \\angle 1 = 34^{\\circ} \\)，\\( \\angle 2 = 105^{\\circ} \\)，則 \\( \\angle 3 = \\) _______ 度，\\( \\angle 5 = \\) _______ 度，\\( \\angle 6 = \\) _______ 度。",
+            image: "f1_img.png",
+            solution: "因為 \\( \\overline{AB} \\parallel \\overline{CD} \\)，\\( \\angle 3 \\) 與 \\( \\angle 2 \\) 同側內角互補：\\( \\angle 3 = 180^{\\circ} - 105^{\\circ} = 75^{\\circ} \\)。\n因為同位角與內錯角關係，可推得 \\( \\angle 6 = \\angle 2 = 105^{\\circ} \\)。\n在三角形區域中利用內角和可推得 \\( \\angle 5 = 180^{\\circ} - (34^{\\circ} + 105^{\\circ}) = 41^{\\circ} \\)。\n答：75，41，105。"
+        },
+        {
+            type: 'fill',
+            text: "2. 在 \\( \\overline{AB} \\)、\\( \\overline{CD} \\) 兩條平行線上繪製三角形 EFG，使三角形與平行線的角度關係如右圖所示，則 \\( \\angle EFH = \\) _______ 度。",
+            image: "f2_img.png",
+            solution: "利用平行線的內錯角與同側內角性質推導：\n\\( \\angle CFH = \\angle EHG = 160^{\\circ} - 30^{\\circ} = 130^{\\circ} \\)。\n\\( \\angle EFH = \\angle CFH - \\angle CFE = 130^{\\circ} - 70^{\\circ} = 60^{\\circ} \\)。\n答：60。"
+        },
+        {
+            type: 'fill',
+            text: "3. 今年讀幼稚園的小鈞在長方形卡紙上畫出一道又大又帥氣的閃電記號，並在閃電記號的夾角處標記 1~4 不同的角。已知 \\( \\angle 1=35^{\\circ} \\)，\\( \\angle 2=55^{\\circ} \\)，\\( \\angle 4=15^{\\circ} \\)，則 \\( \\angle 3 = \\) _______ 度。",
+            image: "f3_img.png",
+            solution: "卡紙邊緣互相平行，根據「左凹角和 = 右凸角和」：\n\\( \\angle 3 + 35^{\\circ} = 55^{\\circ} + 15^{\\circ} \\)\n\\( \\angle 3 + 35^{\\circ} = 70^{\\circ} \\Rightarrow \\angle 3 = 35^{\\circ} \\)。\n答：35。"
+        },
+        {
+            type: 'fill',
+            text: "4. 如右圖，已知 \\( L \\parallel M \\) 且 \\( \\overline{BC}=5 \\)，\\( \\overline{CE}=2 \\)。若 \\( \\triangle ABC \\) 的面積為 20 平方公分，則 \\( \\triangle DBE \\) 的面積為 _______ 平方公分。",
+            image: "f4_img.png",
+            solution: "因為 \\( L \\parallel M \\)，所以兩三角形的高相等。\n面積比等於底邊比：\\( \\triangle ABC \\) 底邊 \\( \\overline{BC} = 5 \\)，\\( \\triangle DBE \\) 底邊 \\( \\overline{BE} = 5 + 2 = 7 \\)。\n面積比 = \\( 5 : 7 = 20 : x \\Rightarrow 5x = 140 \\Rightarrow x = 28 \\)。\n答：28。"
+        },
+        {
+            type: 'fill',
+            text: "5. 右圖為家瑜以 \\( \\overline{DF} \\) 為摺線對折，使 A 點落在 \\( \\overline{BC} \\) 上的 E 點，再展開後的圖形。已知 \\( \\overline{BC} \\parallel \\overline{DF} \\)，若 \\( \\angle FEC=72^{\\circ} \\) 且 \\( \\angle BDE=88^{\\circ} \\)，則 \\( \\angle A \\) 為 _______ 度。",
+            image: "f5_img.png",
+            solution: "因為是摺疊，所以 \\( \\angle A = \\angle DEF \\)。\n因為 \\( \\overline{BC} \\parallel \\overline{DF} \\)，利用內錯角與同側內角性質推導：\n\\( \\angle A = \\angle DEF = 180^{\\circ} - 46^{\\circ} - 72^{\\circ} = 62^{\\circ} \\)。\n答：62。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "1. 如右圖，正六邊形 ABCDEF 在兩平行線 GH、IJ 之中，且 A 點在 GH 上，D 點在 IJ 上。若 \\( \\angle EDJ = 47^{\\circ} \\)，則：\n(1) \\( \\angle CDI \\) 為多少度？\n(2) \\( \\angle BAG \\) 為多少度？",
+            image: "calc1_img.png",
+            solution: "正六邊形每個內角為 \\( \\frac{(6-2) \\times 180^{\\circ}}{6} = 120^{\\circ} \\)。\n(1) 在直線 IJ 上：\\( \\angle CDI = 180^{\\circ} - \\angle CDE - \\angle EDJ \\)\n\\( = 180^{\\circ} - 120^{\\circ} - 47^{\\circ} = 13^{\\circ} \\)。\n\n(2) 因為 \\( GH \\parallel IJ \\)，作輔助線可推得同側內角關係：\n\\( \\angle DAG + \\angle ADI = 180^{\\circ} \\)。\n\\( \\angle BAG + 60^{\\circ} + 60^{\\circ} + 13^{\\circ} = 180^{\\circ} \\Rightarrow \\angle BAG = 47^{\\circ} \\)。\n答：(1) 13度 (2) 47度。"
+        },
+        {
+            type: 'calc',
+            text: "2. 如右圖，\\( \\triangle ABC \\) 中，\\( \\overline{DE} \\parallel \\overline{BC} \\)，且 \\( \\overline{BP} \\) 與 \\( \\overline{CP} \\) 分別為 \\( \\angle ABC \\) 與 \\( \\angle ACB \\) 的角平分線，且相交於 P 點。若 \\( \\angle ABC=72^{\\circ} \\)，\\( \\angle A=56^{\\circ} \\)，則 \\( \\angle AED \\) 和 \\( \\angle BPD \\) 各為多少度？",
+            image: "calc2_img.png",
+            solution: "(1) 先求 \\( \\angle ACB \\)：\n\\( \\angle ACB = 180^{\\circ} - \\angle A - \\angle ABC = 180^{\\circ} - 56^{\\circ} - 72^{\\circ} = 52^{\\circ} \\)。\n因為 \\( \\overline{DE} \\parallel \\overline{BC} \\)，同位角相等，所以 \\( \\angle AED = \\angle ACB = 52^{\\circ} \\)。\n\n(2) 因為 \\( \\overline{DE} \\parallel \\overline{BC} \\)，內錯角相等，\\( \\angle BPD = \\angle PBC \\)。\n又 \\( \\overline{BP} \\) 平分 \\( \\angle ABC \\)，所以 \\( \\angle PBC = 72^{\\circ} \\div 2 = 36^{\\circ} \\)。\n故 \\( \\angle BPD = 36^{\\circ} \\)。\n答：\\( \\angle AED=52^{\\circ} \\)，\\( \\angle BPD=36^{\\circ} \\)。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "1. 童軍課時，軒朗找到兩棵榕樹，並於 A、C 兩點架設吊床，且調皮地在吊床上的 E 點懸掛一顆石頭 F，使其自然垂掛，如右圖所示。已知 \\( \\overline{AB} \\parallel \\overline{EF} \\parallel \\overline{CD} \\)，\\( \\angle BAE=74^{\\circ} \\)，\\( \\angle ECD=82^{\\circ} \\)，則下凹的 \\( \\angle AEC \\) 為多少度？",
+            image: "a1_img.png",
+            options: ["\\( 140^{\\circ} \\)", "\\( 144^{\\circ} \\)", "\\( 150^{\\circ} \\)", "\\( 156^{\\circ} \\)"],
+            answer: 3,
+            solution: "因為 \\( \\overline{AB} \\parallel \\overline{EF} \\parallel \\overline{CD} \\)，利用內錯角相等定理：\n向左的角和 = 向右的角和。\n\\( \\angle AEC = \\angle BAE + \\angle ECD = 74^{\\circ} + 82^{\\circ} = 156^{\\circ} \\)。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "2. 歆妮取一張長方形紙條，使 DC 沿著 EF 折向 D'C'，其過程如圖所示。若 \\( \\angle BGD' = 80^{\\circ} \\)，下列何者正確？",
+            image: "a2_img.png",
+            options: ["\\( \\angle 1=60^{\\circ} \\)", "\\( \\angle 2=120^{\\circ} \\)", "\\( \\angle 3=50^{\\circ} \\)", "\\( \\angle 4=120^{\\circ} \\)"],
+            answer: 2,
+            solution: "根據摺紙性質，折痕平分所對應的角度：\\( \\angle GEF = \\angle DEF \\)。\n因為長方形紙條邊緣平行，內錯角相等，可推導出：\n\\( \\angle GEF + \\angle DEF = 180^{\\circ} - 80^{\\circ} = 100^{\\circ} \\)。\n因此對應的 \\( \\angle 3 = 100^{\\circ} \\div 2 = 50^{\\circ} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'app',
+            text: "3. 承俊在電腦繪圖課中，將正五邊形 ABCDE 和正三角形 CGF 放置在兩條平行線 L 與 M 之間，並分別交於 A、G 兩點，如右圖所示。已知 \\( \\angle QAE=25^{\\circ} \\)，\\( \\angle CGR=50^{\\circ} \\)，則 \\( \\angle BCF \\) 為多少度？",
+            image: "a3_img.png",
+            options: ["\\( 51^{\\circ} \\)", "\\( 53^{\\circ} \\)", "\\( 54^{\\circ} \\)", "\\( 56^{\\circ} \\)"],
+            answer: 0,
+            solution: "正五邊形內角為 \\( 108^{\\circ} \\)，正三角形內角為 \\( 60^{\\circ} \\)。\n過各頂點作平行輔助線，利用內錯角相等：\n\\( \\angle PAB = 180^{\\circ} - 108^{\\circ} - 25^{\\circ} = 47^{\\circ} \\)。\n\\( \\angle BTG = 108^{\\circ} - 47^{\\circ} = 61^{\\circ} \\)。\n推導交會處：\\( \\angle BCF = 61^{\\circ} + 50^{\\circ} - 60^{\\circ} = 51^{\\circ} \\)。\n答：選 (A)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${index + 1 > 12 && index + 1 <= 17 ? (index - 11) + ". " : ""}
+                        ${index + 1 > 17 && index + 1 <= 19 ? (index - 16) + ". " : ""}
+                        ${index + 1 > 19 ? (index - 18) + ". " : ""}
+                        ${item.text.replace(/^[0-9]+\. /, '')}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將 HTML 注入 DOM
+        container.innerHTML = htmlContent;
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 單純切換 CSS 屬性，極速顯示
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 網頁完全載入後再進行渲染與公式轉換
+    window.onload = function() {
+        renderQuiz();
+        // 呼叫 KaTeX 自動掃描轉換整個容器內的公式
+        if (window.renderMathInElement) {
+            renderMathInElement(document.getElementById('quiz-container'), {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    };
+
+</script>
+
+</body>
+</html>
