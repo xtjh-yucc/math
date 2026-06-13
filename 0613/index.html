@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學小幫手 - 課堂拍照畫記主控制台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
+        .tab-btn.active { border-bottom: 2px solid #3b82f6; color: #3b82f6; font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 頂部導覽列 -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-paintbrush text-blue-500 text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-800">課堂拍照畫記系統 <span class="text-sm font-normal text-gray-500 ml-2">主控制台</span></h1>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <i class="fa-solid fa-user-tie mr-1"></i> 教師管理端
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <!-- 分頁標籤 -->
+        <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-xl shadow-sm px-4 pt-2">
+            <button class="tab-btn active px-4 py-3 mr-4 text-gray-500 hover:text-gray-700 transition-colors" data-target="tab-setting">
+                <i class="fa-solid fa-cogs mr-2"></i>設定與分發
+            </button>
+            <button class="tab-btn px-4 py-3 mr-4 text-gray-500 hover:text-gray-700 transition-colors" data-target="tab-dashboard">
+                <i class="fa-solid fa-chart-pie mr-2"></i>數據儀表板
+            </button>
+            <button class="tab-btn px-4 py-3 text-gray-500 hover:text-gray-700 transition-colors" data-target="tab-gas">
+                <i class="fa-solid fa-cloud-arrow-up mr-2"></i>後台 GAS 設定
+            </button>
+        </div>
+
+        <!-- 第一分頁：設定與分發區 -->
+        <div id="tab-setting" class="tab-content active bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-500 pl-3">互動工具參數設定</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">1. 課堂任務名稱</label>
+                    <input type="text" id="taskName" placeholder="例如：尋找校園幾何圖形並畫出對稱軸" class="w-full border-gray-300 rounded-md shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 border">
+                    <p class="text-xs text-gray-500 mt-2">此名稱將顯示在學生端畫面上方。</p>
+                </div>
+                <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">2. Google Apps Script 網址 (接收圖片用)</label>
+                    <input type="text" id="gasUrl" placeholder="請貼上部署好的 GAS 網址 (https://script.google.com/macros/s/...)" class="w-full border-gray-300 rounded-md shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 border">
+                    <p class="text-xs text-gray-500 mt-2">將學生畫記好的圖片儲存至你的雲端硬碟與試算表中。</p>
+                </div>
+            </div>
+            <div class="mt-8 text-center bg-gray-50 p-6 rounded-lg border border-dashed border-gray-300">
+                <i class="fa-brands fa-html5 text-4xl text-orange-500 mb-3"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">單一學生端網頁產生器</h3>
+                <p class="text-sm text-gray-500 mb-4">系統會將上述設定自動封裝，產生一份獨立的 HTML 檔案。學生只要開啟該網頁即可呼叫相機並作答。</p>
+                <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
+                    <i class="fa-solid fa-download mr-2"></i>一鍵下載學生端網頁 (.html)
+                </button>
+            </div>
+        </div>
+
+        <!-- 第二分頁：數據儀表板 -->
+        <div id="tab-dashboard" class="tab-content bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-gray-800 border-l-4 border-green-500 pl-3">即時畫記提交紀錄</h2>
+                <div>
+                    <button id="loadDemoBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded shadow-sm text-sm mr-2 transition-colors">
+                        <i class="fa-solid fa-flask mr-1"></i>載入示範資料
+                    </button>
+                    <button id="loadGasBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow-sm text-sm transition-colors">
+                        <i class="fa-solid fa-rotate mr-1"></i>一鍵載入雲端紀錄
+                    </button>
+                </div>
+            </div>
+
+            <!-- 統計卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow">
+                    <div class="text-sm opacity-80">已收到作品總數</div>
+                    <div class="text-3xl font-bold mt-1" id="totalCount">0</div>
+                </div>
+                <div class="col-span-2 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                     <div class="text-sm text-gray-600 mb-2 font-medium">系統狀態與提示</div>
+                     <p class="text-sm text-gray-500">點擊圖片可放大檢視。若讀取雲端資料，請確保第一分頁的 GAS 網址已填寫正確。</p>
+                </div>
+            </div>
+
+            <!-- 學生紀錄總表 -->
+            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">提交時間</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">學生姓名</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2">畫記作品</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordTableBody" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="3" class="px-6 py-8 text-center text-sm text-gray-500">
+                                尚未載入資料，請點擊上方按鈕載入。
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 第三分頁：後台 GAS 設定 -->
+        <div id="tab-gas" class="tab-content bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-purple-500 pl-3">GAS 全自動中文建表腳本</h2>
+            <p class="text-sm text-gray-600 mb-4">請在 Google 試算表中點選「擴充功能 > Apps Script」，將以下程式碼貼上並發布為網頁應用程式。<br>
+               <strong class="text-red-500">注意：此腳本會自動在你的 Google Drive 中建立「學生畫板上傳圖片」資料夾來存放學生的照片，並在試算表寫入連結。</strong>
+            </p>
+            
+            <div class="relative group">
+                <button id="copyGasBtn" class="absolute top-3 right-3 bg-gray-700 hover:bg-gray-600 text-white text-xs py-1 px-3 rounded shadow opacity-80 group-hover:opacity-100 transition-opacity">
+                    <i class="fa-regular fa-copy mr-1"></i>複製程式碼
+                </button>
+                <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm font-mono shadow-inner border border-gray-800 h-96"><code id="gasCodeText">
+function doOptions(e) {
+  return ContentService.createTextOutput("")
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader("Access-Control-Allow-Origin", "*")
+    .setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+    .setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("畫記紀錄");
+    
+    // 若工作表不存在則自動建立並寫入符合該情境的繁體中文欄位標題
+    if (!sheet) {
+      sheet = ss.insertSheet("畫記紀錄");
+      sheet.appendRow(["提交時間", "學生姓名", "任務名稱", "圖片預覽網址"]);
+      sheet.getRange("A1:D1").setFontWeight("bold").setBackground("#f3f4f6");
+      sheet.setColumnWidth(4, 400); // 加寬圖片網址欄位
+    }
+
+    // 自動建立或尋找 Drive 資料夾存放圖片
+    var folderName = "學生畫板上傳圖片";
+    var folders = DriveApp.getFoldersByName(folderName);
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+    
+    // 解析 Base64 並存成圖片檔
+    var base64Data = data.image.split(",")[1];
+    var fileName = data.name + "_" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmmss") + ".jpg";
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64Data), "image/jpeg", fileName);
+    var file = folder.createFile(blob);
+    
+    // 設定檔案共用權限為知道連結者可檢視，方便前端讀取
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    // 獲取圖片直接檢視網址 (用於 html img src)
+    var fileId = file.getId();
+    var directUrl = "https://drive.google.com/uc?id=" + fileId;
+
+    // 寫入試算表
+    sheet.appendRow([
+      Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy/MM/dd HH:mm:ss"),
+      data.name,
+      data.taskName,
+      directUrl
+    ]);
+
+    return ContentService.createTextOutput(JSON.stringify({"status": "success", "url": directUrl}))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader("Access-Control-Allow-Origin", "*");
+      
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader("Access-Control-Allow-Origin", "*");
+  }
+}
+
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("畫記紀錄");
+    if(!sheet) return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON).setHeader("Access-Control-Allow-Origin", "*");
+    
+    var data = sheet.getDataRange().getValues();
+    var result = [];
+    // 倒序讀取，最新提交在最前
+    for(var i = data.length - 1; i > 0; i--) {
+      result.push({
+        time: data[i][0],
+        name: data[i][1],
+        taskName: data[i][2],
+        imageUrl: data[i][3]
+      });
+    }
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader("Access-Control-Allow-Origin", "*");
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({"error": err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader("Access-Control-Allow-Origin", "*");
+  }
+}
+                </code></pre>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer 致謝 -->
+    <footer class="mt-auto py-4 text-center text-sm text-gray-400 border-t border-gray-200">
+        Made by Xtjh-yucc | 數學小幫手專用系統
+    </footer>
+
+    <!-- 圖片放大 Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 hidden z-50 flex justify-center items-center p-4">
+        <span class="absolute top-5 right-5 text-white text-3xl cursor-pointer" onclick="document.getElementById('imageModal').classList.add('hidden')">&times;</span>
+        <img id="modalImg" class="max-w-full max-h-full rounded shadow-lg object-contain" src="">
+    </div>
+
+    <!-- 核心邏輯載入 -->
+    <script src="app.js"></script>
+</body>
+</html>
