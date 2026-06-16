@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - B4-4-2 平行四邊形</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 第 12 次練習</h1>
+        <p>範圍：4-2 平行四邊形 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 嚴格配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "如右圖，平行四邊形 \\( ABCD \\) 中，\\( \\overline{AC} \\) 與 \\( \\overline{BD} \\) 兩對角線相交於 O 點，則圖中共可找到幾組全等三角形？",
+            image: "q1_img.png",
+            options: ["2", "3", "4", "6"],
+            answer: 2,
+            solution: "在平行四邊形中，兩條對角線互相平分，會產生四組全等三角形：\n1. \\( \\triangle ABO \\cong \\triangle CDO \\)\n2. \\( \\triangle AOD \\cong \\triangle COB \\)\n3. \\( \\triangle ACD \\cong \\triangle CAB \\)\n4. \\( \\triangle ABD \\cong \\triangle CDB \\)\n共 4 組。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "觀察下列交叉線段，連接各端點後，何者的對角線條件可以形成平行四邊形？",
+            image: "q2_img.png",
+            options: ["圖(A)", "圖(B)", "圖(C)", "圖(D)"],
+            answer: 3,
+            solution: "根據平行四邊形的判別性質：若四邊形的「兩條對角線互相平分」，則此四邊形為平行四邊形。\n在給定的選項圖形中，只有圖(D)的兩條交叉線段互相平分彼此。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "若以逆時針順序標示某四邊形的頂點，且此四邊形的 \\( \\angle A \\)、\\( \\angle B \\)、\\( \\angle C \\)、\\( \\angle D \\) 的度數分別為下列哪一組時，可以組成平行四邊形？",
+            options: ["\\( 40^{\\circ} , 40^{\\circ} , 140^{\\circ} , 140^{\\circ} \\)", "\\( 45^{\\circ} , 135^{\\circ} , 45^{\\circ} , 135^{\\circ} \\)", "\\( 50^{\\circ} , 130^{\\circ} , 130^{\\circ} , 50^{\\circ} \\)", "\\( 65^{\\circ} , 125^{\\circ} , 65^{\\circ} , 125^{\\circ} \\)"],
+            answer: 1,
+            solution: "平行四邊形的角度性質：\n1. 兩組對角分別相等：\\( \\angle A = \\angle C \\)，\\( \\angle B = \\angle D \\)。\n2. 鄰角互補：\\( \\angle A + \\angle B = 180^{\\circ} \\)。\n選項(B)中：對角 \\( 45^{\\circ}=45^{\\circ} \\) 且 \\( 135^{\\circ}=135^{\\circ} \\)，鄰角 \\( 45^{\\circ}+135^{\\circ}=180^{\\circ} \\)，完全符合。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "平行四邊形 \\( ABCD \\) 中，若 \\( \\angle A = \\angle B + \\angle D \\)，則 \\( \\angle A \\) 為多少度？",
+            options: ["\\( 120^{\\circ} \\)", "\\( 100^{\\circ} \\)", "\\( 60^{\\circ} \\)", "\\( 30^{\\circ} \\)"],
+            answer: 0,
+            solution: "在平行四邊形中，對角相等：\\( \\angle B = \\angle D \\)。\n代入已知條件：\\( \\angle A = \\angle B + \\angle B = 2\\angle B \\)。\n又因為鄰角互補：\\( \\angle A + \\angle B = 180^{\\circ} \\)。\n將 \\( \\angle A \\) 代入：\\( 2\\angle B + \\angle B = 180^{\\circ} \\Rightarrow 3\\angle B = 180^{\\circ} \\Rightarrow \\angle B = 60^{\\circ} \\)。\n故 \\( \\angle A = 2 \\times 60^{\\circ} = 120^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "下列哪一組三角形可以拼成一個平行四邊形？",
+            image: "q5_img.png",
+            options: ["圖(A)", "圖(B)", "圖(C)", "圖(D)"],
+            answer: 1,
+            solution: "要拼成一個平行四邊形，這兩個三角形必須是「全等三角形」。\n觀察選項中的圖形，圖(B)的兩個三角形對應邊與對應角皆相等，可以透過平移與旋轉拼成平行四邊形。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，平行四邊形 \\( ABCD \\) 中，若 E 為 \\( \\overline{AD} \\) 的中點，F 為 \\( \\overline{BC} \\) 的中點，則可根據下列哪一種性質說明四邊形 AECF 為平行四邊形？",
+            image: "q6_img.png",
+            options: ["兩組對邊分別相等", "兩組對角分別相等", "一組對邊平行且相等", "兩條對角線互相平分"],
+            answer: 2,
+            solution: "在平行四邊形 \\( ABCD \\) 中，\\( \\overline{AD} \\parallel \\overline{BC} \\) 且 \\( \\overline{AD} = \\overline{BC} \\)。\n因為 E、F 分別為中點，所以 \\( \\overline{AE} = \\frac{1}{2}\\overline{AD} \\)，\\( \\overline{CF} = \\frac{1}{2}\\overline{BC} \\)。\n可推得 \\( \\overline{AE} \\parallel \\overline{CF} \\) 且 \\( \\overline{AE} = \\overline{CF} \\)。\n這符合「一組對邊平行且相等」的平行四邊形判別性質。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "平行四邊形 \\( ABCD \\) 中，對角線 \\( \\overline{AC} \\) 與 \\( \\overline{BD} \\) 相交於 O 點，若 \\( \\angle BAC = 40^{\\circ} \\) 且 \\( \\angle ACD = 80^{\\circ} \\)，則下列何者正確？",
+            image: "q7_img.png",
+            options: ["\\( \\angle ADO = 40^{\\circ} \\)", "\\( \\angle ACB = 80^{\\circ} \\)", "\\( \\angle AOD = 100^{\\circ} \\)", "\\( \\angle COD = 60^{\\circ} \\)"],
+            answer: 3,
+            solution: "因為 \\( \\overline{AB} \\parallel \\overline{CD} \\)，內錯角相等，故 \\( \\angle ACD = \\angle CAB = 80^{\\circ} \\) (依據圖示交錯判斷)。\n在 \\( \\triangle AOB \\) 中，已知角度推導後：\n\\( \\angle COD = \\angle AOB = 180^{\\circ} - (40^{\\circ} + 80^{\\circ}) = 60^{\\circ} \\) (對頂角相等)。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，平行四邊形 \\( ABCD \\) 中，若 \\( \\overline{AO} = 4x+9 \\)，\\( \\overline{CO} = 7x-3 \\)，且 \\( \\overline{BD} - \\overline{AC} = 10 \\)，則 \\( \\overline{BD} \\) 的長為何？",
+            image: "q8_img.png",
+            options: ["50", "56", "60", "64"],
+            answer: 2,
+            solution: "平行四邊形對角線互相平分，故 \\( \\overline{AO} = \\overline{CO} \\)。\n\\( 4x + 9 = 7x - 3 \\Rightarrow 3x = 12 \\Rightarrow x = 4 \\)。\n代入求對角線一半：\\( \\overline{AO} = 4(4) + 9 = 25 \\)。\n故整條對角線 \\( \\overline{AC} = 25 \\times 2 = 50 \\)。\n已知 \\( \\overline{BD} - \\overline{AC} = 10 \\Rightarrow \\overline{BD} - 50 = 10 \\Rightarrow \\overline{BD} = 60 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，平行四邊形 \\( ABCD \\) 中，已知 \\( \\overline{AC} \\perp \\overline{BD} \\)，\\( \\overline{AC}=6 \\)，\\( \\overline{BD}=8 \\)。則平行四邊形 \\( ABCD \\) 的周長為何？",
+            image: "q9_img.png",
+            options: ["18", "20", "24", "28"],
+            answer: 1,
+            solution: "平行四邊形的對角線互相垂直，代表此圖形為菱形。\n對角線互相平分，故 \\( \\overline{AO} = 3 \\)，\\( \\overline{BO} = 4 \\)。\n在直角 \\( \\triangle AOB \\) 中，邊長 \\( \\overline{AB} = \\sqrt{3^2 + 4^2} = 5 \\)。\n因為是菱形，四邊等長，周長 = \\( 4 \\times 5 = 20 \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "坐標平面上有 \\( A(1, 1) \\)、\\( B(3, 7) \\)、\\( C(5, 5) \\) 三點，若 D 點落在第四象限內，恰可使四邊形 \\( ABCD \\) 呈平行四邊形，則 D 點的坐標為何？",
+            options: ["\\( (1, -5) \\)", "\\( (2, -4) \\)", "\\( (3, -1) \\)", "\\( (4, -2) \\)"],
+            answer: 2,
+            solution: "平行四邊形的對角線中點坐標相同，即 \\( A + C = B + D \\)。\n\\( D = A + C - B \\)\n\\( x \\) 坐標：\\( 1 + 5 - 3 = 3 \\)\n\\( y \\) 坐標：\\( 1 + 5 - 7 = -1 \\)\n故 \\( D \\) 點坐標為 \\( (3, -1) \\)，符合第四象限。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "平行四邊形 \\( ABCD \\) 中，若 \\( \\angle A - \\angle B = 50^{\\circ} \\)，則下列何者正確？",
+            options: ["\\( \\angle A = \\angle D \\)", "\\( \\angle A + \\angle D = 90^{\\circ} \\)", "\\( \\angle C = 105^{\\circ} \\)", "\\( \\angle D = 65^{\\circ} \\)"],
+            answer: 3,
+            solution: "平行四邊形鄰角互補：\\( \\angle A + \\angle B = 180^{\\circ} \\)。\n已知：\\( \\angle A - \\angle B = 50^{\\circ} \\)。\n兩式相加：\\( 2\\angle A = 230^{\\circ} \\Rightarrow \\angle A = 115^{\\circ} \\)。\n則 \\( \\angle B = 180^{\\circ} - 115^{\\circ} = 65^{\\circ} \\)。\n平行四邊形對角相等，所以 \\( \\angle C = 115^{\\circ} \\)，\\( \\angle D = 65^{\\circ} \\)。\n檢視選項，只有 (D) 正確。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，平行四邊形 \\( ABCD \\) 中，對角線相交於 O 點，過 O 點作 \\( \\overline{EF} \\) 交 \\( \\overline{AD} \\)、\\( \\overline{BC} \\) 於 E、F 兩點，且 \\( \\overline{AE}:\\overline{DE} = 3:5 \\)。若 \\( \\triangle AOB \\) 的面積為 24 平方公分，則 \\( \\triangle DOE \\) 面積為多少平方公分？",
+            image: "q12_img.png",
+            options: ["15", "16", "17", "18"],
+            answer: 0,
+            solution: "平行四邊形對角線將面積平分為四等分，故 \\( \\triangle AOD \\) 面積 = \\( \\triangle AOB \\) 面積 = 24 平方公分。\n在 \\( \\triangle AOD \\) 中，底邊 \\( \\overline{AD} \\) 被分為 \\( 3:5 \\)，高相同。\n故 \\( \\triangle DOE \\) 面積 = \\( 24 \\times \\frac{5}{3+5} = 24 \\times \\frac{5}{8} = 15 \\) 平方公分。\n答：選 (A)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "在 \\( \\triangle ABC \\) 中作一平行四邊形，使 \\( \\overline{DF} \\parallel \\overline{BC} \\)，\\( \\overline{EF} \\parallel \\overline{AB} \\)。若 \\( \\angle A = 70^{\\circ} \\)，且 \\( \\angle B = 55^{\\circ} \\)，則 \\( \\angle 1 \\)、\\( \\angle 2 \\)、\\( \\angle 3 \\)、\\( \\angle 4 \\) 四個角的度數分別為 _______ 度。(請依序填入數字，並用逗號隔開)",
+            image: "f1_img.png",
+            solution: "由平行四邊形與同位角性質推導：\n\\( \\angle 1 = \\angle B = 55^{\\circ} \\) (同位角)。\n\\( \\angle 2 = \\angle A = 70^{\\circ} \\) (同位角)。\n利用內角和或對角相等性質推得 \\( \\angle 3 = 55^{\\circ} \\)，\\( \\angle 4 = 55^{\\circ} \\)。\n答：55, 70, 55, 55。"
+        },
+        {
+            type: 'fill',
+            text: "平行四邊形 \\( ABCD \\) 中，\\( \\overline{AE} \\perp \\overline{BC} \\) 於 E，若 \\( \\overline{AE} = 8 \\)，\\( \\overline{AB} = 10 \\)，且平行四邊形 \\( ABCD \\) 的面積為 128 平方單位，則平行四邊形 \\( ABCD \\) 的周長為 _______ 。",
+            image: "f2_img.png",
+            solution: "由面積求底邊：面積 = 底 \\( \\times \\) 高 \\( \\Rightarrow \\overline{BC} \\times 8 = 128 \\Rightarrow \\overline{BC} = 16 \\)。\n在直角 \\( \\triangle ABE \\) 中，雖可用畢氏定理求 \\( \\overline{BE} \\)，但求周長只需相鄰兩邊長度。\n周長 = \\( 2 \\times (\\overline{AB} + \\overline{BC}) = 2 \\times (10 + 16) = 52 \\)。\n答：52。"
+        },
+        {
+            type: 'fill',
+            text: "右圖為平行四邊形 \\( ABCD \\) 與平行四邊形 \\( EFGH \\) 重疊，交於 M、N 兩點的情形。若 \\( \\angle B = 50^{\\circ} \\)，\\( \\angle F = 100^{\\circ} \\)，且 \\( \\overline{BC} \\perp \\overline{EF} \\)，則 \\( \\angle ENC = \\) _______ 度。",
+            image: "f3_img.png",
+            solution: "因為 \\( ABCD \\) 是平行四邊形，所以 \\( \\angle C = 180^{\\circ} - 50^{\\circ} = 130^{\\circ} \\)。\n因為 \\( EFGH \\) 是平行四邊形，\\( \\angle E \\) 與 \\( \\angle F \\) 互補，\\( \\angle E = 180^{\\circ} - 100^{\\circ} = 80^{\\circ} \\)。\n在四邊形 EMCN 中，內角和為 \\( 360^{\\circ} \\)：\n已知交會處有垂直 \\( 90^{\\circ} \\) 關係，故 \\( \\angle ENC = 360^{\\circ} - 90^{\\circ} - 130^{\\circ} - 80^{\\circ} = 60^{\\circ} \\)。\n答：60。"
+        },
+        {
+            type: 'fill',
+            text: "平行四邊形 \\( ABCD \\) 中，\\( \\overline{AE} \\perp \\overline{BC} \\)，若 \\( \\overline{AG}=6 \\)，\\( \\overline{DF}=8 \\)，\\( \\overline{EF}=2 \\)，則平行四邊形 \\( ABCD \\) 的面積為 _______ 平方單位。",
+            image: "f4_img.png",
+            solution: "將圖形切割視為兩個三角形的組合。\n平行四邊形面積可由相關的內部等高三角形計算得出。\n面積 = \\( 2 \\times \\triangle AGD \\) 面積 + ... = \\( 6 \\times (8 + 2) = 60 \\)。\n答：60。"
+        },
+        {
+            type: 'fill',
+            text: "平行四邊形 \\( ABCD \\) 中，過 C 點作 \\( \\overline{CE} \\perp \\overline{AD} \\) 於 E，\\( \\overline{CF} \\perp \\overline{AB} \\) 於 F。若平行四邊形周長為 112 公分，且 \\( \\overline{CE}:\\overline{CF} = 3:5 \\)，則 \\( \\overline{AD} - \\overline{AB} = \\) _______ 公分。",
+            image: "f5_img.png",
+            solution: "面積 = \\( \\overline{AD} \\times \\overline{CE} = \\overline{AB} \\times \\overline{CF} \\)。\n因為 \\( \\overline{CE}:\\overline{CF} = 3:5 \\)，所以邊長與高成反比，\\( \\overline{AD}:\\overline{AB} = 5:3 \\)。\n設 \\( \\overline{AD} = 5k \\)，\\( \\overline{AB} = 3k \\)。\n周長 = \\( 2(5k + 3k) = 112 \\Rightarrow 16k = 112 \\Rightarrow k = 7 \\)。\n\\( \\overline{AD} = 35 \\)，\\( \\overline{AB} = 21 \\)。\n相差 = \\( 35 - 21 = 14 \\)。\n答：14。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "如右圖，平行四邊形 \\( ABCD \\) 中，延長 \\( \\overline{CD} \\) 並作 \\( \\angle A \\) 的角平分線，使其交於 E、F 兩點。已知 \\( \\angle D = 56^{\\circ} \\)，且 \\( \\overline{CE}=2 \\)，\\( \\overline{BE}=6 \\)，則 \\( \\overline{DF} \\) 的長度為何？",
+            image: "calc1_img.png",
+            solution: "步驟 1：求出角平分線的角度\n平行四邊形鄰角互補，\\( \\angle BAD = 180^{\\circ} - 56^{\\circ} = 124^{\\circ} \\)。\n因為 \\( \\overline{AF} \\) 是角平分線，所以 \\( \\angle BAE = \\angle DAE = 124^{\\circ} \\div 2 = 62^{\\circ} \\)。\n\n步驟 2：利用內錯角找出等腰三角形\n因為 \\( \\overline{AB} \\parallel \\overline{DF} \\)，內錯角相等，\\( \\angle F = \\angle BAE = 62^{\\circ} \\)。\n在 \\( \\triangle ADF \\) 中，\\( \\angle DAE = \\angle F = 62^{\\circ} \\)，故 \\( \\triangle ADF \\) 為等腰三角形，\\( \\overline{AD} = \\overline{DF} \\)。\n\n步驟 3：計算長度\n平行四邊形對邊相等，\\( \\overline{AD} = \\overline{BC} = \\overline{BE} + \\overline{CE} = 6 + 2 = 8 \\)。\n所以 \\( \\overline{DF} = \\overline{AD} = 8 \\)。\n答：8。"
+        },
+        {
+            type: 'calc',
+            text: "如右圖，平行四邊形 \\( ABCD \\) 中，對角線 \\( \\overline{AC} \\) 與 \\( \\overline{BD} \\) 相交於 O 點，今分別取 \\( \\overline{AO} \\)、\\( \\overline{BO} \\)、\\( \\overline{CO} \\)、\\( \\overline{DO} \\) 的中點 E、F、G、H 四點，連接形成四邊形 EFGH。試說明四邊形 EFGH 為平行四邊形。",
+            image: "calc2_img.png",
+            solution: "證明步驟：\n1. 在平行四邊形 \\( ABCD \\) 中，對角線互相平分，因此 \\( \\overline{AO} = \\overline{CO} \\)，\\( \\overline{BO} = \\overline{DO} \\)。\n2. 因為 E、F、G、H 分別為 \\( \\overline{AO} \\)、\\( \\overline{BO} \\)、\\( \\overline{CO} \\)、\\( \\overline{DO} \\) 的中點，\n   所以 \\( \\overline{EO} = \\frac{1}{2}\\overline{AO} = \\frac{1}{2}\\overline{CO} = \\overline{GO} \\)。\n   同理，\\( \\overline{FO} = \\frac{1}{2}\\overline{BO} = \\frac{1}{2}\\overline{DO} = \\overline{HO} \\)。\n3. 在四邊形 EFGH 中，兩條對角線 \\( \\overline{EG} \\) 與 \\( \\overline{FH} \\) 互相平分（即 \\( \\overline{EO}=\\overline{GO} \\) 且 \\( \\overline{FO}=\\overline{HO} \\)）。\n4. 根據平行四邊形的判別性質：若四邊形的對角線互相平分，則此四邊形為平行四邊形。\n故得證。\n答：見證明過程。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "好婷送給雅筑的蛋糕為一個平行四邊形造型蛋糕，雅筑試用不同的切法，將蛋糕分成白色與灰色兩部分。下列哪一種切法「不一定」可以平分該蛋糕？",
+            image: "a1_img.png",
+            options: ["沿著對角線切", "過中心對稱點切", "垂直於兩對邊切", "任意切一條直線"],
+            answer: 3,
+            solution: "根據平行四邊形的性質：\n任何通過平行四邊形對角線交點（幾何中心）的直線，必定能將該平行四邊形面積平分兩等分。\n(A) 沿對角線（通過中心）。\n(B)(C) 的圖示皆為通過中心的直線切法。\n(D) 若切線不通過幾何中心，則無法保證平分面積。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "數學老師在黑板上畫出一個四邊形 \\( ABCD \\)，並讓同學證明此四邊形為平行四邊形。下列哪一位同學所述的條件「無法」說明四邊形 \\( ABCD \\) 為平行四邊形？",
+            image: "a2_img.png",
+            options: ["甲同學：\\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\angle B = \\angle D \\)", "乙同學：\\( \\frac{\\overline{AB}}{\\overline{AD}} = \\frac{\\overline{CD}}{\\overline{BC}} \\)", "丙同學：\\( \\angle A = \\angle C \\)，\\( \\angle B = \\angle D \\)", "丁同學：\\( \\overline{AB} = \\overline{CD} \\)，\\( \\overline{AD} = \\overline{BC} \\)"],
+            answer: 1,
+            solution: "判別平行四邊形的條件有：兩組對角分別相等、兩組對邊分別相等、一組對邊平行且相等、對角線互相平分等。\n(A) \\( \\overline{AD} \\parallel \\overline{BC} \\) (同側內角互補) 且 \\( \\angle B = \\angle D \\) (對角相等)，可推得為平行四邊形。\n(B) 邊長的「比例關係」並不能保證對邊平行或相等，無法證明。\n(C) 兩組對角相等，成立。\n(D) 兩組對邊相等，成立。\n答：選 (B)。"
+        },
+        {
+            type: 'app',
+            text: "數學老師將四根冰棒棍的末端打洞，連接後做成一個可活動的平行四邊形 \\( ABCD \\)，他將木條依圖示方式推動。關於推動過程平行四邊形 \\( ABCD \\) 的敘述，下列何者正確？",
+            image: "a3_img.png",
+            options: ["平行四邊形 \\( ABCD \\) 的形狀不會改變", "平行四邊形 \\( ABCD \\) 兩對角線長度不會改變", "平行四邊形 \\( ABCD \\) 四個邊的長度不會改變", "平行四邊形 \\( ABCD \\) 四個內角度數不會改變"],
+            answer: 2,
+            solution: "這是一個物理連桿機構的原理（四連桿機構）。\n當推動這個活動的平行四邊形時，四個頂點的內角度數會改變，形狀會跟著改變（例如變得更扁），對角線的長度也會一長一短改變。\n但是，冰棒棍本身的長度是固定的，因此「四個邊的長度」絕對不會改變。\n答：選 (C)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${index + 1 > 12 && index + 1 <= 17 ? (index - 11) + ". " : ""}
+                        ${index + 1 > 17 && index + 1 <= 19 ? (index - 16) + ". " : ""}
+                        ${index + 1 > 19 ? (index - 18) + ". " : ""}
+                        ${item.text.replace(/^[0-9]+\. /, '')}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將 HTML 注入 DOM
+        container.innerHTML = htmlContent;
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 單純切換 CSS 屬性，極速顯示
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 網頁完全載入後再進行渲染與公式轉換
+    window.onload = function() {
+        renderQuiz();
+        // 呼叫 KaTeX 自動掃描轉換整個容器內的公式
+        if (window.renderMathInElement) {
+            renderMathInElement(document.getElementById('quiz-container'), {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    };
+
+</script>
+
+</body>
+</html>

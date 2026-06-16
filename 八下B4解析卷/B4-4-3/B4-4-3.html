@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - B4-4-3 特殊四邊形的性質</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 第 13 次練習</h1>
+        <p>範圍：4-3 特殊四邊形的性質 &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 嚴格配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "下列四邊形中，何者的兩條對角線不會互相垂直？",
+            options: ["菱形", "箏形", "長方形", "正方形"],
+            answer: 2,
+            solution: "長方形的兩條對角線互相平分且等長，但不一定互相垂直。\n菱形、箏形、正方形的對角線都會互相垂直。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "有一個正方形的面積為 36 平方公分，此正方形的對角線長度為多少公分？",
+            options: ["\\( 6\\sqrt{2} \\)", "\\( 6\\sqrt{3} \\)", "6", "\\( 3\\sqrt{2} \\)"],
+            answer: 0,
+            solution: "正方形面積為 36，可知邊長為 \\( \\sqrt{36} = 6 \\)。\n正方形的對角線長度為邊長的 \\( \\sqrt{2} \\) 倍，即 \\( 6\\sqrt{2} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "找出下列四邊形的各邊中點，並將相鄰的中點連線，何者會形成長方形？",
+            options: ["菱形", "長方形", "等腰梯形", "平行四邊形"],
+            answer: 0,
+            solution: "四邊形各邊中點連線會形成「平行四邊形」。\n若原四邊形的對角線互相垂直（如菱形、箏形），其中點四邊形會是長方形。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "平行四邊形 \\( ABCD \\) 中，若 \\( \\overline{AB}=\\overline{AD} \\) 且 \\( \\angle A= \\angle B \\)，平行四邊形 \\( ABCD \\) 亦為下列哪一種四邊形？",
+            options: ["箏形", "菱形", "正方形", "長方形"],
+            answer: 2,
+            solution: "1. 平行四邊形加上鄰邊相等 (\\( \\overline{AB}=\\overline{AD} \\))，可推得此為「菱形」。\n2. 平行四邊形鄰角互補 (\\( \\angle A+\\angle B=180^{\\circ} \\))，又 \\( \\angle A=\\angle B \\)，故皆為 \\( 90^{\\circ} \\)，可推得此為「長方形」。\n同時具備菱形與長方形性質的四邊形即為「正方形」。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "梯形 \\( ABCD \\) 中，\\( \\overline{AD} \\parallel \\overline{BC} \\)，若 \\( \\overline{AD}=8 \\)，中線 \\( \\overline{EF}=12 \\)，則 \\( \\overline{BC} \\) 的長度為何？",
+image: "q5_img.png",
+            options: ["10", "16", "18", "20"],
+            answer: 1,
+            solution: "梯形中線長度 = (上底 + 下底) \\( \\div 2 \\)。\n\\( \\overline{EF} = \\frac{\\overline{AD} + \\overline{BC}}{2} \\Rightarrow 12 = \\frac{8 + \\overline{BC}}{2} \\)。\n\\( 24 = 8 + \\overline{BC} \\Rightarrow \\overline{BC} = 16 \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "四邊形 \\( ABCD \\) 為等腰梯形，\\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\angle ADB=30^{\\circ} \\)，\\( \\angle ABD=40^{\\circ} \\)，下列角度何者錯誤？",
+image: "q6_img.png",
+            options: ["\\( \\angle ADC=110^{\\circ} \\)", "\\( \\angle C=70^{\\circ} \\)", "\\( \\angle BDC=80^{\\circ} \\)", "\\( \\angle DBC=40^{\\circ} \\)"],
+            answer: 3,
+            solution: "在 \\( \\triangle ABD \\) 中，\\( \\angle A = 180^{\\circ} - 30^{\\circ} - 40^{\\circ} = 110^{\\circ} \\)。\n因為是等腰梯形，底角相等且同側內角互補：\n\\( \\angle ADC = \\angle A = 110^{\\circ} \\) (A正確)。\n\\( \\angle C = 180^{\\circ} - 110^{\\circ} = 70^{\\circ} \\) (B正確)。\n\\( \\angle BDC = \\angle ADC - \\angle ADB = 110^{\\circ} - 30^{\\circ} = 80^{\\circ} \\) (C正確)。\n\\( \\angle DBC = 180^{\\circ} - 80^{\\circ} - 70^{\\circ} = 30^{\\circ} \\)，選項寫 \\( 40^{\\circ} \\) 錯誤。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖為箏形 \\( ABCD \\)，已知 \\( \\overline{AC}=9 \\)，\\( \\overline{BD}=8 \\)，則此箏形 \\( ABCD \\) 的面積為多少平方單位？",
+            image: "q7_img.png",
+            options: ["17", "24", "36", "40"],
+            answer: 2,
+            solution: "箏形的對角線互相垂直。\n面積 = 對角線相乘 \\( \\div 2 \\) = \\( \\frac{9 \\times 8}{2} = 36 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "長方形 \\( ABCD \\) 中，\\( \\overline{AB}=5 \\)，\\( \\overline{BD}=13 \\)，若兩對角線相交於 O 點，則 \\( \\triangle OBC \\) 的面積為多少平方單位？",
+            image: "q8_img.png",
+            options: ["12", "15", "18", "20"],
+            answer: 1,
+            solution: "在直角 \\( \\triangle ABD \\) 中，\\( \\overline{AD} = \\sqrt{13^2 - 5^2} = 12 \\)。\n長方形面積 = \\( 5 \\times 12 = 60 \\)。\n長方形對角線將面積平分為四等分，故 \\( \\triangle OBC \\) 面積 = \\( 60 \\div 4 = 15 \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，\\( \\overline{AD} \\parallel \\overline{BC} \\)，且兩對角線 \\( \\overline{AC} \\) 與 \\( \\overline{BD} \\) 相交於 E 點，若 \\( \\triangle ABE \\) 的面積為 15 平方公分，則 \\( \\triangle DEC \\) 的面積為多少平方公分？",
+            image: "q9_img.png",
+            options: ["12", "15", "16", "18"],
+            answer: 1,
+            solution: "因為 \\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\triangle ABD \\) 與 \\( \\triangle ACD \\) 同底等高，故面積相等。\n兩者扣除共同的 \\( \\triangle ADE \\) 面積後，剩下部分面積亦相等。\n即 \\( \\triangle ABE \\) 面積 = \\( \\triangle DEC \\) 面積 = 15 平方公分。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "菱形 \\( ABCD \\) 中，\\( \\angle A=120^{\\circ} \\)，周長為 48，對角線 \\( \\overline{AC}=12 \\)，則此菱形的面積為何？",
+image: "q10_img.png",
+            options: ["72", "\\( 72\\sqrt{2} \\)", "\\( 72\\sqrt{3} \\)", "\\( 48\\sqrt{5} \\)"],
+            answer: 2,
+            solution: "菱形邊長 = \\( 48 \\div 4 = 12 \\)。\n因為邊長為 12，且 \\( \\overline{AC}=12 \\)，所以 \\( \\triangle ABC \\) 與 \\( \\triangle ADC \\) 皆為正三角形。\n正三角形面積 = \\( \\frac{\\sqrt{3}}{4} \\times 12^2 = 36\\sqrt{3} \\)。\n菱形面積 = \\( 36\\sqrt{3} \\times 2 = 72\\sqrt{3} \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "梯形 \\( ABCD \\) 中，已知 \\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\overline{AD}=20 \\)，\\( \\overline{BC}=60 \\)，若 G、E、I 將 \\( \\overline{AB} \\) 分成四等分，H、F、J 將 \\( \\overline{CD} \\) 分成四等分，下列敘述何者錯誤？",
+            image: "q11_img.png",
+            options: ["\\( \\overline{GH}=30 \\)", "\\( \\overline{EF}=40 \\)", "\\( 2\\overline{EF}=\\overline{GH}+\\overline{IJ} \\)", "\\( \\overline{IJ}=\\frac{1}{2}(\\overline{AD}+\\overline{BC}) \\)"],
+            answer: 3,
+            solution: "因為等分點，這三條線段形成等差數列。\n中線 \\( \\overline{EF} = \\frac{20+60}{2} = 40 \\) (B正確)。\n\\( \\overline{GH} \\) 位於 \\( \\overline{AD} \\) 與 \\( \\overline{EF} \\) 之間，\\( \\overline{GH} = \\frac{20+40}{2} = 30 \\) (A正確)。\n\\( \\overline{IJ} \\) 位於 \\( \\overline{EF} \\) 與 \\( \\overline{BC} \\) 之間，\\( \\overline{IJ} = \\frac{40+60}{2} = 50 \\)。\n(D) 選項說 \\( \\overline{IJ}=\\frac{1}{2}(\\overline{AD}+\\overline{BC})=40 \\) 這是錯誤的，50不等於40。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "長方形 \\( ABCD \\) 中，連接對角線 \\( \\overline{AC} \\) 與 \\( \\overline{BD} \\) 相交於 O 點，並作 \\( \\overline{DG} \\perp \\overline{AC} \\)，\\( \\overline{PE} \\perp \\overline{BD} \\)，\\( \\overline{PF} \\perp \\overline{AC} \\)。若 \\( \\overline{DO}=5 \\)，\\( \\overline{OG}=3 \\)，則 \\( \\overline{PE}+\\overline{PF}=? \\)",
+            image: "q12_img.png",
+            options: ["4", "\\( 4\\sqrt{2} \\)", "\\( 5\\sqrt{2} \\)", "6"],
+            answer: 0,
+            solution: "在直角 \\( \\triangle DOG \\) 中，\\( \\overline{DG} = \\sqrt{5^2 - 3^2} = 4 \\)。\nP 在底邊 \\( \\overline{BC} \\) 上，利用面積分割關係：\n\\( \\triangle OBC \\) 面積 = \\( \\frac{1}{2} \\times \\overline{OC} \\times \\overline{DG} \\)。\n同時 \\( \\triangle OBC = \\triangle OPB + \\triangle OPC = \\frac{1}{2} \\times \\overline{OB} \\times \\overline{PE} + \\frac{1}{2} \\times \\overline{OC} \\times \\overline{PF} \\)。\n因為長方形對角線互相平分且相等，\\( \\overline{OB} = \\overline{OC} \\)。\n故 \\( \\overline{PE} + \\overline{PF} = \\overline{DG} = 4 \\)。\n答：選 (A)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "觀察下列四種四邊形：(A)正方形 (B)菱形 (C)長方形 (D)平行四邊形。其中「兩條對角線等長」的四邊形有哪些？ _______ (請填代號並以逗號分隔)",
+image: "f1_img.png",
+            solution: "對角線等長的四邊形有：正方形、長方形、等腰梯形。\n此題選項中符合條件的有 (A)正方形 與 (C)長方形。\n答：A, C。"
+        },
+        {
+            type: 'fill',
+            text: "箏形 \\( ABCD \\) 兩對角線相交於 O 點，若 \\( \\overline{AO}=6 \\) 公分，\\( \\overline{BC}=17 \\) 公分，\\( \\overline{DO}=8 \\) 公分，則箏形 \\( ABCD \\) 的面積為 _______ 平方公分。",
+            image: "f2_img.png",
+            solution: "箏形中，其中一條對角線垂直平分另一條對角線。假設 \\( \\overline{BD} \\) 被 \\( \\overline{AC} \\) 平分，則 \\( \\overline{BO} = \\overline{DO} = 8 \\)。\n在直角 \\( \\triangle BOC \\) 中，\\( \\overline{CO} = \\sqrt{17^2 - 8^2} = 15 \\)。\n對角線 \\( \\overline{AC} = \\overline{AO} + \\overline{CO} = 6 + 15 = 21 \\)。\n對角線 \\( \\overline{BD} = 8 + 8 = 16 \\)。\n面積 = \\( \\frac{21 \\times 16}{2} = 168 \\)。\n答：168。"
+        },
+        {
+            type: 'fill',
+            text: "有一菱形的對角線分別為 9 公分與 12 公分，則此菱形的周長為 _______ 公分。",
+            solution: "菱形對角線互相垂直平分。\n可分割成四個兩股分別為 4.5 與 6 的直角三角形。\n斜邊（菱形邊長）= \\( \\sqrt{4.5^2 + 6^2} = 7.5 \\)。\n周長 = \\( 7.5 \\times 4 = 30 \\)。\n答：30。"
+        },
+        {
+            type: 'fill',
+            text: "如右圖，E 為菱形 \\( ABCD \\) 內部一點，若 \\( \\triangle ABE \\) 為正三角形，\\( \\angle ADC=108^{\\circ} \\)，則 \\( \\angle ADE= \\) _______ 度。",
+            image: "f4_img.png",
+            solution: "菱形鄰角互補：\\( \\angle DAB = 180^{\\circ} - 108^{\\circ} = 72^{\\circ} \\)。\n因為 \\( \\triangle ABE \\) 為正三角形，\\( \\angle EAB = 60^{\\circ} \\)。\n\\( \\angle DAE = 72^{\\circ} - 60^{\\circ} = 12^{\\circ} \\)。\n因為菱形四邊相等，且 \\( \\triangle ABE \\) 為正三角形，故 \\( \\overline{AD} = \\overline{AB} = \\overline{AE} \\)，\\( \\triangle ADE \\) 為等腰三角形。\n\\( \\angle ADE = \\frac{180^{\\circ} - 12^{\\circ}}{2} = 84^{\\circ} \\)。\n答：84。"
+        },
+        {
+            type: 'fill',
+            text: "梯形 \\( ABCD \\) 中，已知 \\( \\overline{AD} \\parallel \\overline{BC} \\)。若 \\( \\overline{AB}=\\overline{AD}=3 \\)，\\( \\overline{BC}=8 \\)，\\( \\overline{CD}=4 \\)，則梯形 \\( ABCD \\) 面積為 _______ 平方單位。",
+            image: "f5_img.png",
+            solution: "過 D 作 \\( \\overline{DE} \\parallel \\overline{AB} \\) 交 \\( \\overline{BC} \\) 於 E，形成平行四邊形 ABED。\n\\( \\overline{DE} = 3 \\)，\\( \\overline{BE} = 3 \\)，則 \\( \\overline{CE} = 8 - 3 = 5 \\)。\n在 \\( \\triangle CDE \\) 中，邊長為 3, 4, 5，故為直角三角形，\\( \\angle CDE = 90^{\\circ} \\)。\n\\( \\triangle CDE \\) 斜邊 \\( \\overline{CE} \\) 上的高 = \\( \\frac{3 \\times 4}{5} = 2.4 \\)，這也是梯形的高。\n梯形面積 = \\( \\frac{(3 + 8) \\times 2.4}{2} = 13.2 = \\frac{66}{5} \\)。\n答：\\( \\frac{66}{5} \\) (或 13.2)。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "等腰梯形 \\( ABCD \\) 中，已知 \\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\overline{BC}=50 \\) cm，\\( \\overline{AC}=40 \\) cm，\\( \\overline{AB} \\perp \\overline{AC} \\)，試問 \\( \\overline{AD} \\) 的長是多少 cm？",
+            image: "calc1_img.png",
+            solution: "在直角 \\( \\triangle ABC \\) 中，\\( \\overline{AB} = \\sqrt{50^2 - 40^2} = 30 \\)。\n因為是等腰梯形，所以 \\( \\overline{CD} = \\overline{AB} = 30 \\)。\n過 A 作高 \\( \\overline{AE} \\perp \\overline{BC} \\)，利用面積公式求高：\n\\( \\overline{AE} = \\frac{30 \\times 40}{50} = 24 \\)。\n在直角 \\( \\triangle ABE \\) 中，\\( \\overline{BE} = \\sqrt{30^2 - 24^2} = 18 \\)。\n因為等腰梯形兩側對稱，上底 \\( \\overline{AD} = \\overline{BC} - 2 \\times \\overline{BE} = 50 - 2(18) = 14 \\)。\n答：14。"
+        },
+        {
+            type: 'calc',
+            text: "等腰梯形 \\( ABCD \\) 中，已知 \\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\overline{AB}=\\overline{CD}=13 \\)，高為 12，中線長為 15，求梯形 \\( ABCD \\) 的周長與面積？",
+image: "calc2_img.png",
+            solution: "面積 = 中線長 \\( \\times \\) 高 = \\( 15 \\times 12 = 180 \\) 平方單位。\n梯形中線 = \\( \\frac{1}{2}(\\overline{AD} + \\overline{BC}) = 15 \\Rightarrow \\overline{AD} + \\overline{BC} = 30 \\)。\n周長 = (上底 + 下底) + 兩腰長 = \\( 30 + 13 + 13 = 56 \\)。\n答：周長為 56，面積為 180。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "形狀為長方形 \\( ABCD \\) 的巧克力掉落地面後，恰巧分割成四塊小長方形，已知 M、N 分別為 \\( \\overline{AB} \\)、\\( \\overline{CD} \\) 的中點，且小長方形的面積比例關係為甲:乙=2:5，丙:丁=7:3。若長方形 \\( ABCD \\) 的面積為 \\( x \\)，關於甲與丁的關係，下列何者正確？",
+            image: "a1_img.png",
+            options: ["甲與丁的面積相差 \\( \\frac{1}{20}x \\)", "甲與丁的面積共是 \\( \\frac{1}{3}x \\)", "甲:丁 = 20:21", "丁為 \\( \\frac{3}{10}x \\)"],
+            answer: 2,
+            solution: "M、N 為中點，所以長方形被分成的左右兩半面積皆為 \\( 0.5x \\)。\n左半邊 (甲+乙) 面積為 \\( 0.5x \\)。甲所占比例 = \\( 0.5x \\times \\frac{2}{2+5} = \\frac{1}{7}x \\)。\n右半邊 (丙+丁) 面積為 \\( 0.5x \\)。丁所占比例 = \\( 0.5x \\times \\frac{3}{7+3} = \\frac{3}{20}x \\)。\n比較比例：甲 : 丁 = \\( \\frac{1}{7} : \\frac{3}{20} = 20 : 21 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'app',
+            text: "承俊在材料行買了一根 30 公分，一根 40 公分的木桿，想以這兩根木桿作為對角線，以鐵絲綁緊後，黏上白紙製成一個箏形風箏。此箏形風箏的面積應為多少平方公分？",
+            options: ["600", "1200", "1250", "2500"],
+            answer: 0,
+            solution: "箏形的對角線互相垂直，其面積算法為兩對角線相乘除以 2。\n面積 = \\( \\frac{30 \\times 40}{2} = 600 \\) 平方公分。\n答：選 (A)。"
+        },
+        {
+            type: 'app',
+            text: "如右圖，在平行四邊形 \\( ABCD \\) 中，\\( \\angle A \\) 的角平分線交 \\( \\overline{BC} \\) 於 E，若 \\( \\overline{AB}=10 \\)，\\( \\overline{AD}=14 \\)，則 \\( \\overline{CE} \\) 的長度為何？",
+            image: "a3_img.png",
+            options: ["3", "4", "5", "6"],
+            answer: 1,
+            solution: "因為 \\( \\overline{AE} \\) 是角平分線，所以 \\( \\angle DAE = \\angle BAE \\)。\n因為 \\( \\overline{AD} \\parallel \\overline{BC} \\)，內錯角相等，\\( \\angle DAE = \\angle AEB \\)。\n由此推得 \\( \\angle BAE = \\angle AEB \\)，所以 \\( \\triangle ABE \\) 為等腰三角形，\\( \\overline{BE} = \\overline{AB} = 10 \\)。\n平行四邊形對邊相等，\\( \\overline{BC} = \\overline{AD} = 14 \\)。\n故 \\( \\overline{CE} = 14 - 10 = 4 \\)。\n答：選 (B)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${index + 1 > 12 && index + 1 <= 17 ? (index - 11) + ". " : ""}
+                        ${index + 1 > 17 && index + 1 <= 19 ? (index - 16) + ". " : ""}
+                        ${index + 1 > 19 ? (index - 18) + ". " : ""}
+                        ${item.text.replace(/^[0-9]+\. /, '')}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將 HTML 注入 DOM
+        container.innerHTML = htmlContent;
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 單純切換 CSS 屬性，極速顯示
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 網頁完全載入後再進行渲染與公式轉換
+    window.onload = function() {
+        renderQuiz();
+        // 呼叫 KaTeX 自動掃描轉換整個容器內的公式
+        if (window.renderMathInElement) {
+            renderMathInElement(document.getElementById('quiz-container'), {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    };
+
+</script>
+
+</body>
+</html>
