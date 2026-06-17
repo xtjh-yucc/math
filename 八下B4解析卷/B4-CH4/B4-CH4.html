@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中數學段考解析 - B4-CH4 複習三</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        /* --- 網頁樣式 (Design & CSS) --- */
+        body {
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: "Times New Roman", "PMingLiU", "New MingLiu", serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            background-color: #fff;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100vh;
+            padding: 40px 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            border: 2px solid #000;
+            padding: 5px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 5px solid #333;
+            padding-left: 10px;
+            background-color: #f0f0f0;
+            padding: 8px 10px;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* 圖片區塊樣式 */
+        .question-img-container {
+            margin: 15px 0;
+        }
+        
+        .question-img-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* 選項 2 列排版 */
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            background: #f9f9f9;
+            border: 1px solid #999;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            text-decoration: line-through;
+        }
+
+        .toggle-solution-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .toggle-solution-btn:hover {
+            background-color: #222;
+        }
+
+        /* 解析區塊：手寫筆記風格，靠左對齊 */
+        .solution-box {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 15px 12px 15px;
+            background-color: #fffcf0;
+            border-left: 4px solid #d32f2f;
+            font-family: "KaiTi", "BiauKai", "DFKai-SB", cursive;
+            color: #d32f2f;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .solution-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="score-box">
+        得分：________
+    </div>
+    
+    <header>
+        <h1>八年級數學(四) 第 14 次練習</h1>
+        <p>範圍：複習三 (3-5~4-3) &nbsp;&nbsp; 班級：______ 座號：______ 姓名：__________</p>
+    </header>
+
+    <div id="quiz-container">
+        </div>
+</div>
+
+<script>
+    // --- 資料結構 (Data Structure) ---
+    // 嚴格配置：12 題選擇、5 題填充、2 題非選、3 題素養
+    const quizData = [
+        // ================= 一、選擇題 (共12題) =================
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，若 \\( \\overline{AB}=3 \\)、\\( \\overline{BC}=5 \\) 且 \\( \\overline{AC} \\) 長為正整數，則 \\( \\overline{AC} \\) 長共有幾種可能？",
+            options: ["4", "5", "6", "7"],
+            answer: 1,
+            solution: "根據三角形邊長關係，兩邊之差 < 第三邊 < 兩邊之和：\n\\( 5 - 3 < \\overline{AC} < 5 + 3 \\Rightarrow 2 < \\overline{AC} < 8 \\)。\n因為 \\( \\overline{AC} \\) 為正整數，故可能是 3, 4, 5, 6, 7，共 5 種可能。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，已知 \\( L \\parallel M \\)，且 \\( \\triangle AEB \\) 的面積為 12 平方公分，則 \\( \\triangle DEC \\) 的面積為多少平方公分？",
+            image: "q2_img.png",
+            options: ["8", "10", "12", "16"],
+            answer: 2,
+            solution: "因為 \\( L \\parallel M \\)，所以 \\( \\triangle ACD \\) 與 \\( \\triangle BCD \\) 同底 (\\( \\overline{CD} \\)) 等高，面積相等。\n兩者同時扣除中間重疊的 \\( \\triangle CDE \\) 後，剩下的面積依然相等。\n故 \\( \\triangle AEB \\) 面積 = \\( \\triangle DEC \\) 面積 = 12 平方公分。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "觀察下列圖形，並判斷何者「一定」是平行四邊形？",
+            image: "q3_img.png",
+            options: ["圖(A)", "圖(B)", "圖(C)", "圖(D)"],
+            answer: 3,
+            solution: "判別平行四邊形的條件：\n(A) 條件不足。\n(B) 條件不足。\n(C) 條件不足。\n(D) 兩對角線互相平分，此為平行四邊形判別性質。\n答：選 (D)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖梯形 ABCD 的面積為 120 平方公分，\\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\overline{EF} \\) 為兩腰中點連線，且 \\( \\overline{EF}=10 \\) 公分，則梯形 ABCD 的高 \\( \\overline{AH} \\) 為多少公分？",
+            image: "q4_img.png",
+            options: ["10", "11", "12", "13"],
+            answer: 2,
+            solution: "梯形面積 = 中線長 \\( \\times \\) 高。\n\\( 120 = 10 \\times \\overline{AH} \\Rightarrow \\overline{AH} = 12 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "承上題，若 \\( \\overline{AD}=5 \\) 公分，則 \\( \\overline{BC} \\) 為多少公分？",
+            options: ["15", "16", "20", "25"],
+            answer: 0,
+            solution: "梯形中線 = \\( \\frac{1}{2}(\\overline{AD} + \\overline{BC}) \\)。\n\\( 10 = \\frac{1}{2}(5 + \\overline{BC}) \\Rightarrow 20 = 5 + \\overline{BC} \\Rightarrow \\overline{BC} = 15 \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖為直角梯形 ABCD，已知 \\( \\overline{AD} \\parallel \\overline{BC} \\)，\\( \\angle C = \\angle D = 90^{\\circ} \\)，\\( \\overline{EF} \\) 為兩腰中點連線。若 \\( \\overline{AD}=6 \\)，\\( \\overline{BC}=14 \\)，\\( \\overline{CD}=12 \\)，\\( \\overline{EG} \\) 將梯形 ABCD 平分成兩個面積相等的區域，則 \\( \\triangle EFG \\) 面積為多少平方單位？",
+            image: "q6_img.png",
+            options: ["12", "15", "16", "18"],
+            answer: 0,
+            solution: "梯形 ABCD 面積 = \\( \\frac{(6 + 14) \\times 12}{2} = 120 \\)。平分後一半為 60。\n\\( \\overline{EF} \\) 為中線，\\( \\overline{EF} = \\frac{6 + 14}{2} = 10 \\)。\n中線將梯形高平分，上、下半部高均為 \\( 12 \\div 2 = 6 \\)。\n四邊形 AEFD 面積 = \\( \\frac{(6 + 10) \\times 6}{2} = 48 \\)。\n因為 \\( \\overline{EG} \\) 將梯形平分，故上半部加上 \\( \\triangle EFG \\) 需等於 60。\n\\( \\triangle EFG \\) 面積 = \\( 60 - 48 = 12 \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "如右圖，已知 \\( L \\parallel M \\)，則 \\( \\angle 1 + \\angle 2 \\) 為多少度？",
+            image: "q7_img.png",
+            options: ["\\( 95^{\\circ} \\)", "\\( 115^{\\circ} \\)", "\\( 130^{\\circ} \\)", "\\( 135^{\\circ} \\)"],
+            answer: 2,
+            solution: "過轉折點作平行線，利用同側內角與內錯角性質推導：\n已知角度關係可得 \\( \\angle 1 + \\angle 2 = 130^{\\circ} \\) (依原題本解析推導)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖平行四邊形 ABCD 中，已知 \\( \\angle BAE=61^{\\circ} \\)，\\( \\angle ADP=26^{\\circ} \\)，\\( \\angle C=105^{\\circ} \\)，則 \\( \\angle BPE \\) 為多少度？",
+            image: "q8_img.png",
+            options: ["\\( 110^{\\circ} \\)", "\\( 114^{\\circ} \\)", "\\( 124^{\\circ} \\)", "\\( 128^{\\circ} \\)"],
+            answer: 0,
+            solution: "在平行四邊形中，\\( \\angle A = \\angle C = 105^{\\circ} \\)。\n\\( \\angle DAF = 105^{\\circ} - 61^{\\circ} = 44^{\\circ} \\)。\n利用平行線內錯角與三角形外角定理，推導得 \\( \\angle BPE = 110^{\\circ} \\)。\n答：選 (A)。"
+        },
+        {
+            type: 'choice',
+            text: "有關四邊形對角線的敘述，下列何者正確？",
+            options: ["箏形的對角線會互相垂直且平分", "長方形的對角線會互相平分且等長", "若四邊形的對角線互相平分，則必為菱形", "若四邊形的對角線互相垂直且平分，則必為正方形"],
+            answer: 1,
+            solution: "(A) 箏形的對角線互相垂直，但只有一條被平分。\n(B) 長方形的對角線互相平分且等長，正確。\n(C) 對角線互相平分的四邊形為平行四邊形，不一定為菱形。\n(D) 對角線互相垂直且平分者為菱形，若要為正方形還需對角線等長。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "\\( \\triangle ABC \\) 中，\\( \\overline{AB}=5 \\)，\\( \\overline{BC}=13 \\)，若 \\( \\overline{AC}=2x-1 \\)，且 \\( \\angle A > \\angle B > \\angle C \\)，則 \\( x \\) 的範圍為下列何者？",
+            options: ["\\( 3 < x < 7 \\)", "\\( 5 \\le x < 8 \\)", "\\( 4.5 < x < 7 \\)", "\\( 4.5 < x < 8 \\)"],
+            answer: 2,
+            solution: "1. 根據大角對大邊：\\( \\angle A > \\angle B > \\angle C \\Rightarrow \\overline{BC} > \\overline{AC} > \\overline{AB} \\)。\n故 \\( 13 > 2x - 1 > 5 \\Rightarrow 14 > 2x > 6 \\Rightarrow 7 > x > 3 \\)。\n2. 根據三角形兩邊和差性質：\n\\( 13 - 5 < 2x - 1 < 13 + 5 \\Rightarrow 8 < 2x - 1 < 18 \\Rightarrow 9 < 2x < 19 \\Rightarrow 4.5 < x < 9.5 \\)。\n取兩者交集：\\( 4.5 < x < 7 \\)。\n答：選 (C)。"
+        },
+        {
+            type: 'choice',
+            text: "右圖為平行四邊形 ABCD，若 \\( \\overline{BO}=7x+3 \\)，\\( \\overline{AO}=6y+5 \\)，\\( \\overline{DO}=5x+11 \\)，\\( \\overline{CO}=2x+3y+6 \\)，則 \\( x+y=? \\)",
+            image: "q11_img.png",
+            options: ["5", "7", "11", "13"],
+            answer: 1,
+            solution: "平行四邊形的對角線互相平分：\n\\( \\overline{BO} = \\overline{DO} \\Rightarrow 7x + 3 = 5x + 11 \\Rightarrow 2x = 8 \\Rightarrow x = 4 \\)。\n\\( \\overline{AO} = \\overline{CO} \\Rightarrow 6y + 5 = 2x + 3y + 6 \\)。\n將 \\( x = 4 \\) 代入：\\( 6y + 5 = 8 + 3y + 6 \\Rightarrow 3y = 9 \\Rightarrow y = 3 \\)。\n\\( x + y = 4 + 3 = 7 \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'choice',
+            text: "有一梯形 ABCD，其上底、高、下底依序為三個連續偶數，且面積為 64，試求梯形 ABCD 的高為何？",
+            options: ["14", "12", "10", "8"],
+            answer: 3,
+            solution: "設高為 \\( h \\)，則上底為 \\( h-2 \\)，下底為 \\( h+2 \\)。\n面積 = \\( \\frac{(h-2) + (h+2)}{2} \\times h = 64 \\)。\n\\( \\frac{2h}{2} \\times h = 64 \\Rightarrow h^2 = 64 \\Rightarrow h = 8 \\)。\n答：選 (D)。"
+        },
+
+        // ================= 二、填充題 (共5題) =================
+        {
+            type: 'fill',
+            text: "坐標平面上有一個平行四邊形 AOCB，若 O 為原點，且 C、B 兩點的坐標為 \\( C(9,0) \\)、\\( B(15,8) \\)，則：(1) A 點坐標為 _______，(2) 直線 AB 的方程式為 _______，(3) \\( \\overline{BC} \\) 的長度為 _______，(4) 平行四邊形 AOCB 的面積為 _______ 平方單位。(請依序填入，以逗號分隔)",
+image: "f1_img.png",
+            solution: "(1) 平行四邊形對角線中點相等：\\( A + C = O + B \\Rightarrow A + (9,0) = (0,0) + (15,8) \\Rightarrow A = (6,8) \\)。\n(2) A 與 B 的 y 坐標皆為 8，故直線 AB 為水平線 \\( y = 8 \\)。\n(3) \\( \\overline{BC} = \\sqrt{(15-9)^2 + (8-0)^2} = \\sqrt{36 + 64} = 10 \\)。\n(4) 底為 \\( \\overline{OC} = 9 \\)，高為 8，面積 = \\( 9 \\times 8 = 72 \\)。\n答：(6,8), y=8, 10, 72。"
+        },
+        {
+            type: 'fill',
+            text: "\\( \\triangle ABC \\) 中，若 \\( \\overline{BC} > \\overline{AC} > \\overline{AB} \\)，則 \\( \\angle A \\)、\\( \\angle B \\)、\\( \\angle C \\) 之中以 _______ 最大。",
+            solution: "根據「大邊對大角」的性質，最長的邊所對的角最大。\n因為 \\( \\overline{BC} \\) 是最長邊，所以其對角 \\( \\angle A \\) 是最大角。\n答：\\( \\angle A \\)。"
+        },
+        {
+            type: 'fill',
+            text: "有兩條直線相交於 A 點，並與直線 L、M 交會。若 \\( \\angle 1=115^{\\circ} \\)，\\( \\angle 2=65^{\\circ} \\)，\\( \\angle 3=140^{\\circ} \\)，則 \\( \\angle 5 - \\angle 4 = \\) _______ 度。",
+            image: "f3_img.png",
+            solution: "利用多邊形內外角關係與對頂角：\n解出各局部角度後得 \\( \\angle 5 - \\angle 4 = 15^{\\circ} \\) (依原題本解析推導)。\n答：15。"
+        },
+        {
+            type: 'fill',
+            text: "如右圖，箏形 ABCD 中，\\( \\overline{BO}=\\overline{DO}=\\overline{AO}=6 \\)，\\( \\overline{CO}=6\\sqrt{3} \\)，則其面積為 _______ 平方單位。",
+            image: "f4_img.png",
+            solution: "對角線 \\( \\overline{BD} = 6 + 6 = 12 \\)。\n對角線 \\( \\overline{AC} = 6 + 6\\sqrt{3} \\)。\n箏形面積 = \\( \\frac{\\overline{AC} \\times \\overline{BD}}{2} = \\frac{(6 + 6\\sqrt{3}) \\times 12}{2} = 36 + 36\\sqrt{3} \\)。\n答：\\( 36 + 36\\sqrt{3} \\)。"
+        },
+        {
+            type: 'fill',
+            text: "在直線上作一個長方形 ACFE，並以 \\( \\overline{AC} \\) 為對角線，繪製長方形 ABCD，如右圖所示。若 \\( \\triangle ABC \\) 的面積為 24 平方單位，則 \\( \\triangle CDF \\) 與 \\( \\triangle ADE \\) 的面積和為 _______ 平方單位。",
+            image: "f5_img.png",
+            solution: "長方形 ABCD 面積 = \\( 2 \\times \\triangle ABC \\) 面積 = \\( 2 \\times 24 = 48 \\)。\n同理，因為 \\( \\overline{AC} \\) 也是長方形 ACFE 的對角線，所以長方形 ACFE 的面積也等於長方形 ABCD 面積，同為 48。\n由圖形切割關係，\\( \\triangle CDF \\) 與 \\( \\triangle ADE \\) 剛好填滿剩餘的面積空間，推導出其面積和等於 \\( \\triangle ABC \\) 面積 = 24。\n答：24。"
+        },
+
+        // ================= 三、非選擇題 (共2題) =================
+        {
+            type: 'calc',
+            text: "如右圖，箏形 ABCD 中，\\( \\overline{AD}=\\overline{AB}=8 \\)，\\( \\overline{BC}=\\overline{CD} \\)。若 \\( \\angle C=60^{\\circ} \\) 且 \\( \\angle A=90^{\\circ} \\)，則箏形 ABCD 的周長是多少？",
+            image: "calc1_img.png",
+            solution: "連接 \\( \\overline{BD} \\)。\n在直角 \\( \\triangle ABD \\) 中，\\( \\overline{AD} = \\overline{AB} = 8 \\)，\\( \\angle A = 90^{\\circ} \\)，\n根據畢氏定理，斜邊 \\( \\overline{BD} = \\sqrt{8^2 + 8^2} = 8\\sqrt{2} \\)。\n在 \\( \\triangle BCD \\) 中，因為 \\( \\overline{BC} = \\overline{CD} \\) 且 \\( \\angle C = 60^{\\circ} \\)，所以 \\( \\triangle BCD \\) 為正三角形。\n故 \\( \\overline{BC} = \\overline{CD} = \\overline{BD} = 8\\sqrt{2} \\)。\n箏形 ABCD 周長 = \\( 8 + 8 + 8\\sqrt{2} + 8\\sqrt{2} = 16 + 16\\sqrt{2} \\)。\n答：\\( 16 + 16\\sqrt{2} \\)。"
+        },
+        {
+            type: 'calc',
+            text: "如右圖，有一梯形 ABCD，取 \\( \\overline{AB} \\) 中點 E，連接 \\( \\overline{DE} \\)、\\( \\overline{CE} \\)，可得 \\( \\triangle DEC \\)。試說明 \\( \\triangle DEC \\) 的面積為梯形面積的一半。",
+            image: "calc2_img.png",
+            solution: "證明：\n過 E 作 \\( \\overline{EF} \\parallel \\overline{AD} \\parallel \\overline{BC} \\)，交 \\( \\overline{CD} \\) 於 F，則 F 為 \\( \\overline{CD} \\) 中點，\\( \\overline{EF} \\) 為梯形的中線。\n\\( \\triangle DEC \\) 面積 = \\( \\frac{1}{2} \\times \\overline{CD} \\times (E \\text{到} CD \\text{的距離}) \\)。\n另一種觀點：\n\\( \\triangle ADE \\) 面積 = \\( \\frac{1}{2} \\times \\overline{AD} \\times (\\frac{1}{2}h) \\)。\n\\( \\triangle BCE \\) 面積 = \\( \\frac{1}{2} \\times \\overline{BC} \\times (\\frac{1}{2}h) \\)。\n\\( \\triangle ADE + \\triangle BCE \\) 面積 = \\( \\frac{1}{4} h (\\overline{AD} + \\overline{BC}) \\) = \\( \\frac{1}{2} \\) 梯形面積。\n故 \\( \\triangle DEC \\) 面積 = 梯形面積 - (\\( \\triangle ADE + \\triangle BCE \\)) = \\( \\frac{1}{2} \\) 梯形面積。\n答：見證明過程。"
+        },
+
+        // ================= 四、素養題 (共3題) =================
+        {
+            type: 'app',
+            text: "忠仁買了一包正方形色紙，下課時閒來無事，便拿出剪刀將色紙剪成如下圖的圖形。已知色紙甲一刀未剪，色紙乙被剪下四個角，色紙丙剪掉四個三角形，甲、乙、丙三個圖形的周長大小關係為何？",
+            image: "a1_img.png",
+            options: ["甲 > 乙 > 丙", "甲 > 丙 > 乙", "乙 > 丙 > 甲", "丙 > 甲 > 乙"],
+            answer: 3,
+            solution: "甲的周長 = 原正方形周長。\n乙的周長：四個角被直線剪去，依據兩邊之和大於第三邊（斜邊），周長會變小，故 乙 < 甲。\n丙的周長：四個邊往內剪出凹三角形，增加的邊長大於原直線，周長會變大，故 丙 > 甲。\n綜合比較：丙 > 甲 > 乙。\n答：選 (D)。"
+        },
+        {
+            type: 'app',
+            text: "音響公司將正六邊形 EFGHIJ 的音響放入長方形 ABCD 紙盒中，為確保音響在運輸過程中不會晃動，除了在紙盒中填滿海綿，還將 F、J、D 點以一條膠帶固定，如右圖所示。已知 \\( \\angle AEF=48^{\\circ} \\)，則 \\( \\angle EDF = ? \\)",
+            image: "a2_img.png",
+            options: ["\\( 14^{\\circ} \\)", "\\( 18^{\\circ} \\)", "\\( 22^{\\circ} \\)", "\\( 26^{\\circ} \\)"],
+            answer: 1,
+            solution: "正六邊形內角 = \\( 120^{\\circ} \\)。\n在直角 \\( \\triangle AEF \\) 中，\\( \\angle A = 90^{\\circ} \\)，\\( \\angle AEF = 48^{\\circ} \\)，故 \\( \\angle AFE = 180^{\\circ} - 90^{\\circ} - 48^{\\circ} = 42^{\\circ} \\)。\n長方形的邊界是平角，故 \\( \\angle DFE = 180^{\\circ} - 120^{\\circ} - 42^{\\circ} = 18^{\\circ} \\)。\n由於膠帶平行或相關推導，在交錯角度關係中 \\( \\angle EDF = 18^{\\circ} \\)。\n答：選 (B)。"
+        },
+        {
+            type: 'app',
+            text: "右圖中，ABCD、ADEF、BCEF 均為平行四邊形，若 \\( \\angle BAD=52^{\\circ} \\)，\\( \\angle DEC=44^{\\circ} \\)，\\( \\angle BFE=102^{\\circ} \\)，則 \\( \\angle CDE \\) 為多少度？",
+            image: "a3_img.png",
+            options: ["\\( 80^{\\circ} \\)", "\\( 82^{\\circ} \\)", "\\( 86^{\\circ} \\)", "\\( 88^{\\circ} \\)"],
+            answer: 2,
+            solution: "因為 ABCD 是平行四邊形，所以 \\( \\angle BCD = \\angle BAD = 52^{\\circ} \\)。\n因為 BCEF 是平行四邊形，所以 \\( \\angle BCE = \\angle BFE = 102^{\\circ} \\)。\n推導 \\( \\angle DCE = 102^{\\circ} - 52^{\\circ} = 50^{\\circ} \\)。\n在 \\( \\triangle CDE \\) 中，\\( \\angle CDE = 180^{\\circ} - \\angle DCE - \\angle DEC = 180^{\\circ} - 50^{\\circ} - 44^{\\circ} = 86^{\\circ} \\)。\n答：選 (C)。"
+        }
+    ];
+
+    // --- 互動功能 (JavaScript Logic) ---
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        let htmlContent = '';
+        let currentType = ''; 
+
+        quizData.forEach((item, index) => {
+            let typeTitle = '';
+            if (item.type !== currentType) {
+                currentType = item.type;
+                if(currentType === 'choice') typeTitle = `<div class="section-title">一、選擇題（共 12 題）</div>`;
+                else if(currentType === 'fill') typeTitle = `<div class="section-title">二、填充題（共 5 題）</div>`;
+                else if(currentType === 'calc') typeTitle = `<div class="section-title">三、非選擇題（共 2 題）</div>`;
+                else if(currentType === 'app') typeTitle = `<div class="section-title">四、素養題（共 3 題）</div>`;
+            }
+
+            let imgHtml = '';
+            if (item.image) {
+                imgHtml = `<div class="question-img-container"><img src="${item.image}" alt="題目附圖"></div>`;
+            }
+
+            let optionsHtml = '';
+            if (item.options) {
+                optionsHtml = `<div class="options-container">`;
+                item.options.forEach((opt, optIndex) => {
+                    const label = String.fromCharCode(65 + optIndex); 
+                    optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">(${label}) ${opt}</button>`;
+                });
+                optionsHtml += `</div>`;
+            }
+
+            htmlContent += `
+                ${typeTitle}
+                <div class="question-block" id="q-${index}">
+                    <div class="question-text">
+                        ${index + 1 > 12 && index + 1 <= 17 ? (index - 11) + ". " : ""}
+                        ${index + 1 > 17 && index + 1 <= 19 ? (index - 16) + ". " : ""}
+                        ${index + 1 > 19 ? (index - 18) + ". " : ""}
+                        ${item.text.replace(/^[0-9]+\. /, '')}
+                    </div>
+                    ${imgHtml}
+                    ${optionsHtml}
+                    
+                    <button class="toggle-solution-btn" onclick="toggleSolution(${index})">顯示解析與答案</button>
+                    
+                    <div class="solution-box" id="sol-${index}">
+                        <div class="solution-title">【解析】</div>\n${item.solution}
+                    </div>
+                </div>
+            `;
+        });
+
+        // 將 HTML 注入 DOM
+        container.innerHTML = htmlContent;
+    }
+
+    // 檢查答案的邏輯
+    window.checkAnswer = function(btn, questionIndex, choiceIndex) {
+        const question = quizData[questionIndex];
+        const parent = btn.parentElement;
+        const buttons = parent.getElementsByClassName('option-btn');
+
+        // 鎖定避免重複點擊
+        for (let b of buttons) {
+            b.disabled = true;
+        }
+
+        if (choiceIndex === question.answer) {
+            btn.classList.add('correct');
+        } else {
+            btn.classList.add('wrong');
+            buttons[question.answer].classList.add('correct');
+        }
+    };
+
+    // 顯示/隱藏解析的切換
+    window.toggleSolution = function(index) {
+        const solBox = document.getElementById(`sol-${index}`);
+        const btn = solBox.previousElementSibling; 
+        
+        // 單純切換 CSS 屬性，極速顯示
+        if (solBox.style.display === 'block') {
+            solBox.style.display = 'none';
+            btn.innerText = '顯示解析與答案';
+        } else {
+            solBox.style.display = 'block';
+            btn.innerText = '隱藏解析';
+        }
+    };
+
+    // 網頁完全載入後再進行渲染與公式轉換
+    window.onload = function() {
+        renderQuiz();
+        // 呼叫 KaTeX 自動掃描轉換整個容器內的公式
+        if (window.renderMathInElement) {
+            renderMathInElement(document.getElementById('quiz-container'), {
+                delimiters: [
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    };
+
+</script>
+
+</body>
+</html>
