@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI撞球教練 - 智能動作分析</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Roboto', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#4ADE80',
+                        onPrimary: '#022C22',
+                        primaryContainer: '#064E3B',
+                        onPrimaryContainer: '#D1FAE5',
+                        secondary: '#2DD4BF',
+                        onSecondary: '#003833',
+                        secondaryContainer: '#004F49',
+                        onSecondaryContainer: '#99F6E4',
+                        tertiary: '#FACC15',
+                        onTertiary: '#422006',
+                        tertiaryContainer: '#713F12',
+                        onTertiaryContainer: '#FEF9C3',
+                        background: '#062C26',
+                        onBackground: '#ECFDF5',
+                        surface: '#022C22',
+                        onSurface: '#ECFDF5',
+                        'surface-variant': '#064E3B',
+                        'on-surface-variant': '#A7F3D0',
+                        outline: '#34D399',
+                        error: '#F87171',
+                        onError: '#450A0A',
+                    },
+                    boxShadow: {
+                        'elevation-1': '0px 1px 3px 1px rgba(0, 0, 0, 0.3), 0px 1px 2px 0px rgba(0, 0, 0, 0.5)',
+                        'elevation-2': '0px 2px 6px 2px rgba(0, 0, 0, 0.3), 0px 1px 2px 0px rgba(0, 0, 0, 0.5)',
+                        'elevation-3': '0px 4px 8px 3px rgba(0, 0, 0, 0.3), 0px 1px 3px 0px rgba(0, 0, 0, 0.5)',
+                    },
+                    backgroundImage: {
+                        'felt-pattern': "radial-gradient(circle at 50% 50%, #064e3b 0%, #062c26 100%)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #062C26;
+            background-image: radial-gradient(circle at 50% 50%, #0f463a 0%, #022c22 100%);
+            background-attachment: fixed;
+            color: #ECFDF5;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            padding: 0;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #022C22; }
+        ::-webkit-scrollbar-thumb { background: #064E3B; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #34D399; }
+
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #D1FAE5; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 700; }
+        .markdown-body h2 { border-bottom: 1px solid #064E3B; padding-bottom: 0.3em; }
+        .markdown-body p { margin-bottom: 1em; line-height: 1.7; color: #ECFDF5; }
+        .markdown-body ul, .markdown-body ol { margin-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body li { margin-bottom: 0.5em; }
+        .markdown-body strong { color: #4ADE80; font-weight: 700; }
+        .markdown-body blockquote {
+            border-left: 4px solid #4ADE80;
+            padding-left: 1em;
+            color: #A7F3D0;
+            font-style: italic;
+            margin: 1em 0;
+            background: rgba(6, 78, 59, 0.3);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .markdown-body code {
+            background-color: #022C22;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #FACC15;
+        }
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            background-color: #064E3B;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid #34D399;
+            padding: 12px;
+            text-align: left;
+        }
+        .markdown-body th { background-color: #022C22; color: #4ADE80; }
+        .markdown-body a { color: #2DD4BF; text-decoration: none; border-bottom: 1px dashed #2DD4BF; transition: all 0.2s; }
+        .markdown-body a:hover { color: #D1FAE5; border-bottom-style: solid; }
+
+        .pdf-export {
+            background-color: #ffffff !important;
+            background-image: none !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: none !important;
+            color: #000000 !important;
+            font-family: 'Noto Sans TC', sans-serif !important;
+            padding: 20px !important;
+            border-radius: 0 !important;
+        }
+        .pdf-export h2 { color: #991b1b !important; border-bottom-color: #fca5a5 !important; }
+        .pdf-export p { color: #374151 !important; }
+        .pdf-export .markdown-body h1, .pdf-export .markdown-body h2, .pdf-export .markdown-body h3, .pdf-export .markdown-body h4 { color: #991b1b !important; border-bottom-color: #fca5a5 !important; }
+        .pdf-export .markdown-body strong { color: #dc2626 !important; }
+        .pdf-export .markdown-body blockquote { border-left-color: #dc2626 !important; background-color: #fff1f2 !important; color: #4b5563 !important; }
+        .pdf-export .markdown-body code { background-color: #f3f4f6 !important; color: #b91c1c !important; border: 1px solid #e5e7eb !important; }
+        .pdf-export .markdown-body table { background-color: transparent !important; border-radius: 0 !important; }
+        .pdf-export .markdown-body th { background-color: #fee2e2 !important; color: #991b1b !important; border-color: #fecaca !important; }
+        .pdf-export .markdown-body td { border-color: #e5e7eb !important; color: #1f2937 !important; }
+        .pdf-export .markdown-body ul, .pdf-export .markdown-body ol, .pdf-export .markdown-body li { color: #1f2937 !important; }
+        .pdf-export .markdown-body a { color: #dc2626 !important; border-bottom-color: #dc2626 !important; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .loader {
+            border: 4px solid rgba(74, 222, 128, 0.1);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border-left-color: #4ADE80;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; text-align: center; padding: 20px;">
+            <div class="loader" style="margin-bottom: 24px;"></div>
+            <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 12px; color: #4ADE80;">系統初始化中...</h2>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const safeGetStorage = (key, defaultValue) => {
+            try { return localStorage.getItem(key) || defaultValue; } 
+            catch (e) { return defaultValue; }
+        };
+        
+        const safeSetStorage = (key, value) => {
+            try { localStorage.setItem(key, value); } 
+            catch (e) {}
+        };
+
+        const { useState, useEffect, useRef } = React;
+
+        const Icon = ({ children, className, size = 24, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+                {children}
+            </svg>
+        );
+
+        const EightBallIcon = ({ size = 24, className, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} {...props}>
+                <circle cx="12" cy="12" r="10" fill="black" stroke="none" />
+                <circle cx="12" cy="12" r="5" fill="white" stroke="none" />
+                <text x="12" y="14" fontSize="6" fontWeight="bold" textAnchor="middle" fill="black" fontFamily="Arial, sans-serif" stroke="none">8</text>
+            </svg>
+        );
+
+        const ChevronRight = (props) => <Icon {...props}><path d="m9 18 6-6-6-6" /></Icon>;
+        const FileVideo = (props) => <Icon {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="m10 11 5 3-5 3v-6z" /></Icon>;
+        const AlertCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></Icon>;
+        const Globe = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><line x1="2" x2="22" y1="12" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></Icon>;
+        const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></Icon>;
+
+        const translations = {
+            'zh-TW': {
+                appTitle: "AI撞球教練",
+                appSubtitle: "智能動作分析",
+                heroTitle: "精準掌控每一桿",
+                heroSubtitle: "上傳您的擊球影片，AI 將針對站姿、運桿、架桿與延伸進行專業分析。",
+                selectSport: "開始分析",
+                uploadAreaTitle: "上傳或錄製撞球影片",
+                uploadAreaSubtitle: "支援 MP4, MOV, AVI 格式 (最大 20MB)",
+                analyzing: "AI 正在分析您的擊球動作...",
+                analyzingSubtitle: "正在處理影片與軌跡識別...",
+                uploadingStep: "正在上傳影片至 AI 伺服器...",
+                processingStep: "AI 伺服器正在解析畫格，這可能需要幾秒鐘...",
+                detectingModels: "正在連線並過濾可用模型...",
+                negotiating: "正在測試 AI 模型...",
+                resultTitle: "撞球動作分析報告",
+                reanalyze: "分析下一桿",
+                downloadPdf: "下載成PDF",
+                footer: "© 2026 AI Billiards Coach. Powered by Gemini",
+                apiKeyPlaceholder: "請輸入您的 Google Gemini API Key",
+                apiKeyHelp: "需要 API Key 才能使用 AI 功能。",
+                startAnalysis: "開始分析"
+            },
+            'en': {
+                appTitle: "AI Billiards Coach",
+                appSubtitle: "Smart Motion Analysis",
+                heroTitle: "Master Every Shot",
+                heroSubtitle: "Upload your video for professional AI analysis of your stance, bridge, stroke, and follow-through.",
+                selectSport: "Start Analysis",
+                uploadAreaTitle: "Upload or Record Video",
+                uploadAreaSubtitle: "Supports MP4, MOV, AVI (Max 20MB)",
+                analyzing: "AI is analyzing your shot...",
+                analyzingSubtitle: "Processing video and stroke mechanics...",
+                uploadingStep: "Uploading video to AI servers...",
+                processingStep: "AI is parsing frames, this might take a few seconds...",
+                detectingModels: "Connecting to AI models...",
+                negotiating: "Testing AI model...",
+                resultTitle: "Analysis Report",
+                reanalyze: "Analyze Another Shot",
+                downloadPdf: "Download PDF",
+                footer: "© 2026 AI Billiards Coach. Powered by Gemini",
+                apiKeyPlaceholder: "Enter your Google Gemini API Key",
+                apiKeyHelp: "API Key required for AI functionality.",
+                startAnalysis: "Start Analysis"
+            }
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState('zh-TW');
+            const [apiKey, setApiKey] = useState(() => safeGetStorage('gemini_api_key', ''));
+            const [selectedSport, setSelectedSport] = useState(null); 
+            const [videoFile, setVideoFile] = useState(null);
+            const [videoUrl, setVideoUrl] = useState(null);
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+            const [statusMessage, setStatusMessage] = useState('');
+            const [result, setResult] = useState(null);
+            const [error, setError] = useState(null);
+
+            const t = translations[lang];
+
+            useEffect(() => {
+                if (apiKey) safeSetStorage('gemini_api_key', apiKey);
+            }, [apiKey]);
+
+            const toggleLanguage = () => {
+                setLang(prev => prev === 'zh-TW' ? 'en' : 'zh-TW');
+            };
+
+            const handleFileChange = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    if (file.size > 20 * 1024 * 1024) {
+                        alert(lang === 'zh-TW' ? "檔案太大，請上傳小於 20MB 的影片" : "File too large. Please upload < 20MB.");
+                        return;
+                    }
+                    setVideoFile(file);
+                    setVideoUrl(URL.createObjectURL(file));
+                    setResult(null);
+                    setError(null);
+                }
+            };
+
+            const analyzeVideo = () => {
+                if (!videoFile) return;
+                if (!apiKey) {
+                    setError(lang === 'zh-TW' ? "請先輸入 API Key" : "Please enter API Key first.");
+                    return;
+                }
+
+                setIsAnalyzing(true);
+                setError(null);
+                setStatusMessage(t.uploadingStep);
+
+                const uploadUrl = "https://generativelanguage.googleapis.com/upload/v1beta/files?key=" + apiKey;
+                
+                fetch(uploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-Goog-Upload-Command': 'start, upload, finalize',
+                        'X-Goog-Upload-Header-Content-Length': videoFile.size.toString(),
+                        'X-Goog-Upload-Header-Content-Type': videoFile.type || 'video/mp4',
+                        'Content-Type': videoFile.type || 'video/mp4'
+                    },
+                    body: videoFile
+                })
+                .then(function(uploadRes) {
+                    if (!uploadRes.ok) {
+                        return uploadRes.text().then(function(errTxt) {
+                            throw new Error("影片上傳失敗: " + uploadRes.status + " - " + errTxt);
+                        });
+                    }
+                    return uploadRes.json();
+                })
+                .then(function(uploadData) {
+                    const uploadedFile = uploadData.file;
+                    setStatusMessage(t.processingStep);
+                    
+                    const pollStatus = function() {
+                        return fetch("https://generativelanguage.googleapis.com/v1beta/" + uploadedFile.name + "?key=" + apiKey)
+                            .then(function(res) { return res.json(); })
+                            .then(function(checkData) {
+                                if (checkData.state === 'ACTIVE') {
+                                    return uploadedFile;
+                                } else if (checkData.state === 'FAILED') {
+                                    throw new Error("AI 無法解析此影片格式。");
+                                } else {
+                                    return new Promise(function(resolve) { setTimeout(resolve, 2000); })
+                                        .then(pollStatus);
+                                }
+                            });
+                    };
+                    return pollStatus();
+                })
+                .then(function(uploadedFile) {
+                    setStatusMessage(t.detectingModels);
+                    return fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey)
+                        .then(function(res) {
+                            if (!res.ok) throw new Error("無法取得可用模型清單，請檢查金鑰。");
+                            return res.json();
+                        })
+                        .then(function(modelsData) {
+                            let list = modelsData.models
+                                .filter(function(m) { return m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"); })
+                                .map(function(m) { return m.name.replace("models/", ""); })
+                                .filter(function(name) { return name.includes("gemini") && !name.includes("preview") && !name.includes("tuning"); });
+                            
+                            if (list.length === 0) {
+                                list = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'];
+                            }
+                            return { uploadedFile: uploadedFile, modelsToTry: list };
+                        });
+                })
+                .then(function(dataObj) {
+                    const uploadedFile = dataObj.uploadedFile;
+                    const modelsToTry = dataObj.modelsToTry;
+                    
+                    setStatusMessage(t.analyzingSubtitle);
+
+                    const sportName = "Billiards/Pool/Snooker";
+                    const specificCriteria = "Focus strictly on:\n1. **Stance (站姿)**: Stability, balance.\n2. **Bridge (架桿)**: Hand stability.\n3. **Stroke (運桿)**: Smoothness, straightness, and follow-through (延伸).\n4. **Head/Eye (頭部與視線)**: Stillness.\nAnalyze the shot mechanics specifically for Billiards/Pool.";
+                    
+                    const systemPrompt = "You are an Olympic-level AI Motion Coach specializing in " + sportName + ".\n" +
+                        "Analyze the uploaded video.\n" + specificCriteria + "\n\n" +
+                        "Provide the output in Markdown format with structure:\n" +
+                        "# " + sportName + " Analysis Report\n" +
+                        "## 🏆 Overall Score: [0-100] / 100\n" +
+                        "## ✅ Key Strengths\n* [Strength]\n" +
+                        "## ⚠️ Areas for Improvement (Prioritized)\n" +
+                        "1. **[Issue]**: [Observation]\n" +
+                        "   * **Correction**: [Advice]\n" +
+                        "   * **🎥 Demo**: [Click to Watch on YouTube](https://www.youtube.com/results?search_query=billiards+tutorial)\n\n" +
+                        "## 🔬 Detailed Technical Analysis\n* Phase 1, 2, 3\n\n## 💡 Pro Tip\n[Tip]\n\n" +
+                        "Language: Traditional Chinese (zh-TW)";
+
+                    let chain = Promise.reject();
+                    let finalResponseData = null;
+
+                    modelsToTry.forEach(function(model) {
+                        chain = chain.catch(function() {
+                            setStatusMessage(t.negotiating + " (" + model + ")");
+                            return fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{
+                                        parts: [
+                                            { text: systemPrompt },
+                                            { fileData: { fileUri: uploadedFile.uri, mimeType: uploadedFile.mimeType } }
+                                        ]
+                                    }]
+                                })
+                            })
+                            .then(function(res) {
+                                if (!res.ok) {
+                                    return res.json().then(function(ej) { throw new Error(ej.error?.message || "Error"); })
+                                            .catch(function() { throw new Error("Status " + res.status); });
+                                }
+                                return res.json();
+                            })
+                            .then(function(resJson) {
+                                finalResponseData = resJson;
+                                return resJson;
+                            });
+                        });
+                    });
+
+                    return chain.then(function() {
+                        if (!finalResponseData) throw new Error("所有可用模型均拒絕了分析請求。");
+                        return finalResponseData;
+                    });
+                })
+                .then(function(finalData) {
+                    const text = finalData.candidates[0].content.parts[0].text;
+                    setResult(text);
+                    setIsAnalyzing(false);
+                })
+                .catch(function(err) {
+                    console.error("Analysis failed:", err);
+                    let errorMessage = err.message || "分析失敗，請檢查網路連線。";
+                    if (errorMessage.includes("API key not valid") || errorMessage.includes("403") || errorMessage.includes("404")) {
+                        errorMessage = "API 錯誤 (404/403)：目前的 API Key 在此網域無效或專案未開通服務。請點擊下方按鈕重新輸入您在本機正常使用的正確 Key。";
+                    } else if (errorMessage.includes("429")) {
+                        errorMessage = "API 額度已達上限，請稍後再試。";
+                    }
+                    setError(errorMessage);
+                    setIsAnalyzing(false);
+                });
+            };
+
+            const downloadPDF = () => {
+                const element = document.getElementById('analysis-result-content');
+                if (!element) return;
+                const clone = element.cloneNode(true);
+                clone.classList.add('pdf-export');
+                clone.classList.remove('bg-black/40', 'backdrop-blur-md', 'shadow-2xl', 'border', 'border-primary/20');
+                const container = document.createElement('div');
+                container.style.position = 'absolute';
+                container.style.left = '-9999px';
+                container.style.top = '0';
+                container.style.width = '800px'; 
+                container.appendChild(clone);
+                document.body.appendChild(container);
+
+                const opt = {
+                    margin: 10,
+                    filename: 'billiards-analysis.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, 
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(clone).save().then(() => {
+                    document.body.removeChild(container);
+                });
+            };
+
+            const renderContent = () => {
+                if (selectedSport === null) {
+                    return (
+                        <div className="space-y-8 animate-fade-in py-10">
+                            <div className="text-center space-y-6">
+                                <div className="inline-block p-4 rounded-full bg-primary/20 mb-4 animate-pulse">
+                                    <EightBallIcon size={64} className="text-primary" />
+                                </div>
+                                <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight drop-shadow-lg">
+                                    {t.heroTitle}
+                                </h2>
+                                <p className="text-lg md:text-xl text-primaryContainer bg-primary/90 inline-block px-4 py-1 rounded-full font-medium">
+                                    {t.heroSubtitle}
+                                </p>
+                            </div>
+                            <div className="flex justify-center mt-10">
+                                <button
+                                    onClick={() => setSelectedSport('billiards')}
+                                    className="group relative overflow-hidden px-12 py-6 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary/80 hover:to-secondary/80 transition-all duration-300 shadow-elevation-3 hover:scale-105 flex items-center gap-4"
+                                >
+                                    <span className="font-bold text-2xl text-onPrimary tracking-wide">{t.selectSport}</span>
+                                    <ChevronRight size={32} className="text-onPrimary group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            </div>
+                        </div>
+                    );
+                }
+
+                if (isAnalyzing) {
+                    return (
+                        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8 animate-fade-in">
+                            <div className="relative">
+                                <div className="loader"></div>
+                                <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                                    <EightBallIcon size={20} className="text-primary animate-pulse" />
+                                </div>
+                            </div>
+                            <div className="text-center space-y-2">
+                                <h3 className="text-2xl font-bold text-white drop-shadow-md">{t.analyzing}</h3>
+                                <p className="text-gray-300">{statusMessage}</p>
+                            </div>
+                        </div>
+                    );
+                }
+
+                if (result) {
+                    return (
+                        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                            <div className="flex justify-between items-center mb-4 no-print">
+                                <button onClick={() => setResult(null)} className="flex items-center gap-2 text-primary hover:text-white transition-colors font-bold bg-black/30 px-4 py-2 rounded-full w-fit">
+                                    <ChevronRight className="rotate-180" size={20} /> {t.reanalyze}
+                                </button>
+                                <button onClick={downloadPDF} className="flex items-center gap-2 text-white bg-primary hover:bg-primary/80 transition-colors font-bold px-4 py-2 rounded-full shadow-lg">
+                                    <Download size={20} /> {t.downloadPdf}
+                                </button>
+                            </div>
+                            <div id="analysis-result-content" className="bg-black/40 backdrop-blur-md rounded-3xl p-6 md:p-10 border border-primary/20 shadow-2xl">
+                                <div id="pdf-header-container" className="mb-6 text-center border-b border-primary/30 pb-6">
+                                    <h2 id="pdf-header-title" className="text-3xl font-bold text-white">{t.resultTitle}</h2>
+                                    <p id="pdf-header-subtitle" className="text-gray-400 text-sm mt-2">Generated by AI Billiards Coach</p>
+                                </div>
+                                <div className="prose prose-invert max-w-none markdown-body" dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(result) : result }} />
+                            </div>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
+                        <button onClick={() => setSelectedSport(null)} className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
+                            <ChevronRight className="rotate-180" size={20} /> Back to Home
+                        </button>
+
+                        <div className="bg-black/30 backdrop-blur-sm border-2 border-dashed border-primary/30 rounded-3xl p-10 text-center hover:border-primary/60 transition-all duration-300 relative group cursor-pointer">
+                            <input type="file" accept="video/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                            <div className="flex flex-col items-center gap-6">
+                                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300 border border-primary/30">
+                                    <FileVideo size={40} />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold mb-2 text-white">{t.uploadAreaTitle}</h3>
+                                    <p className="text-sm text-gray-300">{t.uploadAreaSubtitle}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {videoUrl && (
+                            <div className="rounded-2xl overflow-hidden border-2 border-primary/20 bg-black shadow-2xl">
+                                <video src={videoUrl} controls className="w-full max-h-[60vh]" />
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="bg-error/20 border border-error/50 p-4 rounded-xl flex flex-col gap-3 text-red-200 animate-fade-in backdrop-blur-md">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle size={20} className="mt-0.5 shrink-0 text-error" />
+                                    <div className="text-sm font-medium whitespace-pre-wrap">{error}</div>
+                                </div>
+                                <button 
+                                    onClick={() => { setApiKey(''); safeSetStorage('gemini_api_key', ''); setError(null); }}
+                                    className="text-xs bg-red-500/30 hover:bg-red-500/50 text-white font-bold py-1.5 px-4 rounded-full w-fit self-end mt-1 transition-all"
+                                >
+                                    重新輸入 API Key
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            {!apiKey && (
+                                <div className="bg-black/40 border border-primary/20 p-6 rounded-2xl flex flex-col gap-3 backdrop-blur-md">
+                                    <div className="flex items-center gap-2 text-primary font-bold">
+                                        <AlertCircle size={20} /> <span>{t.apiKeyHelp}</span>
+                                    </div>
+                                    <input type="password" placeholder={t.apiKeyPlaceholder} value={apiKey} onChange={(e) => setApiKey(e.target.value.trim())} className="w-full bg-black/50 border border-primary/30 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary focus:outline-none placeholder-gray-500 transition-all" />
+                                </div>
+                            )}
+                            
+                            {apiKey && !error && (
+                                <div className="flex justify-between items-center bg-black/20 border border-white/5 px-4 py-2 rounded-xl text-xs text-gray-400">
+                                    <span>金鑰已儲存 (已隱藏輸入框)</span>
+                                    <button onClick={() => { setApiKey(''); safeSetStorage('gemini_api_key', ''); }} className="text-primary hover:underline">更換金鑰</button>
+                                </div>
+                            )}
+
+                            <button onClick={analyzeVideo} disabled={!videoFile || !apiKey} className={`w-full py-4 rounded-xl font-bold text-xl flex items-center justify-center gap-3 transition-all duration-300 ${(!videoFile || !apiKey) ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' : 'bg-primary text-onPrimary hover:bg-primary/90 hover:scale-[1.02] shadow-lg shadow-primary/20'}`}>
+                                <EightBallIcon size={24} /> {t.startAnalysis}
+                            </button>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen font-sans selection:bg-primary selection:text-onPrimary">
+                    <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/5 px-6 py-4">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryContainer flex items-center justify-center text-onPrimary shadow-lg ring-2 ring-primary/30">
+                                    <EightBallIcon size={28} />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight text-white">{t.appTitle}</h1>
+                                    <p className="text-xs text-primary font-medium hidden sm:block">{t.appSubtitle}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button onClick={toggleLanguage} className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-full text-sm font-medium text-gray-300 hover:text-white transition-colors border border-white/5">
+                                    <Globe size={18} />
+                                    <span className={lang === 'zh-TW' ? 'text-primary font-bold' : ''}>繁</span>
+                                    <span className="opacity-30">|</span>
+                                    <span className={lang === 'en' ? 'text-primary font-bold' : ''}>EN</span>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="pt-28 pb-12 px-6 max-w-7xl mx-auto min-h-screen flex flex-col">
+                        {renderContent()}
+                    </main>
+
+                    <footer className="py-8 text-center text-gray-400 text-sm border-t border-white/5 bg-black/20 backdrop-blur-sm">
+                        <p>{t.footer}</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
