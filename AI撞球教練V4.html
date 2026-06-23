@@ -163,6 +163,9 @@
     </div>
 
     <script type="text/babel">
+        // 強制清除所有可能導致 404 的舊版模型快取
+        localStorage.removeItem('gemini_active_model');
+
         const safeGetStorage = (key, defaultValue = null) => {
             try { return localStorage.getItem(key) || defaultValue; } 
             catch (e) { return defaultValue; }
@@ -252,23 +255,12 @@
             const [statusMessage, setStatusMessage] = useState('');
             const [result, setResult] = useState(null);
             const [error, setError] = useState(null);
-            const [activeModel, setActiveModel] = useState(() => safeGetStorage('gemini_active_model', null));
 
             const t = translations[lang];
 
             useEffect(() => {
                 if (apiKey) safeSetStorage('gemini_api_key', apiKey);
             }, [apiKey]);
-
-            useEffect(() => {
-                if (result) {
-                    const links = document.querySelectorAll('.markdown-body a');
-                    links.forEach(link => {
-                        link.setAttribute('target', '_blank');
-                        link.setAttribute('rel', 'noopener noreferrer');
-                    });
-                }
-            }, [result]);
 
             const toggleLanguage = () => {
                 setLang(prev => prev === 'zh-TW' ? 'en' : 'zh-TW');
@@ -370,11 +362,6 @@
                     });
 
                     let modelsToTry = validModels;
-                    
-                    if (activeModel && validModels.includes(activeModel)) {
-                        modelsToTry = modelsToTry.filter(m => m !== activeModel);
-                        modelsToTry.unshift(activeModel);
-                    }
 
                     const sportName = "Billiards/Pool/Snooker";
                     const specificCriteria = `
@@ -462,9 +449,6 @@
                         const errorMsg = meaningfulError?.errorMsg || "未知錯誤";
                         throw new Error(`所有可用模型均被拒絕。\n發生在模型 ${meaningfulError.model}:\n${errorMsg}`);
                     }
-
-                    setActiveModel(successModel);
-                    safeSetStorage('gemini_active_model', successModel);
 
                     const text = finalData.candidates[0].content.parts[0].text;
                     setResult(text);
@@ -659,14 +643,23 @@
 
                     <footer className="py-8 text-center text-gray-400 text-sm border-t border-white/5 bg-black/20 backdrop-blur-sm">
                         <p>{t.footer}</p>
-                        <p className="mt-2 text-primary/60 text-xs">XTJH-YUCC 修改</p>
                     </footer>
                 </div>
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } catch (renderError) {
+            console.error(renderError);
+            document.getElementById('root').innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; color:#F87171; text-align:center;">
+                    <h2>❌ 程式碼執行失敗</h2>
+                    <p style="margin-top: 10px;">${renderError.message}</p>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
