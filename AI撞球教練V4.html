@@ -163,7 +163,7 @@
     </div>
 
     <script type="text/babel">
-        // 強制清除所有可能導致 404 的舊版模型快取
+        // 清除舊版的記憶
         localStorage.removeItem('gemini_active_model');
 
         const safeGetStorage = (key, defaultValue = null) => {
@@ -211,7 +211,7 @@
                 analyzingSubtitle: "正在處理影片與軌跡識別...",
                 uploadingStep: "正在上傳影片至 AI 伺服器...",
                 processingStep: "AI 伺服器正在解析畫格，這可能需要幾秒鐘...",
-                detectingModels: "正在偵測可用 AI 模型...",
+                detectingModels: "正在連線至 AI 模型...",
                 negotiating: "正在測試 AI 模型...",
                 resultTitle: "撞球動作分析報告",
                 reanalyze: "分析下一桿",
@@ -233,7 +233,7 @@
                 analyzingSubtitle: "Processing video and stroke mechanics...",
                 uploadingStep: "Uploading video to AI servers...",
                 processingStep: "AI is parsing frames, this might take a few seconds...",
-                detectingModels: "Detecting available AI models...",
+                detectingModels: "Connecting to AI models...",
                 negotiating: "Testing AI model...",
                 resultTitle: "Analysis Report",
                 reanalyze: "Analyze Another Shot",
@@ -292,6 +292,7 @@
                 setStatusMessage(t.uploadingStep);
 
                 try {
+                    // 1. 上傳影片
                     const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`;
                     const uploadRes = await fetch(uploadUrl, {
                         method: 'POST',
@@ -312,6 +313,7 @@
                     const uploadData = await uploadRes.json();
                     const uploadedFile = uploadData.file;
 
+                    // 2. 等待影片處理完成
                     setStatusMessage(t.processingStep);
                     let isReady = false;
                     while (!isReady) {
@@ -328,40 +330,14 @@
                     }
 
                     setStatusMessage(t.detectingModels);
-                    const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-                    if (!modelsRes.ok) {
-                        throw new Error("無法向 Google 取得可用模型清單，請確認 API Key 是否有效。");
-                    }
-                    
-                    const modelsData = await modelsRes.json();
-                    
-                    let validModels = modelsData.models
-                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-                        .map(m => m.name.replace("models/", ""))
-                        .filter(name => name.includes("gemini-1.5") || name.includes("gemini-2"));
 
-                    if (validModels.length === 0) {
-                        validModels = modelsData.models
-                            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-                            .map(m => m.name.replace("models/", ""))
-                            .filter(name => name.includes("gemini"));
-                    }
-
-                    if (validModels.length === 0) {
-                         throw new Error("此 API Key 尚未開通任何支援生成內容的 Gemini 模型權限。");
-                    }
-
-                    const priorityList = ['gemini-1.5-pro', 'gemini-1.5-pro-latest', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
-                    validModels.sort((a, b) => {
-                        const indexA = priorityList.findIndex(p => a === p || a.startsWith(p));
-                        const indexB = priorityList.findIndex(p => b === p || b.startsWith(p));
-                        if (indexA > -1 && indexB > -1) return indexA - indexB;
-                        if (indexA > -1) return -1;
-                        if (indexB > -1) return 1;
-                        return 0;
-                    });
-
-                    let modelsToTry = validModels;
+                    // 3. 放棄自動偵測，直接鎖死最穩定的模型名單
+                    const modelsToTry = [
+                        'gemini-1.5-pro',
+                        'gemini-1.5-pro-002',
+                        'gemini-1.5-flash',
+                        'gemini-1.5-flash-002'
+                    ];
 
                     const sportName = "Billiards/Pool/Snooker";
                     const specificCriteria = `
